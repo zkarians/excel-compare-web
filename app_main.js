@@ -603,9 +603,17 @@ async function readExcelFile(file, type) {
                                 let cellDest = safeGetText(COL.DEST);
                                 let cellCntrNo = safeGetText(COL.CNTR_NO);
 
-                                const isNewCntr = /^[A-Za-z]{3}U\d{7}$/i.test(cellCntrNo);
+                                // 컨테이너 번호 감지 및 상속 로직 개선
+                                // 1. 유효한 컨테이너 번호 형식(ISO 등)이거나
+                                // 2. 숫자가 아닌 문자가 포함된 8자 이상의 문자열이면 새로운 컨테이너로 간주
+                                // (사용자 요청: 아래쪽의 단순 숫자(4, 0 등)는 새로운 컨테이너가 아니라 위쪽 번호를 상속받아야 함)
+                                const isNewCntr = /^[A-Za-z]{3}[A-Za-z]U?\d{7}$/i.test(cellCntrNo) ||
+                                    (cellCntrNo.length >= 8 && isNaN(Number(cellCntrNo)));
+
                                 if (isNewCntr) {
-                                    if (cellCntrNo !== lastValidCntrNo) { lastValidDest = ""; lastValidE = ""; lastValidN = ""; lastValidO = ""; lastValidQ = ""; lastValidR = ""; }
+                                    if (cellCntrNo !== lastValidCntrNo) {
+                                        lastValidDest = ""; lastValidE = ""; lastValidN = ""; lastValidO = ""; lastValidQ = ""; lastValidR = "";
+                                    }
                                     lastValidCntrNo = cellCntrNo;
                                     try { lastFontColor = row.getCell(COL.CNTR_NO).font?.color?.argb || null; } catch (e) { }
                                 }
@@ -616,6 +624,7 @@ async function readExcelFile(file, type) {
                                 let cellQ = safeGetText(COL.ETD), cellR = safeGetText(COL.REMARK);
                                 if (cellQ) lastValidQ = cellQ; if (cellR) lastValidR = cellR;
 
+                                // 최종 컨테이너 번호 결정 (새 번호가 아니면 마지막 유효 번호 사용)
                                 let cntrNo = isNewCntr ? cellCntrNo : lastValidCntrNo;
                                 if (!cntrNo || cntrNo.toUpperCase().includes("WAIT")) return;
 
