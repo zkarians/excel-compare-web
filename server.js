@@ -370,26 +370,133 @@ app.post('/api/open-excel-path', async (req, res) => {
     }
 });
 
-// 마스터 데이터 직접 업로드 API
+// 제품 마스터 데이터 가져오기 API (DB 우선)
+app.get('/api/master-data', async (req, res) => {
+    try {
+        console.log(`📡 [API] 마스터 데이터 조회 요청 (DB 우선)`);
+
+        let masterData = [];
+        if (pool) {
+            try {
+                const result = await pool.query('SELECT prod_name as name, prod_type as type, weight, width, depth, height FROM product_master_sync ORDER BY prod_name ASC');
+                masterData = result.rows;
+                console.log(`🐘 [DB] 제품 마스터 ${masterData.length}건 조회 완료`);
+            } catch (dbErr) {
+                console.error("❌ [DB] 제품 마스터 조회 실패 (파일 폴백):", dbErr.message);
+            }
+        }
+
+        // DB에 데이터가 없거나 DB 연결 실패 시 파일에서 읽어옴
+        if (masterData.length === 0) {
+            console.log(`📂 [API] DB에 데이터가 없으므로 파일에서 파싱을 시도합니다.`);
+            masterData = await parseMasterExcel();
+            // 파일에서 읽어왔다면 백그라운드에서 DB에 저장 시도 (다음번 조회를 위해)
+            if (pool && masterData.length > 0) {
+                saveMasterDataToDb(masterData).catch(err => console.error("❌ [DB] 초기 데이터 저장 실패:", err));
+            }
+        }
+
+        res.json({ success: true, masterData });
+    } catch (err) {
+        console.error("❌ 마스터 조회 오류:", err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// 제품 마스터 DB 저장 헬퍼 함수
+async function saveMasterDataToDb(masterData) {
+    if (!pool) return;
+
+    // 중복 제거
+    const uniqueMap = new Map();
+    masterData.forEach(item => {
+        if (item.name && item.name.trim() !== "") {
+            uniqueMap.set(item.name.trim(), item);
+        }
+    });
+    const finalData = Array.from(uniqueMap.values());
+    console.log(`🐘 [DB] 마스터 데이터 저장 시작 (총 ${finalData.length}건)`);
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        await client.query('DELETE FROM product_master_sync');
+
+        const BATCH_SIZE = 1000;
+        for (let i = 0; i < finalData.length; i += BATCH_SIZE) {
+            const batch = finalData.slice(i, i + BATCH_SIZE);
+            const values = [];
+            const placeholders = [];
+
+            batch.forEach((item, index) => {
+                const offset = index * 6;
+                placeholders.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6})`);
+                values.push(
+                    item.name.trim(),
+                    item.prodType || item.type || '',
+                    item.weight || 0,
+                    item.width || 0,
+                    item.depth || 0,
+                    item.height || 0
+                );
+            });
+
+            const query = `
+                INSERT INTO product_master_sync
+                (prod_name, prod_type, weight, width, depth, height)
+                VALUES ${placeholders.join(', ')}
+                ON CONFLICT (prod_name) DO UPDATE SET
+                    prod_type = EXCLUDED.prod_type,
+                    weight = EXCLUDED.weight,
+                    width = EXCLUDED.width,
+                    depth = EXCLUDED.depth,
+                    height = EXCLUDED.height,
+                    updated_at = NOW()
+            `;
+            await client.query(query, values);
+        }
+        await client.query('COMMIT');
+        console.log(`✅ [DB] 마스터 데이터 ${finalData.length}건 저장 완료`);
+    } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
+// 마스터 데이터 직접 업로드 API (DB 동기화 포함)
 app.post('/api/upload-master', upload.single('masterFile'), async (req, res) => {
     try {
-        console.log(`📂 [API] 마스터 데이터 업데이트 요청`);
+        console.log(`📂 [API] 마스터 데이터 업데이트 요청 (DB 저장 방식)`);
         if (!req.file) {
             return res.status(400).json({ success: false, message: '마스터 파일이 누락되었습니다.' });
         }
 
-        // Save the uploaded master file into the AppData folder for persistence
+        // 1. 파일에서 데이터 파싱 (메모리 효율적인 XLSX 사용)
+        const data = await parseMasterExcel(req.file.buffer);
+        console.log(`✅ [API] 마스터 파일 파싱 성공 (${data.length}건)`);
+
+        // 2. DB에 즉시 동기화
+        if (pool) {
+            await saveMasterDataToDb(data);
+        }
+
+        // 3. 파일 유지 (백업용)
         const MASTER_DATA_FILE = path.join(DATA_DIR, 'product_master.xlsx');
         fs.writeFileSync(MASTER_DATA_FILE, req.file.buffer);
-        console.log(`✅ [API] 마스터 엑셀. 저장 완료: ${MASTER_DATA_FILE}`);
 
-        // Automatically reload the data from the newly saved file
-        const data = await parseMasterExcel();
-
-        res.json({ success: true, message: '마스터 데이터가 성공적으로 업데이트되었습니다.', masterData: data });
+        res.json({
+            success: true,
+            message: '마스터 데이터가 성공적으로 DB와 동기화되었습니다.',
+            masterData: data
+        });
     } catch (err) {
         console.error("❌ 마스터 업로드 오류:", err);
-        res.status(500).json({ success: false, message: `마스터 파일을 업로드하는 중 오류가 발생했습니다: ${err.message}` });
+        res.status(500).json({
+            success: false,
+            message: `마스터 파일을 처리하는 중 오류가 발생했습니다: ${err.message}`
+        });
     }
 });
 

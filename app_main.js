@@ -421,6 +421,7 @@ if (document.readyState === 'loading') {
 
 // 제품 마스터 로드
 async function loadProductMaster() {
+    const statusMaster = document.getElementById('statusMaster');
     try {
         const response = await fetch(`${API_BASE}/api/master-data`);
         if (response.ok) {
@@ -428,6 +429,9 @@ async function loadProductMaster() {
             if (apiData.success) {
                 productMaster = apiData.masterData;
                 console.log(`✅ 제품 마스터 ${productMaster.length}건 로드 완료 (서버 기반)`);
+                if (statusMaster) {
+                    statusMaster.innerHTML = `<i class="fas fa-database" style="color: #4361ee; margin-right:4px;"></i>상태: 클라우드 DB 연동 완료 (${productMaster.length.toLocaleString()}건)`;
+                }
             } else {
                 throw new Error(apiData.message);
             }
@@ -437,10 +441,16 @@ async function loadProductMaster() {
             if (responseJson.ok) {
                 productMaster = await responseJson.json();
                 console.log(`✅ 제품 마스터 ${productMaster.length}건 로드 완료 (JSON 백업)`);
+                if (statusMaster) {
+                    statusMaster.innerHTML = `<i class="fas fa-file-json" style="color: #64748b; margin-right:4px;"></i>상태: 로컬 백업 로드 완료 (${productMaster.length.toLocaleString()}건)`;
+                }
             }
         }
     } catch (err) {
         console.error('❌ 제품 마스터 로드 오류:', err);
+        if (statusMaster) {
+            statusMaster.innerHTML = `<i class="fas fa-exclamation-triangle" style="color: #ef4444; margin-right:4px;"></i>상태: 로드 오류 (DB 확인 필요)`;
+        }
     }
 }
 loadProductMaster();

@@ -31,28 +31,38 @@ function getTransporterFromColor(fontColor) {
 }
 
 // 제품 마스터 엑셀 파싱 함수
-async function parseMasterExcel() {
-    // 1. First check if a custom master file exists in the user's AppData directory
-    // If APP_DATA_PATH is not set, we assume the data directory is the project root (where server.js lives)
-    const DATA_DIR = process.env.APP_DATA_PATH || path.join(__dirname, '..', 'data');
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+async function parseMasterExcel(optionalBuffer = null) {
+    let masterPath = "";
+    let workbook;
 
-    const customMasterPath = path.join(DATA_DIR, 'product_master.xlsx');
-    const bundledMasterPath = path.join(__dirname, '..', 'master_data', 'product_master.xlsx');
-    const productsJsonPath = path.join(DATA_DIR, 'products.json');
-
-    let masterPath = bundledMasterPath; // Default fallback
-    if (fs.existsSync(customMasterPath)) {
-        console.log(`📂 [parseMasterExcel] 커스텀 마스터 데이터 발견: ${customMasterPath}`);
-        masterPath = customMasterPath;
-    } else if (!fs.existsSync(bundledMasterPath)) {
-        throw new Error("마스터 데이터(product_master.xlsx) 파일이 존재하지 않습니다.");
+    if (optionalBuffer) {
+        console.log(`🔍 [parseMasterExcel] 제공된 버퍼로 파싱을 시작합니다.`);
+        workbook = XLSX.read(optionalBuffer);
     } else {
-        console.log(`📂 [parseMasterExcel] 기본 마스터 데이터 사용: ${bundledMasterPath}`);
+        // 1. First check if a custom master file exists in the user's AppData directory
+        const DATA_DIR = process.env.APP_DATA_PATH || path.join(__dirname, '..', 'data');
+        if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+        const customMasterPath = path.join(DATA_DIR, 'product_master.xlsx');
+        const bundledMasterPath = path.join(__dirname, '..', 'master_data', 'product_master.xlsx');
+
+        masterPath = customMasterPath;
+        if (!fs.existsSync(customMasterPath)) {
+            if (!fs.existsSync(bundledMasterPath)) {
+                throw new Error("마스터 데이터(product_master.xlsx) 파일이 존재하지 않습니다.");
+            }
+            masterPath = bundledMasterPath;
+            console.log(`📂 [parseMasterExcel] 기본 마스터 데이터 사용: ${bundledMasterPath}`);
+        } else {
+            console.log(`📂 [parseMasterExcel] 커스텀 마스터 데이터 발견: ${customMasterPath}`);
+        }
+
+        console.log(`🔍 [parseMasterExcel] 파일 읽기 시작: ${masterPath}`);
+        workbook = XLSX.readFile(masterPath);
     }
 
-    console.log(`🔍 [parseMasterExcel] 파일 읽기 시작: ${masterPath}`);
-    const workbook = XLSX.readFile(masterPath);
+    const productsJsonPath = path.join(DATA_DIR, 'products.json');
+
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
     // header: 1 means return array of arrays

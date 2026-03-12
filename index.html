@@ -501,24 +501,21 @@
                     <div
                         style="margin-top: 8px; padding: 8px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0;">
                         <strong style="font-size: 0.85rem; color: #475569; display: block; margin-bottom: 8px;">최신 기준으로
-                            마스터
-                            데이터를 교체하고 싶다면 아래에서 파일을 업로드하세요.</strong>
+                            마스터 데이터를 교체하고 싶다면 아래에서 파일을 업로드하세요.</strong>
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <input type="file" id="fileMasterUpload" accept=".xlsx, .xls" style="font-size: 0.85rem;">
                             <button id="btnUploadMaster" class="btn btn-primary-soft"
                                 style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 6px;">
-                                <i class="fas fa-upload"></i> 업데이트
+                                <i class="fas fa-upload"></i> 업데이트 & DB 저장
                             </button>
                         </div>
-                        <p style="color: #94a3b8; font-size: 0.8rem; margin: 5px 0 0 0;">* 업로드한 마스터 파일은 PC에 저장되며, 다음 번
-                            실행
-                            시에도 계속 유지됩니다.</p>
+                        <p style="color: #64748b; font-size: 0.8rem; margin: 5px 0 0 0;">* 업로드한 데이터는 <strong>클라우드 DB에 즉시
+                                저장</strong>되며 모든 사용자가 공유합니다.</p>
                     </div>
 
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
                         <p class="file-status" id="statusMaster" style="margin: 0; font-weight: bold; color: #1e293b;">
-                            <i class="fas fa-check-circle" style="color: #10b981; margin-right:4px;"></i>상태: 자동 연동 (준비
-                            완료)
+                            <i class="fas fa-database" style="color: #4361ee; margin-right:4px;"></i>상태: 클라우드 DB 연동 완료
                         </p>
                         <div class="sync-actions" style="display: flex; gap: 8px;">
                             <button id="btnCloudUploadMaster" class="btn btn-secondary-outline"
