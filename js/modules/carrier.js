@@ -3,7 +3,7 @@
 // --------------------------------------------------
 let carrierMap = {};
 
-function loadCarrierMap() {
+async function loadCarrierMap() {
     // 1. 기본 선사 맵핑 정의 (최신 기준)
     const defaultMap = {
         "MSK": ["머스크", "MAERSK", "MSK", "한국머스크", "KR055242", "MAEU", "MSKU"],
@@ -31,11 +31,26 @@ function loadCarrierMap() {
         "TSL": ["TSLINE", "TSL", "덕상티에스라인즈", "덕상티에스"]
     };
 
+    try {
+        // 1순위: DB에서 조회
+        const response = await fetch(`${API_BASE}/api/sync/carriers`);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.mapping && Object.keys(data.mapping).length > 0) {
+                carrierMap = data.mapping;
+                return;
+            }
+        }
+    } catch (err) {
+        console.error("DB 선사 로딩 실패:", err);
+    }
+
+    // 2순위: DB가 비어있거나 통신 실패 시 (기존 로컬스토리지 방식 및 필수 병합)
     const savedMap = localStorage.getItem('carrierMapPrefs');
     if (savedMap) {
         carrierMap = JSON.parse(savedMap);
 
-        // 2. 필수 새로운 키(EMC, OOL, ESL, FEO, DYS, KMD, IAL, TSL)가 기존 저장 앱에 없는 경우 자동 병합
+        // 새로운 키가 없는 경우 자동 병합
         let needsUpdate = false;
         const requiredKeys = ["EMC", "OOL", "ESL", "FEO", "DYS", "KMD", "IAL", "TSL", "SKR"];
 
@@ -48,7 +63,9 @@ function loadCarrierMap() {
 
         if (needsUpdate) {
             saveCarrierMap();
-            // console.log("✅ 신규 선사 정보가 기존 설정에 병합되었습니다.");
+        } else {
+            // 수정된 내용이 없더라도 DB와 동기화 시도
+            saveCarrierMap();
         }
     } else {
         carrierMap = defaultMap;
@@ -56,8 +73,18 @@ function loadCarrierMap() {
     }
 }
 
-function saveCarrierMap() {
+async function saveCarrierMap() {
     localStorage.setItem('carrierMapPrefs', JSON.stringify(carrierMap));
+    try {
+        await fetch(`${API_BASE}/api/sync/carriers`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mapping: carrierMap })
+        });
+        if (window.updateDbGlobalStats) window.updateDbGlobalStats();
+    } catch (err) {
+        console.error("DB 선사 저장 실패:", err);
+    }
 }
 
 function normalizeCarrier(name) {
@@ -172,8 +199,8 @@ function resetSettingsInput() {
 
 // 모달 로직
 const settingsModal = document.getElementById('settingsModal');
-document.getElementById('btnOpenSettings')?.addEventListener('click', () => {
-    loadCarrierMap();
+document.getElementById('btnOpenSettings')?.addEventListener('click', async () => {
+    await loadCarrierMap();
     renderCarrierSettings();
     if (settingsModal) settingsModal.style.display = 'block';
 });
@@ -230,50 +257,6 @@ document.getElementById('btnAddCarrier')?.addEventListener('click', () => {
     document.getElementById('inputMappedName').value = '';
 });
 
-// --- Cloud Sync Logic ---
-async function uploadCarriersToServer() {
-    try {
-        const resp = await fetch(`${API_BASE}/api/sync/carriers`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mapping: carrierMap })
-        });
-        const data = await resp.json();
-        if (data.success) {
-            alert("✅ 선사 매핑이 클라우드에 업로드되었습니다.");
-            if (window.updateDbGlobalStats) window.updateDbGlobalStats();
-        } else {
-            alert("❌ 업로드 실패: " + data.message);
-        }
-    } catch (err) {
-        console.error("Cloud Upload Error:", err);
-        alert("❌ 클라우드 연결 오류가 발생했습니다.");
-    }
-}
-
-async function downloadCarriersFromServer() {
-    if (!confirm("클라우드에서 데이터를 내려받으면 현재 로컬의 매핑 설정이 덮어씌워집니다. 진행하시겠습니까?")) return;
-    try {
-        const resp = await fetch(`${API_BASE}/api/sync/carriers`);
-        const data = await resp.json();
-        if (data.success) {
-            carrierMap = data.mapping;
-            saveCarrierMap();
-            renderCarrierSettings();
-            alert("✅ 클라우드에서 선사 매핑을 성공적으로 내려받았습니다.");
-            if (window.updateDbGlobalStats) window.updateDbGlobalStats();
-        } else {
-            alert("❌ 다운로드 실패: " + data.message);
-        }
-    } catch (err) {
-        console.error("Cloud Download Error:", err);
-        alert("❌ 클라우드 연결 오류가 발생했습니다.");
-    }
-}
-
-document.getElementById('btnCloudUploadCarriers')?.addEventListener('click', uploadCarriersToServer);
-document.getElementById('btnCloudDownloadCarriers')?.addEventListener('click', downloadCarriersFromServer);
-
 // --- Export ---
 window.carrierMap = carrierMap;
 window.loadCarrierMap = loadCarrierMap;
@@ -281,5 +264,3 @@ window.saveCarrierMap = saveCarrierMap;
 window.normalizeCarrier = normalizeCarrier;
 window.renderCarrierSettings = renderCarrierSettings;
 window.resetSettingsInput = resetSettingsInput;
-window.uploadCarriersToServer = uploadCarriersToServer;
-window.downloadCarriersFromServer = downloadCarriersFromServer;

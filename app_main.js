@@ -3406,7 +3406,14 @@ if (btnRefreshCloudStats) {
         const icon = btnRefreshCloudStats.querySelector('.fa-sync-alt');
         if (icon) icon.classList.add('fa-spin');
 
-        updateDbGlobalStats().finally(() => {
+        const promises = [
+            updateDbGlobalStats(),
+            typeof loadProductMaster === 'function' ? loadProductMaster() : Promise.resolve(),
+            typeof window.loadCarrierMap === 'function' ? window.loadCarrierMap() : Promise.resolve(),
+            typeof window.loadDynamicRules === 'function' ? window.loadDynamicRules() : Promise.resolve()
+        ];
+
+        Promise.all(promises).finally(() => {
             setTimeout(() => {
                 if (icon) icon.classList.remove('fa-spin');
             }, 600);

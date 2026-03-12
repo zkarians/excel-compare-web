@@ -6,10 +6,22 @@ const rulesModal = document.getElementById('rulesModal');
 
 async function loadDynamicRules() {
     try {
-        const response = await fetch(`${API_BASE}/api/rules`);
-        const data = await response.json();
-        if (data.success) {
-            dynamicRules = (Array.isArray(data.rules) && data.rules.length > 0) ? data.rules : [
+        // 1순위: DB에서 규칙 로딩 시도
+        const response = await fetch(`${API_BASE}/api/sync/rules`);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && Array.isArray(data.rules) && data.rules.length > 0) {
+                dynamicRules = data.rules;
+                renderRulesTable();
+                return;
+            }
+        }
+
+        // 2순위: DB가 비어있거나 실패하면 기존 로컬(rules.json) 로딩
+        const localResp = await fetch(`${API_BASE}/api/rules`);
+        const localData = await localResp.json();
+        if (localData.success) {
+            dynamicRules = (Array.isArray(localData.rules) && localData.rules.length > 0) ? localData.rules : [
                 {
                     "id": "dvq3f7e",
                     "isActive": true,
@@ -37,6 +49,11 @@ async function loadDynamicRules() {
 
             ];
             renderRulesTable();
+
+            // 로컬에서 불러온 데이터가 있다면 DB로 백그라운드 동기화
+            if (dynamicRules.length > 0) {
+                saveDynamicRules().catch(err => console.error("초기 DB 규칙 백업 실패:", err));
+            }
         }
     } catch (err) {
         console.error("규칙 로딩 실패:", err);
@@ -45,14 +62,23 @@ async function loadDynamicRules() {
 
 async function saveDynamicRules() {
     try {
-        await fetch(`${API_BASE}/api/rules`, {
+        await fetch(`${API_BASE}/api/sync/rules`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ rules: dynamicRules })
         });
+
+        // 로컬 백업용으로도 저장
+        await fetch(`${API_BASE}/api/rules`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rules: dynamicRules })
+        }).catch(e => console.warn("로컬 백업 저장 실패", e));
+
+        if (window.updateDbGlobalStats) window.updateDbGlobalStats();
     } catch (err) {
         console.error("규칙 저장 실패:", err);
-        alert("규칙을 서버에 저장하는데 실패했습니다.");
+        alert("규칙을 서버 DB에 저장하는데 실패했습니다.");
     }
 }
 
@@ -518,51 +544,6 @@ document.getElementById('rulesTableBody').addEventListener('click', (e) => {
     }
 });
 
-// --- Cloud Sync Logic ---
-async function uploadRulesToServer() {
-    try {
-        const resp = await fetch(`${API_BASE}/api/sync/rules`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rules: dynamicRules })
-        });
-        const data = await resp.json();
-        if (data.success) {
-            alert("✅ 자동분류 규칙이 클라우드에 업로드되었습니다.");
-            if (window.updateDbGlobalStats) window.updateDbGlobalStats();
-        } else {
-            alert("❌ 업로드 실패: " + data.message);
-        }
-    } catch (err) {
-        console.error("Cloud Upload Error:", err);
-        alert("❌ 클라우드 연결 오류가 발생했습니다.");
-    }
-}
-
-async function downloadRulesFromServer() {
-    if (!confirm("클라우드에서 데이터를 내려받으면 현재 로컬의 규칙 설정이 덮어씌워집니다. 진행하시겠습니까?")) return;
-    try {
-        const resp = await fetch(`${API_BASE}/api/sync/rules`);
-        const data = await resp.json();
-        if (data.success) {
-            dynamicRules = data.rules;
-            // 로컬 파일(rules.json)에도 저장 (서버 API 활용)
-            await saveDynamicRules();
-            renderRulesTable();
-            alert("✅ 클라우드에서 자동분류 규칙을 성공적으로 내려받았습니다.");
-            if (window.updateDbGlobalStats) window.updateDbGlobalStats();
-        } else {
-            alert("❌ 다운로드 실패: " + data.message);
-        }
-    } catch (err) {
-        console.error("Cloud Download Error:", err);
-        alert("❌ 클라우드 연결 오류가 발생했습니다.");
-    }
-}
-
-document.getElementById('btnCloudUploadRules')?.addEventListener('click', uploadRulesToServer);
-document.getElementById('btnCloudDownloadRules')?.addEventListener('click', downloadRulesFromServer);
-
 // --- Exports ---
 window.dynamicRules = dynamicRules;
 window.loadDynamicRules = loadDynamicRules;
@@ -570,5 +551,3 @@ window.saveDynamicRules = saveDynamicRules;
 window.createConditionRow = createConditionRow;
 window.renderRulesTable = renderRulesTable;
 window.resetRuleForm = resetRuleForm;
-window.uploadRulesToServer = uploadRulesToServer;
-window.downloadRulesFromServer = downloadRulesFromServer;
