@@ -1,0 +1,11 @@
+node_modules/
+dist/
+data/
+uploads/
+masterrule/runtime_debug.log
+masterrule/startup_error.log
+*.xlsx
+*.xls
+.env
+.DS_Store
+package-lock.json

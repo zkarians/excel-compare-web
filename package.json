@@ -1,0 +1,57 @@
+{
+  "dependencies": {
+    "cors": "^2.8.6",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "jsdom": "^28.1.0",
+    "multer": "^2.0.2",
+    "pg": "^8.20.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "electron": "^40.6.1",
+    "electron-builder": "^26.8.1",
+    "wait-on": "^9.0.4"
+  },
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "serve": "node server.js",
+    "build": "cross-env NODE_NO_WARNINGS=1 electron-builder --win --x64"
+  },
+  "build": {
+    "npmRebuild": false,
+    "appId": "com.excelcompare.app",
+    "productName": "ExcelCompare",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ]
+    },
+    "files": [
+      "server.js",
+      "main.js",
+      "preload.js",
+      "index.html",
+      "app_main.js",
+      "style.css",
+      "js/",
+      "css/",
+      "services/",
+      "routes/",
+      "master_data/product_master.xlsx",
+      "node_modules/**/*",
+      "!node_modules/electron/**/*",
+      "!node_modules/electron-builder/**/*"
+    ]
+  },
+  "name": "excelcompare",
+  "version": "1.0.9",
+  "description": "Excel Data Comparison Application with Built-in Server",
+  "author": "User"
+}

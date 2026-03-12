@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>엑셀 데이터 비교 프로그램</title>
+    <!-- Local CSS Libraries -->
+    <link href="css/libs/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/libs/fontawesome.min.css">
+    <link rel="stylesheet" href="css/libs/animate.min.css">
+    <link rel="stylesheet" href="style.css">
+    <!-- Local JS Libraries -->
+    <script src="js/libs/exceljs.min.js"></script>
+    <script src="js/libs/FileSaver.min.js"></script>
+    <script>
+        window.isElectron = !!(window.navigator.userAgent.toLowerCase().indexOf(' electron/') > -1);
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <header
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.6rem;">
+            <div style="flex: 1; text-align: left;">
+                <h1 style="margin: 0; font-size: 1.3rem; color: #1e293b; letter-spacing: -0.5px;">📊 엑셀 데이터 비교 프로그램
+                    <span style="font-size: 0.85rem; color: #64748b; font-weight: normal; margin-left: 6px;">(운송사
+                        자동분류)</span>
+                </h1>
+                <p style="margin: 3px 0 0 0; color: #64748b; font-size: 0.82rem; max-width: 800px;">원본(작업내역/CLP)과 전산
+                    데이터를 비교하여 잘못 입력된 데이터를
+                    찾고 반입정보를 생성합니다.</p>
+            </div>
+            <div id="cloudStatsBadge" class="header-actions"
+                style="display: flex; gap: 12px; align-items: center; background: #f0fdf4; padding: 6px 12px; border-radius: 10px; border: 1px solid #bbf7d0; margin-left: auto; font-size: 0.8rem; color: #166534;">
+                <div title="클라우드에 저장된 선사 매핑 수">🚢 선사: <strong id="cloudCarrierCnt">0</strong></div>
+                <div style="width: 1px; height: 12px; background: #bbf7d0;"></div>
+                <div title="클라우드에 저장된 자동분류 규칙 수">📋 규칙: <strong id="cloudRuleCnt">0</strong></div>
+                <div style="width: 1px; height: 12px; background: #bbf7d0;"></div>
+                <div title="클라우드에 저장된 제품 마스터 수">📦 마스터: <strong id="cloudMasterCnt">0</strong></div>
+                <button id="btnRefreshCloudStats"
+                    style="background: none; border: none; cursor: pointer; color: #10b981; padding: 2px;"
+                    title="클라우드 상태 새로고침">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+
+            <div class="header-actions"
+                style="display: flex; gap: 8px; align-items: center; background: #f8fafc; padding: 4px; border-radius: 10px; border: 1px solid #e2e8f0; margin-left: 16px;">
+                <button id="btnOpenSettings" class="btn btn-secondary-outline"
+                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 500;">⚙️ 선사
+                    매핑</button>
+                <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
+                <button id="btnOpenRules" class="btn btn-primary-soft"
+                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600;">📋 자동분류
+                    규칙</button>
+                <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
+                <button id="btnOpenPopWeight" class="btn"
+                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa;">
+                    <i class="fas fa-weight-hanging"></i> POP 무게
+                    <span id="popWeightBadge"
+                        style="display:none; background:#ea580c; color:white; font-size:0.7rem; padding:1px 5px; border-radius:8px; margin-left:3px; font-weight:700;">0</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Navigation Tabs -->
+        <nav class="main-tabs">
+            <button class="main-tab-btn active" id="mainTabBtnSelection">
+                <i class="fas fa-file-upload"></i> 1. 데이터 선택
+            </button>
+            <button class="main-tab-btn" id="mainTabBtnResults">
+                <i class="fas fa-chart-bar"></i> 2. 비교 결과
+            </button>
+        </nav>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h2 style="margin: 0;">⚙️ 선사/포워딩 매핑 설정</h2>
+                        <div class="sync-actions" style="display: flex; gap: 6px;">
+                            <button id="btnCloudUploadCarriers" class="btn btn-secondary-outline"
+                                style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-color: #3b82f6; color: #3b82f6;"
+                                title="현재 설정을 클라우드에 업로드합니다.">
+                                <i class="fas fa-cloud-upload-alt"></i> 클라우드 업로드
+                            </button>
+                            <button id="btnCloudDownloadCarriers" class="btn btn-secondary-outline"
+                                style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-color: #10b981; color: #10b981;"
+                                title="클라우드에서 설정을 내려받습니다.">
+                                <i class="fas fa-cloud-download-alt"></i> 클라우드 다운로드
+                            </button>
+                        </div>
+                    </div>
+                    <span class="close-btn">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1rem;">엑셀 원문에 적힌 코드나 약어를 인식하여 예쁜 이름으로
+                        바꿔주는 사전을 관리합니다.</p>
+
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; align-items: center;">
+                        <input type="hidden" id="editOriginalCode">
+                        <input type="text" id="inputRawCode" placeholder="원문 코드 (예: WSL, HLC)"
+                            style="flex: 1; padding: 0.5rem; border: 1px solid #ccc; border-radius: 6px;">
+                        <input type="text" id="inputMappedName" placeholder="표출될 이름 (들) - 쉼표로 구분"
+                            style="flex: 1; padding: 0.5rem; border: 1px solid #ccc; border-radius: 6px;">
+                        <div id="settingsBtnGroup" style="display: flex; gap: 4px;">
+                            <button id="btnAddCarrier" class="btn btn-primary"
+                                style="padding: 0.5rem 1rem; white-space: nowrap;">추가</button>
+                            <button id="btnUpdateCarrier" class="btn btn-success"
+                                style="padding: 0.5rem 1rem; display: none; white-space: nowrap;">수정 완료</button>
+                            <button id="btnCancelEdit" class="btn btn-secondary"
+                                style="padding: 0.5rem 1rem; display: none; white-space: nowrap;">취소</button>
+                        </div>
+                    </div>
+
+                    <table style="width: 100%; font-size: 0.9rem;">
+                        <thead>
+                            <tr>
+                                <th>인식할 원문/코드</th>
+                                <th>바뀐 이름 (결과)</th>
+                                <th style="width: 60px; text-align: center;">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="carrierSettingsBody">
+                            <!-- JS에서 동적으로 채워짐 -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer"
+                    style="text-align: right; margin-top: 1rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                    <button class="btn btn-secondary close-btn-bottom">닫기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- POP 샘플 무게 관리 Modal -->
+        <div id="popWeightModal" class="modal">
+            <div class="modal-content" style="max-width: 700px; height: auto; max-height: 85vh;">
+                <div class="modal-header">
+                    <h2 style="margin: 0; color: #ea580c;">
+                        <i class="fas fa-weight-hanging"></i> POP 샘플 무게 등록
+                    </h2>
+                    <span class="close-btn" id="closePopWeightBtn">&times;</span>
+                </div>
+                <div class="modal-body" style="padding: 1rem 1.5rem;">
+                    <p style="color: #64748b; font-size: 0.88rem; margin: 0 0 1rem 0;">
+                        원본·전산 파일에 없는 샘플을 컨테이너에 넣어 보낼 경우, 컨테이너 번호와 추가 무게를 등록합니다.<br>
+                        반입정보 탭에서 해당 컨테이너의 G/W에 추가 무게가 합산 표시됩니다.
+                    </p>
+
+                    <!-- 입력 폼 -->
+                    <div
+                        style="display: flex; gap: 8px; align-items: flex-end; margin-bottom: 1rem; background: #fff7ed; padding: 12px; border-radius: 10px; border: 1px solid #fed7aa;">
+                        <div style="flex: 2;">
+                            <label
+                                style="display:block; font-size:0.78rem; font-weight:600; color:#ea580c; margin-bottom:4px;">컨테이너
+                                번호</label>
+                            <input type="text" id="popCntrNoInput" placeholder="예: MSCU1234567"
+                                style="width:100%; padding:0.5rem; border:1px solid #fdba74; border-radius:6px; font-size:0.9rem; text-transform:uppercase;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label
+                                style="display:block; font-size:0.78rem; font-weight:600; color:#ea580c; margin-bottom:4px;">추가
+                                무게 (kg)</label>
+                            <input type="number" id="popWeightInput" placeholder="예: 150.5" min="0.1" step="0.1"
+                                style="width:100%; padding:0.5rem; border:1px solid #fdba74; border-radius:6px; font-size:0.9rem;">
+                        </div>
+                        <div style="flex: 2;">
+                            <label
+                                style="display:block; font-size:0.78rem; font-weight:600; color:#ea580c; margin-bottom:4px;">메모
+                                (선택)</label>
+                            <input type="text" id="popMemoInput" placeholder="예: 샘플 3박스"
+                                style="width:100%; padding:0.5rem; border:1px solid #fdba74; border-radius:6px; font-size:0.9rem;">
+                        </div>
+                        <button id="btnAddPopWeight" class="btn"
+                            style="padding:0.5rem 1.2rem; background:#ea580c; color:white; border:none; border-radius:6px; font-weight:700; white-space:nowrap; height:38px; cursor:pointer;">
+                            <i class="fas fa-plus"></i> 등록
+                        </button>
+                    </div>
+
+                    <!-- 등록 목록 -->
+                    <div style="font-size:0.8rem; font-weight:600; color:#92400e; margin-bottom:6px;">
+                        <i class="fas fa-list"></i> 등록된 POP 목록 (<span id="popWeightCount">0</span>건)
+                    </div>
+                    <div style="max-height:340px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px;">
+                        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                            <thead>
+                                <tr style="background:#f8fafc; position:sticky; top:0;">
+                                    <th
+                                        style="padding:8px 12px; text-align:left; border-bottom:1px solid #e2e8f0; color:#64748b;">
+                                        컨테이너 번호</th>
+                                    <th
+                                        style="padding:8px 12px; text-align:right; border-bottom:1px solid #e2e8f0; color:#64748b;">
+                                        추가 무게 (kg)</th>
+                                    <th
+                                        style="padding:8px 12px; text-align:left; border-bottom:1px solid #e2e8f0; color:#64748b;">
+                                        메모</th>
+                                    <th
+                                        style="padding:8px 12px; text-align:center; border-bottom:1px solid #e2e8f0; color:#64748b; width:60px;">
+                                        삭제</th>
+                                </tr>
+                            </thead>
+                            <tbody id="popWeightTableBody">
+                                <tr>
+                                    <td colspan="4" style="padding:20px; text-align:center; color:#94a3b8;">등록된 POP 무게가
+                                        없습니다.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer" style="text-align:right; padding-top:1rem; border-top:1px solid #eee;">
+                    <button class="btn btn-secondary" id="closePopWeightBottomBtn">닫기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Rules Modal -->
+        <div id="rulesModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h2 style="margin: 0;">📋 조건별 자동분류 규칙 관리</h2>
+                        <div class="sync-actions" style="display: flex; gap: 6px;">
+                            <button id="btnCloudUploadRules" class="btn btn-secondary-outline"
+                                style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-color: #3b82f6; color: #3b82f6;"
+                                title="현재 규칙을 클라우드에 업로드합니다.">
+                                <i class="fas fa-cloud-upload-alt"></i> 클라우드 업로드
+                            </button>
+                            <button id="btnCloudDownloadRules" class="btn btn-secondary-outline"
+                                style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-color: #10b981; color: #10b981;"
+                                title="클라우드에서 규칙을 내려받습니다.">
+                                <i class="fas fa-cloud-download-alt"></i> 클라우드 다운로드
+                            </button>
+                        </div>
+                    </div>
+                    <span class="close-btn" id="closeRulesBtn">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem;">특정 단어가 포함될 때 원하는 항목(특이사항, 선사,
+                        도착지, 상세사유)을 자동으로 변경합니다.</p>
+
+                    <!-- 다이나믹 필드 관리 섹션 -->
+                    <div class="rule-form-card"
+                        style="background: #f0fdf4; border-color: #bbf7d0; margin-bottom: 2rem; border-width: 1px; border-style: solid;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 1rem; color: #166534;">🏗️ 필드/열 관리 (사용자 정의 열 추가)</h3>
+                        <p style="font-size: 0.85rem; color: #15803d; margin-bottom: 15px;">규칙 조건에 사용할 새로운 엑셀 열을 등록합니다.
+                            (예: AC열, AL열 등)</p>
+
+                        <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 120px;">
+                                <label
+                                    style="display:block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: #15803d;">파일
+                                    소스</label>
+                                <select id="newFieldSource"
+                                    style="width:100%; padding:0.5rem; border:1px solid #bbf7d0; border-radius:6px; font-size: 0.9rem;">
+                                    <option value="down">전산 파일</option>
+                                    <option value="orig">원본 파일</option>
+                                </select>
+                            </div>
+                            <div style="flex: 1; min-width: 120px;">
+                                <label
+                                    style="display:block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: #15803d;">엑셀
+                                    열 (A, B...)</label>
+                                <input type="text" id="newFieldCol" placeholder="예: AC"
+                                    style="width:100%; padding:0.5rem; border:1px solid #bbf7d0; border-radius:6px; font-size: 0.9rem;">
+                            </div>
+                            <div style="flex: 2; min-width: 200px;">
+                                <label
+                                    style="display:block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: #15803d;">나타낼
+                                    이름</label>
+                                <input type="text" id="newFieldName" placeholder="예: 도착지(추가), OQC 정보"
+                                    style="width:100%; padding:0.5rem; border:1px solid #bbf7d0; border-radius:6px; font-size: 0.9rem;">
+                            </div>
+                            <button id="btnAddCustomField" class="btn btn-success"
+                                style="padding: 0.5rem 1rem; font-weight: bold; height: 38px;">필드 추가</button>
+                        </div>
+
+                        <div id="customFieldsList" style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 8px;">
+                            <!-- 등록된 커스텀 필드가 여기에 표시됩니다 -->
+                        </div>
+                    </div>
+
+                    <div class="rule-form-card">
+                        <input type="hidden" id="editRuleId">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 id="ruleFormTitle" style="margin: 0; font-size: 1rem; color: #334155;">✨ 새로운 규칙 정의</h3>
+                            <button id="btnCancelRuleEdit" class="btn btn-secondary-outline"
+                                style="display: none; padding: 0.4rem 0.8rem; font-size: 0.8rem;">취소</button>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label
+                                style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 5px;">규칙
+                                그룹 이름 (선택)</label>
+                            <input type="text" id="ruleGroupName" placeholder="예: 북항/신선대 체크, 특수모델 CVZ"
+                                style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;">
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label
+                                style="font-weight: 600; font-size: 0.85rem; color: #475569; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span><i class="fas fa-filter" style="margin-right: 4px; color: #4361ee;"></i> 만족해야 할
+                                    조건들</span>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <select id="ruleConditionOperator"
+                                        style="padding: 0.2rem 0.4rem; font-size: 0.75rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #f8fafc;">
+                                        <option value="AND">모든 조건 만족 (AND)</option>
+                                        <option value="OR">하나라도 만족 (OR)</option>
+                                    </select>
+                                    <button id="btnAddConditionRow" type="button" class="btn btn-secondary-outline"
+                                        style="padding: 0.2rem 0.6rem; font-size: 0.75rem;">+ 조건 추가</button>
+                                </div>
+                            </label>
+                            <div id="conditionRowsContainer" style="display: flex; flex-direction: column; gap: 8px;">
+                                <!-- 조건 행이 여기에 동적으로 추가됩니다 -->
+                            </div>
+                        </div>
+
+                        <div style="padding-top: 15px; border-top: 1px dashed #cbd5e1;">
+                            <label
+                                style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 8px;"><i
+                                    class="fas fa-arrow-right" style="margin-right: 4px; color: #10b981;"></i> 모든
+                                조건을 만족하면, 다음 동작 수행</label>
+                            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                <select id="ruleTargetField"
+                                    style="padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; min-width: 150px;">
+                                    <option value="tags">특이사항 추가</option>
+                                    <option value="carrier">선사 지정/변경</option>
+                                    <option value="dest">도착지 변경</option>
+                                    <option value="errorDetail">상세사유(오류) 표시</option>
+                                    <option value="planQty">계획수량(Plan Qty) 변경</option>
+                                    <option value="loadQty">적재수량(Loading Qty) 변경</option>
+                                    <option value="packingQty">단위수량(Packing Qty) 변경</option>
+                                    <option value="transporter">운송사(배분) 지정/변경</option>
+                                </select>
+                                <span style="color: #64748b; font-size: 0.9rem;" id="ruleValLabel">값을</span>
+                                <input type="text" id="ruleTargetValue" placeholder="변경할 값 (태그명, 변경수식 등)"
+                                    style="flex: 1; min-width: 200px; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;">
+                                <select id="ruleTargetTransporter"
+                                    style="display: none; flex: 1; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;">
+                                    <option value="천마(빨강)">천마(빨강)</option>
+                                    <option value="BNI(파랑)">BNI(파랑)</option>
+                                    <option value="미분류">미분류</option>
+                                </select>
+                                <select id="ruleTagColor"
+                                    style="padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;">
+                                    <option value="success">초록색</option>
+                                    <option value="danger">빨간색</option>
+                                    <option value="warning">노란색</option>
+                                    <option value="info">파란색</option>
+                                    <option value="secondary">회색</option>
+                                    <option value="primary">진파랑</option>
+                                </select>
+                            </div>
+                            <div id="qtyHintText"
+                                style="display:none; margin-top: 5px; font-size: 0.8rem; color: #94a3b8;">
+                                * 수량 변경 시 수식(예: <b>/10</b>, <b>*2</b>, <b>=50</b>) 또는 고정숫자를 입력하세요.
+                            </div>
+                        </div>
+
+                        <div id="ruleBtnGroup"
+                            style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px;">
+                            <button id="btnUpdateRule" class="btn btn-success"
+                                style="display: none; padding: 0.6rem 1.2rem; font-size: 0.9rem;">수정 완료</button>
+                            <button id="btnAddRule" class="btn btn-primary"
+                                style="padding: 0.6rem 1.2rem; font-size: 0.9rem; font-weight: bold;">규칙 등록</button>
+                        </div>
+                    </div>
+
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="margin: 0; font-size: 1.1rem; color: #1e293b;">📋 등록된 규칙 목록</h3>
+                        <div style="font-size: 0.85rem; color: #64748b;">총 <span id="ruleCount"
+                                style="font-weight: bold; color: #4361ee;">0</span>건</div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="rulesTable"
+                            style="width: 100%; font-size: 0.85rem; border-collapse: collapse; min-width: 900px;">
+                            <thead style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; text-align: left;">
+                                <tr>
+                                    <th style="padding: 10px; width: 60px; text-align: center;">활성</th>
+                                    <th style="padding: 10px; width: 120px;">그룹명</th>
+                                    <th style="padding: 10px;">조건 (AND/OR)</th>
+                                    <th style="padding: 10px;">변경 결과</th>
+                                    <th style="padding: 10px; width: 80px; text-align: center;">관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rulesTableBody">
+                                <!-- JS에서 로드됨 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer"
+                        style="text-align: right; margin-top: 1rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                        <button class="btn btn-secondary" id="closeRulesBtnBottom">닫기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tabContentSelection" class="tab-content active">
+            <div class="card">
+                <div class="file-input-group">
+                    <h3>1. 원본 파일 설정 (직사적당일/법인당일/혼적당일)</h3>
+                    <div class="path-input-wrapper">
+                        <input type="text" id="pathOriginal" placeholder="파일 절대 경로 입력 (예: C:\Users\Desktop\원본.xlsx)"
+                            class="path-input">
+                    </div>
+                    <div style="margin-top: 5px; font-size: 0.82rem; color: #64748b;">
+                        또는 직접 업로드: <input type="file" id="fileOriginal" accept=".xlsx, .xls, .xlsm">
+                    </div>
+                    <p class="file-status" id="statusOriginal">상태: 대기 중</p>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 3px;">
+                        <p id="lastOrig" style="font-size: 0.8rem; color: #64748b; margin: 0;"></p>
+                        <button id="btnReloadOriginal" class="btn btn-secondary"
+                            style="padding: 2px 8px; font-size: 0.75rem; display: none;">불러오기</button>
+                    </div>
+                </div>
+
+                <!-- 재작업 파일 설정 (선택 사항) -->
+                <div class="file-input-group" style="background: #fdf2f8; border: 1px solid #fbcfe8;">
+                    <h3 style="color: #db2777;">1-2. 재작업 파일 설정 (선택 사항 - '재작업당일' 시트)</h3>
+                    <div class="path-input-wrapper">
+                        <input type="text" id="pathRework" placeholder="재작업 파일 절대 경로 입력 (선택)" class="path-input">
+                    </div>
+                    <div style="margin-top: 5px; font-size: 0.82rem; color: #db2777;">
+                        또는 직접 업로드: <input type="file" id="fileRework" accept=".xlsx, .xls, .xlsm">
+                    </div>
+                    <p class="file-status" id="statusRework">상태: 대기 중</p>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 3px;">
+                        <p id="lastRework" style="font-size: 0.8rem; color: #64748b; margin: 0;"></p>
+                        <button id="btnClearRework" class="btn btn-secondary"
+                            style="padding: 2px 8px; font-size: 0.75rem; display: none;">해제</button>
+                    </div>
+                </div>
+
+                <!-- 창고재고 파일 설정 (선택 사항) -->
+                <div class="file-input-group" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
+                    <h3 style="color: #15803d; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-warehouse" style="font-size: 1rem;"></i>
+                        1-3. 창고재고 파일 설정
+                        <span
+                            style="font-size: 0.78rem; color: #16a34a; font-weight: normal; background: #dcfce7; padding: 2px 8px; border-radius: 12px; border: 1px solid #86efac;">선택
+                            사항</span>
+                        <span id="dongTagBadge"
+                            style="display:none; font-size: 0.78rem; color: #7c3aed; font-weight: 600; background: #f5f3ff; padding: 2px 8px; border-radius: 12px; border: 1px solid #ddd6fe;">
+                            <i class="fas fa-tags"></i> <span id="dongPrefixCount">0</span>개 접두어 → (동) 태그 적용
+                        </span>
+                    </h3>
+                    <p style="color: #15803d; font-size: 0.83rem; margin: 0 0 8px 0;">
+                        업로드 시: 마스터 제품구분이 <strong>Q 또는 H</strong>인 제품 중, 창고에 <strong>동일 접두어·다른 접미어</strong> 제품이 있으면 제품명
+                        옆에 <strong style="color: #7c3aed;">(동)</strong> 태그를 표시합니다.
+                    </p>
+                    <div style="margin-top: 5px; font-size: 0.82rem; color: #15803d;">
+                        직접 업로드: <input type="file" id="fileWarehouseStock" accept=".xlsx, .xls, .xlsm">
+                    </div>
+                    <p class="file-status" id="statusWarehouseStock" style="color: #64748b;">상태: 대기 중 (미사용)</p>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 3px;">
+                        <p id="lastWarehouseStock"
+                            style="font-size: 0.8rem; color: #16a34a; margin: 0; font-weight: 500;"></p>
+                        <button id="btnClearWarehouseStock" class="btn btn-secondary"
+                            style="padding: 2px 8px; font-size: 0.75rem; display: none; border-color: #16a34a; color: #16a34a;">해제</button>
+                    </div>
+                </div>
+
+                <div class="file-input-group">
+                    <h3>2. 다운로드 파일 (전산 데이터) 설정</h3>
+                    <div class="path-input-wrapper" style="display: flex; gap: 8px;">
+                        <input type="text" id="pathDownload" placeholder="파일 절대 경로 입력 (예: C:\Users\Downloads\전산.xlsx)"
+                            class="path-input" style="flex: 1;">
+                        <button id="btnAutoLoadDown" class="btn btn-primary"
+                            style="padding: 0.6rem 1rem; white-space: nowrap; font-size: 0.85rem;">최신 파일 자동
+                            불러오기</button>
+                    </div>
+                    <div style="margin-top: 5px; font-size: 0.82rem; color: #64748b;">
+                        또는 직접 업로드: <input type="file" id="fileDownload" accept=".xlsx, .xls, .xlsm">
+                    </div>
+                    <p class="file-status" id="statusDownload">상태: 대기 중</p>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 3px;">
+                        <p id="lastDown" style="font-size: 0.8rem; color: #64748b; margin: 0;"></p>
+                        <button id="btnReloadDownload" class="btn btn-secondary"
+                            style="padding: 2px 8px; font-size: 0.75rem; display: none;">불러오기</button>
+                    </div>
+                </div>
+
+                <div class="file-input-group"
+                    style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 0.75rem 1rem;">
+                    <h3 style="margin-top: 0;">3. 제품 마스터 데이터 <span
+                            style="font-size: 0.85rem; color: #3b82f6; font-weight: normal; margin-left: 8px;">(자동
+                            연동)</span></h3>
+                    <p style="color: #475569; font-size: 0.9rem; margin-bottom: 8px;">
+                        <i class="fas fa-folder-open" style="color: #eab308; margin-right: 4px;"></i>
+                        <b>기본 포함된 마스터 데이터 파일</b>에서 제품 중량/CBM 정보를 자동으로 불러옵니다.
+                    </p>
+
+                    <!-- 커스텀 마스터 데이터 업로드 UI -->
+                    <div
+                        style="margin-top: 8px; padding: 8px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <strong style="font-size: 0.85rem; color: #475569; display: block; margin-bottom: 8px;">최신 기준으로
+                            마스터
+                            데이터를 교체하고 싶다면 아래에서 파일을 업로드하세요.</strong>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="file" id="fileMasterUpload" accept=".xlsx, .xls" style="font-size: 0.85rem;">
+                            <button id="btnUploadMaster" class="btn btn-primary-soft"
+                                style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 6px;">
+                                <i class="fas fa-upload"></i> 업데이트
+                            </button>
+                        </div>
+                        <p style="color: #94a3b8; font-size: 0.8rem; margin: 5px 0 0 0;">* 업로드한 마스터 파일은 PC에 저장되며, 다음 번
+                            실행
+                            시에도 계속 유지됩니다.</p>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
+                        <p class="file-status" id="statusMaster" style="margin: 0; font-weight: bold; color: #1e293b;">
+                            <i class="fas fa-check-circle" style="color: #10b981; margin-right:4px;"></i>상태: 자동 연동 (준비
+                            완료)
+                        </p>
+                        <div class="sync-actions" style="display: flex; gap: 8px;">
+                            <button id="btnCloudUploadMaster" class="btn btn-secondary-outline"
+                                style="padding: 0.35rem 0.75rem; font-size: 0.8rem; border-color: #3b82f6; color: #3b82f6;"
+                                title="현재 마스터 데이터를 클라우드에 업로드합니다.">
+                                <i class="fas fa-cloud-upload-alt"></i> 클라우드 업로드
+                            </button>
+                            <button id="btnCloudDownloadMaster" class="btn btn-secondary-outline"
+                                style="padding: 0.35rem 0.75rem; font-size: 0.8rem; border-color: #10b981; color: #10b981;"
+                                title="클라우드에서 마스터 데이터를 내려받습니다.">
+                                <i class="fas fa-cloud-download-alt"></i> 클라우드 다운로드
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin: 1rem 0 0.5rem 0;">
+                    <button id="btnCompare" class="btn primary" disabled>데이터 비교 시작</button>
+                </div>
+            </div>
+
+            <div class="status-box" id="processStatus" style="display: none;">
+                <div id="statusMessage">데이터 처리 중...</div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tabContentResults" class="tab-content">
+            <!-- 요약 대시보드 (Summary) -->
+            <div class="dashboard-container" id="dashboardContainer" style="display: none;">
+                <div class="summary-card total"
+                    style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #0ea5e9;">
+                    <h4>총 컨테이너 대수</h4>
+                    <div class="value" id="valTotalCntr" style="color: #0369a1;">0</div>
+                </div>
+                <div class="summary-card success">
+                    <h4>정상 컨테이너</h4>
+                    <div class="value" id="valSuccessCntr">0</div>
+                </div>
+                <div class="summary-card danger">
+                    <h4 title="양쪽 파일에 모두 관련 정보가 있으나 상호 불일치(수량, 목적지 등)하는 경우">오류 및 불일치</h4>
+                    <div class="value" id="valErrorCntr">0</div>
+                </div>
+
+                <div class="summary-card warning">
+                    <h4>추가(원본에 없음)</h4>
+                    <div class="value" id="valDownExtraCntr">0</div>
+                </div>
+
+                <div class="summary-card" style="background: #fdf2f8; border-color: #f472b6;">
+                    <h4 style="color: #db2777;" title="원본(작업내역) O / 전산 파일 X">누락(전산에 없음)</h4>
+                    <div class="value" id="valOrigExtraCntr" style="color: #be185d;">0</div>
+                </div>
+                <div class="summary-card update-needed">
+                    <h4>제품정보 업데이트 필요</h4>
+                    <div class="value" id="valUpdate" style="color: #6366f1;">0</div>
+                </div>
+                <div class="summary-card info">
+                    <h4>운송사 배정 현황</h4>
+                    <div class="value" style="font-size: 0.85rem; margin-top: 3px; line-height: 1.2;">
+                        <div style="margin-bottom: 2px;">
+                            <span style="color: #e74c3c;">천마: <strong id="valChunma"
+                                    style="font-size: 0.95rem;">0</strong></span>
+                            <span style="margin: 0 5px; color: #cbd5e1;">|</span>
+                            <span style="color: #3498db;">BNI: <strong id="valBni"
+                                    style="font-size: 0.95rem;">0</strong></span>
+                        </div>
+                        <div style="color: #64748b; font-size: 0.75rem;">정보없음: <strong
+                                id="valUnknownTransporter">0</strong>대</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-container" id="resultsContainer" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 20px;">
+                        <h2 style="margin: 0;">📝 비교 상세 결과</h2>
+                        <div class="search-box" style="position: relative; width: 300px;">
+                            <i class="fas fa-search"
+                                style="position: absolute; left: 12px; top: 11px; color: #94a3b8; font-size: 0.9rem;"></i>
+                            <input type="text" id="inputSearch" placeholder="컨테이너 번호 검색 (Ctrl+F)"
+                                style="width: 100%; padding: 8px 12px 8px 35px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; outline: none; transition: all 0.2s;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 탭 메뉴 복구 -->
+                <div class="tabs">
+                    <button class="tab-btn active tab-success-only" id="tabSuccessOnly"><i
+                            class="fas fa-check-square"></i>
+                        정상 컨테이너만 보기</button>
+                    <button class="tab-btn tab-all" id="tabAll"><i class="fas fa-list"></i> 전체 데이터 보기</button>
+                    <button class="tab-btn tab-error-only" id="tabErrorOnly"><i class="fas fa-exclamation-circle"></i>
+                        오류 및
+                        특이사항만 보기</button>
+                    <button class="tab-btn tab-missing-only" id="tabMissingOnly"><i class="fas fa-search-minus"></i>
+                        전산원본컨테이너누락</button>
+                    <button class="tab-btn tab-entry-gen" id="tabEntryInfo"><i class="fas fa-file-import"></i> 반입정보
+                        생성</button>
+                    <button class="tab-btn tab-entry-unclassified" id="tabUnclassifiedEntry"><i
+                            class="fas fa-question-circle"></i> 반입정보 미분류</button>
+                    <button class="tab-btn tab-db-search" id="tabDbSearch"><i class="fas fa-database"></i> DB
+                        조회</button>
+
+                    <div style="flex: 1;"></div>
+                    <button class="btn success btn-excel-download" id="btnDownloadResult">
+                        <i class="fas fa-file-excel"></i> 결과 엑셀 다운로드
+                    </button>
+                </div>
+
+                <!-- DB 조회 전용 검색 다중 필터 (DB 탭에서만 보임) -->
+                <div id="dbSearchFilterBar" class="db-filter-bar" style="display: none;">
+                    <div class="db-filter-item">
+                        <label>컨테이너 번호</label>
+                        <input type="text" id="dbFilterCntr" placeholder="컨테이너 번호 입력">
+                    </div>
+                    <div class="db-filter-item">
+                        <label>도착지</label>
+                        <input type="text" id="dbFilterDest" placeholder="예: METGD">
+                    </div>
+                    <div class="db-filter-item">
+                        <label>선사</label>
+                        <input type="text" id="dbFilterCarrier" placeholder="예: MSC">
+                    </div>
+                    <div class="db-filter-item">
+                        <label>조회 시작일</label>
+                        <input type="date" id="dbFilterStartDate">
+                    </div>
+                    <div class="db-filter-item">
+                        <label>조회 종료일</label>
+                        <input type="date" id="dbFilterEndDate">
+                    </div>
+                    <button id="btnDbSearchExec" class="db-search-btn">
+                        <i class="fas fa-search"></i> 검색
+                    </button>
+                </div>
+
+                <div id="dbSearchResultSummary" class="db-summary-bar" style="display: none;">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div>
+                            조회 결과: <strong id="dbTotalItems" style="color: var(--primary);">0</strong>개 항목
+                            (컨테이너 <strong id="dbTotalCntrs" style="color: var(--primary);">0</strong>대)
+                        </div>
+                        <div id="dbBulkActions" class="db-bulk-actions" style="display: none;">
+                            <label>
+                                <input type="checkbox" id="chkDbAll"> 전체 선택
+                            </label>
+                            <button id="btnDbBulkDelete" class="db-bulk-btn-delete">
+                                <i class="fas fa-trash-alt"></i> 선택 삭제 (<span id="dbSelectedCount">0</span>)
+                            </button>
+                        </div>
+                    </div>
+                    <div id="dbGlobalStats" class="db-stats-badge">
+                        <i class="fas fa-database"></i>
+                        전체 DB: <span id="dbGlobalCntrs">0</span>대 / <span id="dbGlobalSize">0 KB</span>
+                    </div>
+                </div>
+
+                <!-- 정상 컨테이너 서브 필터 -->
+                <div id="successFilterContainer"
+                    style="display: none; margin-top: 10px; margin-bottom: 10px; padding: 10px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <label
+                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #334155; font-size: 0.9rem; font-weight: 500;">
+                        <input type="checkbox" id="chkFullyCompletedOnly"
+                            style="width: 16px; height: 16px; cursor: pointer;">
+                        ☑️ 모든 모델 완료 컨테이너만 (작업중/대기 제외)
+                    </label>
+                </div>
+
+                <!-- 선택 항목 관리 바 (DB 저장 등) -->
+                <div id="selectionBar"
+                    style="display: none; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding: 12px 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <label
+                            style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 500; cursor: pointer;">
+                            <input type="checkbox" id="selectAll" style="width: 16px; height: 16px;"> 전체 선택
+                        </label>
+                        <div style="width: 1px; height: 16px; background: #cbd5e1;"></div>
+                        <span style="font-size: 0.9rem; color: #475569;">선택됨: <strong id="selectedCount"
+                                style="color: #4361ee; font-size: 1rem;">0</strong>개</span>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="btnSaveToDB" class="btn success"
+                            style="padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 6px; font-weight: 600;">
+                            <i class="fas fa-save" style="margin-right: 4px;"></i> 선택항목 DB 저장
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 반입정보 탭 요약 바 -->
+
+                <div id="entrySummary" class="entry-summary-bar"
+                    style="display: none; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <div class="summary-item"><span class="label">운송사별 집계:</span> <span id="entrySummaryContent">천마
+                                0개 /
+                                BNI 0개</span></div>
+                        <div class="summary-item"><span class="label">합산중량:</span> <span
+                                id="entryTotalWeight">0.00</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="btnCopyChunma" class="btn btn-primary"
+                            style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background-color: #ef4444; border-color: #ef4444; border-radius: 6px;"><i
+                                class="fas fa-copy" style="margin-right: 4px;"></i>천마 메일 복사</button>
+                        <button id="btnCopyBni" class="btn btn-primary"
+                            style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background-color: #3b82f6; border-color: #3b82f6; border-radius: 6px;"><i
+                                class="fas fa-copy" style="margin-right: 4px;"></i>BNI 메일 복사</button>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table id="resultTable">
+                        <thead>
+                            <tr>
+                                <th>작업구분</th>
+                                <th>컨테이너번호</th>
+                                <th>제품구분</th>
+                                <th>사업부</th>
+                                <th>제품모델명</th>
+                                <th>수량 (계획/적재/팬딩적재/잔여/단위)</th>
+                                <th>컨테이너규격</th>
+                                <th>제품크기</th>
+                                <th>선사</th>
+                                <th>도착지</th>
+                                <th style="text-align: right;">GW</th>
+                                <th style="text-align: center;">추가정보</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultBody">
+                            <!-- 결과 데이터 행이 들어갈 곳 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals (Outside main container for better Z-index handling) -->
+
+    <script src="js/modules/carrier.js?v=202603052310"></script>
+    <script src="js/modules/customFields.js?v=202603052310"></script>
+    <script src="js/modules/dynamicRules.js?v=202603052310"></script>
+    <script src="js/modules/compareLogic.js?v=202603052310"></script>
+    <script src="app_main.js?v=202603052310"></script>
+</body>
+
+</html>
