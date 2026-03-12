@@ -353,6 +353,22 @@ async function initializeApp() {
         alert(`🚧 경고: ${err.message}\n프로그램의 일부 기능(DB, 마스터 로드 등)이 작동하지 않을 수 있습니다.`);
     }
 
+    // Web 환경에서 잘못 저장된 로컬 경로가 있으면 미리 제거 (오류 방지)
+    const isLocalHost = window.isElectron || window.location.hostname === 'localhost';
+    if (!isLocalHost) {
+        ['pathOrig', 'pathRework', 'pathDown', 'dirOrig', 'dirRework', 'dirDown'].forEach(key => {
+            const val = localStorage.getItem(key);
+            if (val && (/^[a-zA-Z]:\\/.test(val) || val.startsWith('\\\\'))) {
+                localStorage.removeItem(key);
+                console.log(`🧹 Web 버전: 로컬 경로 캐시 제거 (${key})`);
+            }
+        });
+        // 입력창 강제 비우기
+        if (pathOriginal) pathOriginal.value = '';
+        if (pathRework) pathRework.value = '';
+        if (pathDownload) pathDownload.value = '';
+    }
+
     let savedPathOrig = localStorage.getItem('pathOrig');
     let savedPathRework = localStorage.getItem('pathRework');
     let savedPathDown = localStorage.getItem('pathDown');
@@ -370,10 +386,19 @@ async function initializeApp() {
     // 경로 검증 헬퍼
     const isPathValid = async (p) => {
         if (!p || p.trim() === "") return false;
+
+        // Electron 환경이면 실제 파일 존재 여부 체크
         if (window.electronAPI && window.electronAPI.checkFileExists) {
             return await window.electronAPI.checkFileExists(p);
         }
-        return true; // 웹 환경 방어코드
+
+        // 웹 환경이면 로컬 경로(Y:\, C:\ 등)는 무조건 무효 처리
+        const isLocalPath = /^[a-zA-Z]:\\/.test(p) || p.startsWith('\\\\');
+        if (isLocalPath && window.location.hostname !== 'localhost') {
+            return false;
+        }
+
+        return true;
     };
 
     if (savedPathOrig) {
@@ -1647,6 +1672,10 @@ btnCompare.addEventListener('click', async () => {
             finalOrigList = await readExcelFile(originalFile, 'original');
         } else if (pathOriginal.value.trim()) {
             const filePath = pathOriginal.value.trim();
+            const isLocalPath = /^[a-zA-Z]:\\/.test(filePath) || filePath.startsWith('\\\\');
+            if (isLocalPath && !window.isElectron && window.location.hostname !== 'localhost') {
+                throw new Error("웹 버전에서는 로컬 절대 경로(Y:\\, C:\\ 등)를 사용할 수 없습니다. 파일을 직접 선택해 주세요.");
+            }
             const resp = await fetch(`${API_BASE}/api/load-file-raw?path=${encodeURIComponent(filePath)}&t=${Date.now()}`);
             if (!resp.ok) throw new Error("서버 경로(원본)를 찾을 수 없습니다.");
             const res = await resp.json();
@@ -1676,6 +1705,10 @@ btnCompare.addEventListener('click', async () => {
             finalDownList = await readExcelFile(downloadFile, 'download');
         } else if (pathDownload.value.trim()) {
             const filePath = pathDownload.value.trim();
+            const isLocalPath = /^[a-zA-Z]:\\/.test(filePath) || filePath.startsWith('\\\\');
+            if (isLocalPath && !window.isElectron && window.location.hostname !== 'localhost') {
+                throw new Error("웹 버전에서는 로컬 폴더/파일 경로를 사용할 수 없습니다. 파일을 직접 선택해 주세요.");
+            }
 
             // 폴더 경로인지 파일 경로인지 판단
             // 확장자(.xlsx 등)가 없으면 폴더 경로로 간주
@@ -1727,23 +1760,28 @@ btnCompare.addEventListener('click', async () => {
         } else if (pathRework.value.trim()) {
             // 경로 기반 재작업 파일 로드: raw 파일을 받아서 브라우저에서 파싱
             const filePath = pathRework.value.trim();
-            const reworkResp = await fetch(`${API_BASE}/api/load-file-raw?path=${encodeURIComponent(filePath)}&t=${Date.now()}`);
-            if (reworkResp.ok) {
-                const reworkResult = await reworkResp.json();
-                if (reworkResult.success) {
-                    const binaryStr = atob(reworkResult.base64);
-                    const bytes = new Uint8Array(binaryStr.length);
-                    for (let i = 0; i < binaryStr.length; i++) {
-                        bytes[i] = binaryStr.charCodeAt(i);
-                    }
-                    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                    const reworkFileObj = new File([blob], reworkResult.fileName || 'rework.xlsx', { type: blob.type });
-                    finalReworkList = await readExcelFile(reworkFileObj, 'rework');
-                    finalReworkList = finalReworkList.filter(item => (item.qty || 0) > 0);
+            const isLocalPath = /^[a-zA-Z]:\\/.test(filePath) || filePath.startsWith('\\\\');
+            if (isLocalPath && !window.isElectron && window.location.hostname !== 'localhost') {
+                console.warn("웹 버전에서는 로컬 재작업 파일 경로를 건너뜁니다.");
+            } else {
+                const reworkResp = await fetch(`${API_BASE}/api/load-file-raw?path=${encodeURIComponent(filePath)}&t=${Date.now()}`);
+                if (reworkResp.ok) {
+                    const reworkResult = await reworkResp.json();
+                    if (reworkResult.success) {
+                        const binaryStr = atob(reworkResult.base64);
+                        const bytes = new Uint8Array(binaryStr.length);
+                        for (let i = 0; i < binaryStr.length; i++) {
+                            bytes[i] = binaryStr.charCodeAt(i);
+                        }
+                        const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                        const reworkFileObj = new File([blob], reworkResult.fileName || 'rework.xlsx', { type: blob.type });
+                        finalReworkList = await readExcelFile(reworkFileObj, 'rework');
+                        finalReworkList = finalReworkList.filter(item => (item.qty || 0) > 0);
 
-                    // 경로 저장 (성공 시)
-                    localStorage.setItem('pathRework', filePath);
-                    if (window.electronAPI) window.electronAPI.saveFilePath('rework', filePath);
+                        // 경로 저장 (성공 시)
+                        localStorage.setItem('pathRework', filePath);
+                        if (window.electronAPI) window.electronAPI.saveFilePath('rework', filePath);
+                    }
                 }
             }
         }
