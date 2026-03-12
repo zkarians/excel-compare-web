@@ -230,6 +230,7 @@ const lastOrig = document.getElementById('lastOrig');
 const lastDown = document.getElementById('lastDown');
 const btnReloadOriginal = document.getElementById('btnReloadOriginal');
 const btnReloadDownload = document.getElementById('btnReloadDownload');
+const btnAutoLoadOrig = document.getElementById('btnAutoLoadOrig');
 const btnAutoLoadDown = document.getElementById('btnAutoLoadDown');
 const btnCompare = document.getElementById('btnCompare');
 const btnClearRework = document.getElementById('btnClearRework');
@@ -705,8 +706,12 @@ fileOriginal.addEventListener('change', async (e) => {
         if (window.electronAPI && window.electronAPI.getPathForFile) {
             const filePath = window.electronAPI.getPathForFile(file);
             if (filePath) {
+                const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
+                const dirPath = lastSlash !== -1 ? filePath.substring(0, lastSlash) : filePath;
+
                 window.electronAPI.saveFilePath('original', filePath);
                 localStorage.setItem('pathOrig', filePath);
+                localStorage.setItem('dirOrig', dirPath); // 디렉토리 별도 저장
                 pathOriginal.value = filePath;
                 console.log('✅ 원본 파일 경로 저장:', filePath);
             }
@@ -740,8 +745,9 @@ fileDownload.addEventListener('change', async (e) => {
                 const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
                 const dirPath = lastSlash !== -1 ? filePath.substring(0, lastSlash) : filePath;
 
-                window.electronAPI.saveFilePath('download', dirPath);
-                localStorage.setItem('pathDown', dirPath);
+                window.electronAPI.saveFilePath('download', filePath);
+                localStorage.setItem('pathDown', filePath);
+                localStorage.setItem('dirDown', dirPath); // 디렉토리 별도 저장
                 pathDownload.value = dirPath;
                 console.log('✅ 전산 파일 폴더 경로 저장:', dirPath);
             }
@@ -1241,87 +1247,92 @@ async function reloadLatestFile(type) {
 btnReloadOriginal.addEventListener('click', () => reloadLatestFile('original'));
 btnReloadDownload.addEventListener('click', () => reloadLatestFile('download'));
 
-// 다운로드 폴더에서 가장 최신 파일 자동 불러오기
-btnAutoLoadDown.addEventListener('click', async () => {
-    let dirPath = pathDownload.value.trim();
-    if (!dirPath) {
-        // 입력창이 비어있으면 브라우저에 저장된 마지막 경로를 불러옴
-        const savedPath = localStorage.getItem('pathDown');
-        if (savedPath) {
-            dirPath = savedPath;
-            pathDownload.value = savedPath; // 화면에도 다시 표시
+// 공통 자동 불러오기 로직
+async function handleAutoLoad(type) {
+    const inputEl = type === 'original' ? pathOriginal : pathDownload;
+    const statusEl = type === 'original' ? statusOriginal : statusDownload;
+    const lastEl = type === 'original' ? lastOrig : lastDown;
+    const reloadBtn = type === 'original' ? btnReloadOriginal : btnReloadDownload;
+    const storageKey = type === 'original' ? 'dirOrig' : 'dirDown';
+
+    let pathVal = inputEl.value.trim();
+    let dirPath = "";
+
+    if (pathVal) {
+        // 입력값에서 디렉토리 추출 (파일일 경우를 대비)
+        const lastSlash = Math.max(pathVal.lastIndexOf('/'), pathVal.lastIndexOf('\\'));
+        // 확장자가 있으면(.xlsx 등) 파일로 간주하고 디렉토리만 추출
+        if (pathVal.toLowerCase().endsWith('.xlsx') || pathVal.toLowerCase().endsWith('.xls')) {
+            dirPath = lastSlash !== -1 ? pathVal.substring(0, lastSlash) : pathVal;
+        } else {
+            dirPath = pathVal; // 이미 디렉토리인 경우
         }
+    } else {
+        dirPath = localStorage.getItem(storageKey);
     }
 
     if (!dirPath) {
-        alert("폴더 경로를 입력해주세요.");
-        pathDownload.focus();
+        alert("폴더 경로를 입력하거나 파일을 먼저 선택해주세요.");
+        inputEl.focus();
         return;
     }
 
     try {
-        statusDownload.textContent = "상태: 폴더에서 최신 파일 탐색 중...";
-        statusDownload.style.color = '#3b82f6';
+        statusEl.textContent = `상태: ${type === 'original' ? '원본' : '전산'} 최신 파일 탐색 중...`;
+        statusEl.style.color = '#3b82f6';
 
-        // [수정] 캐시 방지용 타임스탬프 추가 및 경로 명시
         const response = await fetch(`${API_BASE}/api/load-latest-from-dir?dirPath=${encodeURIComponent(dirPath)}&t=${Date.now()}`);
 
         if (!response.ok) {
-            let errorMsg = `서버 오류 (${response.status})`;
-            const errText = await response.text();
-            try {
-                const errData = JSON.parse(errText);
-                errorMsg = errData.message || errorMsg;
-            } catch (e) {
-                if (errText.includes('<!DOCTYPE')) {
-                    errorMsg = "서버 경로를 찾을 수 없습니다. (API 설정 확인 필요)";
-                } else {
-                    errorMsg = errText || errorMsg;
-                }
-            }
-            throw new Error(errorMsg);
+            throw new Error(`파일을 찾을 수 없습니다. 경로를 확인해주세요.`);
         }
 
         const result = await response.json();
 
         if (result.success) {
-            // raw base64 -> Blob -> File -> readExcelFile (직접 선택과 동일한 파싱)
             const binaryStr = atob(result.base64);
             const bytes = new Uint8Array(binaryStr.length);
-            for (let i = 0; i < binaryStr.length; i++) {
-                bytes[i] = binaryStr.charCodeAt(i);
-            }
+            for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
             const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const file = new File([blob], result.fileName, { type: blob.type });
 
-            // 브라우저의 readExcelFile로 파싱 (직접 선택과 100% 동일)
-            downloadData = await readExcelFile(file, 'download');
-            statusDownload.textContent = `상태: 최신 파일 자동 로드 성공 (${result.fileName})`;
-            statusDownload.style.color = '#059669';
+            const parsed = await readExcelFile(file, type);
+            if (type === 'original') {
+                originalData = parsed.filter(item => (item.qty || 0) > 0);
+                originalFile = { name: result.fileName, path: result.fullPath, isAutoLoaded: true, isReloaded: true };
+                localStorage.setItem('lastOrigName', result.fileName);
+            } else {
+                downloadData = parsed;
+                downloadFile = { name: result.fileName, path: result.fullPath, isAutoLoaded: true, isReloaded: true };
+                localStorage.setItem('lastDownName', result.fileName);
+            }
 
-            // 파일 객체 시뮬레이션 (비교 버튼 활성화를 위해)
-            downloadFile = { name: result.fileName, path: result.fullPath, isAutoLoaded: true, isReloaded: true };
-            localStorage.setItem('lastDownName', result.fileName);
-            lastDown.textContent = `최근 사용: ${result.fileName}`;
-            btnReloadDownload.style.display = 'inline-block';
+            statusEl.textContent = `상태: 최신 파일 로드 성공 (${result.fileName})`;
+            statusEl.style.color = '#059669';
+            lastEl.textContent = `최근 사용: ${result.fileName}`;
+            reloadBtn.style.display = 'inline-block';
 
-            // Electron IPC로 파일 경로 저장 (불러오기 시 최신 파일 로드용)
             if (result.fullPath && window.electronAPI) {
-                window.electronAPI.saveFilePath('download', result.fullPath);
+                window.electronAPI.saveFilePath(type, result.fullPath);
+                localStorage.setItem(type === 'original' ? 'pathOrig' : 'pathDown', result.fullPath);
+                localStorage.setItem(storageKey, dirPath);
             }
 
             checkReadyStatus();
-            alert(`가장 최신 파일 '${result.fileName}'을 불러왔습니다.`);
+            alert(`${type === 'original' ? '원본' : '전산'} 최신 파일 '${result.fileName}'을 불러왔습니다.`);
         } else {
             throw new Error(result.message);
         }
     } catch (err) {
-        console.error("❌ 최신 파일 자동 불러오기 실패:", err);
-        statusDownload.textContent = `상태: 자동 불러오기 실패 (${err.message})`;
-        statusDownload.style.color = '#ef4444';
+        console.error(`❌ ${type} 자동 로드 실패:`, err);
+        statusEl.textContent = `상태: 로드 실패 (${err.message})`;
+        statusEl.style.color = '#ef4444';
         alert(`불러오기 실패: ${err.message}`);
     }
-});
+}
+
+btnAutoLoadOrig.addEventListener('click', () => handleAutoLoad('original'));
+btnAutoLoadDown.addEventListener('click', () => handleAutoLoad('download'));
 
 function checkReadyStatus() {
     const hasOrig = (pathOriginal.value.trim() !== "" || (originalFile !== null && originalFile !== undefined));

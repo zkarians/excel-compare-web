@@ -406,9 +406,12 @@
             <div class="card">
                 <div class="file-input-group">
                     <h3>1. 원본 파일 설정 (직사적당일/법인당일/혼적당일)</h3>
-                    <div class="path-input-wrapper">
+                    <div class="path-input-wrapper" style="display: flex; gap: 8px;">
                         <input type="text" id="pathOriginal" placeholder="파일 절대 경로 입력 (예: C:\Users\Desktop\원본.xlsx)"
-                            class="path-input">
+                            class="path-input" style="flex: 1;">
+                        <button id="btnAutoLoadOrig" class="btn btn-primary"
+                            style="padding: 0.6rem 1rem; white-space: nowrap; font-size: 0.85rem;">최신 파일 자동
+                            불러오기</button>
                     </div>
                     <div style="margin-top: 5px; font-size: 0.82rem; color: #64748b;">
                         또는 직접 업로드: <input type="file" id="fileOriginal" accept=".xlsx, .xls, .xlsm">
