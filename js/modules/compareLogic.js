@@ -442,20 +442,23 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
         const prod = productMap.get((down.prodName || "").trim().toUpperCase());
         const dbWeight = prod ? (parseFloat(prod.weight) || 0) : 0;
 
-        // [FIX] 제품구분: 모델명을 기준으로 마스터 데이터(prodType)에서 가져옴
-        const masterProdType = prod ? (prod.prodType || "-") : "-";
+        // [FIX] 제품구분: 모델명을 기준으로 마스터 데이터(prodType)에서 가져오되, 없으면 원본파일 정보 활용
+        // masterProdType이 '-' 이거나 비어있으면 matchedOrig 정보를 사용하도록 수정
+        const dbProdType = prod ? (prod.prodType || "") : "";
+        const masterProdType = (dbProdType && dbProdType !== "-") ? dbProdType : (matchedOrig ? matchedOrig.prodType : "-");
 
-        // [FIX] 사업부: 전산파일(A열)에 정보가 없으면 원본파일(G열)에서 가져옴
-        // 원본파일의 G열은 parseOriginalExcel에서 'prodType' 필드로 파싱됨
+        // [FIX] 사업부: 전산파일(A열)에 정보가 없으면 원본파일(G열) 정보 우선, 그 다음 마스터 정보 순으로 확인
         let finalDivision = down.division || (matchedOrig ? matchedOrig.prodType : "");
-        if (!finalDivision || finalDivision === "-") finalDivision = "-";
+        if (!finalDivision || finalDivision === "-") {
+            finalDivision = (dbProdType && dbProdType !== "-") ? dbProdType : "-";
+        }
 
         let remainQty = down.remainQtySum; // 직접 추출한 잔여수량 사용
         let resultObj = {
             type: rowType,
             cntrNo: down.cntrNo,
             division: finalDivision,
-            prodType: masterProdType || (matchedOrig ? matchedOrig.prodType : "-"),
+            prodType: masterProdType,
             prodName: down.prodName,
             qtyInfo: {
                 plan: down.planQtySum,
