@@ -440,7 +440,7 @@ async function saveMasterDataToDb(masterData) {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        await client.query('DELETE FROM product_master_sync');
+        // await client.query('DELETE FROM product_master_sync'); // Upsert 방식으로 변경 (기존 데이터 유지)
 
         const BATCH_SIZE = 1000;
         for (let i = 0; i < finalData.length; i += BATCH_SIZE) {
@@ -478,14 +478,49 @@ async function saveMasterDataToDb(masterData) {
             await client.query(query, values);
         }
         await client.query('COMMIT');
-        console.log(`✅ [DB] 마스터 데이터 ${finalData.length}건 저장 완료`);
+        console.log(`✅ [DB] 마스터 데이터 ${finalData.length}건 동기화 완료 (Upsert)`);
     } catch (err) {
-        await client.query('ROLLBACK');
+        if (client) await client.query('ROLLBACK');
+        console.error("❌ DB 저장 오류:", err);
         throw err;
     } finally {
-        client.release();
+        if (client) client.release();
     }
 }
+
+// 마스터 데이터 정리 (오래된 데이터 삭제)
+app.post('/api/master-data/clean', async (req, res) => {
+    const { days } = req.body;
+    if (!pool) return res.status(500).json({ success: false, message: 'DB 연결 불가' });
+
+    try {
+        const thresholdDays = parseInt(days) || 30;
+        const result = await pool.query(
+            "DELETE FROM product_master_sync WHERE updated_at < NOW() - INTERVAL '1 day' * $1",
+            [thresholdDays]
+        );
+        res.json({
+            success: true,
+            message: `${thresholdDays}일 이상 업데이트되지 않은 데이터 ${result.rowCount}건을 삭제했습니다.`
+        });
+    } catch (err) {
+        console.error("❌ 데이터 정리 오류:", err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// 마스터 데이터 전체 삭제 (초기화용)
+app.post('/api/master-data/reset', async (req, res) => {
+    if (!pool) return res.status(500).json({ success: false, message: 'DB 연결 불가' });
+
+    try {
+        await pool.query("DELETE FROM product_master_sync");
+        res.json({ success: true, message: "제품 마스터 DB가 완전히 초기화되었습니다." });
+    } catch (err) {
+        console.error("❌ 데이터 초기화 오류:", err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // 마스터 데이터 직접 업로드 API (DB 동기화 포함)
 app.post('/api/upload-master', upload.single('masterFile'), async (req, res) => {

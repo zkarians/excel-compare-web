@@ -530,6 +530,24 @@
                             </button>
                         </div>
                     </div>
+
+                    <!-- 마스터 데이터 DB 관리 (신규) -->
+                    <div
+                        style="margin-top: 8px; padding: 6px 10px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 0.75rem; color: #64748b;"><i class="fas fa-tools"></i> DB 관리:</span>
+                        <div style="display: flex; gap: 6px;">
+                            <button id="btnCleanOldMaster" class="btn"
+                                style="padding: 0.25rem 0.5rem; font-size: 0.7rem; background: #fff; border: 1px solid #e2e8f0; color: #64748b; border-radius: 4px;"
+                                title="30일 이상 업데이트되지 않은 오래된 데이터를 삭제합니다.">
+                                <i class="fas fa-broom"></i> 오래된 데이터 정리
+                            </button>
+                            <button id="btnResetMasterDb" class="btn"
+                                style="padding: 0.25rem 0.5rem; font-size: 0.7rem; background: #fff; border: 1px solid #fee2e2; color: #ef4444; border-radius: 4px;"
+                                title="DB의 모든 마스터 데이터를 삭제합니다.">
+                                <i class="fas fa-trash-alt"></i> 전체 초기화
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div style="text-align: center; margin: 1rem 0 0.5rem 0;">

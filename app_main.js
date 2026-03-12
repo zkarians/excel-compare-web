@@ -3081,6 +3081,50 @@ if (btnCloudDownloadMaster) {
     };
 }
 
+const btnCleanOldMaster = document.getElementById('btnCleanOldMaster');
+if (btnCleanOldMaster) {
+    btnCleanOldMaster.onclick = async () => {
+        const days = prompt('몇 일 이상 업데이트되지 않은 데이터를 삭제할까요?', '30');
+        if (days === null) return;
+
+        if (!confirm(`${days}일 이상 업데이트되지 않은 오래된 제품 데이터를 정리하겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+
+        try {
+            const resp = await fetch(`${API_BASE}/api/master-data/clean`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ days: parseInt(days) })
+            });
+            const data = await resp.json();
+            alert(data.message);
+            loadProductMaster();
+            if (window.updateDbGlobalStats) window.updateDbGlobalStats();
+        } catch (err) {
+            alert('정리 중 오류 발생: ' + err.message);
+        }
+    };
+}
+
+const btnResetMasterDb = document.getElementById('btnResetMasterDb');
+if (btnResetMasterDb) {
+    btnResetMasterDb.onclick = async () => {
+        const code = prompt('DB를 완전히 초기화하려면 "초기화"라고 입력해주세요.');
+        if (code !== '초기화') return;
+
+        if (!confirm('정말로 DB의 모든 마스터 데이터를 삭제하시겠습니까?')) return;
+
+        try {
+            const resp = await fetch(`${API_BASE}/api/master-data/reset`, { method: 'POST' });
+            const data = await resp.json();
+            alert(data.message);
+            loadProductMaster();
+            if (window.updateDbGlobalStats) window.updateDbGlobalStats();
+        } catch (err) {
+            alert('초기화 중 오류 발생: ' + err.message);
+        }
+    };
+}
+
 const btnSaveToDB = document.getElementById('btnSaveToDB');
 if (btnSaveToDB) {
     btnSaveToDB.onclick = async () => {
