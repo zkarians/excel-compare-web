@@ -429,6 +429,9 @@ async function loadProductMaster() {
             if (apiData.success) {
                 productMaster = apiData.masterData;
                 console.log(`✅ 제품 마스터 ${productMaster.length}건 로드 완료 (서버 기반)`);
+                if (productMaster.length > 0) {
+                    console.log(`🔍 [Sample]`, productMaster[0]);
+                }
                 if (statusMaster) {
                     statusMaster.innerHTML = `<i class="fas fa-database" style="color: #4361ee; margin-right:4px;"></i>상태: 클라우드 DB 연동 완료 (${productMaster.length.toLocaleString()}건)`;
                 }

@@ -24,8 +24,35 @@ try {
     });
 
     console.log("🐘 [DB] pg 모듈 로드 및 Pool 설정 완료 (Timeout 15s)");
+
+    // DB 테이블 초기화
+    initDb().catch(err => console.error("❌ [DB] 초기화 실패:", err));
 } catch (e) {
     console.warn("⚠️ [DB] pg 모듈을 찾을 수 없거나 DB 설정 오류: DB 기능을 사용할 수 없습니다.");
+}
+
+async function initDb() {
+    if (!pool) return;
+    const client = await pool.connect();
+    try {
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS product_master_sync (
+                prod_name TEXT PRIMARY KEY,
+                prod_type TEXT,
+                weight NUMERIC DEFAULT 0,
+                width NUMERIC DEFAULT 0,
+                depth NUMERIC DEFAULT 0,
+                height NUMERIC DEFAULT 0,
+                cbm NUMERIC DEFAULT 0,
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+        // Migrations: Ensure cbm column exists
+        await client.query(`ALTER TABLE product_master_sync ADD COLUMN IF NOT EXISTS cbm NUMERIC DEFAULT 0`);
+        console.log("✅ [DB] product_master_sync 테이블 준비 완료 (cbm 컬럼 확인)");
+    } finally {
+        client.release();
+    }
 }
 
 const ExcelJS = require('exceljs');
@@ -96,15 +123,8 @@ app.post('/api/debug-test', (req, res) => {
 
 const { parseMasterExcel, parseOriginalExcel, parseDownloadExcel } = require('./services/excelService');
 
-// 제품 마스터 데이터 가져오기 API
-app.get('/api/master-data', async (req, res) => {
-    try {
-        const data = await parseMasterExcel();
-        res.json({ success: true, masterData: data });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
-    }
-});
+// Redundant master-data endpoint removed (Moved below with DB logic)
+
 
 // 파일 읽기 전용 엔드포인트
 app.post('/api/read-excel', async (req, res) => {
@@ -378,7 +398,7 @@ app.get('/api/master-data', async (req, res) => {
         let masterData = [];
         if (pool) {
             try {
-                const result = await pool.query('SELECT prod_name as name, prod_type as type, weight, width, depth, height FROM product_master_sync ORDER BY prod_name ASC');
+                const result = await pool.query('SELECT prod_name as name, prod_type as "prodType", weight, width, depth, height, cbm FROM product_master_sync ORDER BY prod_name ASC');
                 masterData = result.rows;
                 console.log(`🐘 [DB] 제품 마스터 ${masterData.length}건 조회 완료`);
             } catch (dbErr) {
@@ -429,21 +449,22 @@ async function saveMasterDataToDb(masterData) {
             const placeholders = [];
 
             batch.forEach((item, index) => {
-                const offset = index * 6;
-                placeholders.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6})`);
+                const offset = index * 7;
+                placeholders.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7})`);
                 values.push(
                     item.name.trim(),
                     item.prodType || item.type || '',
                     item.weight || 0,
                     item.width || 0,
                     item.depth || 0,
-                    item.height || 0
+                    item.height || 0,
+                    item.cbm || 0
                 );
             });
 
             const query = `
                 INSERT INTO product_master_sync
-                (prod_name, prod_type, weight, width, depth, height)
+                (prod_name, prod_type, weight, width, depth, height, cbm)
                 VALUES ${placeholders.join(', ')}
                 ON CONFLICT (prod_name) DO UPDATE SET
                     prod_type = EXCLUDED.prod_type,
@@ -451,6 +472,7 @@ async function saveMasterDataToDb(masterData) {
                     width = EXCLUDED.width,
                     depth = EXCLUDED.depth,
                     height = EXCLUDED.height,
+                    cbm = EXCLUDED.cbm,
                     updated_at = NOW()
             `;
             await client.query(query, values);
