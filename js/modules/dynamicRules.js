@@ -6,7 +6,7 @@ const rulesModal = document.getElementById('rulesModal');
 
 async function loadDynamicRules() {
     try {
-        const response = await fetch('http://localhost:3000/api/rules');
+        const response = await fetch(`${API_BASE}/api/rules`);
         const data = await response.json();
         if (data.success) {
             dynamicRules = (Array.isArray(data.rules) && data.rules.length > 0) ? data.rules : [
@@ -45,7 +45,7 @@ async function loadDynamicRules() {
 
 async function saveDynamicRules() {
     try {
-        await fetch('http://localhost:3000/api/rules', {
+        await fetch(`${API_BASE}/api/rules`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ rules: dynamicRules })
@@ -521,7 +521,7 @@ document.getElementById('rulesTableBody').addEventListener('click', (e) => {
 // --- Cloud Sync Logic ---
 async function uploadRulesToServer() {
     try {
-        const resp = await fetch('http://localhost:3000/api/sync/rules', {
+        const resp = await fetch(`${API_BASE}/api/sync/rules`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ rules: dynamicRules })
@@ -542,7 +542,7 @@ async function uploadRulesToServer() {
 async function downloadRulesFromServer() {
     if (!confirm("클라우드에서 데이터를 내려받으면 현재 로컬의 규칙 설정이 덮어씌워집니다. 진행하시겠습니까?")) return;
     try {
-        const resp = await fetch('http://localhost:3000/api/sync/rules');
+        const resp = await fetch(`${API_BASE}/api/sync/rules`);
         const data = await resp.json();
         if (data.success) {
             dynamicRules = data.rules;

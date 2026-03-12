@@ -233,7 +233,7 @@ document.getElementById('btnAddCarrier')?.addEventListener('click', () => {
 // --- Cloud Sync Logic ---
 async function uploadCarriersToServer() {
     try {
-        const resp = await fetch('http://localhost:3000/api/sync/carriers', {
+        const resp = await fetch(`${API_BASE}/api/sync/carriers`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ mapping: carrierMap })
@@ -254,7 +254,7 @@ async function uploadCarriersToServer() {
 async function downloadCarriersFromServer() {
     if (!confirm("클라우드에서 데이터를 내려받으면 현재 로컬의 매핑 설정이 덮어씌워집니다. 진행하시겠습니까?")) return;
     try {
-        const resp = await fetch('http://localhost:3000/api/sync/carriers');
+        const resp = await fetch(`${API_BASE}/api/sync/carriers`);
         const data = await resp.json();
         if (data.success) {
             carrierMap = data.mapping;
