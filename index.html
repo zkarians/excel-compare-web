@@ -382,18 +382,25 @@
             <div class="card">
                 <div class="file-input-group">
                     <h3>1. 원본 파일 설정 (직사적당일/법인당일/혼적당일)</h3>
-                    <div class="path-input-wrapper" style="display: flex; gap: 8px;">
-                        <input type="text" id="pathOriginal" placeholder="파일 절대 경로 입력 (예: C:\Users\Desktop\원본.xlsx)"
-                            class="path-input" style="flex: 1;">
-                        <button id="btnAutoLoadOrig" class="btn btn-primary"
-                            style="padding: 0.6rem 1rem; white-space: nowrap; font-size: 0.85rem;">최신 파일 자동
-                            불러오기</button>
+                    <div class="local-only-feature" style="display: none; margin-bottom: 8px;">
+                        <div class="path-input-wrapper" style="display: flex; gap: 8px;">
+                            <input type="text" id="pathOriginal" placeholder="파일 절대 경로 입력 (예: C:\Users\Desktop\원본.xlsx)"
+                                class="path-input" style="flex: 1;">
+                            <button id="btnAutoLoadOrig" class="btn btn-primary"
+                                style="padding: 0.6rem 1rem; white-space: nowrap; font-size: 0.85rem;">최신 파일 자동
+                                불러오기</button>
+                        </div>
                     </div>
-                    <div style="margin-top: 5px; font-size: 0.82rem; color: #64748b;">
-                        또는 직접 업로드: <input type="file" id="fileOriginal" accept=".xlsx, .xls, .xlsm">
+                    <div
+                        style="margin-top: 5px; font-size: 0.82rem; color: #64748b; display: flex; align-items: center; gap: 8px;">
+                        또는 직접 업로드:
+                        <input type="file" id="fileOriginal" accept=".xlsx, .xls, .xlsm">
+                        <button id="btnNativePickerOrig" class="btn btn-secondary electron-only-picker"
+                            style="display: none; padding: 3px 8px; font-size: 0.75rem;">파일 탐색기 (폴더 기억)</button>
                     </div>
                     <p class="file-status" id="statusOriginal">상태: 대기 중</p>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 3px;">
+                    <div class="local-only-feature"
+                        style="display: none; align-items: center; gap: 8px; margin-top: 3px;">
                         <p id="lastOrig" style="font-size: 0.8rem; color: #64748b; margin: 0;"></p>
                         <button id="btnReloadOriginal" class="btn btn-secondary"
                             style="padding: 2px 8px; font-size: 0.75rem; display: none;">불러오기</button>
@@ -403,14 +410,22 @@
                 <!-- 재작업 파일 설정 (선택 사항) -->
                 <div class="file-input-group" style="background: #fdf2f8; border: 1px solid #fbcfe8;">
                     <h3 style="color: #db2777;">1-2. 재작업 파일 설정 (선택 사항 - '재작업당일' 시트)</h3>
-                    <div class="path-input-wrapper">
-                        <input type="text" id="pathRework" placeholder="재작업 파일 절대 경로 입력 (선택)" class="path-input">
+                    <div class="local-only-feature" style="display: none; margin-bottom: 8px;">
+                        <div class="path-input-wrapper">
+                            <input type="text" id="pathRework" placeholder="재작업 파일 절대 경로 입력 (선택)" class="path-input">
+                        </div>
                     </div>
-                    <div style="margin-top: 5px; font-size: 0.82rem; color: #db2777;">
-                        또는 직접 업로드: <input type="file" id="fileRework" accept=".xlsx, .xls, .xlsm">
+                    <div
+                        style="margin-top: 5px; font-size: 0.82rem; color: #db2777; display: flex; align-items: center; gap: 8px;">
+                        또는 직접 업로드:
+                        <input type="file" id="fileRework" accept=".xlsx, .xls, .xlsm">
+                        <button id="btnNativePickerRework" class="btn btn-secondary electron-only-picker"
+                            style="display: none; padding: 3px 8px; font-size: 0.75rem; border-color: #f472b6; color: #db2777;">파일
+                            탐색기 (폴더 기억)</button>
                     </div>
                     <p class="file-status" id="statusRework">상태: 대기 중</p>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 3px;">
+                    <div class="local-only-feature"
+                        style="display: none; align-items: center; gap: 8px; margin-top: 3px;">
                         <p id="lastRework" style="font-size: 0.8rem; color: #64748b; margin: 0;"></p>
                         <button id="btnClearRework" class="btn btn-secondary"
                             style="padding: 2px 8px; font-size: 0.75rem; display: none;">해제</button>
@@ -434,8 +449,13 @@
                         업로드 시: 마스터 제품구분이 <strong>Q 또는 H</strong>인 제품 중, 창고에 <strong>동일 접두어·다른 접미어</strong> 제품이 있으면 제품명
                         옆에 <strong style="color: #7c3aed;">(동)</strong> 태그를 표시합니다.
                     </p>
-                    <div style="margin-top: 5px; font-size: 0.82rem; color: #15803d;">
-                        직접 업로드: <input type="file" id="fileWarehouseStock" accept=".xlsx, .xls, .xlsm">
+                    <div
+                        style="margin-top: 5px; font-size: 0.82rem; color: #15803d; display: flex; align-items: center; gap: 8px;">
+                        직접 업로드:
+                        <input type="file" id="fileWarehouseStock" accept=".xlsx, .xls, .xlsm">
+                        <button id="btnNativePickerWarehouse" class="btn btn-secondary electron-only-picker"
+                            style="display: none; padding: 3px 8px; font-size: 0.75rem; border-color: #86efac; color: #15803d;">파일
+                            탐색기 (폴더 기억)</button>
                     </div>
                     <p class="file-status" id="statusWarehouseStock" style="color: #64748b;">상태: 대기 중 (미사용)</p>
                     <div style="display: flex; align-items: center; gap: 8px; margin-top: 3px;">
@@ -448,18 +468,26 @@
 
                 <div class="file-input-group">
                     <h3>2. 다운로드 파일 (전산 데이터) 설정</h3>
-                    <div class="path-input-wrapper" style="display: flex; gap: 8px;">
-                        <input type="text" id="pathDownload" placeholder="파일 절대 경로 입력 (예: C:\Users\Downloads\전산.xlsx)"
-                            class="path-input" style="flex: 1;">
-                        <button id="btnAutoLoadDown" class="btn btn-primary"
-                            style="padding: 0.6rem 1rem; white-space: nowrap; font-size: 0.85rem;">최신 파일 자동
-                            불러오기</button>
+                    <div class="local-only-feature" style="display: none; margin-bottom: 8px;">
+                        <div class="path-input-wrapper" style="display: flex; gap: 8px;">
+                            <input type="text" id="pathDownload"
+                                placeholder="파일 절대 경로 입력 (예: C:\Users\Downloads\전산.xlsx)" class="path-input"
+                                style="flex: 1;">
+                            <button id="btnAutoLoadDown" class="btn btn-primary"
+                                style="padding: 0.6rem 1rem; white-space: nowrap; font-size: 0.85rem;">최신 파일 자동
+                                불러오기</button>
+                        </div>
                     </div>
-                    <div style="margin-top: 5px; font-size: 0.82rem; color: #64748b;">
-                        또는 직접 업로드: <input type="file" id="fileDownload" accept=".xlsx, .xls, .xlsm">
+                    <div
+                        style="margin-top: 5px; font-size: 0.82rem; color: #64748b; display: flex; align-items: center; gap: 8px;">
+                        또는 직접 업로드:
+                        <input type="file" id="fileDownload" accept=".xlsx, .xls, .xlsm">
+                        <button id="btnNativePickerDown" class="btn btn-secondary electron-only-picker"
+                            style="display: none; padding: 3px 8px; font-size: 0.75rem;">파일 탐색기 (폴더 기억)</button>
                     </div>
                     <p class="file-status" id="statusDownload">상태: 대기 중</p>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 3px;">
+                    <div class="local-only-feature"
+                        style="display: none; align-items: center; gap: 8px; margin-top: 3px;">
                         <p id="lastDown" style="font-size: 0.8rem; color: #64748b; margin: 0;"></p>
                         <button id="btnReloadDownload" class="btn btn-secondary"
                             style="padding: 2px 8px; font-size: 0.75rem; display: none;">불러오기</button>

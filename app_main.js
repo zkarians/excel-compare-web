@@ -288,10 +288,15 @@ document.addEventListener('DOMContentLoaded', () => {
  *  INITIALIZATION
  * ========================================================================= */
 
-// 초기화: 이전 경로 정보 불러오기
+// 초기화: 이전 저장 데이터 및 서버 상태 확인
 async function initializeApp() {
-    loadCarrierMap(); // 초기화 시 선사 일관화 데이터 로드
-    loadCustomFields(); // 초기화 시 커스텀 필드 로드
+    // 마스터 데이터 일괄 로드
+    await Promise.all([
+        loadCarrierMap(),
+        loadDynamicRules(),
+        loadProductMaster(),
+        loadCustomFields()
+    ]);
 
     // Check Server & DB Status
     try {
@@ -330,7 +335,19 @@ async function initializeApp() {
                 btnSaveToDB.title = '선택항목을 DB에 저장';
             }
         }
-        // 웹 인터페이스라도 로컬 서버 통신을 통해 절대 경로 및 자동 불러오기 기능이 작동하므로 숨기지 않음
+        // 로컬 전용 기능 노출 제어 (Electron 혹은 localhost일 때만 표시)
+        const isLocal = window.isElectron || window.location.hostname === 'localhost';
+        if (isLocal) {
+            document.querySelectorAll('.local-only-feature').forEach(el => {
+                if (el.tagName === 'DIV' && el.style.alignItems === 'center') {
+                    el.style.display = 'flex';
+                } else {
+                    el.style.display = 'block';
+                }
+            });
+            // Electron 전용 네이티브 피커 노출
+            document.querySelectorAll('.electron-only-picker').forEach(el => el.style.display = 'inline-block');
+        }
     } catch (err) {
         console.error('Critical initialization error:', err);
         alert(`🚧 경고: ${err.message}\n프로그램의 일부 기능(DB, 마스터 로드 등)이 작동하지 않을 수 있습니다.`);
@@ -1273,13 +1290,30 @@ async function handleAutoLoad(type) {
     }
 
     try {
+        // 클라우드 버전에서 로컬 경로(Y:\, C:\ 등) 접근 시도 감지 및 경고
+        const isLocalPath = /^[a-zA-Z]:\\/.test(dirPath) || dirPath.startsWith('\\\\');
+        const isRemoteServer = !window.isElectron && window.location.hostname !== 'localhost';
+
+        if (isLocalPath && isRemoteServer) {
+            alert("⚠️ 현재 웹(클라우드) 버전에서는 내 컴퓨터의 로컬 폴더(Y:, C: 등)에 직접 접근할 수 없습니다.\n\n" +
+                "로컬 폴더 자동 불러오기 기능을 사용하려면:\n" +
+                "1. 일렉트론(내 PC 실행용) 프로그램을 사용하시거나\n" +
+                "2. 파일을 아래 '파일 선택' 버튼으로 직접 업로드해 주세요.");
+            return;
+        }
+
         statusEl.textContent = `상태: ${type === 'original' ? '원본' : '전산'} 최신 파일 탐색 중...`;
         statusEl.style.color = '#3b82f6';
 
         const response = await fetch(`${API_BASE}/api/load-latest-from-dir?dirPath=${encodeURIComponent(dirPath)}&t=${Date.now()}`);
 
         if (!response.ok) {
-            throw new Error(`파일을 찾을 수 없습니다. 경로를 확인해주세요.`);
+            let errMsg = `파일을 찾을 수 없습니다. 경로를 확인해주세요.`;
+            try {
+                const errData = await response.json();
+                if (errData && errData.message) errMsg = errData.message;
+            } catch (e) { }
+            throw new Error(errMsg);
         }
 
         const result = await response.json();
@@ -1452,6 +1486,137 @@ function evaluateMathString(currentVal, expr) {
     let num = parseFloat(str);
     if (!isNaN(num)) return num;
     return currentVal;
+}
+
+// Electron 네이티브 파일 피커 바인딩
+(function setupNativePickers() {
+    if (!window.electronAPI) return;
+
+    const pickers = [
+        { btn: 'btnNativePickerOrig', type: 'original', storageKey: 'dirOrig' },
+        { btn: 'btnNativePickerRework', type: 'rework', storageKey: 'dirRework' },
+        { btn: 'btnNativePickerWarehouse', type: 'warehouse', storageKey: 'dirWarehouse' },
+        { btn: 'btnNativePickerDown', type: 'download', storageKey: 'dirDown' }
+    ];
+
+    pickers.forEach(p => {
+        const btn = document.getElementById(p.btn);
+        if (!btn) return;
+
+        btn.addEventListener('click', async () => {
+            const lastDir = localStorage.getItem(p.storageKey);
+            const filePath = await window.electronAPI.selectFile(p.type, lastDir);
+
+            if (filePath) {
+                // 폴더 경로 업데이트
+                const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
+                const dirPath = lastSlash !== -1 ? filePath.substring(0, lastSlash) : filePath;
+                localStorage.setItem(p.storageKey, dirPath);
+
+                // 파일 로드 시도
+                if (p.type === 'warehouse') {
+                    // 창고재고는 별도 로직 (서버 사이드 파싱)
+                    loadNativeWarehouseFile(filePath);
+                } else {
+                    reloadNativeFileFromPath(p.type, filePath);
+                }
+            }
+        });
+    });
+})();
+
+// 네이티브 경로에서 파일 로드 및 파싱 (원본/전산/재작업 공용)
+async function reloadNativeFileFromPath(type, filePath) {
+    const statusEl = type === 'original' ? statusOriginal : (type === 'download' ? statusDownload : statusRework);
+    try {
+        statusEl.textContent = `상태: 데이터 불러오는 중...`;
+        statusEl.style.color = '#3b82f6';
+
+        const response = await fetch(`${API_BASE}/api/load-file-raw?path=${encodeURIComponent(filePath)}&t=${Date.now()}`);
+        if (!response.ok) throw new Error("파일 로드 실패");
+
+        const result = await response.json();
+        if (result.success) {
+            const binaryStr = atob(result.base64);
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+            const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const file = new File([blob], result.fileName, { type: blob.type });
+
+            const parsed = await readExcelFile(file, type);
+
+            if (type === 'original') {
+                originalData = parsed.filter(item => (item.qty || 0) > 0);
+                originalFile = { name: result.fileName, path: filePath, isReloaded: true };
+                localStorage.setItem('lastOrigName', result.fileName);
+                localStorage.setItem('pathOrig', filePath);
+                document.getElementById('pathOriginal').value = filePath;
+                document.getElementById('lastOrig').textContent = `최근 사용: ${result.fileName}`;
+                document.getElementById('btnReloadOriginal').style.display = 'inline-block';
+            } else if (type === 'download') {
+                downloadData = parsed;
+                downloadFile = { name: result.fileName, path: filePath, isReloaded: true };
+                localStorage.setItem('lastDownName', result.fileName);
+                localStorage.setItem('pathDown', filePath);
+                document.getElementById('pathDownload').value = filePath;
+                document.getElementById('lastDown').textContent = `최근 사용: ${result.fileName}`;
+                document.getElementById('btnReloadDownload').style.display = 'inline-block';
+            } else if (type === 'rework') {
+                reworkFile = file;
+                localStorage.setItem('pathRework', filePath);
+                document.getElementById('pathRework').value = filePath;
+                document.getElementById('lastRework').textContent = `최근 사용: ${result.fileName}`;
+                document.getElementById('btnClearRework').style.display = 'inline-block';
+            }
+
+            statusEl.textContent = `상태: 로드 성공 (${result.fileName})`;
+            statusEl.style.color = '#059669';
+            checkReadyStatus();
+        }
+    } catch (err) {
+        statusEl.textContent = `상태: 로드 실패 (${err.message})`;
+        statusEl.style.color = '#ef4444';
+    }
+}
+
+// 창고재고 파일 네이티브 로드
+async function loadNativeWarehouseFile(filePath) {
+    const statusEl = document.getElementById('statusWarehouseStock');
+    try {
+        statusEl.innerHTML = `<i class="fas fa-spinner fa-spin" style="color:#16a34a; margin-right:4px;"></i>상태: 분석 중...`;
+
+        // 창고재고는 서버에서 파싱하므로 path만 전달해도 되지만 현재 API는 multipart/form-data를 원함
+        // 편리하게 하기 위해 파일을 받아서 처리하거나, 서버에 path 기반 파싱 API를 추가해야 함.
+        // 여기서는 위와 동일하게 base64로 가져와서 Blob을 만들고 FormData로 전송
+        const response = await fetch(`${API_BASE}/api/load-file-raw?path=${encodeURIComponent(filePath)}&t=${Date.now()}`);
+        const resultRaw = await response.json();
+
+        if (resultRaw.success) {
+            const binaryStr = atob(resultRaw.base64);
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+            const file = new File([new Blob([bytes])], resultRaw.fileName);
+
+            const formData = new FormData();
+            formData.append('warehouseFile', file);
+            const resp = await fetch(`${API_BASE}/api/parse-warehouse-stock`, { method: 'POST', body: formData });
+            const result = await resp.json();
+
+            if (result.success) {
+                warehouseStockDongPrefixes = new Set(result.dongPrefixes.map(p => p.toUpperCase()));
+                warehouseStockLoaded = true;
+                statusEl.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a; margin-right:4px;"></i>상태: 완료 (${result.fileName})`;
+                document.getElementById('lastWarehouseStock').textContent = `고유제품 ${result.totalProducts}개 분석 완료`;
+                document.getElementById('btnClearWarehouseStock').style.display = 'inline-block';
+                if (document.getElementById('dongTagBadge')) {
+                    document.getElementById('dongPrefixCount').textContent = result.dongPrefixes.length;
+                    document.getElementById('dongTagBadge').style.display = 'inline-flex';
+                }
+            }
+        }
+    } catch (err) {
+        statusEl.textContent = `에러: ${err.message}`;
+    }
 }
 
 // 비교 로직 실행 버튼

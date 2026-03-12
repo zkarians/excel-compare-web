@@ -204,6 +204,26 @@ app.on('ready', () => {
         return { success: false };
     });
 
+    ipcMain.handle('select-file', async (event, { type, defaultPath }) => {
+        const { filePath } = await dialog.showOpenDialog(mainWindow, {
+            defaultPath: defaultPath || undefined,
+            properties: ['openFile'],
+            filters: [
+                { name: 'Excel Files', extensions: ['xlsx', 'xls', 'xlsm'] }
+            ]
+        });
+
+        if (filePath && filePath.length > 0) {
+            const selectedPath = filePath[0];
+            const paths = loadSavedPaths();
+            paths[type] = selectedPath;
+            savePaths(paths);
+            console.log(`📂 [IPC] 파일 선택 완료: ${type} => ${selectedPath}`);
+            return selectedPath;
+        }
+        return null;
+    });
+
     ipcMain.handle('check-file-exists', (event, targetPath) => {
         try {
             return fs.existsSync(targetPath);
