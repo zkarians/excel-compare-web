@@ -53,7 +53,7 @@
   "name": "excelcompare",
   "version": "1.0.9",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "description": "Excel Data Comparison Application with Built-in Server",
   "author": "User"

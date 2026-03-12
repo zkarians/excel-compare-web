@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Install build dependencies for any native modules if needed
 RUN apk add --no-cache python3 make g++
