@@ -330,12 +330,7 @@ async function initializeApp() {
                 btnSaveToDB.title = '선택항목을 DB에 저장';
             }
         }
-        if (!window.isElectron) {
-            // 웹 인터페이스 최적화: 경로 입력창 숨기기
-            document.querySelectorAll('.path-input-wrapper').forEach(el => el.style.display = 'none');
-            const autoLoadBtn = document.getElementById('btnAutoLoadDown');
-            if (autoLoadBtn) autoLoadBtn.style.display = 'none';
-        }
+        // 웹 인터페이스라도 로컬 서버 통신을 통해 절대 경로 및 자동 불러오기 기능이 작동하므로 숨기지 않음
     } catch (err) {
         console.error('Critical initialization error:', err);
         alert(`🚧 경고: ${err.message}\n프로그램의 일부 기능(DB, 마스터 로드 등)이 작동하지 않을 수 있습니다.`);
