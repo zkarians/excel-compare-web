@@ -1,4 +1,5 @@
 const ExcelJS = require('exceljs');
+const XLSX = require('xlsx');
 const path = require('path');
 const fs = require('fs');
 
@@ -50,29 +51,33 @@ async function parseMasterExcel() {
         console.log(`📂 [parseMasterExcel] 기본 마스터 데이터 사용: ${bundledMasterPath}`);
     }
 
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile(masterPath);
-    const worksheet = workbook.getWorksheet(1) || workbook.worksheets[0];
+    console.log(`🔍 [parseMasterExcel] 파일 읽기 시작: ${masterPath}`);
+    const workbook = XLSX.readFile(masterPath);
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+    // header: 1 means return array of arrays
+    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
     const data = [];
 
-    // 1행은 헤더, 2행부터 데이터
-    worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber <= 1) return;
+    // Skip header (row 0)
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || row.length === 0) continue;
 
-        // A: 품명, B: 중량, C: 가로, D: 세로, E: 높이, F: CBM, G: 제품구분
-        const name = row.getCell(1).text || row.getCell(1).value;
+        const name = row[0]; // A: 품명
         if (name) {
             data.push({
                 name: String(name).trim(),
-                weight: parseFloat(row.getCell(2).value) || 0,
-                width: parseFloat(row.getCell(3).value) || 0,
-                depth: parseFloat(row.getCell(4).value) || 0,
-                height: parseFloat(row.getCell(5).value) || 0,
-                cbm: parseFloat(row.getCell(6).value) || 0,
-                prodType: String(row.getCell(7).value || "-").trim() || "-"
+                weight: parseFloat(row[1]) || 0,     // B: 중량
+                width: parseFloat(row[2]) || 0,      // C: 가로
+                depth: parseFloat(row[3]) || 0,      // D: 세로
+                height: parseFloat(row[4]) || 0,     // E: 높이
+                cbm: parseFloat(row[5]) || 0,        // F: CBM
+                prodType: String(row[6] || "-").trim() || "-" // G: 제품구분
             });
         }
-    });
+    }
+    console.log(`✅ [parseMasterExcel] 파싱 완료: ${data.length}건`);
 
     // 2. products.json(사용자 업데이트 중량)으로 덮어쓰기 (핵심!)
     // /api/update로 저장한 중량이 다음 비교 시에도 반영되도록 함

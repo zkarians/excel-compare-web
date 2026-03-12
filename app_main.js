@@ -789,7 +789,16 @@ document.getElementById('btnUploadMaster').addEventListener('click', async () =>
             body: formData
         });
 
-        const result = await response.json();
+        let result;
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            result = await response.json();
+        } else {
+            const text = await response.text();
+            console.error("서버에서 JSON이 아닌 응답이 왔습니다:", text.substring(0, 200));
+            throw new Error(`서버 오류 (상태 코드: ${response.status}). 서버가 응답하지 않거나 파일 크기가 너무 큽니다.`);
+        }
+
         if (result.success) {
             statusMaster.innerHTML = `<i class="fas fa-check-circle" style="color: #10b981; margin-right:4px;"></i>상태: 업데이트 성공 (${file.name})`;
             statusMaster.style.color = '#10b981';
@@ -930,7 +939,16 @@ if (btnClearRework) {
                 method: 'POST',
                 body: formData
             });
-            const result = await resp.json();
+
+            let result;
+            const contentType = resp.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                result = await resp.json();
+            } else {
+                const text = await resp.text();
+                console.error("서버에서 JSON이 아닌 응답이 왔습니다:", text.substring(0, 200));
+                throw new Error(`서버 오류 (상태 코드: ${resp.status}). 서버가 응답하지 않거나 파일 크기가 너무 큽니다.`);
+            }
 
             if (result.success) {
                 warehouseStockDongPrefixes = new Set(result.dongPrefixes.map(p => p.toUpperCase()));
