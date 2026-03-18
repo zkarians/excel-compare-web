@@ -307,14 +307,15 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
         if (!matchedOrig) {
             const isNonAsset = checkIsNonAsset(down.prodName, productMap);
             if (isNonAsset) {
-                rowType = '정상(부)';
-                rowBadge = 'success';
+                rowType = '원본모델누락';
+                rowBadge = 'extra';
+                errorDetails.push(`원본 파일에 해당 모델[${down.prodName}] 정보 없음 (비자산 항목)`);
             } else {
                 stats.extra++;
                 isError = true;
                 rowClass = 'row-new';
                 rowBadge = 'extra';
-                rowType = contMatchOrig ? `추가 (원본 모델[${down.prodName}] 누락)` : '추가 (원본 컨테이너 누락)';
+                rowType = '원본모델누락';
                 errorDetails.push(contMatchOrig ? `원본 작업내역에 해당 모델[${down.prodName}] 없음` : `원본 파일에 컨테이너 정보 없음`);
             }
         } else {
@@ -488,6 +489,7 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
             origRemark: matchedOrig ? (matchedOrig.remark || '') : (origCntrMap.get(cleanCntr) ? (origCntrMap.get(cleanCntr).remark || '') : '없음'),
             adj1: matchedOrig ? (matchedOrig.adj1 || '') : '',
             adj1Color: matchedOrig ? (matchedOrig.adj1Color || null) : null,
+            adj2: matchedOrig ? (matchedOrig.adj2 || '') : '',
             transporter: transporter,
             sealNo: down.sealNo || "",
             eta: matchedOrig ? (matchedOrig.eta || "") : "",
@@ -635,7 +637,7 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
             }
 
             results.push({
-                type: isNonAsset ? '정상(부)' : '누락 (전산 파일)',
+                type: isNonAsset ? '정상(부) - 전산없음' : '누락 (전산 파일)',
                 cntrNo: orig.cntrNo,
                 division: orig.prodType || '-', // 원본의 G열(사업부)
                 prodType: prod ? (prod.prodType || '-') : (orig.prodType || '-'),
@@ -650,13 +652,15 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                 destination: { val: '-', orig: orig.dest, isMismatch: true },
                 detail: isNonAsset ? '' : `전산 파일에 해당 컨테이너/모델 정보 없음`,
                 origRemark: orig.remark || '',
+                adj1: orig.adj1 || '',
+                adj2: orig.adj2 || '',
                 workDate: workDateStr,
-                transporter: orig.transporter,
+                transporter: isNonAsset ? orig.transporter : "미분류",
                 tags: orig.tags || [],
                 source: orig.source || "original",
                 loadPlanNo: inheritedLoadPlanNo,
-                cssClass: isNonAsset ? '' : 'row-missing',
-                badgeClass: isNonAsset ? 'success' : 'missing',
+                cssClass: 'row-missing',
+                badgeClass: 'missing',
                 isErrorRow: !isNonAsset,
                 unitWeight: parseFloat(prod?.weight || 0),
                 unitCBM: parseFloat(prod?.cbm || 0),

@@ -35,14 +35,14 @@ async function parseMasterExcel(optionalBuffer = null) {
     let masterPath = "";
     let workbook;
 
+    const DATA_DIR = process.env.APP_DATA_PATH || path.join(__dirname, '..', 'data');
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
     if (optionalBuffer) {
         console.log(`🔍 [parseMasterExcel] 제공된 버퍼로 파싱을 시작합니다.`);
         workbook = XLSX.read(optionalBuffer);
     } else {
         // 1. First check if a custom master file exists in the user's AppData directory
-        const DATA_DIR = process.env.APP_DATA_PATH || path.join(__dirname, '..', 'data');
-        if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-
         const customMasterPath = path.join(DATA_DIR, 'product_master.xlsx');
         const bundledMasterPath = path.join(__dirname, '..', 'master_data', 'product_master.xlsx');
 

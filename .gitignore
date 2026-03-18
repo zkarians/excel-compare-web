@@ -8,4 +8,5 @@ masterrule/startup_error.log
 *.xls
 .env
 .DS_Store
-package-lock.json
+# package-lock.json (Keep in Git for consistent dependencies)
+# package-lock.json

@@ -22,14 +22,179 @@ let originalData = [];
 let downloadData = [];
 let comparisonResult = [];
 let displayData = []; // 현재 화면에 표시 중인 (필터링된) 전체 데이터
+let lastDbSearchResults = []; // 마지막 DB 검색 결과 (탭 전환 시 유지용)
 let currentFilter = 'success';
 let selectedItems = new Set(); // DB 저장을 위해 선택된 항목
+
+window.toggleSelectItem = (itemKey, event) => {
+    if (event.target.checked) {
+        selectedItems.add(itemKey);
+    } else {
+        selectedItems.delete(itemKey);
+    }
+    updateSelectionUI();
+    // 행 배경색만 즉시 변경 (전체 렌더링 피함)
+    const tr = event.target.closest('tr');
+    if (tr) tr.classList.toggle('selected-row', event.target.checked);
+};
+let holdContainerMap = new Map(); // 보류 컨테이너 상태 (DB 연동)
 let productMaster = []; // 엑셀에서 추출한 제품 마스터
+let manualApprovedItems = new Set(); // 수동 승인 항목 보관 (Session level)
+
+window.approveHItem = (cntrNo, prodName) => {
+    const cleanCntr = (cntrNo || "").trim();
+    const cleanProd = (prodName || "").trim();
+    if (confirm(`[${cleanCntr}] 의 ${cleanProd} 모델을 정상으로 승인하시겠습니까?`)) {
+        manualApprovedItems.add(`${cleanCntr}_${cleanProd}`);
+        if (typeof comparisonResult !== 'undefined' && Array.isArray(comparisonResult)) {
+            updateDashboard(); // 상단 요약 갱신
+            displayResults(comparisonResult, false); // 테이블 갱신
+        }
+    }
+};
+
+window.cancelApproveHItem = (cntrNo, prodName) => {
+    const cleanCntr = (cntrNo || "").trim();
+    const cleanProd = (prodName || "").trim();
+    manualApprovedItems.delete(`${cleanCntr}_${cleanProd}`);
+    if (typeof comparisonResult !== 'undefined' && Array.isArray(comparisonResult)) {
+        updateDashboard();
+        displayResults(comparisonResult, false);
+    }
+};
 
 window.updateWeightChoice = (cntrNo, choice) => {
     userSelectedWeights[cntrNo] = choice;
     displayResults(comparisonResult, false);
 };
+
+/* =========================================================================
+ *  CONTAINER HOLD LOGIC (DB SYNC)
+ * ========================================================================= */
+async function loadHoldContainers() {
+    try {
+        const resp = await fetch(`${API_BASE}/api/sync/holds`);
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.success && Array.isArray(data.holds)) {
+                holdContainerMap.clear();
+                data.holds.forEach(h => {
+                    holdContainerMap.set(h.cntrNo, h.reason || '');
+                });
+                console.log(`✅ [DB] 보류 컨테이너 ${holdContainerMap.size}건 로드 완료`);
+            }
+        }
+    } catch (err) {
+        console.error("보류 목록 로드 실패:", err);
+    }
+}
+
+window.toggleContainerHold = async (cntrNo, event) => {
+    if (event) event.stopPropagation();
+    const isHeld = holdContainerMap.has(cntrNo);
+
+    try {
+        if (isHeld) {
+            // 보류 해제
+            const resp = await fetch(`${API_BASE}/api/sync/holds/${cntrNo}`, { method: 'DELETE' });
+            if (resp.ok) {
+                holdContainerMap.delete(cntrNo);
+                console.log(`[Hold] ${cntrNo} 보류 해제`);
+            }
+        } else {
+            // 보류 등록
+            const resp = await fetch(`${API_BASE}/api/sync/holds`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cntrNo, reason: '사용자 지정 보류' })
+            });
+            if (resp.ok) {
+                holdContainerMap.set(cntrNo, '사용자 지정 보류');
+                console.log(`[Hold] ${cntrNo} 보류 등록`);
+            }
+        }
+
+        // UI 갱신 (집계수량 등 재계산 포함)
+        displayResults(comparisonResult, false);
+    } catch (err) {
+        console.error("보류 처리 실패:", err);
+        alert("보류 처리에 실패했습니다.");
+    }
+};
+
+/**
+ * 클립보드 복사 및 토스트 알림
+ */
+window.copyToClipboard = (text, label) => {
+    if (!text) return;
+
+    // 브라우저 복사 API 사용
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast(`[${label}] 복사됨: ${text}`);
+        }).catch(err => {
+            console.error('클립보드 복사 실패 (API):', err);
+            copyFallback(text, label);
+        });
+    } else {
+        copyFallback(text, label);
+    }
+};
+
+function copyFallback(text, label) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        showToast(`[${label}] 복사됨: ${text}`);
+    } catch (err) {
+        console.error('복사 실패 (Fallback):', err);
+    }
+    document.body.removeChild(textArea);
+}
+
+function showToast(message) {
+    let toast = document.getElementById('copy-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'copy-toast';
+        Object.assign(toast.style, {
+            position: 'fixed',
+            bottom: '40px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: '#1e293b',
+            color: 'white',
+            padding: '12px 24px',
+            borderRadius: '12px',
+            fontSize: '0.9rem',
+            fontWeight: '700',
+            zIndex: '100000',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            opacity: '0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            border: '1px solid rgba(255,255,255,0.1)'
+        });
+        document.body.appendChild(toast);
+    }
+
+    toast.innerHTML = `<i class="fas fa-check-circle" style="color: #10b981;"></i> ${message}`;
+    toast.style.display = 'flex';
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(-15px)';
+
+    if (window._toastTimer) clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+        setTimeout(() => { if (toast.style.opacity === '0') toast.style.display = 'none'; }, 400);
+    }, 2500);
+}
 
 window.openWeightMismatchPopup = (cntrNo) => {
     const item = displayData.find(d => d.cntrNo === cntrNo);
@@ -249,10 +414,31 @@ const tabErrorOnly = document.getElementById('tabErrorOnly');
 const tabMissingOnly = document.getElementById('tabMissingOnly');
 const tabEntryInfo = document.getElementById('tabEntryInfo');
 const tabUnclassifiedEntry = document.getElementById('tabUnclassifiedEntry');
+const tabHold = document.getElementById('tabHold'); // Added for hold tab
 const successFilterContainer = document.getElementById('successFilterContainer');
 const chkFullyCompletedOnly = document.getElementById('chkFullyCompletedOnly');
 const btnCopyChunma = document.getElementById('btnCopyChunma');
 const btnCopyBni = document.getElementById('btnCopyBni');
+const btnSendChunma = document.getElementById('btnSendChunma');
+const btnSendBni = document.getElementById('btnSendBni');
+
+// DB Sync Elements
+const dbSettingsModal = document.getElementById('dbSettingsModal');
+const btnOpenDbSettings = document.getElementById('btnOpenDbSettings');
+const closeDbSettingsBtn = document.getElementById('closeDbSettingsBtn');
+const closeDbSettingsBottomBtn = document.getElementById('closeDbSettingsBottomBtn');
+const phoneDbIp = document.getElementById('phoneDbIp');
+const phoneDbPort = document.getElementById('phoneDbPort');
+const btnSavePhoneIp = document.getElementById('btnSavePhoneIp');
+const switchToCloud = document.getElementById('switchToCloud');
+const switchToPhone = document.getElementById('switchToPhone');
+const syncToPhone = document.getElementById('syncToPhone');
+const syncToCloud = document.getElementById('syncToCloud');
+const currentDbHost = document.getElementById('currentDbHost');
+const currentDbStatus = document.getElementById('currentDbStatus');
+const syncProgress = document.getElementById('syncProgress');
+const syncStatusText = document.getElementById('syncStatusText');
+const syncProgressBar = document.getElementById('syncProgressBar');
 
 /* =========================================================================
  *  MAIN NAVIGATION TABS ( Selection vs Results )
@@ -295,7 +481,8 @@ async function initializeApp() {
         loadCarrierMap(),
         loadDynamicRules(),
         loadProductMaster(),
-        loadCustomFields()
+        loadCustomFields(),
+        loadHoldContainers()
     ]);
 
     // Check Server & DB Status
@@ -313,6 +500,16 @@ async function initializeApp() {
 
         if (!data.success) {
             console.warn('DB Not Available:', data.message);
+            updateDbConfigUI(false, data.message);
+
+            // 폰 DB가 먹통일 때 사용자에게 즉시 알려주고 클라우드 전환 제안
+            if (data.message.includes('timeout') || data.message.includes('ECONNREFUSED')) {
+                const useCloud = confirm("현재 폰 DB(Phone)에 접속할 수 없습니다.\n[안전망] Cloudtype DB로 즉시 전환하여 작업을 계속하시겠습니까?");
+                if (useCloud) {
+                    document.getElementById('switchToCloud').click();
+                }
+            }
+
             if (tabDbSearch) {
                 tabDbSearch.title = `DB 연결 실패: ${data.message}`;
                 tabDbSearch.style.opacity = '0.7';
@@ -323,6 +520,7 @@ async function initializeApp() {
             }
         } else {
             console.log('DB Available:', data.message);
+            updateDbConfigUI(true);
             updateDbGlobalStats(); // Fetch and display cloud/DB stats
             if (tabDbSearch) {
                 tabDbSearch.style.display = '';
@@ -448,8 +646,126 @@ async function initializeApp() {
         btnReloadDownload.style.display = 'inline-block';
     }
 
+    // DB Settings IP/Port Load
+    const savedPhoneIp = localStorage.getItem('phoneDbIp');
+    const savedPhonePort = localStorage.getItem('phoneDbPort');
+    if (savedPhoneIp && phoneDbIp) {
+        phoneDbIp.value = savedPhoneIp;
+    }
+    if (savedPhonePort && phoneDbPort) {
+        phoneDbPort.value = savedPhonePort;
+    }
+
     checkReadyStatus();
 }
+
+// --- DB Settings & Sync Logic ---
+function updateDbConfigUI(isConnected, errorMsg) {
+    fetch(`${API_BASE}/api/db/config`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                currentDbHost.textContent = data.config.host;
+                if (isConnected) {
+                    currentDbStatus.textContent = "연결됨 ✅";
+                    currentDbStatus.style.color = "#059669";
+                } else {
+                    currentDbStatus.textContent = `연결 안 됨 ❌ (${errorMsg || '알 수 없는 오류'})`;
+                    currentDbStatus.style.color = "#ef4444";
+                }
+            }
+        });
+}
+
+btnOpenDbSettings.addEventListener('click', () => {
+    dbSettingsModal.style.display = 'block';
+    updateDbConfigUI(true);
+});
+
+[closeDbSettingsBtn, closeDbSettingsBottomBtn].forEach(btn => {
+    btn.addEventListener('click', () => dbSettingsModal.style.display = 'none');
+});
+
+btnSavePhoneIp.addEventListener('click', () => {
+    const ip = phoneDbIp.value.trim();
+    const port = phoneDbPort.value.trim();
+    if (!ip || !port) return alert("주소와 포트를 입력하세요.");
+    localStorage.setItem('phoneDbIp', ip);
+    localStorage.setItem('phoneDbPort', port);
+    alert("폰 접속 정보(DDNS/IP)가 저장되었습니다.");
+});
+
+switchToCloud.addEventListener('click', async () => {
+    if (!confirm("클라우드 DB(cloudtype)로 전환하시겠습니까?")) return;
+    const resp = await fetch(`${API_BASE}/api/db/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ host: 'svc.sel3.cloudtype.app', user: 'root', port: 30554, database: 'excel_compare' })
+    });
+    const data = await resp.json();
+    alert(data.message);
+    updateDbConfigUI(data.success, data.message);
+    loadProductMaster(); // 마스터 새로고침
+});
+
+switchToPhone.addEventListener('click', async () => {
+    const ip = phoneDbIp.value.trim();
+    const port = phoneDbPort.value.trim() || '5432';
+    if (!ip) return alert("폰 주소를 먼저 설정하고 저장해주세요.");
+    if (!confirm(`폰 DB(${ip}:${port})로 전환하시겠습니까?`)) return;
+
+    const resp = await fetch(`${API_BASE}/api/db/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ host: ip, user: 'u0_a286', port: Number(port), database: 'u0_a286', password: '', ssl: false })
+    });
+    const data = await resp.json();
+    alert(data.message);
+    updateDbConfigUI(data.success, data.message);
+    loadProductMaster(); // 마스터 새로고침
+});
+
+async function startSync(direction) {
+    const ip = phoneDbIp.value.trim();
+    const port = phoneDbPort.value.trim() || '5432';
+    if (!ip) return alert("폰 주소가 필요합니다.");
+    const msg = direction === 'to_phone' ? "클라우드 ➜ 폰 전송을 시작하시겠습니까?" : "폰 ➜ 클라우드 백업을 시작하시겠습니까?";
+    if (!confirm(msg)) return;
+
+    syncProgress.style.display = 'block';
+    syncProgressBar.style.width = '0%';
+    syncStatusText.textContent = "동기화 준비 중...";
+
+    const phoneConfig = { host: ip, user: 'u0_a286', port: Number(port), database: 'u0_a286', password: '', ssl: false };
+
+    try {
+        const resp = await fetch(`${API_BASE}/api/db/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ direction, phoneConfig })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            syncProgressBar.style.width = '100%';
+            syncStatusText.textContent = "동기화 완료!";
+            let resultMsg = "✅ 동기화 결과:\n";
+            data.results.forEach(r => {
+                resultMsg += `- ${r.table}: ${r.success ? `${r.count}건 완료` : `실패(${r.error})`}\n`;
+            });
+            alert(resultMsg);
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (err) {
+        alert("동기화 실패: " + err.message);
+        syncStatusText.textContent = "실패: " + err.message;
+    } finally {
+        setTimeout(() => { syncProgress.style.display = 'none'; }, 3000);
+    }
+}
+
+syncToPhone.addEventListener('click', () => startSync('to_phone'));
+syncToCloud.addEventListener('click', () => startSync('to_cloud'));
 
 if (document.readyState === 'loading') {
     window.addEventListener('DOMContentLoaded', initializeApp);
@@ -466,10 +782,7 @@ async function loadProductMaster() {
             const apiData = await response.json();
             if (apiData.success) {
                 productMaster = apiData.masterData;
-                console.log(`✅ 제품 마스터 ${productMaster.length}건 로드 완료 (서버 기반)`);
-                if (productMaster.length > 0) {
-                    console.log(`🔍 [Sample]`, productMaster[0]);
-                }
+                console.log(`✅ 제품 마스터 ${productMaster.length}건 로드 완료 (서버 DB)`);
                 if (statusMaster) {
                     statusMaster.innerHTML = `<i class="fas fa-database" style="color: #4361ee; margin-right:4px;"></i>상태: 클라우드 DB 연동 완료 (${productMaster.length.toLocaleString()}건)`;
                 }
@@ -477,7 +790,7 @@ async function loadProductMaster() {
                 throw new Error(apiData.message);
             }
         } else {
-            // Fallback to local json if server api fails or not available yet
+            // DB 연결 실패 시에만 로컬 JSON 시도
             const responseJson = await fetch('products.json');
             if (responseJson.ok) {
                 productMaster = await responseJson.json();
@@ -1429,8 +1742,15 @@ function updateDashboard() {
     const errorCntrs = new Set();
     const extraCntrs = new Set();
     const missingCntrs = new Set();
+    const holdCntrs = new Set();
 
     cntrSet.forEach(cntrNo => {
+        const ck = (cntrNo || "").trim().toUpperCase();
+        if (holdContainerMap.has(ck)) {
+            holdCntrs.add(ck);
+            return;
+        }
+
         const rows = comparisonResult.filter(r => r.cntrNo === cntrNo);
         const allNew = rows.every(r => r.qtyInfo.origPlan === null);
         const allMissing = rows.every(r => r.badgeClass === 'missing');
@@ -1455,12 +1775,14 @@ function updateDashboard() {
     const valDownExtraCntr = document.getElementById('valDownExtraCntr');
     const valOrigExtraCntr = document.getElementById('valOrigExtraCntr');
     const valUpdate = document.getElementById('valUpdate');
+    const holdCountEl = document.getElementById('holdCount');
 
     if (valTotalCntr) valTotalCntr.textContent = cntrSet.size;
     if (valSuccessCntr) valSuccessCntr.textContent = successCntrs.size;
     if (valErrorCntr) valErrorCntr.textContent = errorCntrs.size;
     if (valDownExtraCntr) valDownExtraCntr.textContent = extraCntrs.size;
     if (valOrigExtraCntr) valOrigExtraCntr.textContent = missingCntrs.size;
+    if (holdCountEl) holdCountEl.textContent = holdCntrs.size;
     if (valUpdate) valUpdate.textContent = (missingProductsSet ? missingProductsSet.size : 0) + (weightMismatchSet ? weightMismatchSet.size : 0);
 
     // 운송사 통계
@@ -1506,6 +1828,21 @@ function updateDashboard() {
             showCopyablePopup('제품정보 업데이트 필요 목록', items.join('\n'));
         });
         updateCard._hasClickHandler = true;
+    }
+
+    // 운송사 배정 현황 카드 클릭 이벤트 (반입정보 생성 탭으로 이동)
+    const transporterCard = document.getElementById('cardTransporter');
+    if (transporterCard && !transporterCard._hasClickHandler) {
+        transporterCard.style.cursor = 'pointer';
+        transporterCard.addEventListener('click', () => {
+            if (typeof setActiveTab === 'function') {
+                setActiveTab('entry');
+                if (comparisonResult && comparisonResult.length > 0) {
+                    displayResults(comparisonResult);
+                }
+            }
+        });
+        transporterCard._hasClickHandler = true;
     }
 }
 
@@ -1843,17 +2180,13 @@ btnCompare.addEventListener('click', async () => {
 // Helper to categorize a container's rows (matches updateDashboard logic)
 function getContainerStatus(results, cntrNo) {
     const rows = results.filter(r => r.cntrNo === cntrNo);
-    const allNew = rows.every(r => r.qtyInfo.origPlan === null);
-    const allMissing = rows.every(r => r.badgeClass === 'missing');
-    const hasError = rows.some(r => r.isErrorRow || r.badgeClass === 'diff');
+    const allNew = rows.every(r => r.qtyInfo.origPlan === null && !r.isApproved);
+    const allMissing = rows.every(r => r.badgeClass === 'missing' && !r.isApproved);
+    const hasError = rows.some(r => (r.isErrorRow || r.badgeClass === 'diff') && !r.isApproved);
 
-    if (allNew) {
-        const allNewNonAssetOnly = rows.every(r => r.badgeClass === 'success');
-        if (allNewNonAssetOnly) return 'success';
-        return 'extra';
-    }
+    if (allNew) return 'extra';
     if (allMissing) return 'missing';
-    if (hasError || rows.some(r => r.badgeClass === 'extra' || r.badgeClass === 'missing')) return 'error';
+    if (hasError || rows.some(r => (r.badgeClass === 'extra' || r.badgeClass === 'missing') && !r.isApproved)) return 'error';
     return 'success';
 }
 
@@ -1926,183 +2259,255 @@ function displayResults(results, isDbMode = false) {
     if (isDbMode) {
         displayData = results;
     } else {
-        // --- 검색 필터링 추가 ---
-        const searchInput = document.getElementById('inputSearch');
-        const searchTerm = (searchInput ? searchInput.value : "").trim().toUpperCase();
+        // --- 수동 승인 데이터 반영 ---
+        results.forEach(r => {
+            const approvalKey = `${(r.cntrNo || "").trim()}_${(r.prodName || "").trim()}`;
+            if (manualApprovedItems.has(approvalKey)) {
+                r.type = '승인(정상)';
+                r.badgeClass = 'success';
+                r.cssClass = 'row-success-manual';
+                r.isErrorRow = false;
+                r.isApproved = true;
+                r.adj1 = '원본파일없음 (기존오류원인)';
+                r.detail = '<span style="color: #059669; font-weight: bold;">[사용자 수동 승인완료]</span>';
+            } else {
+                r.isApproved = false;
+            }
+        });
 
-        if (searchTerm) {
+        // --- 보류 정보 동기화 및 요약 ---
+        const heldCntrs = new Set();
+        results.forEach(r => {
+            const ck = (r.cntrNo || "").trim().toUpperCase();
+            if (holdContainerMap.has(ck)) {
+                r.isHeld = true;
+                heldCntrs.add(ck);
+            } else {
+                r.isHeld = false;
+            }
+        });
+        const holdCountEl = document.getElementById('holdCount');
+        if (holdCountEl) holdCountEl.textContent = heldCntrs.size;
+
+        // 탭 필터링 시 컨테이너 상태를 판단하기 위해, 검색 필터 전의 전체 승인/보류 반영 리스트를 보관
+        const fullResultsForStatus = [...results];
+
+        // --- 검색 필터링 추가 (컨테이너 번호, 제품명, 제품구분) ---
+        const searchInput = document.getElementById('inputSearch');
+        const prodSearchInput = document.getElementById('inputProdSearch');
+        const prodTypeSelect = document.getElementById('selectProdType');
+
+        const searchTerm = (searchInput ? searchInput.value : "").trim().toUpperCase();
+        const prodSearchTerm = (prodSearchInput ? prodSearchInput.value : "").trim().toUpperCase();
+        const prodTypeFilter = (prodTypeSelect ? prodTypeSelect.value : "").trim().toUpperCase();
+
+        if (searchTerm || prodSearchTerm || prodTypeFilter) {
             results = results.filter(r => {
                 const cntr = (r.cntrNo || "").toUpperCase();
-                return cntr.includes(searchTerm);
+                const prod = (r.prodName || "").toUpperCase();
+                const type = (r.prodType || "").trim().toUpperCase();
+
+                let match = true;
+                if (searchTerm && !cntr.includes(searchTerm)) match = false;
+                if (prodSearchTerm && !prod.includes(prodSearchTerm)) match = false;
+                if (prodTypeFilter && type !== prodTypeFilter) match = false;
+
+                return match;
             });
         }
 
-        displayData = results;
-        if (currentFilter === 'all') {
-            // Exclude completely missing containers from the All view, UNLESS they have rework data
-            const missingCntrs = new Set(results.filter(r => {
-                if (r.source === 'rework') return false; // Never hide rework containers
-                return getContainerStatus(results, r.cntrNo) === 'missing';
-            }).map(r => r.cntrNo));
-            displayData = results.filter(r => !missingCntrs.has(r.cntrNo));
-        } else if (currentFilter === 'error') {
-            // Show rows from containers classified as "Error"
-            displayData = results.filter(r => getContainerStatus(results, r.cntrNo) === 'error');
-        } else if (currentFilter === 'success') {
-            // Show rows from containers classified as "Success"
-            displayData = results.filter(r => getContainerStatus(results, r.cntrNo) === 'success');
+        // --- 탭 필터링 로직 ---
+        if (currentFilter === 'hold') {
+            displayData = results.filter(r => r.isHeld);
+        } else {
+            // 보류 탭이 아닌 경우 보류 건은 무조건 제외
+            results = results.filter(r => !r.isHeld);
 
-            // 추가 필터: '모든 모델 작업완료 컨테이너만' 체크 시
-            if (chkFullyCompletedOnly && chkFullyCompletedOnly.checked) {
-                const incompleteCntrs = new Set(displayData.filter(r => {
-                    return r.type === '대기' || r.type === '작업중';
+            if (currentFilter === 'all') {
+                // Exclude completely missing containers from the All view, UNLESS they have rework data
+                const missingCntrs = new Set(results.filter(r => {
+                    if (r.source === 'rework') return false; // Never hide rework containers
+                    return getContainerStatus(fullResultsForStatus, r.cntrNo) === 'missing';
                 }).map(r => r.cntrNo));
-                displayData = displayData.filter(r => !incompleteCntrs.has(r.cntrNo));
+                displayData = results.filter(r => !missingCntrs.has(r.cntrNo));
+            } else if (currentFilter === 'error') {
+                displayData = results.filter(r => getContainerStatus(fullResultsForStatus, r.cntrNo) === 'error');
+            } else if (currentFilter === 'success') {
+                displayData = results.filter(r => getContainerStatus(fullResultsForStatus, r.cntrNo) === 'success');
+                if (chkFullyCompletedOnly && chkFullyCompletedOnly.checked) {
+                    const incompleteCntrs = new Set(displayData.filter(r => r.type === '대기' || r.type === '작업중').map(r => r.cntrNo));
+                    displayData = displayData.filter(r => !incompleteCntrs.has(r.cntrNo));
+
+                    // 완료된 컨테이너 수 표시
+                    const uniqueCntrs = new Set(displayData.map(r => r.cntrNo));
+                    const countSpan = document.getElementById('fullyCompletedCount');
+                    if (countSpan) {
+                        countSpan.textContent = `(${uniqueCntrs.size}건)`;
+                        countSpan.style.display = 'inline';
+                    }
+                } else {
+                    const countSpan = document.getElementById('fullyCompletedCount');
+                    if (countSpan) countSpan.style.display = 'none';
+                }
+            } else if (currentFilter === 'missing') {
+                displayData = results.filter(r => {
+                    const status = getContainerStatus(fullResultsForStatus, r.cntrNo);
+                    return status === 'extra' || status === 'missing';
+                });
+                displayData.sort((a, b) => {
+                    const statusA = getContainerStatus(results, a.cntrNo);
+                    const statusB = getContainerStatus(results, b.cntrNo);
+                    if (statusA === 'missing' && statusB !== 'missing') return -1;
+                    if (statusA !== 'missing' && statusB === 'missing') return 1;
+                    return a.cntrNo.localeCompare(b.cntrNo);
+                });
+            } else if (currentFilter === 'entry' || currentFilter === 'entry_unclassified') {
+                const aggregated = new Map();
+                let totalWeight = 0;
+
+                results.forEach(item => {
+                    const cleanTrans = (item.transporter || "").replace(/\(빨강\)|\(파랑\)/g, "").trim();
+                    const isTargetTrans = (currentFilter === 'entry') ? (cleanTrans !== "미분류") : (cleanTrans === "미분류");
+
+                    if (!isTargetTrans) return;
+                    // 전산 누락 컨테이너/모델도 합산 및 원인 분석을 위해 포함
+                    // (기존에는 여기서 return; 하여 원인 분석이 안 되었음)
+
+                    const key = `${item.cntrNo}_${item.transporter}`;
+
+                    if (!aggregated.has(key)) {
+                        const newItem = JSON.parse(JSON.stringify(item));
+                        newItem.transporter = cleanTrans;
+                        newItem.qtyDiffs = [];
+                        newItem.allProdNames = new Set([item.prodName]);
+                        newItem.mismatchReasons = new Set();
+                        newItem.mismatchDetails = {
+                            missingInDown: [], // 원본(O)에만 있고 전산(D)엔 없는 모델
+                            missingInOrig: [], // 전산(D)에만 있고 원본(O)엔 없는 모델
+                            qtyDiffs: [],      // 수량 다른 모델
+                            weightDiffs: [],   // 개별중량 기준 다른 모델
+                            noWeightInfo: []   // DB 중량 정보 없는 모델
+                        };
+
+                        if (item.badgeClass === 'missing') newItem.mismatchDetails.missingInDown.push({ name: item.prodName, qty: (item.qtyInfo ? item.qtyInfo.origPlan : '-') });
+                        else if (item.badgeClass === 'extra') newItem.mismatchDetails.missingInOrig.push({ name: item.prodName, qty: (item.qtyInfo ? item.qtyInfo.plan : '-') });
+                        else if (item.badgeClass === 'noproduct') newItem.mismatchDetails.noWeightInfo.push({ name: item.prodName });
+                        else if (item.badgeClass === 'update') newItem.mismatchDetails.weightDiffs.push({ name: item.prodName, db: item.unitWeight, current: item.currentUnitWeight });
+
+                        if (item.qtyInfo && item.qtyInfo.origPlan !== null && item.qtyInfo.plan !== null && item.qtyInfo.origPlan !== item.qtyInfo.plan) {
+                            newItem.mismatchDetails.qtyDiffs.push({ name: item.prodName, orig: item.qtyInfo.origPlan, down: item.qtyInfo.plan });
+                        }
+
+                        newItem._totalMixed = parseFloat(item.weights.mixed) || 0;
+                        newItem._totalOrig = parseFloat(item.weights.orig) || 0;
+                        newItem._totalDown = parseFloat(item.weights.down) || 0;
+                        newItem._totalCBM = parseFloat(item.totalCBM) || 0;
+                        aggregated.set(key, newItem);
+                    } else {
+                        const existing = aggregated.get(key);
+                        existing.allProdNames.add(item.prodName);
+
+                        if (item.badgeClass === 'missing') existing.mismatchDetails.missingInDown.push({ name: item.prodName, qty: (item.qtyInfo ? item.qtyInfo.origPlan : '-') });
+                        else if (item.badgeClass === 'extra') existing.mismatchDetails.missingInOrig.push({ name: item.prodName, qty: (item.qtyInfo ? item.qtyInfo.plan : '-') });
+                        else if (item.badgeClass === 'noproduct') existing.mismatchDetails.noWeightInfo.push({ name: item.prodName });
+                        else if (item.badgeClass === 'update') existing.mismatchDetails.weightDiffs.push({ name: item.prodName, db: item.unitWeight, current: item.currentUnitWeight });
+
+                        if (item.qtyInfo && item.qtyInfo.origPlan !== null && item.qtyInfo.plan !== null && item.qtyInfo.origPlan !== item.qtyInfo.plan) {
+                            existing.mismatchDetails.qtyDiffs.push({ name: item.prodName, orig: item.qtyInfo.origPlan, down: item.qtyInfo.plan });
+                        }
+
+                        existing._totalMixed += (parseFloat(item.weights.mixed) || 0);
+                        existing._totalOrig += (parseFloat(item.weights.orig) || 0);
+                        existing._totalDown += (parseFloat(item.weights.down) || 0);
+                        existing._totalCBM += (parseFloat(item.totalCBM) || 0);
+
+                        // 하나라도 오류가 있으면 전체를 오류로 처리
+                        if (item.isErrorRow) existing.isErrorRow = true;
+                        if (item.badgeClass === 'missing') existing.hasMissingModel = true;
+
+                        if (item.tags && item.tags.length > 0) {
+                            if (!existing.tags) existing.tags = [];
+                            item.tags.forEach(tag => {
+                                if (!existing.tags.some(t => t.text === tag.text)) existing.tags.push(tag);
+                            });
+                        }
+                    }
+                });
+
+                // Second pass to finalize values and calculate totalWeight
+                displayData = Array.from(aggregated.values()).map(item => {
+                    const choice = userSelectedWeights[item.cntrNo];
+                    if (choice === 'orig') {
+                        item.selectedTotalWeight = item._totalOrig;
+                    } else if (choice === 'down') {
+                        item.selectedTotalWeight = item._totalDown;
+                    } else {
+                        item.selectedTotalWeight = item._totalMixed;
+                    }
+
+                    // Finalize strings for display
+                    item.weights.mixed = item._totalMixed.toFixed(2);
+                    item.weights.orig = item._totalOrig.toFixed(2);
+                    item.weights.down = item._totalDown.toFixed(2);
+                    item.totalCBM = item._totalCBM.toFixed(2);
+
+                    // Determine if a critical weight mismatch exists
+                    item.isCriticalWeightMismatch = Math.abs(item._totalMixed - item._totalOrig) >= 1 && !userSelectedWeights[item.cntrNo];
+
+                    // 요약 집계 시 오류건(붉은색 건)은 배제
+                    const isError = item.isErrorRow || item.hasMissingModel || item.badgeClass === 'missing' || item.isCriticalWeightMismatch;
+                    if (!isError) {
+                        totalWeight += item.selectedTotalWeight;
+                    }
+
+                    return item;
+                });
+
+                const actualCounts = {};
+                displayData.forEach(item => {
+                    // 요약 집계 시 오류건은 배제 (메일 복사 시와 일치시킴)
+                    const isError = item.isErrorRow || item.hasMissingModel || item.badgeClass === 'missing' || item.isCriticalWeightMismatch;
+                    if (isError) return;
+
+                    const t = item.transporter;
+                    if (t) actualCounts[t] = (actualCounts[t] || 0) + 1;
+                });
+
+                const summaryContent = Object.entries(actualCounts)
+                    .sort((a, b) => {
+                        if (a[0] === '미분류') return 1;
+                        if (b[0] === '미분류') return -1;
+                        return a[0].localeCompare(b[0]);
+                    })
+                    .map(([name, count]) => `${name} ${count}개`)
+                    .join(' / ');
+
+                document.getElementById('entrySummaryContent').textContent = summaryContent || "결과 없음";
+                document.getElementById('entryTotalWeight').textContent = totalWeight.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('entrySummary').style.display = 'flex';
+
+                displayData.sort((a, b) => {
+                    const transA = (a.transporter || "");
+                    const transB = (b.transporter || "");
+                    if (transA !== transB) return transA.localeCompare(transB);
+
+                    if (a.isCriticalWeightMismatch && !b.isCriticalWeightMismatch) return -1;
+                    if (!a.isCriticalWeightMismatch && b.isCriticalWeightMismatch) return 1;
+                    return 0;
+                });
             }
-        } else if (currentFilter === 'missing') {
-            displayData = results.filter(r => {
-                const status = getContainerStatus(results, r.cntrNo);
-                return status === 'extra' || status === 'missing';
-            });
-            displayData.sort((a, b) => {
-                const statusA = getContainerStatus(results, a.cntrNo);
-                const statusB = getContainerStatus(results, b.cntrNo);
-                if (statusA === 'missing' && statusB !== 'missing') return -1;
-                if (statusA !== 'missing' && statusB === 'missing') return 1;
-                return a.cntrNo.localeCompare(b.cntrNo);
-            });
-        } else if (currentFilter === 'entry' || currentFilter === 'entry_unclassified') {
-            const aggregated = new Map();
-            let totalWeight = 0;
-
-            results.forEach(item => {
-                const cleanTrans = (item.transporter || "").replace(/\(빨강\)|\(파랑\)/g, "").trim();
-                const isTargetTrans = (currentFilter === 'entry') ? (cleanTrans !== "미분류") : (cleanTrans === "미분류");
-
-                if (!isTargetTrans) return;
-                // 전산 누락 컨테이너/모델도 합산 및 원인 분석을 위해 포함
-                // (기존에는 여기서 return; 하여 원인 분석이 안 되었음)
-
-                const key = `${item.cntrNo}_${item.transporter}`;
-
-                if (!aggregated.has(key)) {
-                    const newItem = JSON.parse(JSON.stringify(item));
-                    newItem.transporter = cleanTrans;
-                    newItem.qtyDiffs = [];
-                    newItem.allProdNames = new Set([item.prodName]);
-                    newItem.mismatchReasons = new Set();
-                    newItem.mismatchDetails = {
-                        missingInDown: [], // 원본(O)에만 있고 전산(D)엔 없는 모델
-                        missingInOrig: [], // 전산(D)에만 있고 원본(O)엔 없는 모델
-                        qtyDiffs: [],      // 수량 다른 모델
-                        weightDiffs: [],   // 개별중량 기준 다른 모델
-                        noWeightInfo: []   // DB 중량 정보 없는 모델
-                    };
-
-                    if (item.badgeClass === 'missing') newItem.mismatchDetails.missingInDown.push({ name: item.prodName, qty: (item.qtyInfo ? item.qtyInfo.origPlan : '-') });
-                    else if (item.badgeClass === 'extra') newItem.mismatchDetails.missingInOrig.push({ name: item.prodName, qty: (item.qtyInfo ? item.qtyInfo.plan : '-') });
-                    else if (item.badgeClass === 'noproduct') newItem.mismatchDetails.noWeightInfo.push({ name: item.prodName });
-                    else if (item.badgeClass === 'update') newItem.mismatchDetails.weightDiffs.push({ name: item.prodName, db: item.unitWeight, current: item.currentUnitWeight });
-
-                    if (item.qtyInfo && item.qtyInfo.origPlan !== null && item.qtyInfo.plan !== null && item.qtyInfo.origPlan !== item.qtyInfo.plan) {
-                        newItem.mismatchDetails.qtyDiffs.push({ name: item.prodName, orig: item.qtyInfo.origPlan, down: item.qtyInfo.plan });
-                    }
-
-                    newItem._totalMixed = parseFloat(item.weights.mixed) || 0;
-                    newItem._totalOrig = parseFloat(item.weights.orig) || 0;
-                    newItem._totalDown = parseFloat(item.weights.down) || 0;
-                    newItem._totalCBM = parseFloat(item.totalCBM) || 0;
-                    aggregated.set(key, newItem);
-                } else {
-                    const existing = aggregated.get(key);
-                    existing.allProdNames.add(item.prodName);
-
-                    if (item.badgeClass === 'missing') existing.mismatchDetails.missingInDown.push({ name: item.prodName, qty: (item.qtyInfo ? item.qtyInfo.origPlan : '-') });
-                    else if (item.badgeClass === 'extra') existing.mismatchDetails.missingInOrig.push({ name: item.prodName, qty: (item.qtyInfo ? item.qtyInfo.plan : '-') });
-                    else if (item.badgeClass === 'noproduct') existing.mismatchDetails.noWeightInfo.push({ name: item.prodName });
-                    else if (item.badgeClass === 'update') existing.mismatchDetails.weightDiffs.push({ name: item.prodName, db: item.unitWeight, current: item.currentUnitWeight });
-
-                    if (item.qtyInfo && item.qtyInfo.origPlan !== null && item.qtyInfo.plan !== null && item.qtyInfo.origPlan !== item.qtyInfo.plan) {
-                        existing.mismatchDetails.qtyDiffs.push({ name: item.prodName, orig: item.qtyInfo.origPlan, down: item.qtyInfo.plan });
-                    }
-
-                    existing._totalMixed += (parseFloat(item.weights.mixed) || 0);
-                    existing._totalOrig += (parseFloat(item.weights.orig) || 0);
-                    existing._totalDown += (parseFloat(item.weights.down) || 0);
-                    existing._totalCBM += (parseFloat(item.totalCBM) || 0);
-
-                    if (item.tags && item.tags.length > 0) {
-                        if (!existing.tags) existing.tags = [];
-                        item.tags.forEach(tag => {
-                            if (!existing.tags.some(t => t.text === tag.text)) existing.tags.push(tag);
-                        });
-                    }
-                }
-            });
-
-            // Second pass to finalize values and calculate totalWeight
-            displayData = Array.from(aggregated.values()).map(item => {
-                const choice = userSelectedWeights[item.cntrNo];
-                if (choice === 'orig') {
-                    item.selectedTotalWeight = item._totalOrig;
-                } else if (choice === 'down') {
-                    item.selectedTotalWeight = item._totalDown;
-                } else {
-                    item.selectedTotalWeight = item._totalMixed;
-                }
-
-                // Finalize strings for display
-                item.weights.mixed = item._totalMixed.toFixed(2);
-                item.weights.orig = item._totalOrig.toFixed(2);
-                item.weights.down = item._totalDown.toFixed(2);
-                item.totalCBM = item._totalCBM.toFixed(2);
-
-                // Determine if a critical weight mismatch exists
-                item.isCriticalWeightMismatch = Math.abs(item._totalMixed - item._totalOrig) >= 1 && !userSelectedWeights[item.cntrNo];
-
-                totalWeight += item.selectedTotalWeight;
-                return item;
-            });
-
-            const actualCounts = {};
-            displayData.forEach(item => {
-                const t = item.transporter;
-                if (t) actualCounts[t] = (actualCounts[t] || 0) + 1;
-            });
-
-            const summaryContent = Object.entries(actualCounts)
-                .sort((a, b) => {
-                    if (a[0] === '미분류') return 1;
-                    if (b[0] === '미분류') return -1;
-                    return a[0].localeCompare(b[0]);
-                })
-                .map(([name, count]) => `${name} ${count}개`)
-                .join(' / ');
-
-            document.getElementById('entrySummaryContent').textContent = summaryContent || "결과 없음";
-            document.getElementById('entryTotalWeight').textContent = totalWeight.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            document.getElementById('entrySummary').style.display = 'flex';
-
-            // Sort: Priority 1: Critical weight mismatch (not selected yet)
-            // Priority 2: Transporter name
-            displayData.sort((a, b) => {
-                if (a.isCriticalWeightMismatch && !b.isCriticalWeightMismatch) return -1;
-                if (!a.isCriticalWeightMismatch && b.isCriticalWeightMismatch) return 1;
-                return a.transporter.localeCompare(b.transporter);
-            });
         }
     }
 
+
+    // 'entry' 또는 'entry_unclassified' 탭이 아닌 경우 entrySummary를 숨김
     if (currentFilter !== 'entry' && currentFilter !== 'entry_unclassified') {
         const entrySummary = document.getElementById('entrySummary');
         if (entrySummary) entrySummary.style.display = 'none';
     }
 
-    // DB 검색 모드일 때 탭 필터 로직 우회 끝
-    if (isDbMode) {
-        const entrySummary = document.getElementById('entrySummary');
-        if (entrySummary) entrySummary.style.display = 'none';
-    }
+    // --- 검색 UI 갱신 (초기화 버튼 색상 및 검색 건수) ---
+    refreshSearchUI();
 
     // 헤더 업데이트 함수 호출
     updateTableHeaders(currentFilter);
@@ -2128,6 +2533,7 @@ function displayResults(results, isDbMode = false) {
             if (res.cssClass) rowClasses.push(res.cssClass);
             if (prevCntr !== null && prevCntr !== res.cntrNo) rowClasses.push('border-group');
             if (selectedItems.has(itemKey)) rowClasses.push('selected-row');
+            if (res.isHeld) rowClasses.push('row-held');
 
             prevCntr = res.cntrNo;
             tr.className = rowClasses.join(' ');
@@ -2236,7 +2642,15 @@ function displayResults(results, isDbMode = false) {
                     <td style="text-align: center;">${res.carrierName.val}</td>
                     <td style="text-align: center;">${res.cntrType.val}</td>
                     <td style="text-align: center; color: ${/^(US|CA)/i.test(res.destination.val) ? 'inherit' : '#ef4444'}; font-weight: ${/^(US|CA)/i.test(res.destination.val) ? 'normal' : 'bold'};">${res.destination.val}</td>
-                    <td style="color: ${effectiveCntrColor}; ${hasPop ? 'font-style:italic;' : ''}"><strong>${res.cntrNo}</strong>${hasPop ? `<span style="display:inline-block;margin-left:3px;font-size:0.65rem;background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;border-radius:4px;padding:0px 4px;vertical-align:middle;">POP</span>` : ''}</td>
+                    <td style="color: ${effectiveCntrColor}; ${hasPop ? 'font-style:italic;' : ''}">
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <strong onclick="window.copyToClipboard('${res.cntrNo.replace(/'/g, "\\'")}', '컨테이너')" 
+                                    style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
+                                    title="클릭하여 컨테이너 복사"
+                                    class="copyable-item">${res.cntrNo}</strong>
+                            ${hasPop ? `<span style="display:inline-block;margin-left:3px;font-size:0.65rem;background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;border-radius:4px;padding:0px 4px;vertical-align:middle;">POP</span>` : ''}
+                        </div>
+                    </td>
                     <td style="text-align: center; color: #3b82f6; font-weight: 500;">${res.sealNo || '-'}</td>
                     <td class="col-gw-entry" style="text-align: right; font-weight: 700; vertical-align: top; padding-top: 8px;">
                         ${(() => {
@@ -2277,7 +2691,8 @@ function displayResults(results, isDbMode = false) {
                     <td><span class="badge" style="background: ${res.transporter.includes('천마') ? '#fee2e2; color: #b91c1c' : '#dbeafe; color: #1d4ed8'}; border: none; padding: 4px 8px; font-weight: 600;">${res.transporter}</span></td>
                 `;
 
-                if (res.isErrorRow && finalDetailHtml && finalDetailHtml.trim() !== '-' && !finalDetailHtml.includes('위와 동일')) {
+                const hasMeaningfulError = res.isErrorRow && detailHtml && detailHtml !== '-';
+                if (hasMeaningfulError && !finalDetailHtml.includes('위와 동일')) {
                     const trError = document.createElement('tr');
                     trError.style.backgroundColor = '#fef2f2';
                     trError.innerHTML = `<td colspan="10" style="padding: 4px 12px; font-size: 0.85rem; color: #b91c1c; border-bottom: 2px solid #fca5a5;">
@@ -2289,15 +2704,57 @@ function displayResults(results, isDbMode = false) {
                     tr._trError = trError;
                 }
             } else {
+                const isSelectable = (currentFilter === 'all' || currentFilter === 'success' || currentFilter === 'hold' || currentFilter === 'error');
                 tr.innerHTML = `
+                    ${isSelectable ? `
+                        <td class="col-select" style="text-align: center;">
+                            <input type="checkbox" ${selectedItems.has(itemKey) ? 'checked' : ''} 
+                                   onchange="window.toggleSelectItem('${itemKey}', event)" 
+                                   style="width: 16px; height: 16px; cursor: pointer;">
+                        </td>
+                    ` : ''}
+                    ${(currentFilter === 'error' || currentFilter === 'missing') ? `
+                        <td class="col-manage" style="text-align: center;">
+                            ${(() => {
+                            const isHType = (res.prodType || '').toUpperCase() === 'H';
+                            const isMissingOrExtra = res.badgeClass === 'missing' || res.badgeClass === 'extra' || res.rowBadge === 'extra';
+
+                            if (res.isApproved) {
+                                return `<button class="btn btn-secondary" style="padding: 2px 6px; font-size: 0.75rem;" onclick="window.cancelApproveHItem('${res.cntrNo}', '${res.prodName}')">승인취소</button>`;
+                            }
+                            if (isHType && isMissingOrExtra) {
+                                return `<button class="btn btn-primary" style="padding: 2px 6px; font-size: 0.75rem; background-color: #7c3aed; border-color: #7c3aed;" onclick="window.approveHItem('${res.cntrNo}', '${res.prodName}')">승인</button>`;
+                            }
+                            return '-';
+                        })()}
+                        </td>
+                    ` : ''}
                     <td class="col-work"><span class="badge ${res.badgeClass}">${res.type}</span></td>
                     <td class="col-cntr" style="padding-top: 4px; padding-bottom: 4px;">
-                        <div style="color: ${cntrColor}; border-bottom: ${tagsHtml ? '1px dashed #cbd5e1' : 'none'}; padding-bottom: ${tagsHtml ? '3px' : '0'}; margin-bottom: ${tagsHtml ? '4px' : '0'}; line-height: 1;"><strong>${res.cntrNo}</strong></div>
+                        <div style="display: flex; align-items: center; gap: 6px; color: ${cntrColor}; border-bottom: ${tagsHtml ? '1px dashed #cbd5e1' : 'none'}; padding-bottom: ${tagsHtml ? '3px' : '0'}; margin-bottom: ${tagsHtml ? '4px' : '0'}; line-height: 1;">
+                            ${currentFilter === 'hold' ? `
+                                <button class="btn-hold-toggle held" 
+                                        onclick="window.toggleContainerHold('${res.cntrNo}', event)" 
+                                        title="보류 해제">
+                                    <i class="fas fa-pause-circle"></i>
+                                </button>
+                            ` : ''}
+                            <strong onclick="window.copyToClipboard('${res.cntrNo.replace(/'/g, "\\'")}', '컨테이너')" 
+                                    style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
+                                    class="copyable-item"
+                                    title="클릭하여 컨테이너 복사">${res.cntrNo}</strong>
+                        </div>
                         ${tagsHtml ? `<div style="display: flex; flex-direction: column; gap: 2px; justify-content: center; line-height: 1;">${tagsHtml}</div>` : ''}
                     </td>
                     <td class="col-type" style="${(res.prodType || '').toUpperCase() === 'H' ? 'color: #7c3aed; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'Q' ? 'color: #0d9488; font-weight: 700;' : ''}">${res.prodType || '-'}</td>
                     <td class="col-div">${res.division || '-'}</td>
-                    <td class="col-model" style="${(res.prodType || '').toUpperCase() === 'H' ? 'color: #7c3aed; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'Q' ? 'color: #0d9488; font-weight: 700;' : ''}">${res.prodName}${getDongTag(res.prodName, res.prodType)}</td>
+                    <td class="col-model" 
+                        onclick="window.copyToClipboard('${res.prodName.replace(/'/g, "\\'")}', '제품명')"
+                        style="cursor: pointer; ${(res.prodType || '').toUpperCase() === 'H' ? 'color: #7c3aed; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'Q' ? 'color: #0d9488; font-weight: 700;' : ''}"
+                        title="클릭하여 제품명 복사"
+                        class="copyable-item">
+                        ${res.prodName}${getDongTag(res.prodName, res.prodType)}
+                    </td>
                     <td class="col-qty" style="font-size: 0.9em;">${renderQtyMismatch(res.qtyInfo)}</td>
                     <td class="col-spec">${renderMismatch(res.cntrType.orig, res.cntrType.val, res.cntrType.isMismatch)}</td>
                     <td class="col-dims">${res.dims || '-'}</td>
@@ -2323,45 +2780,67 @@ function displayResults(results, isDbMode = false) {
                                 <div style="text-align: center; color: #ef4444; font-weight: 800;">${diffStr}</div>`;
                     })()}
                     </td>
-                    <td class="col-adj1" style="font-size: 0.8rem; line-height: 1.4; color: #475569;">
-                        ${(() => {
-                        // 1. DB 조회 모드거나 정상컨테이너 탭인 경우 -> 추가정보(adj1) 표시
+                    ${(currentFilter === 'all' || currentFilter === 'error' || currentFilter === 'missing') ? `
+                        <td class="col-error-detail" colspan="2" style="font-size: 0.8rem; line-height: 1.4; color: #475569;">
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                ${res.isErrorRow ? finalDetailHtml : ''}
+                                ${(() => {
+                            let extraItems = [];
+                            if (res.adj1 && res.adj1 !== '-') {
+                                let adj1ColorStr = 'inherit';
+                                if (res.adj1Color) {
+                                    adj1ColorStr = res.adj1Color.startsWith('FF') ? '#' + res.adj1Color.substring(2) : res.adj1Color;
+                                }
+                                extraItems.push(`<span style="color: ${adj1ColorStr}; font-weight: 500;">${res.adj1}</span>`);
+                            }
+                            if (res.adj2 && res.adj2 !== '-') extraItems.push(`<span>${res.adj2}</span>`);
+
+                            if (extraItems.length > 0) {
+                                const needsSep = res.isErrorRow;
+                                return `<div style="color: #64748b; ${needsSep ? 'border-top: 1px dotted #e2e8f0; padding-top: 3px; margin-top: 2px;' : ''}">${extraItems.join(' | ')}</div>`;
+                            }
+                            return res.isErrorRow ? '' : '-';
+                        })()}
+                            </div>
+                        </td>
+                    ` : `
+                        <td class="col-adj1" style="font-size: 0.8rem; line-height: 1.4; color: #475569;">
+                            ${(() => {
+                        const val = res.adj1 || '-';
                         if (isDbMode || currentFilter === 'success') {
                             let adj1ColorStr = 'inherit';
                             if (res.adj1Color) {
                                 adj1ColorStr = res.adj1Color.startsWith('FF') ? '#' + res.adj1Color.substring(2) : res.adj1Color;
                             }
-                            return `<div class="detail-text" style="color: ${adj1ColorStr}; font-weight: 500;">${res.adj1 || '-'}</div>`;
+                            return `<div class="detail-text" style="color: ${adj1ColorStr}; font-weight: 500;">${val}</div>`;
                         }
-
-                        // 2. 전체 데이터 보기 탭인 경우
-                        if (currentFilter === 'all') {
-                            // 오류가 있으면 -> 상세사유(finalDetailHtml)만 표시 (사용자 요청: 오류표기, 추가정보X)
-                            if (res.isErrorRow) {
-                                return finalDetailHtml;
-                            }
-                            // 오류가 없으면 -> 추가정보(adj1) 표시
-                            else {
-                                let adj1ColorStr = 'inherit';
-                                if (res.adj1Color) {
-                                    adj1ColorStr = res.adj1Color.startsWith('FF') ? '#' + res.adj1Color.substring(2) : res.adj1Color;
-                                }
-                                return `<div class="detail-text" style="color: ${adj1ColorStr}; font-weight: 500;">${res.adj1 || '-'}</div>`;
-                            }
-                        }
-
-                        // 3. 그 외 (오류 탭 등) -> 상세사유(finalDetailHtml) 표시
                         return finalDetailHtml;
                     })()}
-                    </td>
+                        </td>
+                        <td class="col-adj2" style="font-size: 0.8rem; line-height: 1.4; color: #475569;">
+                            <div class="detail-text">${res.adj2 || '-'}</div>
+                        </td>
+                    `}
                 `;
+                // 컬럼 개수 계산 (기본 13개 + 선택/관리 컬럼 1개)
+                let colSpanCount = 13;
+                if (currentFilter === 'all' || currentFilter === 'success' || currentFilter === 'hold' || currentFilter === 'dbSearch' || currentFilter === 'error' || currentFilter === 'missing') colSpanCount = 14;
+
                 if (res.isErrorRow && finalDetailHtml && finalDetailHtml.trim() !== '-' && !finalDetailHtml.includes('위와 동일')) {
                     const trError = document.createElement('tr');
+                    trError.className = 'error-detail-row';
                     trError.style.backgroundColor = '#fef2f2';
-
-                    // 컬럼 개수 계산 (기본 12개 + 선택/관리 컬럼 1개)
-                    let colSpanCount = 12;
-                    if (currentFilter === 'success' || currentFilter === 'dbSearch') colSpanCount = 13;
+                    // 전체/오류/미분류 탭에서는 기본적으로 숨김 처리 (기존에는 전체 탭에서 항상 보였음)
+                    if (currentFilter === 'all' || currentFilter === 'error' || currentFilter === 'missing') {
+                        trError.style.display = 'none';
+                        tr.style.cursor = 'pointer';
+                        tr.title = '클릭하면 상세 오류 내용을 확인할 수 있습니다';
+                        tr.addEventListener('click', () => {
+                            const isExpanded = trError.style.display !== 'none';
+                            trError.style.display = isExpanded ? 'none' : 'table-row';
+                            tr.style.backgroundColor = isExpanded ? '' : '#fef2f2';
+                        });
+                    }
 
                     trError.innerHTML = `<td colspan="${colSpanCount}" style="padding: 4px 12px; font-size: 0.85rem; color: #b91c1c; border-bottom: 2px solid #fca5a5;">
                         <div style="display: flex; align-items: center; gap: 8px;">
@@ -2371,116 +2850,82 @@ function displayResults(results, isDbMode = false) {
                     </td>`;
                     tr._trError = trError;
                 }
-            }
-            // --- 체크박스 및 선택 로직 공통 적용 ---
-            if (currentFilter === 'success' && !isDbMode) {
-                const tdCheck = document.createElement('td');
-                tdCheck.style.textAlign = 'center';
-                const chk = document.createElement('input');
-                chk.type = 'checkbox';
-                chk.checked = selectedItems.has(itemKey);
-                chk.onclick = (e) => {
-                    e.stopPropagation();
-                    if (chk.checked) {
-                        selectedItems.add(itemKey);
-                        tr.classList.add('selected-row');
-                    } else {
-                        selectedItems.delete(itemKey);
-                        tr.classList.remove('selected-row');
-                    }
-                    updateSelectionUI();
-                };
-                tdCheck.appendChild(chk);
-                tr.prepend(tdCheck); // 가장 앞에 추가
 
-                // 행 클릭 시 체크박스 토글
-                tr.onclick = () => {
-                    chk.checked = !chk.checked;
-                    if (chk.checked) {
-                        selectedItems.add(itemKey);
-                        tr.classList.add('selected-row');
-                    } else {
-                        selectedItems.delete(itemKey);
-                        tr.classList.remove('selected-row');
-                    }
-                    updateSelectionUI();
-                };
-            }
+                // DB 검색 모드: 관리 버튼 (삭제) 추가
+                if (isDbMode) {
+                    const tdManage = document.createElement('td');
+                    tdManage.style.textAlign = 'center';
 
-            // DB 검색 모드: 관리 버튼 (삭제) 추가
-            if (isDbMode) {
-                const tdManage = document.createElement('td');
-                tdManage.style.textAlign = 'center';
+                    // 개별 선택 체크박스
+                    const chk = document.createElement('input');
+                    chk.type = 'checkbox';
+                    chk.className = 'db-row-chk';
+                    chk.dataset.id = res.dbId;
+                    chk.style.marginRight = '8px';
+                    chk.onclick = (e) => {
+                        e.stopPropagation();
+                        const total = document.querySelectorAll('.db-row-chk').length;
+                        const checked = document.querySelectorAll('.db-row-chk:checked').length;
+                        document.getElementById('dbSelectedCount').textContent = checked;
+                        document.getElementById('chkDbAll').checked = (total === checked);
+                    };
 
-                // 개별 선택 체크박스
-                const chk = document.createElement('input');
-                chk.type = 'checkbox';
-                chk.className = 'db-row-chk';
-                chk.dataset.id = res.dbId;
-                chk.style.marginRight = '8px';
-                chk.onclick = (e) => {
-                    e.stopPropagation();
-                    const total = document.querySelectorAll('.db-row-chk').length;
-                    const checked = document.querySelectorAll('.db-row-chk:checked').length;
-                    document.getElementById('dbSelectedCount').textContent = checked;
-                    document.getElementById('chkDbAll').checked = (total === checked);
-                };
+                    const btnDel = document.createElement('button');
+                    btnDel.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                    btnDel.className = 'btn-icon-delete';
+                    btnDel.style.cssText = 'background:none; border:none; color:#ef4444; cursor:pointer; padding:5px; transition:all 0.2s;';
+                    btnDel.title = 'DB에서 삭제';
 
-                const btnDel = document.createElement('button');
-                btnDel.innerHTML = '<i class="fas fa-trash-alt"></i>';
-                btnDel.className = 'btn-icon-delete';
-                btnDel.style.cssText = 'background:none; border:none; color:#ef4444; cursor:pointer; padding:5px; transition:all 0.2s;';
-                btnDel.title = 'DB에서 삭제';
+                    btnDel.onclick = async (e) => {
+                        e.stopPropagation();
+                        if (!confirm('이 레코드를 데이터베이스에서 영구적으로 삭제하시겠습니까?')) return;
 
-                btnDel.onclick = async (e) => {
-                    e.stopPropagation();
-                    if (!confirm('이 레코드를 데이터베이스에서 영구적으로 삭제하시겠습니까?')) return;
-
-                    try {
-                        const resp = await fetch(`${API_BASE}/api/db-record/${res.dbId}`, { method: 'DELETE' });
-                        const result = await resp.json();
-                        if (result.success) {
-                            alert('삭제되었습니다.');
-                            displayData = displayData.filter(d => d.dbId !== res.dbId);
-                            const uniqueCntrs = new Set(displayData.map(d => d.cntrNo));
-                            document.getElementById('dbTotalItems').textContent = displayData.length.toLocaleString();
-                            document.getElementById('dbTotalCntrs').textContent = uniqueCntrs.size.toLocaleString();
-                            tr.remove();
-                            if (tr._detailTr) tr._detailTr.remove();
-                        } else {
-                            alert('삭제 실패: ' + result.message);
+                        try {
+                            const resp = await fetch(`${API_BASE}/api/db-record/${res.dbId}`, { method: 'DELETE' });
+                            const result = await resp.json();
+                            if (result.success) {
+                                alert('삭제되었습니다.');
+                                displayData = displayData.filter(d => d.dbId !== res.dbId);
+                                lastDbSearchResults = displayData; // 전역 유지 변수도 갱신
+                                const uniqueCntrs = new Set(displayData.map(d => d.cntrNo));
+                                document.getElementById('dbTotalItems').textContent = displayData.length.toLocaleString();
+                                document.getElementById('dbTotalCntrs').textContent = uniqueCntrs.size.toLocaleString();
+                                tr.remove();
+                                if (tr._detailTr) tr._detailTr.remove();
+                            } else {
+                                alert('삭제 실패: ' + result.message);
+                            }
+                        } catch (err) {
+                            alert('통신 오류: ' + err.message);
                         }
-                    } catch (err) {
-                        alert('통신 오류: ' + err.message);
-                    }
-                };
+                    };
 
-                tdManage.appendChild(chk);
-                tdManage.appendChild(btnDel);
-                tr.prepend(tdManage);
-            }
+                    tdManage.appendChild(chk);
+                    tdManage.appendChild(btnDel);
+                    tr.prepend(tdManage);
+                }
 
-            // --- 최종 행 Append ---
-            fragment.appendChild(tr);
-            if (tr._trError) fragment.appendChild(tr._trError);
+                // 정상컨테이너 탭: 클릭 시 확장 패널 추가
+                if ((currentFilter === 'success' || isDbMode) && currentFilter !== 'entry' && currentFilter !== 'entry_unclassified') {
+                    tr.style.cursor = 'pointer';
+                    tr.title = '클릭하면 원본 상세정보를 확인할 수 있습니다';
 
-            // 정상컨테이너 탭: 클릭 시 확장 패널 추가
-            if ((currentFilter === 'success' || isDbMode) && currentFilter !== 'entry' && currentFilter !== 'entry_unclassified') {
-                tr.style.cursor = 'pointer';
-                tr.title = '클릭하면 원본 상세정보를 확인할 수 있습니다';
+                    const detailTr = document.createElement('tr');
+                    detailTr.className = 'success-detail-row';
+                    detailTr.style.cssText = 'display:none; background: #f0f9ff; border-left: 3px solid #0ea5e9;';
 
-                const detailTr = document.createElement('tr');
-                detailTr.className = 'success-detail-row';
-                detailTr.style.cssText = 'display:none; background: #f0f9ff; border-left: 3px solid #0ea5e9;';
-
-                detailTr.innerHTML = `
-                    <td colspan="13" style="padding: 0; background-color: #f1f5f9;">
+                    detailTr.innerHTML = `
+                    <td colspan="${colSpanCount}" style="padding: 0; background-color: #f1f5f9;">
                         <div class="success-detail-container">
                             <div class="detail-card">
                                 <div class="detail-grid">
                                     <div class="detail-item">
                                         <span class="label"><i class="fas fa-tasks"></i> 작업명</span>
                                         <span class="value">${res.jobName || '-'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="label"><i class="fas fa-lock"></i> 씰정보</span>
+                                        <span class="value">${res.sealNo || '-'}</span>
                                     </div>
                                     <div class="detail-item">
                                         <span class="label"><i class="fas fa-calendar-alt"></i> 선적일</span>
@@ -2490,7 +2935,7 @@ function displayResults(results, isDbMode = false) {
                                         <span class="label"><i class="fas fa-ship"></i> 출항일</span>
                                         <span class="value date-etd">${res.etd || '-'}</span>
                                     </div>
-                                    <div class="detail-item" style="flex: 1; min-width: 450px;">
+                                    <div class="detail-item" style="flex: 1; min-width: 600px;">
                                         <span class="label"><i class="fas fa-comment-dots"></i> 리마크</span>
                                         <div class="remark-content">${res.origRemark || '-'}</div>
                                     </div>
@@ -2499,17 +2944,21 @@ function displayResults(results, isDbMode = false) {
                         </div>
                     </td>
                 `;
-                tr._detailTr = detailTr; // 참조 저장
+                    tr._detailTr = detailTr; // 참조 저장
 
-                tr.addEventListener('click', () => {
-                    const isExpanded = detailTr.style.display !== 'none';
-                    detailTr.style.display = isExpanded ? 'none' : 'table-row';
-                    tr.style.backgroundColor = isExpanded ? '' : '#f0f9ff';
-                });
-                fragment.appendChild(detailTr);
+                    tr.addEventListener('click', () => {
+                        const isExpanded = detailTr.style.display !== 'none';
+                        detailTr.style.display = isExpanded ? 'none' : 'table-row';
+                        tr.style.backgroundColor = isExpanded ? '' : '#f0f9ff';
+                    });
+                }
             }
-        }
 
+            // --- 최종 행 Append (Entry/정상 공통) ---
+            fragment.appendChild(tr);
+            if (tr._trError) fragment.appendChild(tr._trError);
+            if (tr._detailTr) fragment.appendChild(tr._detailTr);
+        }
 
         try {
             const rb = getResultBody();
@@ -2550,13 +2999,15 @@ function updateTableHeaders(filterName) {
             </tr>
         `;
     } else {
-        const isSuccessTab = filterName === 'success';
+        const isSelectableTab = filterName === 'all' || filterName === 'success' || filterName === 'hold' || filterName === 'error';
         const isDbSearchTab = filterName === 'dbSearch';
+        const isMergedColTab = filterName === 'all' || filterName === 'error' || filterName === 'missing';
+        const isErrorTab = filterName === 'error' || filterName === 'missing';
 
         tableHead.innerHTML = `
             <tr>
-                ${isSuccessTab ? '<th class="col-select">선택</th>' : ''}
-                ${isDbSearchTab ? '<th class="col-manage">관리</th>' : ''}
+                ${isSelectableTab ? '<th class="col-select">선택</th>' : ''}
+                ${(isDbSearchTab || isErrorTab) ? '<th class="col-manage">관리</th>' : ''}
                 <th class="col-work">작업구분</th>
                 <th class="col-cntr">컨테이너번호</th>
                 <th class="col-type">제품구분</th>
@@ -2568,7 +3019,12 @@ function updateTableHeaders(filterName) {
                 <th class="col-carrier">선사</th>
                 <th class="col-dest">도착지</th>
                 <th class="col-gw">GW</th>
-                <th class="col-adj1">추가정보</th>
+                ${isMergedColTab ? `
+                    <th class="col-error-detail" colspan="2" style="text-align: center;">${filterName === 'all' ? '상세내역 및 추가정보' : '상세오류내용'}</th>
+                ` : `
+                    <th class="col-adj1">추가정보1</th>
+                    <th class="col-adj2">추가정보2</th>
+                `}
             </tr>
         `;
     }
@@ -2580,12 +3036,13 @@ function setActiveTab(filterName) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
     const tabMap = {
-        'all': tabAll,
-        'success': tabSuccessOnly,
-        'error': tabErrorOnly,
-        'missing': tabMissingOnly,
-        'entry': tabEntryInfo,
-        'entry_unclassified': tabUnclassifiedEntry,
+        'all': document.getElementById('tabAll'),
+        'success': document.getElementById('tabSuccessOnly'),
+        'error': document.getElementById('tabErrorOnly'),
+        'missing': document.getElementById('tabMissingOnly'),
+        'hold': document.getElementById('tabHold'),
+        'entry': document.getElementById('tabEntryInfo'),
+        'entry_unclassified': document.getElementById('tabUnclassifiedEntry'),
         'dbSearch': document.getElementById('tabDbSearch')
     };
     if (tabMap[filterName]) tabMap[filterName].classList.add('active');
@@ -2631,23 +3088,49 @@ function setActiveTab(filterName) {
 
     const rb = getResultBody();
     if (filterName === 'dbSearch') {
-        // DB 검색 탭 진입 시 기존 결과를 지우고 안내 메시지 출력
-        if (rb) {
-            rb.innerHTML = '<tr><td colspan="12" style="text-align:center; padding: 2.5rem; color: #64748b; font-size: 1.05rem;"><i class="fas fa-search" style="font-size: 1.5rem; display: block; margin-bottom: 15px; color: #cbd5e1;"></i>상단의 다중 검색 필터를 입력하고 [검색] 버튼을 눌러주세요.</td></tr>';
+        // DB 검색 탭 진입 시: 기존 검색 결과가 있으면 재표시, 없으면 안내 메시지
+        if (lastDbSearchResults && lastDbSearchResults.length > 0) {
+            displayResults(lastDbSearchResults, true);
+        } else {
+            if (rb) {
+                rb.innerHTML = '<tr><td colspan="12" style="text-align:center; padding: 2.5rem; color: #64748b; font-size: 1.05rem;"><i class="fas fa-search" style="font-size: 1.5rem; display: block; margin-bottom: 15px; color: #cbd5e1;"></i>상단의 다중 검색 필터를 입력하고 [검색] 버튼을 눌러주세요.</td></tr>';
+            }
+            displayData = [];
+            updateSelectionUI();
         }
-        displayData = []; // Clear
-        updateSelectionUI();
     } else {
         if (comparisonResult.length > 0) displayResults(comparisonResult);
     }
 }
 
-if (tabAll) tabAll.addEventListener('click', () => setActiveTab('all'));
-if (tabSuccessOnly) tabSuccessOnly.addEventListener('click', () => setActiveTab('success'));
-if (tabErrorOnly) tabErrorOnly.addEventListener('click', () => setActiveTab('error'));
-if (tabMissingOnly) tabMissingOnly.addEventListener('click', () => setActiveTab('missing'));
-if (tabEntryInfo) tabEntryInfo.addEventListener('click', () => setActiveTab('entry'));
-if (tabUnclassifiedEntry) tabUnclassifiedEntry.addEventListener('click', () => setActiveTab('entry_unclassified'));
+// 탭 이벤트 리스너 재설정 함수 (초기화 및 수동 호출 가능)
+function initTabListeners() {
+    const attach = (id, filter) => {
+        const el = document.getElementById(id);
+        if (el) {
+            // 기존 리스너 제거는 어려우므로 새로 할당 (onclick 사용 혹은 cloneNode 사용 가능하나 여기선 안전하게 체크)
+            el.onclick = () => setActiveTab(filter);
+        }
+    };
+
+    attach('tabAll', 'all');
+    attach('tabSuccessOnly', 'success');
+    attach('tabErrorOnly', 'error');
+    attach('tabMissingOnly', 'missing');
+    attach('tabHold', 'hold');
+    attach('tabEntryInfo', 'entry');
+    attach('tabUnclassifiedEntry', 'entry_unclassified');
+    attach('tabDbSearch', 'dbSearch');
+
+    // 상단 요약 카드 클릭 이벤트 (대시보드 네비게이션)
+    attach('cardTotal', 'all');
+    attach('cardSuccess', 'success');
+    attach('cardError', 'error');
+    attach('cardExtra', 'missing');
+    attach('cardMissing', 'missing');
+}
+
+initTabListeners();
 const tabDbSearchObj = document.getElementById('tabDbSearch');
 if (tabDbSearchObj) {
     tabDbSearchObj.addEventListener('click', () => setActiveTab('dbSearch'));
@@ -2669,9 +3152,33 @@ btnDownloadResult.addEventListener('click', async () => {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('비교 결과');
 
-    // 현재 필터에 따라 내보낼 데이터와 헤더 결정
+    // 현재 필터 및 검색어에 따라 내보낼 데이터와 헤더 결정
     let exportData = [];
     let columns = [];
+
+    // 현재 UI에 적용된 검색어 및 필터 가져오기
+    const searchInput = document.getElementById('inputSearch');
+    const prodSearchInput = document.getElementById('inputProdSearch');
+    const prodTypeSelect = document.getElementById('selectProdType');
+
+    const searchTerm = (searchInput ? searchInput.value : "").trim().toUpperCase();
+    const prodSearchTerm = (prodSearchInput ? prodSearchInput.value : "").trim().toUpperCase();
+    const prodTypeFilter = (prodTypeSelect ? prodTypeSelect.value : "").trim().toUpperCase();
+
+    // 1. 기초 데이터 필터링 (검색어 반영)
+    let filteredResults = comparisonResult;
+    if (searchTerm || prodSearchTerm || prodTypeFilter) {
+        filteredResults = filteredResults.filter(r => {
+            const cntr = (r.cntrNo || "").toUpperCase();
+            const prod = (r.prodName || "").toUpperCase();
+            const type = (r.prodType || "").toUpperCase();
+            let match = true;
+            if (searchTerm && !cntr.includes(searchTerm)) match = false;
+            if (prodSearchTerm && !prod.includes(prodSearchTerm)) match = false;
+            if (prodTypeFilter && type !== prodTypeFilter) match = false;
+            return match;
+        });
+    }
 
     if (currentFilter === 'entry' || currentFilter === 'entry_unclassified') {
         // 반입정보 형식
@@ -2688,9 +3195,12 @@ btnDownloadResult.addEventListener('click', async () => {
             { header: '운송사', key: 'transporter', width: 12 }
         ];
 
-        // displayResults와 동일한 집계 로직 적용 (또는 displayResults의 결과를 재사용하게 구조 변경 가능하나 여기선 직접 재계산)
+        // displayResults와 동일한 집계 로직 적용 (검색어 필터링된 데이터 기반)
         const aggregated = new Map();
-        comparisonResult.forEach(item => {
+        filteredResults.forEach(item => {
+            // 보류 건은 반입정보에서도 제외 (사용자 요청)
+            if (holdContainerMap.has(item.cntrNo)) return;
+
             let isUnclassified = false;
             let cleanTrans = (item.transporter || "").toString().replace(/\(빨강\)|\(파랑\)|\(초록\)|\(주황\)/g, "").trim();
             if (!cleanTrans || cleanTrans === "-" || cleanTrans === "정보없음" || cleanTrans === "미분류" || cleanTrans === "미지정") {
@@ -2713,6 +3223,7 @@ btnDownloadResult.addEventListener('click', async () => {
                     sealNo: item.sealNo || "",
                     mixedWeight: item.weights.mixed === null ? 0 : (parseFloat(item.weights.mixed) || 0),
                     origWeight: item.weights.orig === null ? 0 : (parseFloat(item.weights.orig) || 0),
+                    downWeight: item.weights.down === null ? 0 : (parseFloat(item.weights.down) || 0),
                     isMismatch: item.weights.isMismatch,
                     issueModels: [],
                     origRemark: item.origRemark || "",
@@ -2732,6 +3243,7 @@ btnDownloadResult.addEventListener('click', async () => {
                 // Accumulate weights
                 existing.mixedWeight += (parseFloat(item.weights.mixed) || 0);
                 existing.origWeight += (parseFloat(item.weights.orig) || 0);
+                existing.downWeight += (parseFloat(item.weights.down) || 0);
 
                 if (item.weights.mixed === null) {
                     existing.issueModels.push(`${item.prodName}: 제품정보없음`);
@@ -2770,28 +3282,34 @@ btnDownloadResult.addEventListener('click', async () => {
             { header: '리마크', key: 'origRemark', width: 40 }
         ];
 
-        let filtered = comparisonResult;
-        if (currentFilter === 'error') {
-            filtered = comparisonResult.filter(r => getContainerStatus(comparisonResult, r.cntrNo) === 'error');
-        } else if (currentFilter === 'missing') {
-            filtered = comparisonResult.filter(r => {
-                const s = getContainerStatus(comparisonResult, r.cntrNo);
-                return s === 'extra' || s === 'missing';
-            });
+        let filtered = filteredResults;
+        if (currentFilter === 'hold') {
+            filtered = filteredResults.filter(r => holdContainerMap.has(r.cntrNo));
         } else {
-            // 정상컨테이너보기 (currentFilter === 'success' or 'all')
-            filtered = comparisonResult.filter(r => getContainerStatus(comparisonResult, r.cntrNo) === 'success');
+            // 보류 건은 다른 모든 탭에서 배제
+            filtered = filteredResults.filter(r => !holdContainerMap.has(r.cntrNo));
 
-            // 추가 필터: '모든 모델 작업완료 컨테이너만' 체크 시 (UI와 동일하게 적용)
-            if (chkFullyCompletedOnly && chkFullyCompletedOnly.checked && (currentFilter === 'success' || currentFilter === 'all')) {
-                const incompleteCntrs = new Set(filtered.filter(r => {
-                    return r.type === '작업대기' || r.type === '작업중';
-                }).map(r => r.cntrNo));
-
-                filtered = filtered.filter(r => !incompleteCntrs.has(r.cntrNo));
+            if (currentFilter === 'error') {
+                filtered = filtered.filter(r => getContainerStatus(comparisonResult, r.cntrNo) === 'error');
+            } else if (currentFilter === 'missing') {
+                filtered = filtered.filter(r => {
+                    const s = getContainerStatus(comparisonResult, r.cntrNo);
+                    return s === 'extra' || s === 'missing';
+                });
+            } else if (currentFilter === 'success') {
+                filtered = filtered.filter(r => getContainerStatus(comparisonResult, r.cntrNo) === 'success');
             }
+            // 'all', 'dbSearch' 등인 경우 추가 필터 없이 검색어 필터만 유지 (또는 탭 기본 필터)
         }
 
+        // 추가 필터: '모든 모델 작업완료 컨테이너만' 체크 시 (UI와 동일하게 적용)
+        if (chkFullyCompletedOnly && chkFullyCompletedOnly.checked && (currentFilter === 'success' || currentFilter === 'all')) {
+            const incompleteCntrs = new Set(filtered.filter(r => {
+                return r.type === '대기' || r.type === '작업중';
+            }).map(r => r.cntrNo));
+
+            filtered = filtered.filter(r => !incompleteCntrs.has(r.cntrNo));
+        }
         exportData = filtered.map(r => ({
             type: r.type,
             cntrNo: r.cntrNo,
@@ -2881,20 +3399,35 @@ btnDownloadResult.addEventListener('click', async () => {
                 data.transporter = `${data.transporter}\n(POP : ${popWeightExcel.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}kg 포함)`;
             }
 
-            if (data.mixedWeight === null || (data.issueModels && data.issueModels.length > 0)) {
-                // 제품정보없음이 포함되어 있거나 중량불일치가 있는 경우
+            const choiceExcel = userSelectedWeights[cntrKeyExcel];
+
+            if (!choiceExcel && (data.mixedWeight === null || (data.issueModels && data.issueModels.length > 0))) {
+                // 제품정보없음이 포함되어 있거나 중량불일치가 있는 경우 (그리고 사용자가 중량을 선택하지 않은 경우)
                 let mismatchText = (data.issueModels || []).join('\n');
                 if (hasPopExcel) mismatchText += `\n+POP: ${popWeightExcel.toFixed(2)}kg`;
                 data.grossWeightCombined = mismatchText;
             } else {
                 const wOrig = parseFloat(data.origWeight) || 0;
+                const wDown = parseFloat(data.downWeight) || 0;
                 const wMixed = parseFloat(data.mixedWeight) || 0;
-                const totalMixedExcel = wMixed + popWeightExcel;
+
+                let baseWeightToUse = wMixed;
+                let choiceNote = "";
+
+                if (choiceExcel === 'orig') {
+                    baseWeightToUse = wOrig;
+                    choiceNote = " (원본선택)";
+                } else if (choiceExcel === 'down') {
+                    baseWeightToUse = wDown;
+                    choiceNote = " (전산선택)";
+                }
+
+                const totalWeightFinal = baseWeightToUse + popWeightExcel;
 
                 if (hasPopExcel) {
-                    data.grossWeightCombined = `${totalMixedExcel.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n(기본 ${wMixed.toFixed(2)} + POP ${popWeightExcel.toFixed(2)})`;
+                    data.grossWeightCombined = `${totalWeightFinal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${choiceNote}\n(기본 ${baseWeightToUse.toFixed(2)} + POP ${popWeightExcel.toFixed(2)})`;
                 } else {
-                    data.grossWeightCombined = `${wMixed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} `;
+                    data.grossWeightCombined = `${totalWeightFinal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${choiceNote}`;
                 }
             }
         }
@@ -3000,106 +3533,141 @@ btnDownloadResult.addEventListener('click', async () => {
 loadCarrierMap();
 loadDynamicRules();
 
-// --- HTML 이메일 복사 기능 ---
-async function copyEntryToClipboard(transporterName) {
-    if (!displayData || displayData.length === 0) {
-        alert('복사할 데이터가 없습니다.');
-        return;
-    }
-
-    // 해당 운송사 데이터만 필터링
-    const targetData = displayData.filter(item => {
-        if (!item.transporter) return false;
-        const cleanTrans = item.transporter.replace(/\(빨강\)|\(파랑\)/g, "").trim();
-        return cleanTrans === transporterName;
-    });
-
-    if (targetData.length === 0) {
-        alert(`${transporterName}에 배정된 데이터가 없습니다.`);
-        return;
-    }
-
-    // HTML 테이블 구조 생성
-    let htmlContent = `
-        <div style="font-family: 'Malgun Gothic', 'Dotum', sans-serif; font-size: 13px;">
-            <h3 style="margin-bottom: 10px; color: #1e293b;">${transporterName} 반입정보</h3>
-            <table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; text-align: center; font-size: 12px;">
-                <thead>
-                    <tr style="background-color: #f1f5f9; color: #334155; font-weight: bold;">
-                        <th style="padding: 8px; border: 1px solid #cbd5e1;">선사</th>
-                        <th style="padding: 8px; border: 1px solid #cbd5e1;">규격</th>
-                        <th style="padding: 8px; border: 1px solid #cbd5e1;">F.DEST</th>
-                        <th style="padding: 8px; border: 1px solid #cbd5e1;">CTNR NO</th>
-                        <th style="padding: 8px; border: 1px solid #cbd5e1;">SEAL</th>
-                        <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">G/W</th>
-                        <th style="padding: 8px; border: 1px solid #cbd5e1;">모선항차 / 반입터미널</th>
-                        <th style="padding: 8px; border: 1px solid #cbd5e1;">출항일</th>
-                        <th style="padding: 8px; border: 1px solid #cbd5e1;">작업일</th>
-                        <th style="padding: 8px; border: 1px solid #cbd5e1;">운송사</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-
-    targetData.forEach(item => {
-        const carrier = item.carrierName ? item.carrierName.val : '-';
-        const type = item.cntrType ? item.cntrType.val : '-';
-        const dest = item.destination ? item.destination.val : '-';
-        // --- POP 무게 합산 ---
-        const cntrKeyMail = (item.cntrNo || '').trim().toUpperCase();
-        const popInfoMail = popWeightMap[cntrKeyMail];
-        const popWeightMail = popInfoMail ? (parseFloat(popInfoMail.weight) || 0) : 0;
-        const hasPopMail = popWeightMail > 0;
-
-        const baseWeightMail = item.weights ? (parseFloat(item.weights.mixed) || 0) : 0;
-        const weight = (baseWeightMail + popWeightMail).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-        // 원본 리마크에 POP 라벨 추가
-        let remarkMail = item.origRemark || '-';
-        if (hasPopMail) {
-            remarkMail = `<span style="color:#ea580c; font-weight:bold;">(POP : ${popWeightMail.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}kg)</span> ` + remarkMail;
+// --- HTML 이메일 서식 생성 공통 함수 ---
+function generateEntryMailHtml(transporterName) {
+    try {
+        if (!displayData || displayData.length === 0) {
+            alert('displayData가 비어있습니다.');
+            return null;
         }
 
-        // 출항일 포맷팅
-        let displayEtd = item.etd || '-';
-        if (displayEtd instanceof Date || (typeof displayEtd === 'string' && displayEtd.includes('GMT'))) {
-            try {
-                const d = new Date(displayEtd);
-                displayEtd = `${d.getMonth() + 1}월 ${d.getDate()}일`;
-            } catch (e) { }
+        const targetData = displayData.filter(item => {
+            if (!item.transporter) return false;
+
+            // 보류 필터
+            const ck = (item.cntrNo || "").trim().toUpperCase();
+            if (holdContainerMap.has(ck)) return false;
+
+            const hasChoice = !!userSelectedWeights[item.cntrNo];
+            const isCriticalMismatch = item.isCriticalWeightMismatch === true;
+
+            // 오류 필터
+            if (item.badgeClass === 'missing' || item.hasMissingModel === true || isCriticalMismatch) {
+                return false;
+            }
+
+            if (item.isErrorRow === true && !hasChoice) {
+                return false;
+            }
+
+            const cleanTrans = item.transporter.replace(/\(빨강\)|\(파랑\)/g, "").trim();
+            const match = cleanTrans === transporterName;
+            return match;
+        });
+
+        if (targetData.length === 0) {
+            alert(transporterName + ' 조건에 맞는 전송 가능 데이터가 0건입니다.\n(오류/누락/중량미선택 건은 제외됨)');
+            return null;
         }
 
-        // 작업일(오늘 날짜) 포맷팅
-        const today = new Date();
-        const displayWorkDate = `${today.getMonth() + 1}월 ${today.getDate()}일`;
+        let htmlContent = `
+            <div style="font-family: 'Malgun Gothic', 'Dotum', sans-serif; font-size: 13px; color: #334155;">
+                <div style="margin-bottom: 20px; padding: 15px; background-color: #f1f5f9; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <strong style="color: #475569;">수신:</strong> <span style="color: #2563eb; font-weight: bold;">[설정된 수신 주소]</span><br>
+                    <strong style="color: #475569;">제목:</strong> [반입정보] ${transporterName} ...
+                </div>
+                <h3 style="margin-top: 25px; margin-bottom: 15px; color: #1e293b; border-left: 4px solid #4361ee; padding-left: 12px; font-size: 1.1rem;">${transporterName} 반입정보</h3>
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; text-align: center; font-size: 12px; table-layout: auto;">
+                    <thead>
+                        <tr style="background-color: #f8fafc; color: #334155; font-weight: bold;">
+                            <th style="padding: 10px; border: 1px solid #cbd5e1; white-space: nowrap;">선사</th>
+                            <th style="padding: 10px; border: 1px solid #cbd5e1; white-space: nowrap;">규격</th>
+                            <th style="padding: 10px; border: 1px solid #cbd5e1; white-space: nowrap;">F.DEST</th>
+                            <th style="padding: 10px; border: 1px solid #cbd5e1; white-space: nowrap;">CTNR NO</th>
+                            <th style="padding: 10px; border: 1px solid #cbd5e1; white-space: nowrap;">SEAL</th>
+                            <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; white-space: nowrap;">G/W</th>
+                            <th style="padding: 10px; border: 1px solid #cbd5e1;">모선항차 / 반입터미널</th>
+                            <th style="padding: 10px; border: 1px solid #cbd5e1; white-space: nowrap;">출항일</th>
+                            <th style="padding: 10px; border: 1px solid #cbd5e1; white-space: nowrap;">작업일</th>
+                            <th style="padding: 10px; border: 1px solid #cbd5e1; white-space: nowrap;">운송사</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
 
-        let displayTransporter = item.transporter || '-';
-        if (hasPopMail) {
-            displayTransporter += `<br><span style="color:#ea580c; font-size:11px; font-weight:bold;">(POP : ${popWeightMail.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}kg 포함)</span>`;
-        }
+        targetData.forEach(item => {
+            const carrier = item.carrierName ? (item.carrierName.val || item.carrierName) : '-';
+            const type = item.cntrType ? (item.cntrType.val || item.cntrType) : '-';
+            const dest = item.destination ? (item.destination.val || item.destination) : '-';
+            const cntrKeyMail = (item.cntrNo || '').trim().toUpperCase();
+            const popInfoMail = popWeightMap[cntrKeyMail];
+            const popWeightMail = popInfoMail ? (parseFloat(popInfoMail.weight) || 0) : 0;
+            const hasPopMail = popWeightMail > 0;
+
+            const choiceMail = userSelectedWeights[cntrKeyMail];
+            const baseWeightMail = item.selectedTotalWeight || (item.weights ? (parseFloat(item.weights.mixed) || 0) : 0);
+            const weight = (baseWeightMail + popWeightMail).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const choiceNoteMail = choiceMail ? ` (${choiceMail === 'orig' ? '원본' : '전산'}선택)` : '';
+
+            let remarkMail = item.origRemark || '-';
+            if (hasPopMail) {
+                remarkMail = `<span style="color:#ea580c; font-weight:bold;">(POP : ${popWeightMail.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}kg)</span> ` + remarkMail;
+            }
+
+            let displayEtd = item.etd || '-';
+            if (displayEtd instanceof Date || (typeof displayEtd === 'string' && displayEtd.includes('GMT'))) {
+                try {
+                    const d = new Date(displayEtd);
+                    displayEtd = `${d.getMonth() + 1}월 ${d.getDate()}일`;
+                } catch (e) { }
+            }
+
+            const today = new Date();
+            const displayWorkDate = `${today.getMonth() + 1}월 ${today.getDate()}일`;
+
+            let displayTransporter = item.transporter || '-';
+            if (hasPopMail) {
+                displayTransporter += `<br><span style="color:#ea580c; font-size:11px; font-weight:bold;">(POP : ${popWeightMail.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}kg 포함)</span>`;
+            }
+
+            htmlContent += `
+                <tr style="border: 1px solid #cbd5e1;">
+                    <td style="padding: 6px; border: 1px solid #cbd5e1; color: ${carrier === 'ONE' ? '#db2777' : '#059669'}; font-weight: bold;">${carrier}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1;">${type}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1;">${dest}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; color: #0f172a;">${item.cntrNo || '-'}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1;">${item.sealNo || '-'}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">${weight}${choiceNoteMail}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1;">${remarkMail}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1;">${displayEtd}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1;">${displayWorkDate}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1;">${displayTransporter}</td>
+                </tr>
+            `;
+        });
 
         htmlContent += `
-            <tr style="border: 1px solid #cbd5e1;">
-                <td style="padding: 6px; border: 1px solid #cbd5e1; color: ${carrier === 'ONE' ? '#db2777' : '#059669'}; font-weight: bold;">${carrier}</td>
-                <td style="padding: 6px; border: 1px solid #cbd5e1;">${type}</td>
-                <td style="padding: 6px; border: 1px solid #cbd5e1;">${dest}</td>
-                <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; color: #0f172a;">${item.cntrNo || '-'}</td>
-                <td style="padding: 6px; border: 1px solid #cbd5e1;">${item.sealNo || '-'}</td>
-                <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">${weight}</td>
-                <td style="padding: 6px; border: 1px solid #cbd5e1;">${remarkMail}</td>
-                <td style="padding: 6px; border: 1px solid #cbd5e1;">${displayEtd}</td>
-                <td style="padding: 6px; border: 1px solid #cbd5e1;">${displayWorkDate}</td>
-                <td style="padding: 6px; border: 1px solid #cbd5e1;">${displayTransporter}</td>
-            </tr>
+                    </tbody>
+                </table>
+                <p style="margin-top: 10px; color: #64748b; font-size: 12px;">총 ${targetData.length}건</p>
+            </div>
         `;
-    });
+        return { html: htmlContent, count: targetData.length };
+    } catch (err) {
+        alert('HTML 생성 중 에러 발생: ' + err.message);
+        console.error(err);
+        return null;
+    }
+}
 
-    htmlContent += `
-                </tbody>
-            </table>
-            <p style="margin-top: 10px; color: #64748b; font-size: 12px;">총 ${targetData.length}건</p>
-        </div>
-    `;
+// --- HTML 이메일 복사 기능 ---
+async function copyEntryToClipboard(transporterName) {
+    const result = generateEntryMailHtml(transporterName);
+    if (!result) {
+        // generateEntryMailHtml 내부에서 alert가 뜰 것이므로 여기선 그냥 리턴
+        return;
+    }
+    const htmlContent = result.html;
 
     // Fallback 로직을 포함한 클립보드 복사
     try {
@@ -3141,11 +3709,303 @@ async function copyEntryToClipboard(transporterName) {
     }
 }
 
+// --- 이메일 설정 및 발송 관리 ---
+const emailSettingsModal = document.getElementById('emailSettingsModal');
+const btnOpenEmailSettings = document.getElementById('btnOpenEmailSettings');
+const closeEmailSettingsBtn = document.getElementById('closeEmailSettingsBtn');
+const closeEmailSettingsBottomBtn = document.getElementById('closeEmailSettingsBottomBtn');
+const btnSaveEmailConfig = document.getElementById('btnSaveEmailConfig');
+
+// 미리보기 모달 엘리먼트
+const emailPreviewModal = document.getElementById('emailPreviewModal');
+const closeEmailPreviewBtn = document.getElementById('closeEmailPreviewBtn');
+const closeEmailPreviewBottomBtn = document.getElementById('closeEmailPreviewBottomBtn');
+const btnConfirmSendEmail = document.getElementById('btnConfirmSendEmail');
+const emailPreviewContent = document.getElementById('emailPreviewContent');
+const previewToAddress = document.getElementById('previewToAddress');
+
+// 전역 변수로 현재 발송 대기 데이터 저장
+let currentPendingEmail = null;
+
+// 모달 토글
+if (btnOpenEmailSettings) {
+    btnOpenEmailSettings.addEventListener('click', async () => {
+        emailSettingsModal.style.display = 'block';
+        await loadEmailConfig();
+    });
+}
+[closeEmailSettingsBtn, closeEmailSettingsBottomBtn].forEach(btn => {
+    if (btn) btn.onclick = () => emailSettingsModal.style.display = 'none';
+});
+
+// 미리보기 모달 닫기
+[closeEmailPreviewBtn, closeEmailPreviewBottomBtn].forEach(btn => {
+    if (btn) btn.onclick = () => {
+        emailPreviewModal.style.display = 'none';
+        // 전체화면 상태였다면 리셋
+        const content = emailPreviewModal.querySelector('.modal-content');
+        if (content) content.classList.remove('fullscreen-modal');
+    };
+});
+
+// 전체화면 토글
+const btnToggleEmailFullscreen = document.getElementById('btnToggleEmailFullscreen');
+if (btnToggleEmailFullscreen) {
+    btnToggleEmailFullscreen.addEventListener('click', () => {
+        const content = emailPreviewModal.querySelector('.modal-content');
+        const icon = btnToggleEmailFullscreen.querySelector('i');
+        if (content.style.width === '100%' && content.style.height === '100%') {
+            content.style.width = '1400px';
+            content.style.height = '90vh';
+            content.style.maxWidth = '98%';
+            icon.className = 'fas fa-expand';
+        } else {
+            content.style.width = '100%';
+            content.style.height = '100%';
+            content.style.maxWidth = '100%';
+            icon.className = 'fas fa-compress';
+        }
+    });
+}
+
+async function loadEmailConfig() {
+    try {
+        const res = await fetch(`${API_BASE}/api/email/config`);
+        const data = await res.json();
+        if (data.success && data.config) {
+            document.getElementById('emailSmtpHost').value = data.config.host || '';
+            document.getElementById('emailSmtpPort').value = data.config.port || 465;
+            document.getElementById('emailSmtpSecure').checked = data.config.secure !== false;
+            document.getElementById('emailSmtpUser').value = data.config.user || '';
+            document.getElementById('emailSmtpPass').value = data.config.pass || '';
+            // 분리된 수신 주소 로드
+            if (document.getElementById('emailChunmaTo')) {
+                document.getElementById('emailChunmaTo').value = data.config.toChunma || '';
+            }
+            if (document.getElementById('emailBniTo')) {
+                document.getElementById('emailBniTo').value = data.config.toBni || '';
+            }
+            if (document.getElementById('emailChunmaSubject')) {
+                document.getElementById('emailChunmaSubject').value = data.config.subjectChunma || '';
+            }
+            if (document.getElementById('emailBniSubject')) {
+                document.getElementById('emailBniSubject').value = data.config.subjectBni || '';
+            }
+        }
+    } catch (err) {
+        console.error('이메일 설정 로드 실패:', err);
+    }
+}
+
+if (btnSaveEmailConfig) {
+    btnSaveEmailConfig.addEventListener('click', async () => {
+        const config = {
+            host: document.getElementById('emailSmtpHost').value,
+            port: parseInt(document.getElementById('emailSmtpPort').value),
+            secure: document.getElementById('emailSmtpSecure').checked,
+            user: document.getElementById('emailSmtpUser').value,
+            pass: document.getElementById('emailSmtpPass').value,
+            toChunma: document.getElementById('emailChunmaTo').value,
+            toBni: document.getElementById('emailBniTo').value,
+            subjectChunma: document.getElementById('emailChunmaSubject').value,
+            subjectBni: document.getElementById('emailBniSubject').value
+        };
+
+        try {
+            const res = await fetch(`${API_BASE}/api/email/config`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('이메일 설정이 저장되었습니다.');
+                emailSettingsModal.style.display = 'none';
+            } else {
+                alert('저장 실패: ' + data.message);
+            }
+        } catch (err) {
+            alert('서버 통신 오류가 발생했습니다.');
+        }
+    });
+}
+
+// --- 이메일 설정 클라우드 동기화 (업로드/다운로드) ---
+const btnUploadEmailConfig = document.getElementById('btnUploadEmailConfig');
+if (btnUploadEmailConfig) {
+    btnUploadEmailConfig.addEventListener('click', async () => {
+        if (!confirm('현재 화면의 설정을 클라우드 DB에 백업하시겠습니까?\n(나중에 다른 PC에서 동일하게 불러올 수 있습니다.)')) return;
+
+        try {
+            // 먼저 설정을 서버에 저장(파일)한 후, 서버가 그 파일을 읽어서 DB에 올리도록 요청
+            const resp = await fetch(`${API_BASE}/api/sync/email-config`, { method: 'POST' });
+            const data = await resp.json();
+            if (data.success) {
+                alert('✅ 백업 성공! 이메일 설정이 클라우드 DB에 저장되었습니다.');
+            } else {
+                alert('❌ 백업 실패: ' + data.message);
+            }
+        } catch (err) {
+            alert('백업 중 오류 발생: ' + err.message);
+        }
+    });
+}
+
+const btnDownloadEmailConfig = document.getElementById('btnDownloadEmailConfig');
+if (btnDownloadEmailConfig) {
+    btnDownloadEmailConfig.addEventListener('click', async () => {
+        if (!confirm('클라우드 DB에서 설정을 불러와 현재 설정을 덮어쓰시겠습니까?')) return;
+
+        try {
+            const resp = await fetch(`${API_BASE}/api/sync/email-config`);
+            const data = await resp.json();
+            if (data.success && data.config) {
+                // 내려받은 설정을 로컬 파일로 먼저 저장
+                const saveResp = await fetch(`${API_BASE}/api/email/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data.config)
+                });
+                const saveData = await saveResp.json();
+
+                if (saveData.success) {
+                    alert('✅ 복구 성공! 클라우드 설정을 불러왔습니다.');
+                    await loadEmailConfig(); // 화면 갱신
+                } else {
+                    alert('❌ 복구 실패(저장오류): ' + saveData.message);
+                }
+            } else {
+                alert('❌ 복구 실패: ' + (data.message || '데이터를 찾을 수 없습니다.'));
+            }
+        } catch (err) {
+            alert('복구 중 오류 발생: ' + err.message);
+        }
+    });
+}
+
+// 즉시 발송 함수
+async function sendEntryMailDirect(transporterName) {
+    try {
+        const result = generateEntryMailHtml(transporterName);
+        if (!result) return;
+
+        const today = new Date();
+        const dateStr = `${today.getMonth() + 1}/${today.getDate()}`;
+
+        let subject = '';
+        try {
+            const cfgRes = await fetch(`${API_BASE}/api/email/config`);
+            const cfgData = await cfgRes.json();
+            if (cfgData.config) {
+                targetEmail = (transporterName === '천마') ? cfgData.config.toChunma : cfgData.config.toBni;
+                subject = (transporterName === '천마') ? cfgData.config.subjectChunma : cfgData.config.subjectBni;
+            }
+        } catch (e) {
+            console.error('설정 로드 실패:', e);
+        }
+
+        if (!targetEmail || !targetEmail.includes('@')) {
+            alert(`메일 설정에서 [${transporterName} 메일 받는 사람] 주소를 입력하고 저장한 뒤 다시 시도해 주세요.`);
+            return;
+        }
+
+        // 제목 형식이 없으면 기본값 사용
+        if (!subject || subject.trim() === "") {
+            subject = `[반입정보] ${transporterName} - {date} 작업분 ({count}건)`;
+        }
+
+        // 예약어 치환
+        subject = subject.replace(/{date}/g, dateStr)
+            .replace(/{count}/g, result.count)
+            .replace(/{transporter}/g, transporterName);
+
+        // 2. 미리보기 데이터 설정 및 모달 오픈
+        currentPendingEmail = {
+            to: targetEmail,
+            subject: subject,
+            html: result.html,
+            transporterName: transporterName
+        };
+
+        // 수신 정보를 HTML 상단에 추가하여 미리보기 구성
+        const previewHtml = `
+            <div style="margin-bottom: 25px; padding: 15px; background: #f0f7ff; border-radius: 10px; border: 1px solid #cfe2ff; font-family: sans-serif;">
+                <div style="margin-bottom: 5px;"><strong style="color: #0056b3;">[발송 대상 정보]</strong></div>
+                <div style="font-size: 0.95rem; color: #334155;">
+                    • <b>받는 사람:</b> <span style="color: #2563eb;">${targetEmail}</span><br>
+                    • <b>메일 제목:</b> ${subject}
+                </div>
+            </div>
+            <hr style="border: 0; border-top: 1px dashed #e2e8f0; margin: 25px 0;">
+            ${result.html}
+        `;
+
+        emailPreviewContent.innerHTML = previewHtml;
+        emailPreviewModal.style.display = 'block';
+
+    } catch (err) {
+        alert('발송 준비 중 오류가 발생했습니다: ' + err.message);
+        console.error(err);
+    }
+}
+
+// 미리보기 모달에서 최종 발송 버튼 클릭 시
+if (btnConfirmSendEmail) {
+    btnConfirmSendEmail.onclick = async () => {
+        if (!currentPendingEmail) return;
+
+        const { to, subject, html, transporterName } = currentPendingEmail;
+
+        emailPreviewModal.style.display = 'none'; // 모달 닫기
+
+        const btn = (transporterName === '천마' ? btnSendChunma : btnSendBni);
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 발송 중...';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`${API_BASE}/api/send-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: to,
+                    subject: subject,
+                    html: html
+                })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                alert(`${transporterName} 메일이 ${to} 로 성공적으로 발송되었습니다.`);
+            } else {
+                alert('발송 실패: ' + data.message);
+            }
+        } catch (err) {
+            alert('발송 프로세스 중 오류가 발생했습니다: ' + err.message);
+        } finally {
+            if (btn) {
+                btn.innerHTML = (transporterName === '천마' ?
+                    '<i class="fas fa-paper-plane" style="margin-right: 4px;"></i>천마 즉시 발송' :
+                    '<i class="fas fa-paper-plane" style="margin-right: 4px;"></i>BNI 즉시 발송');
+                btn.disabled = false;
+            }
+            currentPendingEmail = null;
+        }
+    };
+}
+
 if (btnCopyChunma) {
     btnCopyChunma.addEventListener('click', () => copyEntryToClipboard('천마'));
 }
+if (btnSendChunma) {
+    btnSendChunma.addEventListener('click', () => sendEntryMailDirect('천마'));
+}
+
 if (btnCopyBni) {
     btnCopyBni.addEventListener('click', () => copyEntryToClipboard('BNI'));
+}
+if (btnSendBni) {
+    btnSendBni.addEventListener('click', () => sendEntryMailDirect('BNI'));
 }
 
 // --- 검색 기능 이벤트 리스너 ---
@@ -3155,8 +4015,68 @@ if (inputSearch) {
         if (comparisonResult.length > 0) displayResults(comparisonResult);
     });
 }
+const inputProdSearch = document.getElementById('inputProdSearch');
+if (inputProdSearch) {
+    inputProdSearch.addEventListener('input', () => {
+        if (comparisonResult.length > 0) displayResults(comparisonResult);
+    });
+}
+const btnResetSearch = document.getElementById('btnResetSearch');
+if (btnResetSearch) {
+    btnResetSearch.addEventListener('click', () => {
+        if (inputSearch) inputSearch.value = '';
+        if (inputProdSearch) inputProdSearch.value = '';
+        if (selectProdType) selectProdType.value = '';
+        if (comparisonResult.length > 0) displayResults(comparisonResult);
+    });
+}
 
-// Ctrl+F 단축키 처리
+const selectProdType = document.getElementById('selectProdType');
+if (selectProdType) {
+    selectProdType.addEventListener('change', () => {
+        if (comparisonResult.length > 0) displayResults(comparisonResult);
+    });
+}
+
+/**
+ * 검색 필터 상태에 따라 초기화 버튼 색상을 변경하고 검색 건수를 표시함
+ */
+function refreshSearchUI() {
+    const btnReset = document.getElementById('btnResetSearch');
+    const inSearch = document.getElementById('inputSearch');
+    const inProdSearch = document.getElementById('inputProdSearch');
+    const selProdType = document.getElementById('selectProdType');
+    const resultCountSpan = document.getElementById('searchResultCount');
+
+    if (!btnReset) return;
+
+    const hasValue = (inSearch && inSearch.value.trim() !== '') ||
+        (inProdSearch && inProdSearch.value.trim() !== '') ||
+        (selProdType && selProdType.value !== '');
+
+    if (hasValue) {
+        // 검색 값이 있으면 버튼 강조 (인디고 색상)
+        btnReset.style.backgroundColor = '#6366f1';
+        btnReset.style.color = 'white';
+        btnReset.style.borderColor = '#4f46e5';
+    } else {
+        // 검색 값이 없으면 기본 스타일
+        btnReset.style.backgroundColor = 'white';
+        btnReset.style.color = '#475569';
+        btnReset.style.borderColor = '#cbd5e1';
+    }
+
+    if (resultCountSpan) {
+        if (hasValue && typeof displayData !== 'undefined' && displayData.length >= 0) {
+            // 컨테이너 개수 기준으로 표시
+            const uniqueCntrs = new Set(displayData.map(d => d.cntrNo)).size;
+            resultCountSpan.textContent = `${uniqueCntrs}건 검색됨`;
+            resultCountSpan.style.display = 'inline';
+        } else {
+            resultCountSpan.style.display = 'none';
+        }
+    }
+}
 window.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         const inputSearch = document.getElementById('inputSearch');
@@ -3178,7 +4098,9 @@ function updateSelectionUI() {
     if (selectedCountSpan) selectedCountSpan.textContent = selectedItems.size;
 
     if (selectionBar) {
-        selectionBar.style.display = (displayData.length > 0) ? 'flex' : 'none';
+        // 검색 기능은 컨테이너 데이터(comparisonResult)가 있을 때 계속 표시되어야 함 (사용자 입력 유지 목적)
+        const isDbSearchTab = (currentFilter === 'dbSearch');
+        selectionBar.style.display = (!isDbSearchTab && (comparisonResult.length > 0)) ? 'flex' : 'none';
     }
 
     if (selectAllChk && displayData.length > 0) {
@@ -3193,6 +4115,20 @@ function updateSelectionUI() {
         selectAllChk.checked = allVisibleSelected;
     } else if (selectAllChk) {
         selectAllChk.checked = false;
+    }
+
+    // 보류 탭인 경우 버튼 텍스트 변경
+    const btnBulkHold = document.getElementById('btnBulkHold');
+    if (btnBulkHold) {
+        if (currentFilter === 'hold') {
+            btnBulkHold.innerHTML = '<i class="fas fa-play-circle" style="margin-right: 4px;"></i> 선택항목 보류해제';
+            btnBulkHold.style.background = '#f8fafc';
+            btnBulkHold.style.color = '#475569';
+        } else {
+            btnBulkHold.innerHTML = '<i class="fas fa-pause-circle" style="margin-right: 4px;"></i> 선택항목 보류등록';
+            btnBulkHold.style.background = ''; // CSS 클래스 기본값 사용
+            btnBulkHold.style.color = '';
+        }
     }
 }
 
@@ -3212,100 +4148,14 @@ if (selectAllChk) {
     };
 }
 
-// --- 제품 마스터 클라우드 동기화 이벤트 리스너 ---
-const btnCloudUploadMaster = document.getElementById('btnCloudUploadMaster');
-const btnCloudDownloadMaster = document.getElementById('btnCloudDownloadMaster');
-
-if (btnCloudUploadMaster) {
-    btnCloudUploadMaster.onclick = async () => {
-        if (!productMaster || productMaster.length === 0) {
-            alert('업로드할 마스터 데이터가 없습니다.');
-            return;
-        }
-
-        if (!confirm(`현재 로드된 ${productMaster.length}건의 마스터 데이터를 클라우드에 업로드하시겠습니까?`)) return;
-
-        try {
-            btnCloudUploadMaster.disabled = true;
-            btnCloudUploadMaster.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
-
-            const resp = await fetch(`${API_BASE}/api/sync/product-master`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ masterData: productMaster })
-            });
-
-            if (!resp.ok) {
-                const text = await resp.text();
-                throw new Error(`서버 응답 오류 (${resp.status}): ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`);
-            }
-
-            const resData = await resp.json();
-
-            if (resData.success) {
-                alert('마스터 데이터가 클라우드에 업로드되었습니다.');
-                updateDbGlobalStats();
-            } else {
-                alert('업로드 실패: ' + resData.message);
-            }
-        } catch (err) {
-            console.error('Upload Error:', err);
-            alert('서버 통신 오류: ' + err.message);
-        } finally {
-            btnCloudUploadMaster.disabled = false;
-            btnCloudUploadMaster.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> 클라우드 업로드';
-        }
-    };
-}
-
-if (btnCloudDownloadMaster) {
-    btnCloudDownloadMaster.onclick = async () => {
-        if (!confirm('클라우드에서 최신 마스터 데이터를 내려받으시겠습니까?\n현재 로컬 데이터는 클라우드 정보로 대체됩니다.')) return;
-
-        try {
-            btnCloudDownloadMaster.disabled = true;
-            btnCloudDownloadMaster.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 다운로드 중...';
-
-            const resp = await fetch(`${API_BASE}/api/sync/product-master`);
-            const resData = await resp.json();
-
-            if (resData.success) {
-                productMaster = resData.masterData;
-                alert(`클라우드에서 ${productMaster.length}건을 내려받았습니다.`);
-
-                // 로컬 서버 파일에도 업데이트 요청 (영구 저장)
-                const formData = new FormData();
-                // 엑셀 형식이 아니므로 별도 endpoint가 필요할 수 있으나, 일단 productMaster 변수만 업데이트해도 현재 세션은 유지됨.
-                // 정석은 JSON으로 저장하는 api를 쓰는 것
-
-                // /api/update 를 활용해 전체 덮어쓰기 (JSON 파일)
-                const updateResp = await fetch(`${API_BASE}/api/update`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(productMaster)
-                });
-
-                await loadProductMaster(); // 다시 로드하여 확인
-                updateDbGlobalStats();
-            } else {
-                alert('다운로드 실패: ' + resData.message);
-            }
-        } catch (err) {
-            alert('서버 통신 오류: ' + err.message);
-        } finally {
-            btnCloudDownloadMaster.disabled = false;
-            btnCloudDownloadMaster.innerHTML = '<i class="fas fa-cloud-download-alt"></i> 클라우드 다운로드';
-        }
-    };
-}
-
+// --- 제품 마스터 데이터 정리 (오래된/미사용 데이터) ---
 const btnCleanOldMaster = document.getElementById('btnCleanOldMaster');
 if (btnCleanOldMaster) {
     btnCleanOldMaster.onclick = async () => {
-        const days = prompt('몇 일 이상 업데이트되지 않은 데이터를 삭제할까요?', '30');
+        const days = prompt('최근 몇 일 동안 사용 및 업데이트가 없는 데이터를 삭제할까요?', '30');
         if (days === null) return;
 
-        if (!confirm(`${days}일 이상 업데이트되지 않은 오래된 제품 데이터를 정리하겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+        if (!confirm(`최근 ${days}일 동안 한 번도 사용되지 않았고 업데이트도 없는 제품을 마스터 DB에서 삭제하시겠습니까?\n(20만건 이상의 대량 DB 관리를 위해 권장됩니다.)`)) return;
 
         try {
             const resp = await fetch(`${API_BASE}/api/master-data/clean`, {
@@ -3318,10 +4168,11 @@ if (btnCleanOldMaster) {
             loadProductMaster();
             if (window.updateDbGlobalStats) window.updateDbGlobalStats();
         } catch (err) {
-            alert('정리 중 오류 발생: ' + err.message);
+            alert('데이터 정리 중 오류 발생: ' + err.message);
         }
     };
 }
+
 
 const btnResetMasterDb = document.getElementById('btnResetMasterDb');
 if (btnResetMasterDb) {
@@ -3384,6 +4235,78 @@ if (btnSaveToDB) {
         } finally {
             btnSaveToDB.disabled = false;
             btnSaveToDB.innerHTML = '<i class="fas fa-save" style="margin-right: 4px;"></i> 선택항목 DB 저장';
+        }
+    };
+}
+
+const btnBulkHold = document.getElementById('btnBulkHold');
+if (btnBulkHold) {
+    btnBulkHold.onclick = async () => {
+        if (selectedItems.size === 0) {
+            alert(currentFilter === 'hold' ? '보류 해제할 항목을 선택해주세요.' : '보류 등록할 항목을 선택해주세요.');
+            return;
+        }
+
+        const selectedCntrNos = new Set();
+        displayData.forEach((res, i) => {
+            const key = `${res.cntrNo}_${res.prodName}_${i}`;
+            if (selectedItems.has(key)) {
+                selectedCntrNos.add(res.cntrNo);
+            }
+        });
+
+        if (selectedCntrNos.size === 0) return;
+
+        const isUnHoldAction = (currentFilter === 'hold');
+        const confirmMsg = isUnHoldAction
+            ? `선택한 ${selectedCntrNos.size}대의 컨테이너를 모두 보류 해제하시겠습니까?`
+            : `선택한 ${selectedCntrNos.size}대의 컨테이너를 모두 보류 등록하시겠습니까?`;
+
+        if (!confirm(confirmMsg)) return;
+
+        try {
+            btnBulkHold.disabled = true;
+            btnBulkHold.innerHTML = isUnHoldAction
+                ? '<i class="fas fa-spinner fa-spin"></i> 해제 중...'
+                : '<i class="fas fa-spinner fa-spin"></i> 보류 중...';
+
+            let successCount = 0;
+            for (const cntrNo of selectedCntrNos) {
+                if (isUnHoldAction) {
+                    // 보류 해제 (DELETE)
+                    const resp = await fetch(`${API_BASE}/api/sync/holds/${cntrNo}`, { method: 'DELETE' });
+                    if (resp.ok) {
+                        holdContainerMap.delete(cntrNo);
+                        successCount++;
+                    }
+                } else {
+                    // 보류 등록 (POST)
+                    if (!holdContainerMap.has(cntrNo)) {
+                        const resp = await fetch(`${API_BASE}/api/sync/holds`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ cntrNo, reason: '일괄 보류 등록' })
+                        });
+                        if (resp.ok) {
+                            holdContainerMap.set(cntrNo, '일괄 보류 등록');
+                            successCount++;
+                        }
+                    } else {
+                        successCount++;
+                    }
+                }
+            }
+
+            alert(`${selectedCntrNos.size}대의 컨테이너 ${isUnHoldAction ? '해제' : '보류 등록'}가 완료되었습니다.`);
+            selectedItems.clear();
+            updateSelectionUI();
+            displayResults(comparisonResult, false);
+        } catch (err) {
+            console.error("일괄 보류 처리 중 오류:", err);
+            alert('처리 중 오류 발생: ' + err.message);
+        } finally {
+            btnBulkHold.disabled = false;
+            updateSelectionUI(); // 버튼 텍스트 원상복구
         }
     };
 }
@@ -3474,9 +4397,9 @@ async function executeDbSearch(confirm = false) {
                     qtyInfo: {
                         plan: row.qty_plan || 0,
                         load: row.qty_load || 0,
-                        pending: 0,
-                        remain: 0,
-                        packing: 0,
+                        pending: row.qty_pending || 0,
+                        remain: row.qty_remain || 0,
+                        packing: row.qty_packing || 0,
                         origPlan: row.qty_plan || 0,
                         isMismatch: false
                     },
@@ -3506,7 +4429,8 @@ async function executeDbSearch(confirm = false) {
                     if (chkDbAll) chkDbAll.checked = false;
                 }
 
-                // DB 조회 결과를 displayData에 할당하고 renderChunk 렌더링 시작
+                // DB 조회 결과를 전역 변수에 저장하여 탭 전환 시에도 유지되도록 함
+                lastDbSearchResults = mappedData;
                 displayResults(mappedData, true);
             }
         } else {
@@ -3542,6 +4466,7 @@ async function executeDbBulkDelete() {
             alert(result.message);
             // 현재 화면의 데이터에서 삭제된 항목 필터링
             displayData = displayData.filter(d => !selectedIds.includes(d.dbId));
+            lastDbSearchResults = displayData; // 전역 유지 변수도 갱신
             displayResults(displayData, true);
 
             // 요약 업데이트
@@ -3679,3 +4604,140 @@ function showCopyablePopup(title, content) {
         if (e.target === overlay) document.body.removeChild(overlay);
     };
 }
+
+/* =========================================================================
+ *  EMAIL HISTORY LOGIC
+ * ========================================================================= */
+async function loadEmailHistory() {
+    const tableBody = document.getElementById('emailHistoryTableBody');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = '<tr><td colspan="4" style="padding: 20px; text-align: center; color: #4361ee;"><i class="fas fa-spinner fa-spin"></i> 이력을 불러오고 있습니다...</td></tr>';
+
+    try {
+        const response = await fetch(`${API_BASE}/api/email/history`);
+        const data = await response.json();
+
+        if (data.success) {
+            if (data.history.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" style="padding: 20px; text-align: center; color: #94a3b8;">최근 발송 이력이 없습니다.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = data.history.map(item => {
+                const dateStr = new Date(item.sent_at).toLocaleString('ko-KR', {
+                    month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                });
+                return `
+                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                        <td style="padding: 10px; color: #64748b; white-space: nowrap;">${dateStr}</td>
+                        <td style="padding: 10px; color: #1e293b; font-weight: 500;">${item.recipient}</td>
+                        <td style="padding: 10px; color: #1e293b; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.subject || '(제목 없음)'}</td>
+                        <td style="padding: 10px; text-align: center;">
+                            <div style="display: flex; gap: 4px; justify-content: center;">
+                                <button onclick="window.viewEmailHistoryDetail(${item.id})" class="btn" style="padding: 4px 8px; font-size: 0.75rem; background: #f1f5f9; color: #4361ee; border: 1px solid #dbeafe;">보기</button>
+                                <button onclick="window.deleteEmailHistory(${item.id}, event)" class="btn" style="padding: 4px 8px; font-size: 0.75rem; background: #fff1f2; color: #e11d48; border: 1px solid #fecaca;">삭제</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            tableBody.innerHTML = `<tr><td colspan="4" style="padding: 20px; text-align: center; color: #ef4444;">오류: ${data.message}</td></tr>`;
+        }
+    } catch (err) {
+        tableBody.innerHTML = `<tr><td colspan="4" style="padding: 20px; text-align: center; color: #ef4444;">통신 오류: ${err.message}</td></tr>`;
+    }
+}
+
+window.viewEmailHistoryDetail = async (id) => {
+    const overlay = document.getElementById('emailHistoryDetailOverlay');
+    const content = document.getElementById('emailHistoryDetailContent');
+    if (!overlay || !content) return;
+
+    content.innerHTML = '<div style="text-align:center; padding:50px;"><i class="fas fa-spinner fa-spin fa-2x"></i> 로딩 중...</div>';
+    overlay.style.display = 'flex';
+
+    try {
+        const response = await fetch(`${API_BASE}/api/email/history/${id}`);
+        const data = await response.json();
+
+        if (data.success) {
+            const detail = data.detail;
+            content.innerHTML = `
+                <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f1f5f9;">
+                    <div style="margin-bottom: 8px;"><strong style="color: #64748b; width: 80px; display: inline-block;">수신인:</strong> <span style="font-weight: 600;">${detail.recipient}</span></div>
+                    <div style="margin-bottom: 8px;"><strong style="color: #64748b; width: 80px; display: inline-block;">제목:</strong> <span style="font-weight: 600;">${detail.subject}</span></div>
+                    <div><strong style="color: #64748b; width: 80px; display: inline-block;">발송일시:</strong> <span>${new Date(detail.sent_at).toLocaleString()}</span></div>
+                </div>
+                <div class="mail-body-content" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+                    ${detail.content}
+                </div>
+            `;
+        } else {
+            content.innerHTML = `<div style="color: #ef4444; padding: 50px; text-align: center;">${data.message}</div>`;
+        }
+    } catch (err) {
+        content.innerHTML = `<div style="color: #ef4444; padding: 50px; text-align: center;">통신 오류: ${err.message}</div>`;
+    }
+};
+
+window.deleteEmailHistory = async (id, event) => {
+    event.stopPropagation();
+    if (!confirm('해당 발송 기록을 삭제하시겠습니까?')) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/api/email/history/${id}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (data.success) {
+            loadEmailHistory();
+        } else {
+            alert('삭제 실패: ' + data.message);
+        }
+    } catch (err) {
+        alert('삭제 통신 오류: ' + err.message);
+    }
+};
+
+// --- Email History Event Listeners ---
+document.addEventListener('DOMContentLoaded', () => {
+    const btnOpenHistory = document.getElementById('btnOpenEmailHistory');
+    const btnOpenHistoryEntry = document.getElementById('btnOpenEmailHistoryEntry');
+    const modalHistory = document.getElementById('emailHistoryModal');
+    const closeBtns = [
+        document.getElementById('closeEmailHistoryBtn'),
+        document.getElementById('closeEmailHistoryBottomBtn')
+    ];
+
+    if (btnOpenHistory) {
+        btnOpenHistory.addEventListener('click', () => {
+            modalHistory.style.display = 'block';
+            loadEmailHistory();
+        });
+    }
+    if (btnOpenHistoryEntry) {
+        btnOpenHistoryEntry.addEventListener('click', () => {
+            modalHistory.style.display = 'block';
+            loadEmailHistory();
+        });
+    }
+
+    closeBtns.forEach(btn => {
+        if (btn) btn.addEventListener('click', () => modalHistory.style.display = 'none');
+    });
+
+    const overlayDetail = document.getElementById('emailHistoryDetailOverlay');
+    const closeDetailBtns = [
+        document.getElementById('btnCloseEmailHistoryDetail'),
+        document.getElementById('btnHistoryDetailClose')
+    ];
+
+    closeDetailBtns.forEach(btn => {
+        if (btn) btn.addEventListener('click', () => overlayDetail.style.display = 'none');
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === modalHistory) modalHistory.style.display = 'none';
+        if (e.target === overlayDetail) overlayDetail.style.display = 'none';
+    });
+});

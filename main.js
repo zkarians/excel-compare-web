@@ -205,7 +205,7 @@ app.on('ready', () => {
     });
 
     ipcMain.handle('select-file', async (event, { type, defaultPath }) => {
-        const { filePath } = await dialog.showOpenDialog(mainWindow, {
+        const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
             defaultPath: defaultPath || undefined,
             properties: ['openFile'],
             filters: [
@@ -213,8 +213,8 @@ app.on('ready', () => {
             ]
         });
 
-        if (filePath && filePath.length > 0) {
-            const selectedPath = filePath[0];
+        if (!canceled && filePaths && filePaths.length > 0) {
+            const selectedPath = filePaths[0];
             const paths = loadSavedPaths();
             paths[type] = selectedPath;
             savePaths(paths);

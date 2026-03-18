@@ -1,0 +1,12 @@
+{
+  "host": "smtp.daum.net",
+  "port": 465,
+  "secure": true,
+  "user": "aius@hanmail.net",
+  "pass": "lmmomywpnxqvrtbz",
+  "from": "aius@hanmail.net",
+  "toChunma": "cmloc050@nate.com",
+  "toBni": "bni2022y@naver.com",
+  "subjectChunma": "{date} {transporter} 야간 웅동창고 풀 컨테이너 반입 정보 ({count}건)",
+  "subjectBni": "{date} {transporter} 야간 웅동창고 풀 컨테이너 반입 정보 ({count}건)"
+}
