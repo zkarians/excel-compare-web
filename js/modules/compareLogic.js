@@ -277,6 +277,13 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                             if (!matchedOrig.tags.some(t => t.text === finalTargetValue)) {
                                 matchedOrig.tags.push({ text: finalTargetValue, type: rule.tagColor || "info" });
                             }
+                            // [추가] 빨간색(danger) 태그인 경우 오류로 취급
+                            if (rule.tagColor === 'danger') {
+                                isError = true;
+                                if (!errorDetails.includes(finalTargetValue)) {
+                                    errorDetails.push(finalTargetValue);
+                                }
+                            }
                         }
                     } else if (rule.targetField === 'carrier') {
                         if (matchedOrig) matchedOrig.carrier = finalTargetValue;
@@ -444,9 +451,16 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
         const dbWeight = prod ? (parseFloat(prod.weight) || 0) : 0;
 
         // [FIX] 제품구분: 모델명을 기준으로 마스터 데이터(prodType)에서 가져오되, 없으면 원본파일 정보 활용
-        // masterProdType이 '-' 이거나 비어있으면 matchedOrig 정보를 사용하도록 수정
+        //단, 원본 G열의 값이 사업부 코드(3자리, Z로 종료: CVZ, CDZ 등) 이면 제품구분으로 취급하지 않음
         const dbProdType = prod ? (prod.prodType || "") : "";
-        const masterProdType = (dbProdType && dbProdType !== "-") ? dbProdType : (matchedOrig ? matchedOrig.prodType : "-");
+        const origProdType = (matchedOrig && matchedOrig.prodType) ? matchedOrig.prodType : "";
+
+        // 사업부 코드 식별 정규식 (3자리 대문자 + Z)
+        const isDivisionCode = /^[A-Z]{2}Z$/i.test(origProdType) || ["DFZ"].includes(origProdType.toUpperCase());
+
+        const masterProdType = (dbProdType && dbProdType !== "-")
+            ? dbProdType
+            : (matchedOrig && !isDivisionCode ? matchedOrig.prodType : "-");
 
         // [FIX] 사업부: 전산파일(A열)에 정보가 없으면 원본파일(G열) 정보 우선, 그 다음 마스터 정보 순으로 확인
         let finalDivision = down.division || (matchedOrig ? matchedOrig.prodType : "");

@@ -2822,9 +2822,13 @@ function displayResults(results, isDbMode = false) {
                         </td>
                     `}
                 `;
-                // 컬럼 개수 계산 (기본 13개 + 선택/관리 컬럼 1개)
-                let colSpanCount = 13;
-                if (currentFilter === 'all' || currentFilter === 'success' || currentFilter === 'hold' || currentFilter === 'dbSearch' || currentFilter === 'error' || currentFilter === 'missing') colSpanCount = 14;
+                // 컬럼 개수 계산 (전체/오류/미분류 탭은 선택+관리+11+상세오류(2)=15)
+                let colSpanCount = 14;
+                if (currentFilter === 'all' || currentFilter === 'error' || currentFilter === 'missing') {
+                    colSpanCount = 15;
+                } else if (currentFilter === 'entry' || currentFilter === 'entry_unclassified') {
+                    colSpanCount = 10;
+                }
 
                 if (res.isErrorRow && finalDetailHtml && finalDetailHtml.trim() !== '-' && !finalDetailHtml.includes('위와 동일')) {
                     const trError = document.createElement('tr');

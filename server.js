@@ -150,6 +150,18 @@ async function initDb() {
                 updated_at TIMESTAMP DEFAULT NOW()
             )
         `);
+        // 하위 호환성: 기존 테이블에 없는 컬럼들 추가
+        await client.query(`ALTER TABLE auto_classify_rules ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE`);
+        await client.query(`ALTER TABLE auto_classify_rules ADD COLUMN IF NOT EXISTS group_name TEXT`);
+        await client.query(`ALTER TABLE auto_classify_rules ADD COLUMN IF NOT EXISTS condition_operator TEXT DEFAULT 'AND'`);
+        await client.query(`ALTER TABLE auto_classify_rules ADD COLUMN IF NOT EXISTS conditions JSONB`);
+        await client.query(`ALTER TABLE auto_classify_rules ADD COLUMN IF NOT EXISTS target_field TEXT`);
+        await client.query(`ALTER TABLE auto_classify_rules ADD COLUMN IF NOT EXISTS target_value TEXT`);
+        await client.query(`ALTER TABLE auto_classify_rules ADD COLUMN IF NOT EXISTS tag_color TEXT`);
+        await client.query(`ALTER TABLE auto_classify_rules ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()`);
+
+        await client.query(`ALTER TABLE carrier_mappings ADD COLUMN IF NOT EXISTS names JSONB`);
+        await client.query(`ALTER TABLE carrier_mappings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()`);
 
         // 6. 작업 JOB 정보
         await client.query(`
@@ -999,6 +1011,7 @@ app.post('/api/sync/carriers', async (req, res) => {
 app.get('/api/sync/rules', async (req, res) => {
     if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     try {
+        console.log("📂 [API] 자동분류 규칙 로드 중...");
         const result = await pool.query('SELECT * FROM auto_classify_rules ORDER BY updated_at DESC');
         const rules = result.rows.map(row => ({
             id: row.id,
@@ -1012,6 +1025,7 @@ app.get('/api/sync/rules', async (req, res) => {
         }));
         res.json({ success: true, rules });
     } catch (err) {
+        console.error("❌ [API] 규칙 로드 오류:", err.message);
         res.status(500).json({ success: false, message: err.message });
     }
 });

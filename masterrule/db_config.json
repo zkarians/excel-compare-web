@@ -8,5 +8,6 @@
   "connectionTimeoutMillis": 5000,
   "idleTimeoutMillis": 10000,
   "max": 5,
+  "keepAlive": true,
   "application_name": "ExcelCompareApp"
 }
