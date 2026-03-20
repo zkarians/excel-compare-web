@@ -389,9 +389,10 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                 isError = true;
             }
 
-            let origRemarkStr = matchedOrig.remark || "";
-            let remarkMatched = !origRemarkStr;
-            if (origRemarkStr) {
+            let origRemarkStr = (matchedOrig.remark || "").trim();
+            let downRemarkStr = (down.remark || "").trim();
+            let remarkMatched = (origRemarkStr === downRemarkStr);
+            if (!remarkMatched && origRemarkStr) {
                 let dRem = (down.remark || "").toUpperCase();
                 let oRem = origRemarkStr.toUpperCase();
                 if (oRem.length <= 10) {
@@ -500,7 +501,14 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                 isMismatch: matchedOrig && (origDest !== downDest)
             },
             detail: errorDetails.join(' | '),
-            origRemark: matchedOrig ? (matchedOrig.remark || '') : (origCntrMap.get(cleanCntr) ? (origCntrMap.get(cleanCntr).remark || '') : '없음'),
+            // [사용자 요청] 원본 리마크가 비어있거나(한글자 이내) 전산 리마크가 있는 경우 전산 리마크를 대신 사용
+            origRemark: (() => {
+                let r = matchedOrig ? (matchedOrig.remark || '') : (origCntrMap.get(cleanCntr) ? (origCntrMap.get(cleanCntr).remark || '') : '');
+                if ((!r || r.trim().length <= 1) && downRemark && downRemark.trim().length > 1) {
+                    return `(전산) ${downRemark}`;
+                }
+                return r || '없음';
+            })(),
             adj1: matchedOrig ? (matchedOrig.adj1 || '') : '',
             adj1Color: matchedOrig ? (matchedOrig.adj1Color || null) : null,
             adj2: matchedOrig ? (matchedOrig.adj2 || '') : '',
@@ -516,6 +524,23 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
             badgeClass: rowBadge,
             isErrorRow: isError
         };
+
+        // [사용자 추가 요청] 붉은색(danger) 태그가 있는 경우 자동으로 오류 탭으로 분류
+        if (resultObj.tags && resultObj.tags.some(t => t.type === 'danger' || t.color === 'danger')) {
+            resultObj.isErrorRow = true;
+            // 태그명을 오류 상세 내역에도 추가 (중복 방지)
+            const dangerTags = resultObj.tags
+                .filter(t => t.type === 'danger' || t.color === 'danger')
+                .map(t => t.text);
+
+            let currentDetails = resultObj.detail ? resultObj.detail.split(' | ') : [];
+            dangerTags.forEach(tagText => {
+                if (!currentDetails.includes(tagText)) {
+                    currentDetails.push(tagText);
+                }
+            });
+            resultObj.detail = currentDetails.join(' | ');
+        }
 
         const dims = [];
         if (prod) {

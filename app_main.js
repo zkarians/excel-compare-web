@@ -4156,9 +4156,8 @@ if (selectAllChk) {
 const btnCleanOldMaster = document.getElementById('btnCleanOldMaster');
 if (btnCleanOldMaster) {
     btnCleanOldMaster.onclick = async () => {
-        const days = prompt('최근 몇 일 동안 사용 및 업데이트가 없는 데이터를 삭제할까요?', '30');
-        if (days === null) return;
-
+        // Electron renderer에서 prompt()는 지원되지 않거나 불안정하므로 confirm()으로 대체
+        const days = '30';
         if (!confirm(`최근 ${days}일 동안 한 번도 사용되지 않았고 업데이트도 없는 제품을 마스터 DB에서 삭제하시겠습니까?\n(20만건 이상의 대량 DB 관리를 위해 권장됩니다.)`)) return;
 
         try {
@@ -4181,10 +4180,9 @@ if (btnCleanOldMaster) {
 const btnResetMasterDb = document.getElementById('btnResetMasterDb');
 if (btnResetMasterDb) {
     btnResetMasterDb.onclick = async () => {
-        const code = prompt('DB를 완전히 초기화하려면 "초기화"라고 입력해주세요.');
-        if (code !== '초기화') return;
-
-        if (!confirm('정말로 DB의 모든 마스터 데이터를 삭제하시겠습니까?')) return;
+        // prompt() 대신 이중 confirm()으로 안전하게 확인
+        if (!confirm('정말로 DB의 모든 마스터 데이터를 삭제하고 초기화하시겠습니까?')) return;
+        if (!confirm('다시 한번 확인합니다. 이 작업은 되돌릴 수 없습니다. 진행하시겠습니까?')) return;
 
         try {
             const resp = await fetch(`${API_BASE}/api/master-data/reset`, { method: 'POST' });
@@ -4743,5 +4741,193 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('click', (e) => {
         if (e.target === modalHistory) modalHistory.style.display = 'none';
         if (e.target === overlayDetail) overlayDetail.style.display = 'none';
+    });
+});
+
+/* =========================================================================
+ *  PRODUCT MASTER SEARCH (WITH HISTORY)
+ * ========================================================================= */
+let productSearchHistory = [];
+
+function openProductSearchModal() {
+    const modal = document.getElementById('productSearchModal');
+    if (modal) {
+        modal.style.display = 'block';
+        setTimeout(() => {
+            const input = document.getElementById('inputProductSearch');
+            if (input) input.focus();
+        }, 50);
+    }
+}
+
+function closeProductSearchModal() {
+    const modal = document.getElementById('productSearchModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function renderProductSearchHistory() {
+    const body = document.getElementById('productSearchHistoryBody');
+    const count = document.getElementById('productSearchHistoryCount');
+    if (!body) return;
+
+    if (productSearchHistory.length === 0) {
+        body.innerHTML = `<tr><td colspan="6" style="padding: 3rem; text-align: center; color: #94a3b8; font-style: italic;">제품명을 검색하면 여기에 정보가 요약되어 쌓입니다.</td></tr>`;
+        if (count) count.textContent = '0';
+        return;
+    }
+
+    if (count) count.textContent = productSearchHistory.length;
+
+    body.innerHTML = productSearchHistory.map((item, index) => `
+        <tr style="border-bottom: 1px solid #e2e8f0; background: white; transition: background 0.2s;">
+            <td style="padding: 12px; font-weight: 600; color: #1e293b;">${item.name}</td>
+            <td style="padding: 12px; text-align: center; color: #64748b; font-size: 0.85rem;">${item.prodType || '-'}</td>
+            <td style="padding: 12px; text-align: right; font-weight: 700; color: #059669;">${(parseFloat(item.weight) || 0).toLocaleString()} kg</td>
+            <td style="padding: 12px; text-align: center; color: #475569; font-family: monospace; font-size: 0.85rem;">${item.width || 0} × ${item.depth || 0} × ${item.height || 0}</td>
+            <td style="padding: 12px; text-align: right; color: #0284c7; font-weight: 500;">${(parseFloat(item.cbm) || 0).toFixed(3)}</td>
+            <td style="padding: 12px; text-align: center;">
+                <button onclick="window.removeFromProductSearchHistory(${index})" class="btn" style="padding: 4px 8px; font-size: 0.8rem; background: #fff1f2; color: #e11d48; border: 1px solid #fecaca; border-radius: 6px;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+window.removeFromProductSearchHistory = (index) => {
+    productSearchHistory.splice(index, 1);
+    renderProductSearchHistory();
+};
+
+function addToProductSearchHistory(product) {
+    // 중복 방지 (이미 있으면 기존 항목 제거 후 최상단 배치)
+    const existingIndex = productSearchHistory.findIndex(p => p.name === product.name);
+    if (existingIndex !== -1) {
+        productSearchHistory.splice(existingIndex, 1);
+    }
+    productSearchHistory.unshift(product);
+    renderProductSearchHistory();
+}
+
+// 자동완성 선택 처리
+window.handleProductSuggestionSelect = (name) => {
+    const product = productMaster.find(p => p.name === name);
+    if (product) {
+        addToProductSearchHistory(product);
+        const input = document.getElementById('inputProductSearch');
+        if (input) input.value = '';
+        const suggestions = document.getElementById('productSearchSuggestions');
+        if (suggestions) suggestions.style.display = 'none';
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btnOpen = document.getElementById('btnOpenProductMaster');
+    const inputSearch = document.getElementById('inputProductSearch');
+    const suggestions = document.getElementById('productSearchSuggestions');
+    const btnClear = document.getElementById('btnClearProductSearchHistory');
+
+    if (btnOpen) btnOpen.onclick = openProductSearchModal;
+
+    const closeBtns = [
+        document.getElementById('closeProductSearchBtn'),
+        document.getElementById('closeProductSearchBottomBtn')
+    ];
+    closeBtns.forEach(btn => {
+        if (btn) btn.onclick = closeProductSearchModal;
+    });
+
+    if (btnClear) {
+        btnClear.onclick = () => {
+            if (productSearchHistory.length === 0) return;
+            if (confirm('전체 검색 목록을 비우시겠습니까?')) {
+                productSearchHistory = [];
+                renderProductSearchHistory();
+            }
+        };
+    }
+
+    if (inputSearch) {
+        inputSearch.addEventListener('input', (e) => {
+            const query = e.target.value.trim().toUpperCase();
+            if (query.length < 1) {
+                suggestions.style.display = 'none';
+                return;
+            }
+
+            // 전역 productMaster에서 필터링
+            if (!productMaster || productMaster.length === 0) return;
+
+            const matches = productMaster.filter(p =>
+                (p.name || "").toUpperCase().includes(query)
+            ).slice(0, 15);
+
+            if (matches.length > 0) {
+                suggestions.innerHTML = matches.map(p => {
+                    const cleanName = p.name.replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+                    return `
+                    <div class="suggestion-item" 
+                         style="padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;"
+                         onclick="window.handleProductSuggestionSelect('${cleanName}')">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 700; color: #1e293b; font-size: 1rem;">${p.name}</span>
+                            <span style="background: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: 800;">
+                                ${(parseFloat(p.weight) || 0).toLocaleString()}kg
+                            </span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px; display: flex; gap: 10px;">
+                            <span><i class="fas fa-tag"></i> ${p.prodType || '-'}</span>
+                            <span><i class="fas fa-ruler-combined"></i> ${p.width}×${p.depth}×${p.height}</span>
+                            <span><i class="fas fa-cube"></i> ${p.cbm} CBM</span>
+                        </div>
+                    </div>
+                `}).join('');
+                suggestions.style.display = 'block';
+
+                // 마우스 효과
+                suggestions.querySelectorAll('.suggestion-item').forEach(it => {
+                    it.onmouseover = () => it.style.backgroundColor = '#ecfdf5';
+                    it.onmouseout = () => it.style.backgroundColor = 'white';
+                });
+            } else {
+                suggestions.style.display = 'none';
+            }
+        });
+
+        inputSearch.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const query = inputSearch.value.trim().toUpperCase();
+                // 완전히 일치하는 항목이 있으면 자동 추가
+                const bestMatch = productMaster.find(p => (p.name || "").toUpperCase() === query);
+                if (bestMatch) {
+                    addToProductSearchHistory(bestMatch);
+                    inputSearch.value = '';
+                    suggestions.style.display = 'none';
+                } else if (suggestions.style.display === 'block') {
+                    // 첫 번째 제안 항목 선택
+                    const firstSuggestion = suggestions.querySelector('.suggestion-item');
+                    if (firstSuggestion) firstSuggestion.click();
+                }
+            }
+            if (e.key === 'Escape') {
+                suggestions.style.display = 'none';
+            }
+        });
+    }
+
+    // 전역 클릭 핸들러 (모달 외곽 및 제안창 닫기)
+    window.addEventListener('click', (e) => {
+        if (e.target.id === 'productSearchModal') closeProductSearchModal();
+        if (suggestions && !suggestions.contains(e.target) && e.target !== inputSearch) {
+            suggestions.style.display = 'none';
+        }
+    });
+
+    // ESC 키로 모달 닫기
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('productSearchModal');
+            if (modal && modal.style.display === 'block') closeProductSearchModal();
+        }
     });
 });

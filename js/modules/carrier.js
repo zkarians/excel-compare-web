@@ -257,6 +257,54 @@ document.getElementById('btnAddCarrier')?.addEventListener('click', () => {
     document.getElementById('inputMappedName').value = '';
 });
 
+
+// --- DB Sync Manual Buttons ---
+document.getElementById('btnDownloadCarriersFromDb')?.addEventListener('click', async () => {
+    if (confirm("클라우드 DB에서 선사 매핑을 불러오시겠습니까? 현재 로컬 데이터가 덮어씌워질 수 있습니다.")) {
+        try {
+            const response = await fetch(`${API_BASE}/api/sync/carriers`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.mapping) {
+                    carrierMap = data.mapping;
+                    localStorage.setItem('carrierMapPrefs', JSON.stringify(carrierMap));
+                    renderCarrierSettings();
+                    alert("DB에서 선사 매핑을 성공적으로 불러왔습니다.");
+                } else {
+                    alert("DB에 저장된 데이터가 없습니다.");
+                }
+            } else {
+                alert("DB 연동 실패");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("오류 발생: " + err.message);
+        }
+    }
+});
+
+document.getElementById('btnUploadCarriersToDb')?.addEventListener('click', async () => {
+    if (confirm("현재 선사 매핑을 클라우드 DB에 등록(백업)하시겠습니까? 기존 DB 데이터가 대체됩니다.")) {
+        try {
+            const response = await fetch(`${API_BASE}/api/sync/carriers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mapping: carrierMap })
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert("성공적으로 DB에 등록되었습니다.");
+                if (window.updateDbGlobalStats) window.updateDbGlobalStats();
+            } else {
+                alert("DB 등록 실패: " + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("오류 발생: " + err.message);
+        }
+    }
+});
+
 // --- Export ---
 window.carrierMap = carrierMap;
 window.loadCarrierMap = loadCarrierMap;

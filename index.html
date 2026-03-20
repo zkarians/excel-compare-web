@@ -55,6 +55,11 @@
                     style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600;">📋 자동분류
                     규칙</button>
                 <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
+                <button id="btnOpenProductMaster" class="btn"
+                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">
+                    <i class="fas fa-box-open" style="margin-right: 4px;"></i> 제품 정보 검색
+                </button>
+                <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
                 <button id="btnOpenPopWeight" class="btn"
                     style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa;">
                     <i class="fas fa-weight-hanging"></i> POP 무게
@@ -84,12 +89,107 @@
             </button>
         </nav>
 
+        <!-- 제품 정보 검색 Modal -->
+        <div id="productSearchModal" class="modal">
+            <div class="modal-content" style="max-width: 900px; height: auto; max-height: 90vh;">
+                <div class="modal-header">
+                    <h2 style="margin: 0; color: #166534;">
+                        <i class="fas fa-box-open" style="margin-right: 8px;"></i> 제품 정보 검색 (마스터 DB)
+                    </h2>
+                    <span class="close-btn" id="closeProductSearchBtn">&times;</span>
+                </div>
+                <div class="modal-body" style="padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 15px;">
+                    <p style="color: #64748b; font-size: 0.88rem; margin: 0;">
+                        마스터 DB에 등록된 제품의 무게, 규격 정보를 실시간으로 검색합니다. <br>
+                        검색한 결과는 아래 히스토리에 누적되어 한눈에 확인 가능합니다.
+                    </p>
+
+                    <!-- 검색 입력 -->
+                    <div style="position: relative;">
+                        <input type="text" id="inputProductSearch" placeholder="제품명을 입력하세요 (예: S-8, 20-30...)"
+                            style="width: 100%; padding: 0.8rem 1rem 0.8rem 2.8rem; border: 2px solid #bbf7d0; border-radius: 12px; font-size: 1rem; outline: none; transition: border-color 0.2s;">
+                        <i class="fas fa-search"
+                            style="position: absolute; left: 1rem; top: 1.1rem; color: #10b981;"></i>
+
+                        <!-- 실시간 검색 드롭다운 (옵션, 필요 시 구현) -->
+                        <div id="productSearchSuggestions"
+                            style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0 0 12px 12px; z-index: 1000; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); max-height: 200px; overflow-y: auto;">
+                        </div>
+                    </div>
+
+                    <!-- 검색 히스토리 (누적 결과) -->
+                    <div style="flex: 1; min-height: 0; display: flex; flex-direction: column;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-size: 0.85rem; font-weight: 700; color: #166534;">
+                                <i class="fas fa-history"></i> 검색 결과 목록 (<span id="productSearchHistoryCount">0</span>건)
+                            </div>
+                            <button id="btnClearProductSearchHistory" class="btn"
+                                style="padding: 2px 8px; font-size: 0.75rem; background: #fef2f2; color: #ef4444; border: 1px solid #fee2e2;">
+                                <i class="fas fa-trash-alt"></i> 목록 비우기
+                            </button>
+                        </div>
+                        <div
+                            style="max-height: 450px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                                <thead style="position: sticky; top: 0; background: #ecfdf5; z-index: 10;">
+                                    <tr>
+                                        <th
+                                            style="padding: 10px; text-align: left; border-bottom: 1px solid #bbf7d0; color: #065f46;">
+                                            제품명</th>
+                                        <th
+                                            style="padding: 10px; text-align: center; border-bottom: 1px solid #bbf7d0; color: #065f46;">
+                                            타입</th>
+                                        <th
+                                            style="padding: 10px; text-align: right; border-bottom: 1px solid #bbf7d0; color: #065f46;">
+                                            무게 (kg)</th>
+                                        <th
+                                            style="padding: 10px; text-align: center; border-bottom: 1px solid #bbf7d0; color: #065f46;">
+                                            규격 (W×D×H)</th>
+                                        <th
+                                            style="padding: 10px; text-align: right; border-bottom: 1px solid #bbf7d0; color: #065f46;">
+                                            CBM</th>
+                                        <th
+                                            style="padding: 10px; text-align: center; border-bottom: 1px solid #bbf7d0; color: #065f46;">
+                                            삭제</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productSearchHistoryBody">
+                                    <!-- 검색 결과가 여기에 누적됨 -->
+                                    <tr>
+                                        <td colspan="6"
+                                            style="padding: 2.5rem; text-align: center; color: #94a3b8; font-style: italic;">
+                                            제품명을 검색하면 여기에 정보가 요약되어 쌓입니다.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer"
+                    style="text-align: right; margin-top: 0.5rem; border-top: 1px solid #eee; padding: 1rem 1.5rem;">
+                    <button class="btn btn-secondary" id="closeProductSearchBottomBtn">닫기</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Settings Modal -->
         <div id="settingsModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <h2 style="margin: 0;">⚙️ 선사/포워딩 매핑 설정</h2>
+                        <div style="display: flex; gap: 8px; margin-left: 20px;">
+                            <button id="btnDownloadCarriersFromDb" class="btn btn-primary-soft"
+                                style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">
+                                <i class="fas fa-cloud-download-alt"></i> DB 불러오기
+                            </button>
+                            <button id="btnUploadCarriersToDb" class="btn btn-secondary-outline"
+                                style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">
+                                <i class="fas fa-cloud-upload-alt"></i> DB 등록하기
+                            </button>
+                        </div>
                     </div>
                     <span class="close-btn">&times;</span>
                 </div>
@@ -449,6 +549,16 @@
             <div class="modal-header">
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <h2 style="margin: 0;">📋 조건별 자동분류 규칙 관리</h2>
+                    <div style="display: flex; gap: 8px; margin-left: 20px;">
+                        <button id="btnDownloadRulesFromDb" class="btn btn-primary-soft"
+                            style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">
+                            <i class="fas fa-cloud-download-alt"></i> DB 불러오기
+                        </button>
+                        <button id="btnUploadRulesToDb" class="btn btn-secondary-outline"
+                            style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">
+                            <i class="fas fa-cloud-upload-alt"></i> DB 등록하기
+                        </button>
+                    </div>
                 </div>
                 <span class="close-btn" id="closeRulesBtn">&times;</span>
             </div>

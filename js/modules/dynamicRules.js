@@ -45,6 +45,18 @@ async function loadDynamicRules() {
                     "targetField": "errorDetail",
                     "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 1:36 오입력 확인 요망</span>",
                     "tagColor": "danger"
+                },
+                {
+                    "id": "rule_down_remark_empty",
+                    "isActive": true,
+                    "groupName": "기본 정보 체크",
+                    "conditionOperator": "AND",
+                    "conditions": [
+                        { "field": "downRemark", "operator": "regexMatch", "value": "^$" }
+                    ],
+                    "targetField": "errorDetail",
+                    "targetValue": "전산 리마크 누락",
+                    "tagColor": "danger"
                 }
 
             ];
@@ -541,6 +553,53 @@ document.getElementById('rulesTableBody').addEventListener('click', (e) => {
 
         // 스크롤 이동
         document.querySelector('.rule-form-card').scrollIntoView({ behavior: 'smooth' });
+    }
+});
+
+// --- DB Sync Manual Buttons ---
+document.getElementById('btnDownloadRulesFromDb')?.addEventListener('click', async () => {
+    if (confirm("클라우드 DB에서 규칙을 불러오시겠습니까? 현재 로컬 데이터가 덮어씌워질 수 있습니다.")) {
+        try {
+            const response = await fetch(`${API_BASE}/api/sync/rules`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.rules) {
+                    dynamicRules = data.rules;
+                    saveDynamicRules(); // 로컬 파일 및 스테이트 업데이트
+                    renderRulesTable();
+                    alert("DB에서 규칙을 성공적으로 불러왔습니다.");
+                } else {
+                    alert("DB에 저장된 규칙이 없습니다.");
+                }
+            } else {
+                alert("DB 연동 실패");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("오류 발생: " + err.message);
+        }
+    }
+});
+
+document.getElementById('btnUploadRulesToDb')?.addEventListener('click', async () => {
+    if (confirm("현재 규칙들을 클라우드 DB에 등록(백업)하시겠습니까? 기존 DB 데이터가 대체됩니다.")) {
+        try {
+            const response = await fetch(`${API_BASE}/api/sync/rules`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rules: dynamicRules })
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert("성공적으로 DB에 등록되었습니다.");
+                if (window.updateDbGlobalStats) window.updateDbGlobalStats();
+            } else {
+                alert("DB 등록 실패: " + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("오류 발생: " + err.message);
+        }
     }
 });
 

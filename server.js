@@ -14,6 +14,7 @@ const MAIL_CONFIG_FILE = path.join(DATA_DIR, 'mail_config.json');
 
 // pg re-integrated with safe error handling
 let pool = null;
+let isConnecting = false;
 let currentDbConfig = {
     user: process.env.PGUSER || 'root',
     host: process.env.PGHOST || 'svc.sel3.cloudtype.app',
@@ -27,6 +28,23 @@ let currentDbConfig = {
     keepAlive: true,               // TCP Keep-Alive 활성화 (연결 끊김 방지 핵심)
     application_name: 'ExcelCompareApp'
 };
+
+// --- DB 연결 유틸리티 ---
+async function getPool() {
+    if (!pool) {
+        if (isConnecting) {
+            console.log("⏳ [DB] 이미 연결 중입니다. 대기...");
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return getPool();
+        }
+        console.log("🔌 [DB] 풀이 초기화되지 않았습니다. 연결을 시도합니다.");
+        const result = await connectToDb(currentDbConfig);
+        if (!result.success) {
+            throw new Error(`DB 연결 실패: ${result.message}`);
+        }
+    }
+    return pool;
+}
 
 // Load saved config if exists
 if (fs.existsSync(DB_CONFIG_FILE)) {
@@ -42,10 +60,18 @@ if (fs.existsSync(DB_CONFIG_FILE)) {
 const { Pool } = require('pg');
 
 async function connectToDb(config) {
+    if (isConnecting) return { success: false, message: "이미 연결 시도 중입니다." };
+    isConnecting = true;
+
     try {
         if (pool) {
             console.log("🔄 [DB] 기존 연결 풀 종료 중...");
-            await pool.end();
+            try {
+                await pool.end();
+            } catch (e) {
+                console.warn("⚠️ [DB] 기존 풀 종료 중 오류 (무시):", e.message);
+            }
+            pool = null;
         }
 
         currentDbConfig = { ...currentDbConfig, ...config };
@@ -58,20 +84,26 @@ async function connectToDb(config) {
         // 보안상 비밀번호가 포함된 설정 파일 저장
         fs.writeFileSync(DB_CONFIG_FILE, JSON.stringify(currentDbConfig, null, 2));
 
-        pool = new Pool(currentDbConfig);
+        const newPool = new Pool(currentDbConfig);
 
-        pool.on('error', (err) => {
+        newPool.on('error', (err) => {
             console.error('❌ [DB] Pool error (심각):', err.message);
+            // 치명적인 오류(연결 종료 등) 발생 시 풀을 null로 만들어 재연결 유도
+            if (err.message.includes('terminated') || err.message.includes('closed') || err.message.includes('ended')) {
+                console.warn('⚠️ [DB] 연결이 끊겼습니다. 다음 요청 시 재연결을 시도합니다.');
+                pool = null;
+            }
         });
 
-        pool.on('connect', () => {
+        newPool.on('connect', () => {
             console.log('✅ [DB] 새로운 클라이언트가 연결되었습니다.');
         });
 
         // 연결 테스트
-        const client = await pool.connect();
+        const client = await newPool.connect();
         try {
             console.log("✅ [DB] 연결 테스트 성공!");
+            pool = newPool; // 테스트 성공 시에만 전역 pool에 할당
             await initDb();
             return { success: true, message: `Connected to ${currentDbConfig.host}` };
         } finally {
@@ -79,7 +111,10 @@ async function connectToDb(config) {
         }
     } catch (err) {
         console.error("❌ [DB] 초기 연결 및 테이블 생성 실패:", err.message);
+        pool = null; // 실패 시 확실히 null 유지
         return { success: false, message: err.message };
+    } finally {
+        isConnecting = false;
     }
 }
 
@@ -797,7 +832,13 @@ app.get('/api/master-data', async (req, res) => {
 
 // 제품 마스터 DB 저장 헬퍼 함수
 async function saveMasterDataToDb(masterData) {
-    if (!pool) return;
+    let pool;
+    try {
+        pool = await getPool();
+    } catch (e) {
+        console.error("❌ [DB] 마스터 저장 실패 (연결 불가):", e.message);
+        return;
+    }
 
     // 중복 제거
     const uniqueMap = new Map();
@@ -863,9 +904,8 @@ async function saveMasterDataToDb(masterData) {
 // 마스터 데이터 정리 (오래된 데이터 삭제)
 app.post('/api/master-data/clean', async (req, res) => {
     const { days } = req.body;
-    if (!pool) return res.status(500).json({ success: false, message: 'DB 연결 불가' });
-
     try {
+        const pool = await getPool();
         const thresholdDays = parseInt(days) || 30;
         const result = await pool.query(
             "DELETE FROM product_master_sync WHERE (last_used_at IS NULL OR last_used_at < NOW() - INTERVAL '1 day' * $1) AND updated_at < NOW() - INTERVAL '1 day' * $1",
@@ -883,9 +923,8 @@ app.post('/api/master-data/clean', async (req, res) => {
 
 // 마스터 데이터 전체 삭제 (초기화용)
 app.post('/api/master-data/reset', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: 'DB 연결 불가' });
-
     try {
+        const pool = await getPool();
         await pool.query("DELETE FROM product_master_sync");
         res.json({ success: true, message: "제품 마스터 DB가 완전히 초기화되었습니다." });
     } catch (err) {
@@ -907,8 +946,11 @@ app.post('/api/upload-master', upload.single('masterFile'), async (req, res) => 
         console.log(`✅ [API] 마스터 파일 파싱 성공 (${data.length}건)`);
 
         // 2. DB에 즉시 동기화
-        if (pool) {
+        try {
+            const pool = await getPool();
             await saveMasterDataToDb(data);
+        } catch (e) {
+            console.warn("⚠️ [API] 마스터 DB 동기화 대기 (연결 실패):", e.message);
         }
 
         // 3. 파일 유지 (백업용)
@@ -964,8 +1006,8 @@ app.post('/api/rules', (req, res) => {
 
 // 1. 선사 매핑 클라우드 동기화
 app.get('/api/sync/carriers', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     try {
+        const pool = await getPool();
         const result = await pool.query('SELECT code, names FROM carrier_mappings ORDER BY code ASC');
         const mapping = {};
         result.rows.forEach(row => {
@@ -978,11 +1020,11 @@ app.get('/api/sync/carriers', async (req, res) => {
 });
 
 app.post('/api/sync/carriers', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     const { mapping } = req.body;
     if (!mapping) return res.status(400).json({ success: false, message: "데이터가 없습니다." });
 
     try {
+        const pool = await getPool();
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
@@ -1009,8 +1051,8 @@ app.post('/api/sync/carriers', async (req, res) => {
 
 // 2. 자동분류 규칙 클라우드 동기화
 app.get('/api/sync/rules', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     try {
+        const pool = await getPool();
         console.log("📂 [API] 자동분류 규칙 로드 중...");
         const result = await pool.query('SELECT * FROM auto_classify_rules ORDER BY updated_at DESC');
         const rules = result.rows.map(row => ({
@@ -1031,11 +1073,11 @@ app.get('/api/sync/rules', async (req, res) => {
 });
 
 app.post('/api/sync/rules', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     const { rules } = req.body;
     if (!rules || !Array.isArray(rules)) return res.status(400).json({ success: false, message: "데이터가 올바르지 않습니다." });
 
     try {
+        const pool = await getPool();
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
@@ -1065,8 +1107,8 @@ app.post('/api/sync/rules', async (req, res) => {
 
 // 4. 컨테이너 보류(Hold) 클라우드 동기화
 app.get('/api/sync/holds', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     try {
+        const pool = await getPool();
         const result = await pool.query('SELECT cntr_no as "cntrNo", hold_reason as "reason" FROM container_holds ORDER BY created_at DESC');
         res.json({ success: true, holds: result.rows });
     } catch (err) {
@@ -1075,11 +1117,11 @@ app.get('/api/sync/holds', async (req, res) => {
 });
 
 app.post('/api/sync/holds', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     const { cntrNo, reason } = req.body;
     if (!cntrNo) return res.status(400).json({ success: false, message: "컨테이너 번호가 없습니다." });
 
     try {
+        const pool = await getPool();
         await pool.query(
             'INSERT INTO container_holds (cntr_no, hold_reason) VALUES ($1, $2) ON CONFLICT (cntr_no) DO UPDATE SET hold_reason = EXCLUDED.hold_reason',
             [cntrNo.trim().toUpperCase(), reason || '']
@@ -1091,11 +1133,11 @@ app.post('/api/sync/holds', async (req, res) => {
 });
 
 app.delete('/api/sync/holds/:cntrNo', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     const { cntrNo } = req.params;
     if (!cntrNo) return res.status(400).json({ success: false, message: "컨테이너 번호가 없습니다." });
 
     try {
+        const pool = await getPool();
         await pool.query('DELETE FROM container_holds WHERE cntr_no = $1', [cntrNo.trim().toUpperCase()]);
         res.json({ success: true, message: "보류가 해제되었습니다." });
     } catch (err) {
@@ -1105,8 +1147,8 @@ app.delete('/api/sync/holds/:cntrNo', async (req, res) => {
 
 // 3. 제품 마스터 클라우드 동기화
 app.get('/api/sync/product-master', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     try {
+        const pool = await getPool();
         const result = await pool.query('SELECT prod_name as name, prod_type as type, weight, width, depth, height FROM product_master_sync ORDER BY prod_name ASC');
         res.json({ success: true, masterData: result.rows });
     } catch (err) {
@@ -1115,7 +1157,6 @@ app.get('/api/sync/product-master', async (req, res) => {
     }
 });
 app.post('/api/sync/product-master', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     const { masterData } = req.body;
     if (!masterData || !Array.isArray(masterData)) return res.status(400).json({ success: false, message: "데이터가 올바르지 않습니다." });
 
@@ -1130,7 +1171,7 @@ app.post('/api/sync/product-master', async (req, res) => {
     console.log(`📡 [Sync] 제품 마스터 동기화 시작 (원본: ${masterData.length}건, 중복제거 후: ${finalData.length}건)`);
 
     try {
-        const client = await pool.connect();
+        const pool = await getPool();
         try {
             await client.query('BEGIN');
             await client.query('DELETE FROM product_master_sync');
@@ -1188,14 +1229,13 @@ app.post('/api/sync/product-master', async (req, res) => {
 // --- DB 저장 및 조회 API ---
 
 app.post('/api/save-to-db', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
-
     const items = req.body.items;
     if (!items || !Array.isArray(items)) {
         return res.status(400).json({ success: false, message: "저장할 데이터가 없습니다." });
     }
 
     try {
+        const pool = await getPool();
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
@@ -1327,76 +1367,79 @@ app.post('/api/save-to-db', async (req, res) => {
 });
 
 app.get('/api/db-search', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
+    try {
+        const pool = await getPool();
+        const { cntr_no, dest, carrier, start, end } = req.query;
 
-    const { cntr_no, dest, carrier, start, end } = req.query;
-
-    // container_results를 기준으로 하되 container_jobs와 JOIN하여 최신 헤더 정보를 가져옴
-    let queryBase = `
+        // container_results를 기준으로 하되 container_jobs와 JOIN하여 최신 헤더 정보를 가져옴
+        let queryBase = `
         SELECT r.*, j.eta as job_eta, j.etd as job_etd, j.remark as job_remark, j.job_name as job_name_master
         FROM container_results r
         LEFT JOIN container_jobs j ON r.job_id = j.id
         WHERE 1=1
     `;
-    let params = [];
-    let paramIndex = 1;
+        let params = [];
+        let paramIndex = 1;
 
-    if (cntr_no) {
-        queryBase += ` AND (r.cntr_no ILIKE $${paramIndex} OR r.seal_no ILIKE $${paramIndex})`;
-        params.push(`%${cntr_no}%`);
-        paramIndex++;
-    }
-    if (dest) {
-        queryBase += ` AND r.destination ILIKE $${paramIndex}`;
-        params.push(`%${dest}%`);
-        paramIndex++;
-    }
-    if (carrier) {
-        queryBase += ` AND r.carrier ILIKE $${paramIndex}`;
-        params.push(`%${carrier}%`);
-        paramIndex++;
-    }
-    if (start) {
-        queryBase += ` AND r.saved_at >= $${paramIndex}`;
-        params.push(start + " 00:00:00");
-        paramIndex++;
-    }
-    if (end) {
-        queryBase += ` AND r.saved_at <= $${paramIndex}`;
-        params.push(end + " 23:59:59");
-        paramIndex++;
-    }
+        if (cntr_no) {
+            queryBase += ` AND (r.cntr_no ILIKE $${paramIndex} OR r.seal_no ILIKE $${paramIndex})`;
+            params.push(`%${cntr_no}%`);
+            paramIndex++;
+        }
+        if (dest) {
+            queryBase += ` AND r.destination ILIKE $${paramIndex}`;
+            params.push(`%${dest}%`);
+            paramIndex++;
+        }
+        if (carrier) {
+            queryBase += ` AND r.carrier ILIKE $${paramIndex}`;
+            params.push(`%${carrier}%`);
+            paramIndex++;
+        }
+        if (start) {
+            queryBase += ` AND r.saved_at >= $${paramIndex}`;
+            params.push(start + " 00:00:00");
+            paramIndex++;
+        }
+        if (end) {
+            queryBase += ` AND r.saved_at <= $${paramIndex}`;
+            params.push(end + " 23:59:59");
+            paramIndex++;
+        }
 
-    queryBase += " ORDER BY r.saved_at DESC, r.cntr_no ASC, r.id ASC";
-    console.log(`🔎 [DB] 검색 요청: \n - 쿼리: ${queryBase} \n - 파라미터: ${JSON.stringify(params)}`);
+        queryBase += " ORDER BY r.saved_at DESC, r.cntr_no ASC, r.id ASC";
+        console.log(`🔎 [DB] 검색 요청: \n - 쿼리: ${queryBase} \n - 파라미터: ${JSON.stringify(params)}`);
 
-    try {
-        // 먼저 개수만 조회
-        const countQuery = `SELECT COUNT(*) as total FROM (${queryBase}) as subquery`;
-        const countResult = await pool.query(countQuery, params);
-        const totalCount = parseInt(countResult.rows[0].total);
+        try {
+            // 먼저 개수만 조회
+            const countQuery = `SELECT COUNT(*) as total FROM (${queryBase}) as subquery`;
+            const countResult = await pool.query(countQuery, params);
+            const totalCount = parseInt(countResult.rows[0].total);
 
-        // 요청에 confirm=true가 있으면 데이터 조회, 없으면 개수만 반환
-        if (req.query.confirm === 'true' || totalCount <= 500) {
-            const result = await pool.query(queryBase, params);
-            res.json({ success: true, results: result.rows, totalCount });
-        } else {
-            res.json({ success: true, results: [], totalCount, requireConfirm: true });
+            // 요청에 confirm=true가 있으면 데이터 조회, 없으면 개수만 반환
+            if (req.query.confirm === 'true' || totalCount <= 500) {
+                const result = await pool.query(queryBase, params);
+                res.json({ success: true, results: result.rows, totalCount });
+            } else {
+                res.json({ success: true, results: [], totalCount, requireConfirm: true });
+            }
+        } catch (err) {
+            console.error("❌ DB 조회 오류:", err);
+            res.status(500).json({ success: false, message: err.message });
         }
     } catch (err) {
-        console.error("❌ DB 조회 오류:", err);
         res.status(500).json({ success: false, message: err.message });
     }
 });
 
 // DB 벌크 삭제 API
 app.post('/api/db-bulk-delete', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     const { ids } = req.body;
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
         return res.status(400).json({ success: false, message: "삭제할 ID 목록이 없습니다." });
     }
     try {
+        const pool = await getPool();
         await pool.query('DELETE FROM container_results WHERE id = ANY($1)', [ids]);
         res.json({ success: true, message: `${ids.length}건의 레코드가 삭제되었습니다.` });
     } catch (err) {
@@ -1406,9 +1449,9 @@ app.post('/api/db-bulk-delete', async (req, res) => {
 
 // DB 레코드 삭제 API
 app.delete('/api/db-record/:id', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     const { id } = req.params;
     try {
+        const pool = await getPool();
         await pool.query('DELETE FROM container_results WHERE id = $1', [id]);
         res.json({ success: true, message: "레코드가 삭제되었습니다." });
     } catch (err) {
@@ -1418,10 +1461,10 @@ app.delete('/api/db-record/:id', async (req, res) => {
 
 // DB 레코드 수정 API
 app.put('/api/db-record/:id', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     const { id } = req.params;
     const { cntr_no, prod_name, qty_plan, qty_load, cntr_type, carrier, destination, weight_mixed, adj1 } = req.body;
     try {
+        const pool = await getPool();
         await pool.query(`
             UPDATE container_results 
             SET cntr_no = $1, prod_name = $2, qty_plan = $3, qty_load = $4, 
@@ -1436,8 +1479,8 @@ app.put('/api/db-record/:id', async (req, res) => {
 
 // DB 전체 통계 API
 app.get('/api/db-stats', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     try {
+        const pool = await getPool();
         const statsQuery = `
             SELECT 
                 (SELECT COUNT(DISTINCT cntr_no) FROM container_results WHERE cntr_no IS NOT NULL AND cntr_no != '') as total_cntrs,
@@ -1446,17 +1489,17 @@ app.get('/api/db-stats', async (req, res) => {
                 (SELECT COUNT(*) FROM auto_classify_rules) as total_rules,
                 (SELECT COUNT(*) FROM product_master_sync) as total_master,
                 COALESCE(pg_size_pretty(
-                    COALESCE(pg_total_relation_size('container_results'), 0) + 
-                    COALESCE(pg_total_relation_size('container_jobs'), 0) +
-                    COALESCE(pg_total_relation_size('carrier_mappings'), 0) +
-                    COALESCE(pg_total_relation_size('auto_classify_rules'), 0) +
-                    COALESCE(pg_total_relation_size('product_master_sync'), 0)
+                    (SELECT COALESCE(pg_total_relation_size('container_results'), 0)) + 
+                    (SELECT COALESCE(pg_total_relation_size('container_jobs'), 0)) +
+                    (SELECT COALESCE(pg_total_relation_size('carrier_mappings'), 0)) +
+                    (SELECT COALESCE(pg_total_relation_size('auto_classify_rules'), 0)) +
+                    (SELECT COALESCE(pg_total_relation_size('product_master_sync'), 0))
                 ), '0 KB') as total_size
         `;
         const result = await pool.query(statsQuery);
         res.json({ success: true, stats: result.rows[0] });
     } catch (err) {
-        console.error("❌ DB 통계 조회 오류:", err);
+        console.error("❌ DB 통계 조회 오류:", err.message);
         // 테이블이 아직 없는 경우 등을 위해 기본값 반환
         res.json({
             success: true,
@@ -1595,8 +1638,8 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
 // --- POP 샘플 무게 등록 API (DB 연동) ---
 // GET: 전체 POP 무게 목록 반환
 app.get('/api/pop-weights', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     try {
+        const pool = await getPool();
         const result = await pool.query('SELECT cntr_no, weight, memo FROM container_pops');
         const data = {};
         result.rows.forEach(row => {
@@ -1610,8 +1653,8 @@ app.get('/api/pop-weights', async (req, res) => {
 
 // POST: POP 무게 등록/업데이트 { cntrNo, weight, memo }
 app.post('/api/pop-weights', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     try {
+        const pool = await getPool();
         const { cntrNo, weight, memo } = req.body;
         const key = (cntrNo || '').trim().toUpperCase();
         if (!key) return res.status(400).json({ success: false, message: '컨테이너 번호가 필요합니다.' });
@@ -1642,8 +1685,8 @@ app.post('/api/pop-weights', async (req, res) => {
 
 // DELETE: POP 무게 해제 ?cntrNo=XXXX
 app.delete('/api/pop-weights', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     try {
+        const pool = await getPool();
         const key = ((req.query.cntrNo || '')).trim().toUpperCase();
         if (!key) return res.status(400).json({ success: false, message: '컨테이너 번호가 필요합니다.' });
 
@@ -1704,8 +1747,8 @@ app.post('/api/email/config', (req, res) => {
 
 // --- 이메일 설정 클라우드 동기화 API ---
 app.get('/api/sync/email-config', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     try {
+        const pool = await getPool();
         const result = await pool.query("SELECT value FROM app_configs WHERE key = 'mail_config'");
         if (result.rows.length === 0) {
             return res.json({ success: false, message: "클라우드에 저장된 설정이 없습니다." });
@@ -1717,8 +1760,8 @@ app.get('/api/sync/email-config', async (req, res) => {
 });
 
 app.post('/api/sync/email-config', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     try {
+        const pool = await getPool();
         // 실제 비밀번호가 포함된 로컬 파일 읽기
         if (!fs.existsSync(MAIL_CONFIG_FILE)) {
             return res.status(400).json({ success: false, message: "로컬 설정 파일이 없습니다." });
@@ -1766,17 +1809,16 @@ app.post('/api/send-email', async (req, res) => {
         console.log('📧 메일 발송 성공:', info.messageId);
 
         // --- 보낸 메일 DB 저장 로직 추가 ---
-        if (pool) {
-            try {
-                await pool.query(
-                    'INSERT INTO sent_emails (recipient, subject, content) VALUES ($1, $2, $3)',
-                    [to, subject || '(제목 없음)', html]
-                );
-                console.log('📝 보낸 메일이 DB에 저장되었습니다.');
-            } catch (dbErr) {
-                console.error('❌ 보낸 메일 DB 저장 실패:', dbErr.message);
-                // 메일 발송 자체는 성공했으므로 응답에는 실패를 포함하지 않음
-            }
+        try {
+            const pool = await getPool();
+            await pool.query(
+                'INSERT INTO sent_emails (recipient, subject, content) VALUES ($1, $2, $3)',
+                [to, subject || '(제목 없음)', html]
+            );
+            console.log('📝 보낸 메일이 DB에 저장되었습니다.');
+        } catch (dbErr) {
+            console.warn('⚠️ 보낸 메일 DB 저장 대기 (연결 실패):', dbErr.message);
+            // 메일 발송 자체는 성공했으므로 응답에는 실패를 포함하지 않음
         }
 
         res.json({ success: true, message: '메일이 발송되었습니다.' });
@@ -1788,8 +1830,8 @@ app.post('/api/send-email', async (req, res) => {
 
 // --- 보낸 메일 이력 조회 API ---
 app.get('/api/email/history', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     try {
+        const pool = await getPool();
         const result = await pool.query('SELECT id, recipient, subject, sent_at FROM sent_emails ORDER BY sent_at DESC LIMIT 100');
         res.json({ success: true, history: result.rows });
     } catch (err) {
@@ -1799,9 +1841,9 @@ app.get('/api/email/history', async (req, res) => {
 
 // --- 보낸 메일 상세 내용 조회 API ---
 app.get('/api/email/history/:id', async (req, res) => {
-    if (!pool) return res.status(500).json({ success: false, message: "DB 모듈이 없습니다." });
     const { id } = req.params;
     try {
+        const pool = await getPool();
         const result = await pool.query('SELECT * FROM sent_emails WHERE id = $1', [id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, message: "기록을 찾을 수 없습니다." });
