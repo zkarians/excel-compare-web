@@ -66,12 +66,15 @@ async function connectToDb(config) {
     try {
         if (pool) {
             console.log("🔄 [DB] 기존 연결 풀 종료 중...");
+            const oldPool = pool;
+            pool = null;
             try {
-                await pool.end();
+                if (!oldPool.ending) {
+                    await oldPool.end();
+                }
             } catch (e) {
                 console.warn("⚠️ [DB] 기존 풀 종료 중 오류 (무시):", e.message);
             }
-            pool = null;
         }
 
         currentDbConfig = { ...currentDbConfig, ...config };

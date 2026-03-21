@@ -5,8 +5,8 @@
   "password": "z456qwe12!@",
   "port": 5432,
   "ssl": false,
-  "connectionTimeoutMillis": 5000,
-  "idleTimeoutMillis": 10000,
+  "connectionTimeoutMillis": 15000,
+  "idleTimeoutMillis": 600000,
   "max": 5,
   "keepAlive": true,
   "application_name": "ExcelCompareApp"

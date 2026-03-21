@@ -1,56 +1,19 @@
 [
   {
-    "id": "rule_4side_vinyl",
+    "id": "rule_down_remark_empty",
     "isActive": true,
-    "groupName": null,
+    "groupName": "기본 정보 체크",
     "conditionOperator": "AND",
     "conditions": [
       {
-        "field": "remark",
-        "value": "4면",
-        "operator": "includes"
+        "field": "downRemark",
+        "value": "^$",
+        "operator": "regexMatch"
       }
     ],
-    "targetField": "tags",
-    "targetValue": "4면비닐",
-    "tagColor": "info"
-  },
-  {
-    "id": "rule_nz",
-    "isActive": true,
-    "groupName": "",
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "dest",
-        "value": "NZ",
-        "operator": "startsWith"
-      },
-      {
-        "field": "prodType",
-        "value": "CDZ",
-        "operator": "exact"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "뉴질랜드 노실카",
-    "tagColor": "info"
-  },
-  {
-    "id": "rule_kit",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "prodName",
-        "value": "D-",
-        "operator": "startsWith"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "키트작업",
-    "tagColor": "secondary"
+    "targetField": "errorDetail",
+    "targetValue": "전산 리마크 누락",
+    "tagColor": "danger"
   },
   {
     "id": "rule_psm",
@@ -60,13 +23,13 @@
     "conditions": [
       {
         "field": "prodName",
-        "operator": "includes",
-        "value": "PSM04N25G0.ECWCH00"
+        "value": "PSM04N25G0.ECWCH00",
+        "operator": "includes"
       },
       {
         "field": "prodName",
-        "operator": "includes",
-        "value": "KSTK"
+        "value": "KSTK",
+        "operator": "includes"
       }
     ],
     "targetField": "tags",
@@ -598,6 +561,59 @@
     "targetField": "tags",
     "targetValue": "주의북항변경요망",
     "tagColor": "danger"
+  },
+  {
+    "id": "rule_4side_vinyl",
+    "isActive": true,
+    "groupName": null,
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "remark",
+        "value": "4면",
+        "operator": "includes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "4면비닐",
+    "tagColor": "info"
+  },
+  {
+    "id": "rule_nz",
+    "isActive": true,
+    "groupName": "",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "dest",
+        "value": "NZ",
+        "operator": "startsWith"
+      },
+      {
+        "field": "prodType",
+        "value": "CDZ",
+        "operator": "exact"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "뉴질랜드 노실카",
+    "tagColor": "info"
+  },
+  {
+    "id": "rule_kit",
+    "isActive": true,
+    "groupName": null,
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "prodName",
+        "value": "D-",
+        "operator": "startsWith"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "키트작업",
+    "tagColor": "secondary"
   },
   {
     "id": "rule_bukhang_pct",
