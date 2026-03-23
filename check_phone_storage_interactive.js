@@ -6,7 +6,7 @@ const args = [
     '-p', '8022',
     '-o', 'StrictHostKeyChecking=no',
     '-o', 'ConnectTimeout=15',
-    'u0_a286@192.168.0.24',
+    'u0_a354@192.168.0.24',
     'df -h /data/data/com.termux/files/home && echo "---" && df -h /storage/emulated/0'
 ];
 

@@ -340,14 +340,32 @@
                     <h4 style="font-size: 0.9rem; margin-bottom: 10px; color: #1e293b;">🔄 폰 DB 연결 설정</h4>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         <div style="display: flex; gap: 10px;">
-                            <input type="text" id="phoneDbIp" placeholder="IP 또는 DDNS (예: maizen.iptime.org)"
-                                style="flex: 3; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                            <input type="number" id="phoneDbPort" placeholder="포트" value="5432"
-                                style="flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                            <button id="btnSavePhoneIp" class="btn btn-primary"
-                                style="flex: 1; padding: 8px; font-size: 0.85rem;">정보 저장</button>
+                            <div style="flex: 3;">
+                                <label style="display:block; font-size:0.75rem; color:#64748b; margin-bottom:2px;">호스트 (IP/DDNS)</label>
+                                <input type="text" id="phoneDbIp" placeholder="예: maizen.iptime.org"
+                                    style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="display:block; font-size:0.75rem; color:#64748b; margin-bottom:2px;">포트</label>
+                                <input type="number" id="phoneDbPort" placeholder="포트" value="5432"
+                                    style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            </div>
                         </div>
                         <div style="display: flex; gap: 10px;">
+                            <div style="flex: 1;">
+                                <label style="display:block; font-size:0.75rem; color:#64748b; margin-bottom:2px;">사용자 (User)</label>
+                                <input type="text" id="phoneDbUser" placeholder="예: u0_a354"
+                                    style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="display:block; font-size:0.75rem; color:#64748b; margin-bottom:2px;">DB명 (Database)</label>
+                                <input type="text" id="phoneDbName" placeholder="예: u0_a354"
+                                    style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            </div>
+                            <button id="btnSavePhoneIp" class="btn btn-primary"
+                                style="align-self: flex-end; padding: 8px 15px; font-size: 0.85rem; height: 38px;">정보 저장</button>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 5px;">
                             <button id="switchToCloud" class="btn btn-secondary-outline"
                                 style="flex: 1; padding: 10px; font-size: 0.85rem;">☁️ 클라우드로 전환</button>
                             <button id="switchToPhone" class="btn btn-primary-soft"

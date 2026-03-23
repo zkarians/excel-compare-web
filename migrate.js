@@ -2,7 +2,7 @@
 const { Pool } = require('pg');
 
 const cloudConfig = { user: 'root', host: 'svc.sel3.cloudtype.app', database: 'excel_compare', password: 'z456qwe12!@', port: 30554, ssl: false };
-const phoneConfig = { user: 'u0_a286', host: '192.168.0.24', database: 'u0_a286', password: '', port: 5432, ssl: false };
+const phoneConfig = { user: 'u0_a354', host: '192.168.0.24', database: 'u0_a354', password: '', port: 5432, ssl: false };
 
 async function migrate() {
     console.log('🚀 DB 마이그레이션 도구 시작 (고성능 배치)');

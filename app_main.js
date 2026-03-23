@@ -429,6 +429,8 @@ const closeDbSettingsBtn = document.getElementById('closeDbSettingsBtn');
 const closeDbSettingsBottomBtn = document.getElementById('closeDbSettingsBottomBtn');
 const phoneDbIp = document.getElementById('phoneDbIp');
 const phoneDbPort = document.getElementById('phoneDbPort');
+const phoneDbUser = document.getElementById('phoneDbUser');
+const phoneDbName = document.getElementById('phoneDbName');
 const btnSavePhoneIp = document.getElementById('btnSavePhoneIp');
 const switchToCloud = document.getElementById('switchToCloud');
 const switchToPhone = document.getElementById('switchToPhone');
@@ -646,15 +648,16 @@ async function initializeApp() {
         btnReloadDownload.style.display = 'inline-block';
     }
 
-    // DB Settings IP/Port Load
+    // DB Settings IP/Port/User/DB Load
     const savedPhoneIp = localStorage.getItem('phoneDbIp');
     const savedPhonePort = localStorage.getItem('phoneDbPort');
-    if (savedPhoneIp && phoneDbIp) {
-        phoneDbIp.value = savedPhoneIp;
-    }
-    if (savedPhonePort && phoneDbPort) {
-        phoneDbPort.value = savedPhonePort;
-    }
+    const savedPhoneUser = localStorage.getItem('phoneDbUser') || 'u0_a354';
+    const savedPhoneName = localStorage.getItem('phoneDbName') || 'u0_a354';
+
+    if (savedPhoneIp && phoneDbIp) phoneDbIp.value = savedPhoneIp;
+    if (savedPhonePort && phoneDbPort) phoneDbPort.value = savedPhonePort;
+    if (phoneDbUser) phoneDbUser.value = savedPhoneUser;
+    if (phoneDbName) phoneDbName.value = savedPhoneName;
 
     checkReadyStatus();
 }
@@ -689,10 +692,16 @@ btnOpenDbSettings.addEventListener('click', () => {
 btnSavePhoneIp.addEventListener('click', () => {
     const ip = phoneDbIp.value.trim();
     const port = phoneDbPort.value.trim();
-    if (!ip || !port) return alert("주소와 포트를 입력하세요.");
+    const user = phoneDbUser.value.trim();
+    const db = phoneDbName.value.trim();
+
+    if (!ip || !port || !user || !db) return alert("필수 정보를 모두 입력하세요 (호스트, 포트, 사용자, DB명).");
+
     localStorage.setItem('phoneDbIp', ip);
     localStorage.setItem('phoneDbPort', port);
-    alert("폰 접속 정보(DDNS/IP)가 저장되었습니다.");
+    localStorage.setItem('phoneDbUser', user);
+    localStorage.setItem('phoneDbName', db);
+    alert("폰 접속 정보가 저장되었습니다.");
 });
 
 switchToCloud.addEventListener('click', async () => {
@@ -711,13 +720,16 @@ switchToCloud.addEventListener('click', async () => {
 switchToPhone.addEventListener('click', async () => {
     const ip = phoneDbIp.value.trim();
     const port = phoneDbPort.value.trim() || '5432';
-    if (!ip) return alert("폰 주소를 먼저 설정하고 저장해주세요.");
+    const user = phoneDbUser.value.trim();
+    const db = phoneDbName.value.trim();
+
+    if (!ip || !user || !db) return alert("폰 설정을 먼저 완료하고 저장해주세요.");
     if (!confirm(`폰 DB(${ip}:${port})로 전환하시겠습니까?`)) return;
 
     const resp = await fetch(`${API_BASE}/api/db/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ host: ip, user: 'u0_a286', port: Number(port), database: 'u0_a286', password: '', ssl: false })
+        body: JSON.stringify({ host: ip, user: user, port: Number(port), database: db, password: '', ssl: false })
     });
     const data = await resp.json();
     alert(data.message);
@@ -736,7 +748,9 @@ async function startSync(direction) {
     syncProgressBar.style.width = '0%';
     syncStatusText.textContent = "동기화 준비 중...";
 
-    const phoneConfig = { host: ip, user: 'u0_a286', port: Number(port), database: 'u0_a286', password: '', ssl: false };
+    const user = phoneDbUser.value.trim();
+    const db = phoneDbName.value.trim();
+    const phoneConfig = { host: ip, user: user, port: Number(port), database: db, password: '', ssl: false };
 
     try {
         const resp = await fetch(`${API_BASE}/api/db/sync`, {

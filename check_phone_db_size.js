@@ -1,8 +1,8 @@
 const { Client } = require('pg');
 const config = {
-    user: 'u0_a286',
+    user: 'u0_a354',
     host: '192.168.0.24',
-    database: 'u0_a286',
+    database: 'u0_a354',
     password: 'z456qwe12!@',
     port: 5432
 };
@@ -11,8 +11,8 @@ async function checkDbSize() {
     const client = new Client(config);
     try {
         await client.connect();
-        const res = await client.query("SELECT pg_size_pretty(pg_database_size('u0_a286')) as db_size");
-        console.log(`Current Phone DB Size (u0_a286): ${res.rows[0].db_size}`);
+        const res = await client.query("SELECT pg_size_pretty(pg_database_size('u0_a354')) as db_size");
+        console.log(`Current Phone DB Size (u0_a354): ${res.rows[0].db_size}`);
 
         const resTables = await client.query(`
             SELECT 

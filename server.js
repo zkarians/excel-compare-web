@@ -16,11 +16,11 @@ const MAIL_CONFIG_FILE = path.join(DATA_DIR, 'mail_config.json');
 let pool = null;
 let isConnecting = false;
 let currentDbConfig = {
-    user: process.env.PGUSER || 'root',
-    host: process.env.PGHOST || 'svc.sel3.cloudtype.app',
-    database: process.env.PGDATABASE || 'excel_compare',
-    password: process.env.PGPASSWORD || 'z456qwe12!@',
-    port: Number(process.env.PGPORT) || 30554,
+    user: process.env.PGUSER || 'u0_a354',
+    host: process.env.PGHOST || 'localhost',
+    database: process.env.PGDATABASE || 'u0_a354',
+    password: process.env.PGPASSWORD || '',
+    port: Number(process.env.PGPORT) || 5432,
     ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false,
     connectionTimeoutMillis: 15000, // 연결 시도 타임아웃 15초
     idleTimeoutMillis: 600000,    // 10분 동안 활동 없으면 연결 해제 (기존 5분에서 증가)
