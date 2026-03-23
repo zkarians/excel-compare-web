@@ -836,6 +836,12 @@ tr.border-group td {
     background-color: #eef2ff !important;
 }
 
+.row-success-manual {
+    color: #065f46;
+    background-color: #ecfdf5 !important;
+    border-left: 4px solid #10b981;
+}
+
 .row-noproduct {
     color: #92400e;
     background-color: #fff7ed !important;

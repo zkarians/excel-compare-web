@@ -2282,8 +2282,9 @@ function displayResults(results, isDbMode = false) {
                 r.cssClass = 'row-success-manual';
                 r.isErrorRow = false;
                 r.isApproved = true;
-                r.adj1 = '원본파일없음 (기존오류원인)';
-                r.detail = '<span style="color: #059669; font-weight: bold;">[사용자 수동 승인완료]</span>';
+                // 기존 상세 정보 보관 (필요 시)
+                const originalDetail = r.detail || "";
+                r.detail = `<span style="color: #059669; font-weight: bold;">[사용자 수동 정상전환]</span> ${originalDetail ? `(${originalDetail})` : ''}`;
             } else {
                 r.isApproved = false;
             }
@@ -2727,16 +2728,16 @@ function displayResults(results, isDbMode = false) {
                                    style="width: 16px; height: 16px; cursor: pointer;">
                         </td>
                     ` : ''}
-                    ${(currentFilter === 'error' || currentFilter === 'missing') ? `
+                    ${(currentFilter === 'error' || currentFilter === 'missing' || currentFilter === 'all') ? `
                         <td class="col-manage" style="text-align: center;">
                             ${(() => {
-                            const isHType = (res.prodType || '').toUpperCase() === 'H';
-                            const isMissingOrExtra = res.badgeClass === 'missing' || res.badgeClass === 'extra' || res.rowBadge === 'extra';
+                            const isError = res.isErrorRow || res.badgeClass === 'diff' || res.badgeClass === 'missing' || res.badgeClass === 'extra' || res.badgeClass === 'noproduct';
+                            const isApproved = res.isApproved;
 
-                            if (res.isApproved) {
+                            if (isApproved) {
                                 return `<button class="btn btn-secondary" style="padding: 2px 6px; font-size: 0.75rem;" onclick="window.cancelApproveHItem('${res.cntrNo}', '${res.prodName}')">승인취소</button>`;
                             }
-                            if (isHType && isMissingOrExtra) {
+                            if (isError) {
                                 return `<button class="btn btn-primary" style="padding: 2px 6px; font-size: 0.75rem; background-color: #7c3aed; border-color: #7c3aed;" onclick="window.approveHItem('${res.cntrNo}', '${res.prodName}')">승인</button>`;
                             }
                             return '-';
