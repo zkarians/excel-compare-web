@@ -2809,7 +2809,7 @@ function displayResults(results, isDbMode = false) {
                                    style="width: 16px; height: 16px; cursor: pointer;">
                         </td>
                     ` : ''}
-                    ${(currentFilter === 'error' || currentFilter === 'missing' || currentFilter === 'all') ? `
+                    ${(currentFilter === 'error' || currentFilter === 'missing' || currentFilter === 'all' || currentFilter === 'success') ? `
                         <td class="col-manage" style="text-align: center;">
                             ${(() => {
                             const isError = res.isErrorRow || res.badgeClass === 'diff' || res.badgeClass === 'missing' || res.badgeClass === 'extra' || res.badgeClass === 'noproduct';
@@ -3107,7 +3107,7 @@ function updateTableHeaders(filterName) {
         tableHead.innerHTML = `
             <tr>
                 ${isSelectableTab ? '<th class="col-select">선택</th>' : ''}
-                ${(isDbSearchTab || isErrorTab) ? '<th class="col-manage">관리</th>' : ''}
+                ${(isDbSearchTab || isErrorTab || filterName === 'success' || filterName === 'all') ? '<th class="col-manage">관리</th>' : ''}
                 <th class="col-work">작업구분</th>
                 <th class="col-cntr">컨테이너번호</th>
                 <th class="col-type">제품구분</th>
