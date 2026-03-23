@@ -6,7 +6,7 @@ const args = [
     '-p', '8022',
     '-o', 'StrictHostKeyChecking=no',
     '-o', 'ConnectTimeout=10',
-    'u0_a286@192.168.0.17',
+    'u0_a286@192.168.0.24',
     'echo "--- [1] 프로세스 확인 (Postgres & SSH) ---" && ps aux | grep -p "postgres|sshd" && ' +
     'echo "--- [2] 자동실행 스크립트 내용 및 권한 ---" && ls -l ~/.termux/boot/start-db.sh && cat ~/.termux/boot/start-db.sh && ' +
     'echo "--- [3] 시스템 가동 시간 및 부하 ---" && uptime && ' +

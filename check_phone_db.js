@@ -3,7 +3,7 @@ const { Pool } = require('pg');
 
 const phoneConfig = {
     user: 'u0_a286',
-    host: '192.168.0.17',
+    host: '192.168.0.24',
     database: 'u0_a286',
     password: '',
     port: 5432

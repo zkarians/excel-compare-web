@@ -1895,6 +1895,8 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.listen(port, () => {
-    console.log(`🚀 API 서버가 http://localhost:${port} 에서 실행 중입니다.`);
+app.listen(port, '0.0.0.0', () => {
+    console.log(`🚀 API 서버가 http://0.0.0.0:${port} 에서 실행 중입니다.`);
+    console.log(`🌐 로컬 접속: http://localhost:${port}`);
+    console.log(`📱 네트워크 접속: http://192.168.0.24:${port}`);
 });

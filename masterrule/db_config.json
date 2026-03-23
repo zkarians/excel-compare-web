@@ -1,7 +1,7 @@
 {
-  "user": "u0_a286",
-  "host": "maizen.iptime.org",
-  "database": "u0_a286",
+  "user": "u0_a354",
+  "host": "192.168.0.24",
+  "database": "u0_a354",
   "password": "z456qwe12!@",
   "port": 5432,
   "ssl": false,

@@ -1,7 +1,7 @@
 const { Client } = require('pg');
 const config = {
     user: 'u0_a286',
-    host: 'maizen.iptime.org',
+    host: '192.168.0.24',
     database: 'u0_a286',
     password: 'z456qwe12!@',
     port: 5432
