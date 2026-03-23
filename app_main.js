@@ -2511,16 +2511,31 @@ function displayResults(results, isDbMode = false) {
 
                     const key = `${item.cntrNo}_${item.transporter}`;
                     if (!aggregatedFull.has(key)) {
-                        aggregatedFull.set(key, JSON.parse(JSON.stringify(item)));
+                        const newItem = JSON.parse(JSON.stringify(item));
+                        newItem._totalMixed = parseFloat(item.weights.mixed) || 0;
+                        newItem._totalOrig = parseFloat(item.weights.orig) || 0;
+                        newItem._totalDown = parseFloat(item.weights.down) || 0;
+                        newItem.allProdNames = new Set([item.prodName]);
+                        aggregatedFull.set(key, newItem);
                     } else {
                         const existing = aggregatedFull.get(key);
-                        existing._totalMixed = (existing._totalMixed || 0) + (parseFloat(item.weights.mixed) || 0);
-                        existing._totalOrig = (existing._totalOrig || 0) + (parseFloat(item.weights.orig) || 0);
-                        existing._totalDown = (existing._totalDown || 0) + (parseFloat(item.weights.down) || 0);
+                        existing.allProdNames.add(item.prodName);
+                        existing._totalMixed += (parseFloat(item.weights.mixed) || 0);
+                        existing._totalOrig += (parseFloat(item.weights.orig) || 0);
+                        existing._totalDown += (parseFloat(item.weights.down) || 0);
+
+                        // 하위 행 중 하나라도 오류가 있으면 전체를 오류로 표시
+                        if (item.isErrorRow) existing.isErrorRow = true;
+                        if (item.badgeClass === 'missing') existing.hasMissingModel = true;
                     }
                 });
 
                 aggregatedFull.forEach(item => {
+                    // 중량 차이 계산 (임계치 1kg)
+                    const isManualWeight = userSelectedWeights[item.cntrNo];
+                    const weightDiff = Math.abs(item._totalMixed - item._totalOrig);
+                    item.isCriticalWeightMismatch = weightDiff >= 1 && !isManualWeight;
+
                     const isApproved = item.isApproved || (manualApprovedItems && manualApprovedItems.has(`${(item.cntrNo || "").trim()}_${(item.prodName || "").trim()}`));
                     const isError = (item.isErrorRow || item.hasMissingModel || item.badgeClass === 'missing' || item.isCriticalWeightMismatch) && !isApproved;
 
