@@ -1766,17 +1766,20 @@ function updateDashboard() {
         }
 
         const rows = comparisonResult.filter(r => r.cntrNo === cntrNo);
-        const allNew = rows.every(r => r.qtyInfo.origPlan === null);
-        const allMissing = rows.every(r => r.badgeClass === 'missing');
-        const hasError = rows.some(r => r.isErrorRow || r.badgeClass === 'diff');
+        // 수동 승인 여부 확인 헬퍼
+        const checkApproved = (r) => manualApprovedItems.has(`${(r.cntrNo || "").trim()}_${(r.prodName || "").trim()}`);
+
+        const allNew = rows.every(r => r.qtyInfo.origPlan === null && !checkApproved(r));
+        const allMissing = rows.every(r => r.badgeClass === 'missing' && !checkApproved(r));
+        const hasError = rows.some(r => (r.isErrorRow || r.badgeClass === 'diff') && !checkApproved(r));
 
         if (allNew) {
-            const allNewNonAssetOnly = rows.every(r => r.badgeClass === 'success');
+            const allNewNonAssetOnly = rows.every(r => r.badgeClass === 'success' || checkApproved(r));
             if (allNewNonAssetOnly) successCntrs.add(cntrNo);
             else extraCntrs.add(cntrNo);
         } else if (allMissing) {
             missingCntrs.add(cntrNo);
-        } else if (hasError || rows.some(r => r.badgeClass === 'new' || r.badgeClass === 'missing')) {
+        } else if (hasError || rows.some(r => (r.badgeClass === 'new' || r.badgeClass === 'missing') && !checkApproved(r))) {
             errorCntrs.add(cntrNo);
         } else {
             successCntrs.add(cntrNo);
@@ -2194,13 +2197,18 @@ btnCompare.addEventListener('click', async () => {
 // Helper to categorize a container's rows (matches updateDashboard logic)
 function getContainerStatus(results, cntrNo) {
     const rows = results.filter(r => r.cntrNo === cntrNo);
-    const allNew = rows.every(r => r.qtyInfo.origPlan === null && !r.isApproved);
-    const allMissing = rows.every(r => r.badgeClass === 'missing' && !r.isApproved);
-    const hasError = rows.some(r => (r.isErrorRow || r.badgeClass === 'diff') && !r.isApproved);
+    if (rows.length === 0) return 'none';
+
+    // 수동 승인 여부 확인 헬퍼 (r.isApproved 플래그 및 manualApprovedItems Set 동시 확인)
+    const checkApproved = (r) => r.isApproved || manualApprovedItems.has(`${(r.cntrNo || "").trim()}_${(r.prodName || "").trim()}`);
+
+    const allNew = rows.every(r => r.qtyInfo.origPlan === null && !checkApproved(r));
+    const allMissing = rows.every(r => r.badgeClass === 'missing' && !checkApproved(r));
+    const hasError = rows.some(r => (r.isErrorRow || r.badgeClass === 'diff') && !checkApproved(r));
 
     if (allNew) return 'extra';
     if (allMissing) return 'missing';
-    if (hasError || rows.some(r => (r.badgeClass === 'extra' || r.badgeClass === 'missing') && !r.isApproved)) return 'error';
+    if (hasError || rows.some(r => (r.badgeClass === 'extra' || r.badgeClass === 'missing') && !checkApproved(r))) return 'error';
     return 'success';
 }
 
