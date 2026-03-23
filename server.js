@@ -1287,7 +1287,7 @@ app.post('/api/save-to-db', async (req, res) => {
             // job_name, eta, etd, remark가 같은 건은 하나의 job으로 묶음
             const jobsMap = new Map();
             items.forEach(item => {
-                const jobKey = `${item.jobName || ''}_${item.eta || ''}_${item.etd || ''}_${item.origRemark || ''}`;
+                const jobKey = `${item.jobName || ''}_${item.eta || ''}_${item.etd || ''}`;
                 if (!jobsMap.has(jobKey)) {
                     jobsMap.set(jobKey, {
                         jobName: item.jobName || '',
@@ -1302,8 +1302,8 @@ app.post('/api/save-to-db', async (req, res) => {
             for (const [key, job] of jobsMap.entries()) {
                 // 기존에 동일한 Job이 있는지 확인 (최근 1시간 내 동일 정보면 재사용 또는 신규 생성)
                 const jobCheck = await client.query(
-                    "SELECT id FROM container_jobs WHERE job_name = $1 AND eta = $2 AND etd = $3 AND remark = $4 ORDER BY saved_at DESC LIMIT 1",
-                    [job.jobName, job.eta, job.etd, job.remark]
+                    "SELECT id FROM container_jobs WHERE job_name = $1 AND eta = $2 AND etd = $3 ORDER BY saved_at DESC LIMIT 1",
+                    [job.jobName, job.eta, job.etd]
                 );
 
                 let jobId;
@@ -1355,7 +1355,7 @@ app.post('/api/save-to-db', async (req, res) => {
             `;
 
             for (const item of items) {
-                const jobKey = `${item.jobName || ''}_${item.eta || ''}_${item.etd || ''}_${item.origRemark || ''}`;
+                const jobKey = `${item.jobName || ''}_${item.eta || ''}_${item.etd || ''}`;
                 const jobId = jobIdsMap.get(jobKey);
 
                 await client.query(insertQuery, [
