@@ -1802,16 +1802,26 @@ function updateDashboard() {
     if (holdCountEl) holdCountEl.textContent = holdCntrs.size;
     if (valUpdate) valUpdate.textContent = (missingProductsSet ? missingProductsSet.size : 0) + (weightMismatchSet ? weightMismatchSet.size : 0);
 
-    // 운송사 통계
+    // 운송사 통계: 컨테이너와 운송사 쌍으로 집계 (한 컨테이너에 여러 운송사가 섞인 경우 대비)
     let chunmaCount = 0;
     let bniCount = 0;
     let unknownCount = 0;
 
-    cntrSet.forEach(cntrNo => {
-        const rows = comparisonResult.filter(r => r.cntrNo === cntrNo);
-        const trans = rows[0].transporter;
-        if (trans.includes('천마')) chunmaCount++;
-        else if (trans.includes('BNI')) bniCount++;
+    const transAssignmentMap = new Set();
+    comparisonResult.forEach(r => {
+        const ck = (r.cntrNo || "").trim().toUpperCase();
+        let trans = (r.transporter || "").trim();
+        let transKey = "unknown";
+        if (trans.includes('천마')) transKey = '천마';
+        else if (trans.includes('BNI')) transKey = 'BNI';
+
+        transAssignmentMap.add(`${ck}|${transKey}`);
+    });
+
+    transAssignmentMap.forEach(assignment => {
+        const [_, trans] = assignment.split('|');
+        if (trans === '천마') chunmaCount++;
+        else if (trans === 'BNI') bniCount++;
         else unknownCount++;
     });
 
@@ -2511,21 +2521,24 @@ function displayResults(results, isDbMode = false) {
                 });
 
                 aggregatedFull.forEach(item => {
-                    // 오류 여부와 상관없이 '정상 진행' 가능한 상태(승인 포함)면 집계에 포함
                     const isApproved = item.isApproved || (manualApprovedItems && manualApprovedItems.has(`${(item.cntrNo || "").trim()}_${(item.prodName || "").trim()}`));
                     const isError = (item.isErrorRow || item.hasMissingModel || item.badgeClass === 'missing' || item.isCriticalWeightMismatch) && !isApproved;
 
-                    if (!isError) {
-                        const t = item.transporter;
-                        if (t) totalCountsForSummary[t] = (totalCountsForSummary[t] || 0) + 1;
-
-                        // 중량 합산
-                        const choice = userSelectedWeights[item.cntrNo];
-                        let w = 0;
-                        if (choice === 'orig') w = item._totalOrig || parseFloat(item.weights.orig) || 0;
-                        else if (choice === 'down') w = item._totalDown || parseFloat(item.weights.down) || 0;
-                        else w = item._totalMixed || parseFloat(item.weights.mixed) || 0;
-                        summaryTotalWeight += w;
+                    const t = item.transporter;
+                    if (t) {
+                        if (!totalCountsForSummary[t]) totalCountsForSummary[t] = { total: 0, success: 0, error: 0 };
+                        totalCountsForSummary[t].total++;
+                        if (isError) totalCountsForSummary[t].error++;
+                        else {
+                            totalCountsForSummary[t].success++;
+                            // 중량 합산
+                            const choice = userSelectedWeights[item.cntrNo];
+                            let w = 0;
+                            if (choice === 'orig') w = item._totalOrig || parseFloat(item.weights.orig) || 0;
+                            else if (choice === 'down') w = item._totalDown || parseFloat(item.weights.down) || 0;
+                            else w = item._totalMixed || parseFloat(item.weights.mixed) || 0;
+                            summaryTotalWeight += w;
+                        }
                     }
                 });
 
@@ -2535,12 +2548,24 @@ function displayResults(results, isDbMode = false) {
                         if (b[0] === '미분류') return -1;
                         return a[0].localeCompare(b[0]);
                     })
-                    .map(([name, count]) => `${name} ${count}개`)
+                    .map(([name, counts]) => {
+                        if (counts.error > 0) {
+                            return `${name} ${counts.total}개 (${counts.success}정상 / <span style="color: #ef4444; font-weight: bold;">${counts.error}오류</span>)`;
+                        }
+                        return `${name} ${counts.total}개`;
+                    })
                     .join(' / ');
 
-                document.getElementById('entrySummaryContent').textContent = summaryContent || "결과 없음";
-                document.getElementById('entryTotalWeight').textContent = summaryTotalWeight.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                document.getElementById('entrySummary').style.display = 'flex';
+                const entrySummaryContent = document.getElementById('entrySummaryContent');
+                if (entrySummaryContent) {
+                    entrySummaryContent.innerHTML = summaryContent || "결과 없음";
+                }
+                const entryTotalWeight = document.getElementById('entryTotalWeight');
+                if (entryTotalWeight) {
+                    entryTotalWeight.textContent = summaryTotalWeight.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+                const entrySummary = document.getElementById('entrySummary');
+                if (entrySummary) entrySummary.style.display = 'flex';
 
                 displayData.sort((a, b) => {
                     const transA = (a.transporter || "");
