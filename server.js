@@ -936,6 +936,46 @@ app.post('/api/master-data/reset', async (req, res) => {
     }
 });
 
+// 마스터 개별 추가/수정 (Upsert)
+app.post('/api/master-data/save', async (req, res) => {
+    try {
+        const { prodName, prodType, weight, width, depth, height, cbm } = req.body;
+        if (!prodName) {
+            return res.status(400).json({ success: false, message: '제품명은 필수입니다.' });
+        }
+
+        const pool = await getPool();
+        const query = `
+            INSERT INTO product_master_sync (prod_name, prod_type, weight, width, depth, height, cbm, updated_at, last_used_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+            ON CONFLICT (prod_name) DO UPDATE 
+            SET prod_type = EXCLUDED.prod_type,
+                weight = EXCLUDED.weight,
+                width = EXCLUDED.width,
+                depth = EXCLUDED.depth,
+                height = EXCLUDED.height,
+                cbm = EXCLUDED.cbm,
+                updated_at = NOW(),
+                last_used_at = NOW()
+        `;
+        const values = [
+            prodName.trim(),
+            prodType || '',
+            parseFloat(weight) || 0,
+            parseFloat(width) || 0,
+            parseFloat(depth) || 0,
+            parseFloat(height) || 0,
+            parseFloat(cbm) || 0
+        ];
+
+        await pool.query(query, values);
+        res.json({ success: true, message: '제품 정보가 성공적으로 저장되었습니다.' });
+    } catch (err) {
+        console.error('❌ 마스터 개별 저장 오류:', err);
+        res.status(500).json({ success: false, message: 'DB 저장 오류: ' + err.message });
+    }
+});
+
 // 마스터 데이터 직접 업로드 API (DB 동기화 포함)
 app.post('/api/upload-master', upload.single('masterFile'), async (req, res) => {
     try {

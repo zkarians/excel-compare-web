@@ -4800,9 +4800,14 @@ function renderProductSearchHistory() {
             <td style="padding: 12px; text-align: center; color: #475569; font-family: monospace; font-size: 0.85rem;">${item.width || 0} × ${item.depth || 0} × ${item.height || 0}</td>
             <td style="padding: 12px; text-align: right; color: #0284c7; font-weight: 500;">${(parseFloat(item.cbm) || 0).toFixed(3)}</td>
             <td style="padding: 12px; text-align: center;">
-                <button onclick="window.removeFromProductSearchHistory(${index})" class="btn" style="padding: 4px 8px; font-size: 0.8rem; background: #fff1f2; color: #e11d48; border: 1px solid #fecaca; border-radius: 6px;">
-                    <i class="fas fa-times"></i>
-                </button>
+                <div style="display: flex; gap: 4px; justify-content: center;">
+                    <button onclick="window.openPmEditModal('${item.name.replace(/'/g, "\\'")}')" class="btn" style="padding: 4px 8px; font-size: 0.8rem; background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; border-radius: 6px;">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="window.removeFromProductSearchHistory(${index})" class="btn" style="padding: 4px 8px; font-size: 0.8rem; background: #fff1f2; color: #e11d48; border: 1px solid #fecaca; border-radius: 6px;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -4822,6 +4827,136 @@ function addToProductSearchHistory(product) {
     productSearchHistory.unshift(product);
     renderProductSearchHistory();
 }
+
+// --- 제품 마스터 개별 추가/수정 (Add/Edit) 로직 ---
+window.openPmEditModal = (productName = null) => {
+    const modal = document.getElementById('productMasterEditModal');
+    const title = document.getElementById('pmEditModalTitle');
+    const inputName = document.getElementById('pmEditName');
+    const inputType = document.getElementById('pmEditType');
+    const inputWeight = document.getElementById('pmEditWeight');
+    const inputWidth = document.getElementById('pmEditWidth');
+    const inputDepth = document.getElementById('pmEditDepth');
+    const inputHeight = document.getElementById('pmEditHeight');
+    const inputCbm = document.getElementById('pmEditCbm');
+
+    // 폼 초기화
+    document.getElementById('pmEditForm').reset();
+    inputName.readOnly = false;
+    inputName.style.backgroundColor = '#fff';
+
+    if (productName) {
+        title.innerHTML = '<i class="fas fa-edit" style="margin-right: 8px;"></i> 제품 마스터 수정';
+        const product = productMaster.find(p => p.name === productName);
+        if (product) {
+            inputName.value = product.name;
+            inputName.readOnly = true;
+            inputName.style.backgroundColor = '#f1f5f9';
+            inputType.value = product.prodType || product.type || '';
+            inputWeight.value = product.weight || '';
+            inputWidth.value = product.width || '';
+            inputDepth.value = product.depth || '';
+            inputHeight.value = product.height || '';
+            inputCbm.value = product.cbm || '';
+        }
+    } else {
+        title.innerHTML = '<i class="fas fa-plus" style="margin-right: 8px;"></i> 신규 제품 추가';
+    }
+
+    if (modal) modal.style.display = 'block';
+};
+
+window.closePmEditModal = () => {
+    const modal = document.getElementById('productMasterEditModal');
+    if (modal) modal.style.display = 'none';
+};
+
+// CBM 자동계산 및 이벤트 리스너 등록
+document.addEventListener('DOMContentLoaded', () => {
+    const btnCalcCbm = document.getElementById('btnCalcCbm');
+    if (btnCalcCbm) {
+        btnCalcCbm.addEventListener('click', () => {
+            const w = parseFloat(document.getElementById('pmEditWidth').value) || 0;
+            const d = parseFloat(document.getElementById('pmEditDepth').value) || 0;
+            const h = parseFloat(document.getElementById('pmEditHeight').value) || 0;
+            const cbm = (w * d * h) / 1000000;
+            document.getElementById('pmEditCbm').value = cbm.toFixed(3);
+        });
+    }
+
+    const closeBtns = [
+        document.getElementById('closePmEditBtn'),
+        document.getElementById('closePmEditBottomBtn')
+    ];
+    closeBtns.forEach(btn => {
+        if (btn) btn.addEventListener('click', window.closePmEditModal);
+    });
+
+    const btnSavePmEdit = document.getElementById('btnSavePmEdit');
+    if (btnSavePmEdit) {
+        btnSavePmEdit.addEventListener('click', async () => {
+            const name = document.getElementById('pmEditName').value.trim();
+            if (!name) return alert('제품명을 입력해주세요.');
+
+            const payload = {
+                prodName: name,
+                prodType: document.getElementById('pmEditType').value.trim(),
+                weight: parseFloat(document.getElementById('pmEditWeight').value) || 0,
+                width: parseFloat(document.getElementById('pmEditWidth').value) || 0,
+                depth: parseFloat(document.getElementById('pmEditDepth').value) || 0,
+                height: parseFloat(document.getElementById('pmEditHeight').value) || 0,
+                cbm: parseFloat(document.getElementById('pmEditCbm').value) || 0
+            };
+
+            btnSavePmEdit.disabled = true;
+            btnSavePmEdit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 저장 중...';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/master-data/save`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert('성공적으로 저장되었습니다.');
+                    window.closePmEditModal();
+
+                    if (typeof loadProductMaster === 'function') {
+                        await loadProductMaster();
+
+                        // 히스토리에 있는 항목이면 뷰 업데이트
+                        const pIdx = productSearchHistory.findIndex(p => p.name === payload.prodName);
+                        if (pIdx !== -1) {
+                            productSearchHistory[pIdx] = {
+                                name: payload.prodName,
+                                prodType: payload.prodType,
+                                weight: payload.weight,
+                                width: payload.width,
+                                depth: payload.depth,
+                                height: payload.height,
+                                cbm: payload.cbm
+                            };
+                            renderProductSearchHistory();
+                        }
+                    }
+                } else {
+                    alert('저장 실패: ' + result.message);
+                }
+            } catch (err) {
+                alert('통신 오류: ' + err.message);
+            } finally {
+                btnSavePmEdit.disabled = false;
+                btnSavePmEdit.innerHTML = '저장';
+            }
+        });
+    }
+
+    const btnOpenAdd = document.getElementById('btnOpenProductMasterAdd');
+    if (btnOpenAdd) {
+        btnOpenAdd.addEventListener('click', () => window.openPmEditModal(null));
+    }
+});
 
 // 자동완성 선택 처리
 window.handleProductSuggestionSelect = (name) => {
