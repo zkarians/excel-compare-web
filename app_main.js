@@ -2477,8 +2477,10 @@ function displayResults(results, isDbMode = false) {
                     // Determine if a critical weight mismatch exists
                     item.isCriticalWeightMismatch = Math.abs(item._totalMixed - item._totalOrig) >= 1 && !userSelectedWeights[item.cntrNo];
 
-                    // 요약 집계 시 오류건(붉은색 건)은 배제
-                    const isError = item.isErrorRow || item.hasMissingModel || item.badgeClass === 'missing' || item.isCriticalWeightMismatch;
+                    // 요약 집계 시 오류건(붉은색 건)은 배제 (단, 수동 승인된 건은 포함)
+                    const isApproved = item.isApproved || (manualApprovedItems && manualApprovedItems.has(`${(item.cntrNo || "").trim()}_${(item.prodName || "").trim()}`));
+                    const isError = (item.isErrorRow || item.hasMissingModel || item.badgeClass === 'missing' || item.isCriticalWeightMismatch) && !isApproved;
+
                     if (!isError) {
                         totalWeight += item.selectedTotalWeight;
                     }
@@ -2486,17 +2488,48 @@ function displayResults(results, isDbMode = false) {
                     return item;
                 });
 
-                const actualCounts = {};
-                displayData.forEach(item => {
-                    // 요약 집계 시 오류건은 배제 (메일 복사 시와 일치시킴)
-                    const isError = item.isErrorRow || item.hasMissingModel || item.badgeClass === 'missing' || item.isCriticalWeightMismatch;
-                    if (isError) return;
+                // --- 요약 집계 (화면 중앙 상단 요약 바와 일치시키기 위해 검색 필터와 무관하게 전체 집계) ---
+                const totalCountsForSummary = {};
+                let summaryTotalWeight = 0;
 
-                    const t = item.transporter;
-                    if (t) actualCounts[t] = (actualCounts[t] || 0) + 1;
+                // 검색 필터 전의 전체 리스트(fullResultsForStatus)를 사용하여 집계
+                const aggregatedFull = new Map();
+                fullResultsForStatus.forEach(item => {
+                    const cleanTrans = (item.transporter || "").replace(/\(빨강\)|\(파랑\)/g, "").trim();
+                    const isTargetTrans = (currentFilter === 'entry') ? (cleanTrans !== "미분류") : (cleanTrans === "미분류");
+                    if (!isTargetTrans) return;
+
+                    const key = `${item.cntrNo}_${item.transporter}`;
+                    if (!aggregatedFull.has(key)) {
+                        aggregatedFull.set(key, JSON.parse(JSON.stringify(item)));
+                    } else {
+                        const existing = aggregatedFull.get(key);
+                        existing._totalMixed = (existing._totalMixed || 0) + (parseFloat(item.weights.mixed) || 0);
+                        existing._totalOrig = (existing._totalOrig || 0) + (parseFloat(item.weights.orig) || 0);
+                        existing._totalDown = (existing._totalDown || 0) + (parseFloat(item.weights.down) || 0);
+                    }
                 });
 
-                const summaryContent = Object.entries(actualCounts)
+                aggregatedFull.forEach(item => {
+                    // 오류 여부와 상관없이 '정상 진행' 가능한 상태(승인 포함)면 집계에 포함
+                    const isApproved = item.isApproved || (manualApprovedItems && manualApprovedItems.has(`${(item.cntrNo || "").trim()}_${(item.prodName || "").trim()}`));
+                    const isError = (item.isErrorRow || item.hasMissingModel || item.badgeClass === 'missing' || item.isCriticalWeightMismatch) && !isApproved;
+
+                    if (!isError) {
+                        const t = item.transporter;
+                        if (t) totalCountsForSummary[t] = (totalCountsForSummary[t] || 0) + 1;
+
+                        // 중량 합산
+                        const choice = userSelectedWeights[item.cntrNo];
+                        let w = 0;
+                        if (choice === 'orig') w = item._totalOrig || parseFloat(item.weights.orig) || 0;
+                        else if (choice === 'down') w = item._totalDown || parseFloat(item.weights.down) || 0;
+                        else w = item._totalMixed || parseFloat(item.weights.mixed) || 0;
+                        summaryTotalWeight += w;
+                    }
+                });
+
+                const summaryContent = Object.entries(totalCountsForSummary)
                     .sort((a, b) => {
                         if (a[0] === '미분류') return 1;
                         if (b[0] === '미분류') return -1;
@@ -2506,7 +2539,7 @@ function displayResults(results, isDbMode = false) {
                     .join(' / ');
 
                 document.getElementById('entrySummaryContent').textContent = summaryContent || "결과 없음";
-                document.getElementById('entryTotalWeight').textContent = totalWeight.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('entryTotalWeight').textContent = summaryTotalWeight.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 document.getElementById('entrySummary').style.display = 'flex';
 
                 displayData.sort((a, b) => {
