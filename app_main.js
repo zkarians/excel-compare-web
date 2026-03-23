@@ -1802,6 +1802,14 @@ function updateDashboard() {
     if (holdCountEl) holdCountEl.textContent = holdCntrs.size;
     if (valUpdate) valUpdate.textContent = (missingProductsSet ? missingProductsSet.size : 0) + (weightMismatchSet ? weightMismatchSet.size : 0);
 
+    // [통합] 미분류 컨테이너 목록 (누락/추가건 포함)
+    const unclassifiedCntrNos = new Set(
+        comparisonResult.filter(r => (r.badgeClass === 'missing' || r.badgeClass === 'extra' ||
+            (manualApprovedItems.has(`${(r.cntrNo || "").trim()}_${(r.prodName || "").trim()}`) &&
+                (r.origBadgeClass === 'missing' || r.origBadgeClass === 'extra'))))
+            .map(r => r.cntrNo)
+    );
+
     // 운송사 통계: 컨테이너와 운송사 쌍으로 집계 (한 컨테이너에 여러 운송사가 섞인 경우 대비)
     let chunmaCount = 0;
     let bniCount = 0;
@@ -1810,10 +1818,18 @@ function updateDashboard() {
     const transAssignmentMap = new Set();
     comparisonResult.forEach(r => {
         const ck = (r.cntrNo || "").trim().toUpperCase();
+        const isUnclassified = unclassifiedCntrNos.has(r.cntrNo);
+
         let trans = (r.transporter || "").trim();
         let transKey = "unknown";
-        if (trans.includes('천마')) transKey = '천마';
-        else if (trans.includes('BNI')) transKey = 'BNI';
+
+        if (isUnclassified || trans === "미분류") {
+            transKey = "unknown";
+        } else if (trans.includes('천마')) {
+            transKey = '천마';
+        } else if (trans.includes('BNI')) {
+            transKey = 'BNI';
+        }
 
         transAssignmentMap.add(`${ck}|${transKey}`);
     });
@@ -2294,6 +2310,8 @@ function displayResults(results, isDbMode = false) {
         // --- 수동 승인 데이터 반영 ---
         results.forEach(r => {
             const approvalKey = `${(r.cntrNo || "").trim()}_${(r.prodName || "").trim()}`;
+            r.origBadgeClass = r.badgeClass; // 수동 승인 전 원본 배지 정보 보관 (탭 분류용)
+
             if (manualApprovedItems.has(approvalKey)) {
                 r.type = '승인(정상)';
                 r.badgeClass = 'success';
@@ -2307,6 +2325,11 @@ function displayResults(results, isDbMode = false) {
                 r.isApproved = false;
             }
         });
+
+        // [통합] 미분류 컨테이너 목록 (누락/추가건 포함) - 탭 분류 및 요약 집계에서 공통 사용
+        const unclassifiedCntrNos = new Set(
+            results.filter(r => (r.origBadgeClass === 'missing' || r.origBadgeClass === 'extra')).map(r => r.cntrNo)
+        );
 
         // --- 보류 정보 동기화 및 요약 ---
         const heldCntrs = new Set();
@@ -2400,9 +2423,12 @@ function displayResults(results, isDbMode = false) {
 
                 results.forEach(item => {
                     const cleanTrans = (item.transporter || "").replace(/\(빨강\)|\(파랑\)/g, "").trim();
-                    const isTargetTrans = (currentFilter === 'entry') ? (cleanTrans !== "미분류") : (cleanTrans === "미분류");
 
-                    if (!isTargetTrans) return;
+                    // 미분류 반입 탭 대상: 실제 운송사가 미분류이거나, 혹은 컨테이너 내부에 누락/추가건이 있는 경우
+                    const isUnclassifiedTab = (cleanTrans === "미분류") || unclassifiedCntrNos.has(item.cntrNo);
+                    const isTargetTab = (currentFilter === 'entry') ? !isUnclassifiedTab : isUnclassifiedTab;
+
+                    if (!isTargetTab) return;
                     // 전산 누락 컨테이너/모델도 합산 및 원인 분석을 위해 포함
                     // (기존에는 여기서 return; 하여 원인 분석이 안 되었음)
 
@@ -2506,7 +2532,8 @@ function displayResults(results, isDbMode = false) {
                 const aggregatedFull = new Map();
                 fullResultsForStatus.forEach(item => {
                     const cleanTrans = (item.transporter || "").replace(/\(빨강\)|\(파랑\)/g, "").trim();
-                    const isTargetTrans = (currentFilter === 'entry') ? (cleanTrans !== "미분류") : (cleanTrans === "미분류");
+                    const isUnclassified = (cleanTrans === "미분류") || (unclassifiedCntrNos && unclassifiedCntrNos.has(item.cntrNo));
+                    const isTargetTrans = (currentFilter === 'entry') ? !isUnclassified : isUnclassified;
                     if (!isTargetTrans) return;
 
                     const key = `${item.cntrNo}_${item.transporter}`;
