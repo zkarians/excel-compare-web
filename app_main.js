@@ -583,6 +583,12 @@ async function initializeApp() {
         if (diskDown) savedPathDown = diskDown;
     }
 
+    // 마지막 백업 시간 로드
+    const lastBackup = localStorage.getItem('lastBackupTime');
+    if (lastBackup && document.getElementById('lastBackupTime')) {
+        document.getElementById('lastBackupTime').textContent = lastBackup;
+    }
+
     // 경로 검증 헬퍼
     const isPathValid = async (p) => {
         if (!p || p.trim() === "") return false;
@@ -781,6 +787,65 @@ async function startSync(direction) {
 syncToPhone.addEventListener('click', () => startSync('to_phone'));
 syncToCloud.addEventListener('click', () => startSync('to_cloud'));
 
+// 퀵백업 (Cloud -> Phone)
+async function startQuickBackup(isAuto = false) {
+    const ip = localStorage.getItem('phoneDbIp') || (phoneDbIp ? phoneDbIp.value.trim() : '');
+    const port = localStorage.getItem('phoneDbPort') || (phoneDbPort ? phoneDbPort.value.trim() : '5432');
+    const user = localStorage.getItem('phoneDbUser') || (phoneDbUser ? phoneDbUser.value.trim() : '');
+    const db = localStorage.getItem('phoneDbName') || (phoneDbName ? phoneDbName.value.trim() : '');
+
+    if (!ip || !user || !db) {
+        if (!isAuto) alert("폰 DB 설정이 완료되지 않았습니다. [폰 DB 설정] 메뉴에서 먼저 설정해주세요.");
+        return;
+    }
+
+    if (!isAuto && !confirm("클라우드 ➜ 폰 즉시 전체 백업을 시작하시겠습니까?")) return;
+
+    if (!isAuto) {
+        syncProgress.style.display = 'block';
+        syncProgressBar.style.width = '0%';
+        syncStatusText.textContent = "백업 준비 중...";
+    }
+
+    const phoneConfig = { host: ip, user: user, port: Number(port), database: db, password: '', ssl: false };
+
+    try {
+        const resp = await fetch(`${API_BASE}/api/db/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ direction: 'to_phone', phoneConfig })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            const now = new Date();
+            const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+            localStorage.setItem('lastBackupTime', timeStr);
+            if (document.getElementById('lastBackupTime')) {
+                document.getElementById('lastBackupTime').textContent = timeStr;
+            }
+            if (!isAuto) {
+                syncProgressBar.style.width = '100%';
+                syncStatusText.textContent = "백업 완료!";
+                showToast("✨ 클라우드 데이터가 폰으로 백업되었습니다.");
+            } else {
+                console.log("✅ Auto-backup to phone completed.");
+            }
+        }
+    } catch (err) {
+        console.error("❌ Backup failed:", err);
+        if (!isAuto) alert("백업 실패: " + err.message);
+    } finally {
+        if (!isAuto) {
+            setTimeout(() => { syncProgress.style.display = 'none'; }, 2000);
+        }
+    }
+}
+
+const btnQuickBackup = document.getElementById('btnQuickBackup');
+if (btnQuickBackup) {
+    btnQuickBackup.addEventListener('click', () => startQuickBackup());
+}
+
 if (document.readyState === 'loading') {
     window.addEventListener('DOMContentLoaded', initializeApp);
 } else {
@@ -882,12 +947,13 @@ async function readExcelFile(file, type) {
                             let lastValidCntrNo = "";
                             let lastFontColor = null;
                             let lastValidJobName = "";
+                            let lastValidWorkDate = "";
                             let lastValidDest = "";
                             let lastValidE = "", lastValidN = "", lastValidO = "";
                             let lastValidP = "", lastValidQ = "", lastValidR = "";
                             let dataStarted = false;
 
-                            const COL = { JOB_NAME: 1, DEST: 5, PROD_TYPE: 7, PROD_NAME: 9, QTY: 10, CNTR_TYPE_FALLBACK: 12, CARRIER_FALLBACK: 13, CNTR_TYPE: 14, CARRIER: 15, ETA: 16, ETD: 17, REMARK: 18, CNTR_NO: 20, ADJ1: 21, ADJ2: 22 };
+                            const COL = { JOB_NAME: 1, DEST: 5, PROD_TYPE: 7, PROD_NAME: 9, QTY: 10, CNTR_TYPE_FALLBACK: 12, CARRIER_FALLBACK: 13, CNTR_TYPE: 14, CARRIER: 15, ETA: 16, ETD: 17, REMARK: 18, WORK_DATE: 19, CNTR_NO: 20, ADJ1: 21, ADJ2: 22 };
 
                             ws.eachRow((row, i) => {
                                 const safeGetText = (col) => {
@@ -911,7 +977,7 @@ async function readExcelFile(file, type) {
                                 let cellP = safeGetText(COL.ETA);
 
                                 if (currentJobName && currentJobName !== lastValidJobName) {
-                                    lastValidDest = ""; lastValidE = ""; lastValidN = ""; lastValidO = ""; lastValidP = ""; lastValidQ = ""; lastValidR = ""; lastValidCntrNo = ""; lastFontColor = null; lastValidJobName = currentJobName;
+                                    lastValidDest = ""; lastValidE = ""; lastValidN = ""; lastValidO = ""; lastValidP = ""; lastValidQ = ""; lastValidR = ""; lastValidCntrNo = ""; lastFontColor = null; lastValidJobName = currentJobName; lastValidWorkDate = "";
                                 }
 
                                 if (cellP) {
@@ -948,8 +1014,8 @@ async function readExcelFile(file, type) {
                                 const extractedDest = extractDestination(cellDest);
                                 if (/^[A-Za-z0-9]{5}$/.test(extractedDest)) { lastValidDest = extractedDest; lastValidE = cellDest; }
 
-                                let cellQ = safeGetText(COL.ETD), cellR = safeGetText(COL.REMARK);
-                                if (cellQ) lastValidQ = cellQ; if (cellR) lastValidR = cellR;
+                                let cellQ = safeGetText(COL.ETD), cellR = safeGetText(COL.REMARK), cellWorkDate = safeGetText(COL.WORK_DATE);
+                                if (cellQ) lastValidQ = cellQ; if (cellR) lastValidR = cellR; if (cellWorkDate) lastValidWorkDate = cellWorkDate;
 
                                 // 최종 컨테이너 번호 결정 (새 번호가 아니면 마지막 유효 번호 사용)
                                 let cntrNo = isNewCntr ? cellCntrNo : lastValidCntrNo;
@@ -974,7 +1040,7 @@ async function readExcelFile(file, type) {
                                 try { adj1Color = row.getCell(COL.ADJ1).font?.color?.argb || null; } catch (e) { }
 
                                 results.push({
-                                    sheetName: ws.name, jobName: lastValidJobName, dest: lastValidDest || lastValidE, prodType: safeGetText(COL.PROD_TYPE), prodName: cellProd, qty, cntrType: rawCntrType, carrier: rawCarrier, remark: lastValidR, eta: lastValidP, etd: cellQ || lastValidQ, adj1: safeGetText(COL.ADJ1), adj1Color, adj2: safeGetText(COL.ADJ2), cntrNo, transporter, source: type, tags: [], rawRow: row.values ? [...row.values] : []
+                                    sheetName: ws.name, jobName: lastValidJobName, dest: lastValidDest || lastValidE, prodType: safeGetText(COL.PROD_TYPE), prodName: cellProd, qty, cntrType: rawCntrType, carrier: rawCarrier, remark: lastValidR, eta: lastValidP, etd: cellQ || lastValidQ, adj1: safeGetText(COL.ADJ1), adj1Color, adj2: safeGetText(COL.ADJ2), cntrNo, transporter, source: type, tags: [], rawRow: row.values ? [...row.values] : [], workDate: lastValidWorkDate
                                 });
                             });
                         }
@@ -4352,6 +4418,8 @@ if (btnSaveToDB) {
                 updateSelectionUI();
                 displayResults(comparisonResult);
                 updateDbGlobalStats();
+                // 데이터 저장 성공 시 폰 DB로 자동 백업 (Cloud -> Phone)
+                startQuickBackup(true);
             } else {
                 alert('저장 실패: ' + resData.message);
             }

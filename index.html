@@ -23,13 +23,7 @@
         <header
             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.6rem;">
             <div style="flex: 1; text-align: left;">
-                <h1 style="margin: 0; font-size: 1.3rem; color: #1e293b; letter-spacing: -0.5px;">📊 엑셀 데이터 비교 프로그램
-                    <span style="font-size: 0.85rem; color: #64748b; font-weight: normal; margin-left: 6px;">(운송사
-                        자동분류)</span>
-                </h1>
-                <p style="margin: 3px 0 0 0; color: #64748b; font-size: 0.82rem; max-width: 800px;">원본(작업내역/CLP)과 전산
-                    데이터를 비교하여 잘못 입력된 데이터를
-                    찾고 반입정보를 생성합니다.</p>
+                <h1 style="margin: 0; font-size: 1.3rem; color: #1e293b; letter-spacing: -0.5px;">📊 엑셀 데이터 비교 프로그램</h1>
             </div>
             <div id="cloudStatsBadge" class="header-actions"
                 style="display: flex; gap: 12px; align-items: center; background: #f0fdf4; padding: 6px 12px; border-radius: 10px; border: 1px solid #bbf7d0; margin-left: auto; font-size: 0.8rem; color: #166534;">
@@ -42,6 +36,17 @@
                     style="background: none; border: none; cursor: pointer; color: #10b981; padding: 2px;"
                     title="클라우드 상태 새로고침">
                     <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+
+            <div id="backupStatusBadge" class="header-actions"
+                style="display: flex; gap: 10px; align-items: center; background: #fff1f2; padding: 6px 12px; border-radius: 10px; border: 1px solid #fecdd3; margin-left: 10px; font-size: 0.8rem; color: #9f1239;">
+                <div title="마지막 백업 시간(Cloud -> Phone)">🕒 백업: <strong id="lastBackupTime">없음</strong></div>
+                <button id="btnQuickBackup"
+                    style="background: #fb7185; color: white; border: none; padding: 2px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;"
+                    onmouseover="this.style.background='#f43f5e'" onmouseout="this.style.background='#fb7185'"
+                    title="클라우드 -> 폰 즉시 전체 백업 시작">
+                    <i class="fas fa-copy" style="margin-right: 2px;"></i> 퀵백업
                 </button>
             </div>
 
@@ -449,13 +454,13 @@
                             <div style="flex: 1;">
                                 <label style="display:block; font-size:0.75rem; color:#64748b; margin-bottom:2px;">사용자
                                     (User)</label>
-                                <input type="text" id="phoneDbUser" placeholder="예: u0_a354"
+                                <input type="text" id="phoneDbUser" placeholder="예: u0_a286"
                                     style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
                             </div>
                             <div style="flex: 1;">
                                 <label style="display:block; font-size:0.75rem; color:#64748b; margin-bottom:2px;">DB명
                                     (Database)</label>
-                                <input type="text" id="phoneDbName" placeholder="예: u0_a354"
+                                <input type="text" id="phoneDbName" placeholder="예: u0_a286"
                                     style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
                             </div>
                             <button id="btnSavePhoneIp" class="btn btn-primary"
@@ -1143,10 +1148,10 @@
                         조회 결과: <strong id="dbTotalItems" style="color: var(--primary);">0</strong>개 항목
                         (컨테이너 <strong id="dbTotalCntrs" style="color: var(--primary);">0</strong>대)
                     </div>
-                    <div id="dbBulkActions" class="db-bulk-actions" style="display: none;">
-                        <label>
-                            <input type="checkbox" id="chkDbAll"> 전체 선택
-                        </label>
+                    <div id="dbBulkActions" class="db-bulk-actions"
+                        style="display: none; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="chkDbAll" style="cursor: pointer;">
+                        <span style="font-size: 0.9rem; color: #334155;">전체 선택</span>
                         <button id="btnDbBulkDelete" class="db-bulk-btn-delete">
                             <i class="fas fa-trash-alt"></i> 선택 삭제 (<span id="dbSelectedCount">0</span>)
                         </button>
@@ -1161,24 +1166,24 @@
             <!-- 정상 컨테이너 서브 필터 -->
             <div id="successFilterContainer"
                 style="display: none; margin-top: 10px; margin-bottom: 10px; padding: 10px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-                <label
-                    style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #334155; font-size: 0.9rem; font-weight: 500;">
+                <div
+                    style="display: flex; align-items: center; gap: 8px; color: #334155; font-size: 0.9rem; font-weight: 500;">
                     <input type="checkbox" id="chkFullyCompletedOnly"
                         style="width: 16px; height: 16px; cursor: pointer;">
-                    ☑️ 모든 모델 완료 컨테이너만 (작업중/대기 제외)
+                    <span>☑️ 모든 모델 완료 컨테이너만 (작업중/대기 제외)</span>
                     <span id="fullyCompletedCount"
                         style="margin-left: auto; color: #4361ee; font-weight: bold; display: none;">(0건)</span>
-                </label>
+                </div>
             </div>
 
             <!-- 선택 항목 관리 바 (DB 저장 등) -->
             <div id="selectionBar"
                 style="display: none; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding: 12px 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                 <div style="display: flex; align-items: center; gap: 15px;">
-                    <label
-                        style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 500; cursor: pointer;">
-                        <input type="checkbox" id="selectAll" style="width: 16px; height: 16px;"> 전체 선택
-                    </label>
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 500;">
+                        <input type="checkbox" id="selectAll" style="width: 16px; height: 16px; cursor: pointer;">
+                        <span>전체 선택</span>
+                    </div>
                     <span style="font-size: 0.9rem; color: #475569;">선택됨: <strong id="selectedCount"
                             style="color: #4361ee; font-size: 1rem;">0</strong>개</span>
 

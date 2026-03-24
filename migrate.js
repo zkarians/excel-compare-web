@@ -16,7 +16,8 @@ async function migrate() {
         'carrier_mappings': { pk: 'code', schema: 'code TEXT PRIMARY KEY, names JSONB, updated_at TIMESTAMP, id INTEGER' },
         'auto_classify_rules': { pk: 'id', schema: 'id TEXT PRIMARY KEY, is_active BOOLEAN, group_name TEXT, condition_operator TEXT, conditions JSONB, target_field TEXT, target_value TEXT, tag_color TEXT, updated_at TIMESTAMP' },
         'container_jobs': { pk: 'id', schema: 'id SERIAL PRIMARY KEY, job_name TEXT, eta TEXT, etd TEXT, remark TEXT, saved_at TIMESTAMP' },
-        'container_results': { pk: 'id', schema: 'id SERIAL PRIMARY KEY, job_name TEXT, cntr_no TEXT, seal_no TEXT, prod_name TEXT, qty_plan INTEGER, qty_load INTEGER, qty_pending INTEGER, qty_remain INTEGER, qty_packing INTEGER, cntr_type TEXT, carrier TEXT, destination TEXT, weight_mixed NUMERIC, etd TEXT, eta TEXT, remark TEXT, saved_at TIMESTAMP, prod_type TEXT, division TEXT, dims TEXT, weight_orig NUMERIC, weight_down NUMERIC, transporter TEXT, adj1 TEXT, adj1_color TEXT, job_id INTEGER' }
+        'container_results': { pk: 'id', schema: 'id SERIAL PRIMARY KEY, job_name TEXT, cntr_no TEXT, seal_no TEXT, prod_name TEXT, qty_plan INTEGER, qty_load INTEGER, qty_pending INTEGER, qty_remain INTEGER, qty_packing INTEGER, cntr_type TEXT, carrier TEXT, destination TEXT, weight_mixed NUMERIC, etd TEXT, eta TEXT, remark TEXT, saved_at TIMESTAMP, prod_type TEXT, division TEXT, dims TEXT, weight_orig NUMERIC, weight_down NUMERIC, transporter TEXT, adj1 TEXT, adj1_color TEXT, job_id INTEGER' },
+        'sent_emails': { pk: 'id', schema: 'id SERIAL PRIMARY KEY, recipient TEXT, subject TEXT, content TEXT, sent_at TIMESTAMP' }
     };
 
     try {
@@ -77,7 +78,23 @@ async function migrate() {
                 await phonePool.query(query, values);
                 if (i % 10000 === 0 && i > 0) process.stdout.write(`.`);
             }
-            console.log(`\n   - ✨ [${tableName}] 완료!`);
+            console.log(`   - ✨ [${tableName}] 완료!`);
+        }
+
+        // 4. 시퀀스 동기화 (SERIAL PK 테이블들)
+        console.log('\n⚙️ 시퀀스 동기화 중...');
+        const serialTables = ['container_jobs', 'container_results', 'sent_emails'];
+        for (const tableName of serialTables) {
+            try {
+                const resSeq = await phonePool.query(`SELECT pg_get_serial_sequence('${tableName}', 'id') as seq`);
+                const seqName = resSeq.rows[0].seq;
+                if (seqName) {
+                    await phonePool.query(`SELECT setval('${seqName}', COALESCE((SELECT MAX(id) FROM ${tableName}), 0) + 1, false)`);
+                    console.log(`   - ✅ [${tableName}] 시퀀스 갱신 완료`);
+                }
+            } catch (err) {
+                console.warn(`   - ⚠️ [${tableName}] 시퀀스 갱신 실패: ${err.message}`);
+            }
         }
 
         console.log('\n🎉 마이그레이션이 성공적으로 완료되었습니다!');

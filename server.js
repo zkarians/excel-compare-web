@@ -264,6 +264,7 @@ async function initDb() {
                 adj1 TEXT,
                 adj1_color TEXT,
                 adj2 TEXT,
+                work_date TEXT,
                 UNIQUE (job_name, cntr_no, prod_name, qty_plan)
             )
         `);
@@ -272,6 +273,7 @@ async function initDb() {
         await client.query(`ALTER TABLE container_results ADD COLUMN IF NOT EXISTS qty_pending INTEGER DEFAULT 0`);
         await client.query(`ALTER TABLE container_results ADD COLUMN IF NOT EXISTS qty_remain INTEGER DEFAULT 0`);
         await client.query(`ALTER TABLE container_results ADD COLUMN IF NOT EXISTS qty_packing INTEGER DEFAULT 0`);
+        await client.query(`ALTER TABLE container_results ADD COLUMN IF NOT EXISTS work_date TEXT`);
 
         // UPSERT를 위한 유니크 인덱스 강제 생성 (이미 존재하면 건너뜀)
         await client.query(`
@@ -282,7 +284,6 @@ async function initDb() {
         // 8. ID 시퀀스 복구 및 동기화 (Self-healing)
         try {
             for (const tableName of ['container_jobs', 'container_results', 'sent_emails']) {
-                // 시퀀스 존재 확인
                 const seqName = `${tableName}_id_seq`;
                 const seqExists = await client.query(`SELECT 1 FROM pg_class WHERE relname = $1 AND relkind = 'S'`, [seqName]);
 
@@ -291,7 +292,6 @@ async function initDb() {
                     console.log(`🏗️ [DB] 시퀀스 생성: ${seqName}`);
                 }
 
-                // 컬럼에 DEFAULT 설정이 없는 경우 추가
                 await client.query(`
                     DO $$ 
                     BEGIN 
@@ -302,16 +302,20 @@ async function initDb() {
                     END $$;
                 `);
 
-                // 마지막 값 동기화
                 const resSeq = await client.query(`SELECT pg_get_serial_sequence('${tableName}', 'id') as seq`);
-                const actualSeq = resSeq.rows[0].seq || seqName;
+                const actualSeq = (resSeq.rows[0] && resSeq.rows[0].seq) || seqName;
                 await client.query(`SELECT setval('${actualSeq}', COALESCE((SELECT MAX(id) FROM ${tableName}), 0) + 1, false)`);
             }
+
+            // UPSERT용 유니크 인덱스 보강
+            await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_container_jobs_upsert ON container_jobs (job_name, eta, etd)`);
+            await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_container_results_upsert ON container_results (job_name, cntr_no, prod_name, qty_plan)`);
+
         } catch (seqErr) {
-            console.warn("⚠️ [DB] 시퀀스 복구/동기화 중 경고:", seqErr.message);
+            console.warn("⚠️ [DB] 시퀀스/인덱스 복구 중 경고:", seqErr.message);
         }
 
-        console.log("✅ [DB] 모든 테이블(9종) 및 시퀀스 준비 완료");
+        console.log("✅ [DB] 모든 테이블 및 시퀀스 준비 완료");
     } finally {
         client.release();
     }
@@ -327,29 +331,18 @@ const port = process.env.PORT || 3000;
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
-// Electron Writable Data Path - Web Server friendly fallback
+// Electron Writable Data Path
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const RULES_FILE = path.join(DATA_DIR, 'rules.json');
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
-
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
-const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
-});
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
-// Middleware
 app.use(cors({
     origin: (origin, callback) => {
-        // 로컬, 파일, 클라우드타입, 그리고 사용자 DDNS 허용
-        if (!origin || origin === 'null' ||
-            origin.includes('localhost') ||
-            origin.includes('127.0.0.1') ||
-            origin.includes('file://') ||
-            origin.includes('cloudtype.app') ||
-            origin.includes('maizen.iptime.org')) {
+        if (!origin || origin === 'null' || origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('file://') || origin.includes('cloudtype.app') || origin.includes('maizen.iptime.org')) {
             callback(null, true);
         } else {
             callback(new Error('CORS policy violation'));
@@ -362,14 +355,12 @@ app.use(cors({
 
 // --- DB Configuration & Sync Endpoints ---
 
-// Get current DB config (mask password)
 app.get('/api/db/config', (req, res) => {
     const config = { ...currentDbConfig };
     if (config.password) config.password = '********';
     res.json({ success: true, config });
 });
 
-// Set DB config and reconnect
 app.post('/api/db/config', async (req, res) => {
     const { host, user, password, port, database, ssl } = req.body || {};
     const newConfig = {};
@@ -379,7 +370,6 @@ app.post('/api/db/config', async (req, res) => {
     if (port) newConfig.port = Number(port);
     if (database) newConfig.database = database;
     if (ssl !== undefined) newConfig.ssl = ssl;
-
     const result = await connectToDb(newConfig);
     res.json(result);
 });
@@ -394,21 +384,20 @@ async function syncData(sourceConfig, targetConfig, tables) {
         for (const tableName of tables) {
             console.log(`[Sync] Processing ${tableName}...`);
             try {
-                const res = await sourcePool.query(`SELECT * FROM ${tableName}`);
-                const rows = res.rows;
+                const resSource = await sourcePool.query(`SELECT * FROM ${tableName}`);
+                const rows = resSource.rows;
 
                 if (rows.length > 0) {
                     let pk = 'id';
-                    if (['product_master_sync'].includes(tableName)) pk = 'prod_name';
-                    if (['container_holds', 'container_pops'].includes(tableName)) pk = 'cntr_no';
-                    if (['carrier_mappings'].includes(tableName)) pk = 'code';
-                    if (['auto_classify_rules', 'container_jobs', 'container_results'].includes(tableName)) pk = 'id';
+                    if (tableName === 'product_master_sync') pk = 'prod_name';
+                    else if (tableName === 'container_holds' || tableName === 'container_pops') pk = 'cntr_no';
+                    else if (tableName === 'carrier_mappings') pk = 'code';
+                    else if (tableName === 'container_jobs') pk = 'job_name, eta, etd';
+                    else if (tableName === 'container_results') pk = 'job_name, cntr_no, prod_name, qty_plan';
 
-                    // Filter columns: skip surrogate 'id' if 'id' is not the primary key
-                    const columns = Object.keys(rows[0]).filter(c => c !== 'id' || pk === 'id');
+                    const columns = Object.keys(rows[0]);
                     const colNames = columns.join(', ');
-
-                    const updateClause = columns.filter(c => c !== pk).map(c => `${c} = EXCLUDED.${c}`).join(', ');
+                    const updateClause = columns.filter(c => !pk.includes(c)).map(c => `${c} = EXCLUDED.${c}`).join(', ');
 
                     for (let i = 0; i < rows.length; i += 200) {
                         const batch = rows.slice(i, i + 200);
@@ -423,7 +412,13 @@ async function syncData(sourceConfig, targetConfig, tables) {
                                 return (typeof val === 'object' && val !== null && !(val instanceof Date)) ? JSON.stringify(val) : val;
                             }));
                         });
-                        const query = `INSERT INTO ${tableName} (${colNames}) VALUES ${placeholdersRows.join(', ')} ON CONFLICT (${pk}) DO UPDATE SET ${updateClause || `${pk}=EXCLUDED.${pk}`}`;
+
+                        const query = `
+                            INSERT INTO ${tableName} (${colNames}) 
+                            VALUES ${placeholdersRows.join(', ')} 
+                            ON CONFLICT (${pk}) 
+                            DO UPDATE SET ${updateClause || `${pk.split(',')[0]} = EXCLUDED.${pk.split(',')[0]}`}
+                        `;
                         await targetPool.query(query, values);
                     }
                 }
@@ -434,24 +429,19 @@ async function syncData(sourceConfig, targetConfig, tables) {
             }
         }
 
-        // 데이터 전송 후 수동 PK 삽입에 따른 시퀀스 불일치 해결
-        try {
-            const resJobs = await targetPool.query(`SELECT pg_get_serial_sequence('container_jobs', 'id') as seq`);
-            if (resJobs.rows[0].seq) {
-                await targetPool.query(`SELECT setval('${resJobs.rows[0].seq}', COALESCE((SELECT MAX(id) FROM container_jobs), 0) + 1, false)`);
-            }
-
-            const resResults = await targetPool.query(`SELECT pg_get_serial_sequence('container_results', 'id') as seq`);
-            if (resResults.rows[0].seq) {
-                await targetPool.query(`SELECT setval('${resResults.rows[0].seq}', COALESCE((SELECT MAX(id) FROM container_results), 0) + 1, false)`);
-            }
-            console.log(`[Sync] sequences recalculated for target database.`);
-        } catch (seqErr) {
-            console.warn(`[Sync] Failed to reset sequences (ignoring):`, seqErr.message);
+        // 시퀀스 갱신
+        const serialTables = ['container_jobs', 'container_results', 'sent_emails'];
+        for (const tableName of serialTables) {
+            try {
+                const resSeq = await targetPool.query(`SELECT pg_get_serial_sequence('${tableName}', 'id') as seq`);
+                if (resSeq.rows[0] && resSeq.rows[0].seq) {
+                    await targetPool.query(`SELECT setval('${resSeq.rows[0].seq}', COALESCE((SELECT MAX(id) FROM ${tableName}), 0) + 1, false)`);
+                }
+            } catch (e) { }
         }
     } finally {
-        await sourcePool.end();
-        await targetPool.end();
+        await sourcePool.end().catch(() => { });
+        await targetPool.end().catch(() => { });
     }
     return results;
 }
@@ -465,7 +455,7 @@ app.post('/api/db/sync', async (req, res) => {
     const { direction, phoneConfig, tables } = req.body || {};
     const targetTables = tables || [
         'product_master_sync', 'container_holds', 'container_pops',
-        'carrier_mappings', 'auto_classify_rules', 'container_jobs', 'container_results'
+        'carrier_mappings', 'auto_classify_rules', 'container_jobs', 'container_results', 'sent_emails'
     ];
     let source, target;
     if (direction === 'to_phone') {
@@ -522,24 +512,24 @@ app.post('/api/read-excel', async (req, res) => {
     const { origPath, downPath, reworkPath } = req.body;
 
     try {
-        console.log(`📂 [API] 파일 읽기 요청: \n - 원본: ${origPath} \n - 전산: ${downPath} \n - 재작업: ${reworkPath || "없음"}`);
+        console.log(`📂[API] 파일 읽기 요청: \n - 원본: ${origPath} \n - 전산: ${downPath} \n - 재작업: ${reworkPath || "없음"} `);
 
         let originalData = await parseOriginalExcel(origPath);
-        console.log(`✅ [API] 원본 데이터 파싱 완료: ${originalData.length}건`);
+        console.log(`✅[API] 원본 데이터 파싱 완료: ${originalData.length} 건`);
 
         // 재작업 파일이 있으면 추가 파싱하여 합침
         if (reworkPath && reworkPath.trim() !== "") {
-            console.log(`🔍 [API] 재작업 경로 처리 시도: "${reworkPath}"`);
+            console.log(`🔍[API] 재작업 경로 처리 시도: "${reworkPath}"`);
             if (fs.existsSync(reworkPath)) {
-                console.log(`📂 [API] 재작업 파일 실존 확인됨. 파싱 시작...`);
+                console.log(`📂[API] 재작업 파일 실존 확인됨.파싱 시작...`);
                 const reworkData = await parseOriginalExcel(reworkPath, ["재작업당일"], "rework");
-                console.log(`✅ [API] 재작업 데이터 파싱 완료: ${reworkData.length}건`);
+                console.log(`✅[API] 재작업 데이터 파싱 완료: ${reworkData.length} 건`);
                 originalData = originalData.concat(reworkData);
             } else {
-                console.error(`❌ [API] 재작업 파일 경로를 찾을 수 없음: "${reworkPath}"`);
+                console.error(`❌[API] 재작업 파일 경로를 찾을 수 없음: "${reworkPath}"`);
             }
         } else {
-            console.log(`ℹ️ [API] 재작업 경로가 입력되지 않았습니다.`);
+            console.log(`ℹ️[API] 재작업 경로가 입력되지 않았습니다.`);
         }
 
         originalData = originalData.filter(item => item.qty > 0);
@@ -560,14 +550,14 @@ app.post('/api/read-excel', async (req, res) => {
         res.json({ success: true, originalData, downloadData });
     } catch (err) {
         console.error("❌ 파일 읽기 오류:", err);
-        res.status(500).json({ success: false, message: `파일을 읽을 수 없습니다: ${err.message}` });
+        res.status(500).json({ success: false, message: `파일을 읽을 수 없습니다: ${err.message} ` });
     }
 });
 
 // 파일 업로드 기반 읽기 엔드포인트
 app.post('/api/upload-excel', upload.fields([{ name: 'originalFile' }, { name: 'downloadFile' }, { name: 'reworkFile' }]), async (req, res) => {
     try {
-        console.log(`📂 [API] 파일 업로드 파싱 요청`);
+        console.log(`📂[API] 파일 업로드 파싱 요청`);
 
         if (!req.files && !fs.existsSync(path.join(UPLOADS_DIR, 'latest_original.xlsx'))) {
             return res.status(400).json({ success: false, message: '업로드된 파일이 전혀 없습니다.' });
@@ -611,7 +601,7 @@ app.post('/api/upload-excel', upload.fields([{ name: 'originalFile' }, { name: '
         res.json({ success: true, originalData, downloadData });
     } catch (err) {
         console.error("❌ 파일 업로드 오류:", err);
-        res.status(500).json({ success: false, message: `파일을 업로드하고 파싱하는 중 오류가 발생했습니다: ${err.message}` });
+        res.status(500).json({ success: false, message: `파일을 업로드하고 파싱하는 중 오류가 발생했습니다: ${err.message} ` });
     }
 });
 
@@ -637,8 +627,8 @@ app.get('/api/load-latest', async (req, res) => {
 
         res.json({ success: true, data });
     } catch (err) {
-        console.error(`❌ 최근 ${req.query.type} 파일 로드 오류:`, err);
-        res.status(500).json({ success: false, message: `파일 로드 중 오류 발생: ${err.message}` });
+        console.error(`❌ 최근 ${req.query.type} 파일 로드 오류: `, err);
+        res.status(500).json({ success: false, message: `파일 로드 중 오류 발생: ${err.message} ` });
     }
 });
 
@@ -652,18 +642,18 @@ app.get('/api/load-file-raw', async (req, res) => {
         }
 
         if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ success: false, message: `파일을 찾을 수 없습니다: ${filePath}` });
+            return res.status(404).json({ success: false, message: `파일을 찾을 수 없습니다: ${filePath} ` });
         }
 
         const fileBuffer = fs.readFileSync(filePath);
         const base64 = fileBuffer.toString('base64');
         const fileName = path.basename(filePath);
 
-        console.log(`📂 [API] Raw 파일 로드: ${filePath} (${(fileBuffer.length / 1024).toFixed(1)}KB)`);
+        console.log(`📂[API] Raw 파일 로드: ${filePath} (${(fileBuffer.length / 1024).toFixed(1)}KB)`);
         res.json({ success: true, base64, fileName });
     } catch (err) {
-        console.error(`❌ Raw 파일 로드 오류:`, err);
-        res.status(500).json({ success: false, message: `파일 로드 중 오류 발생: ${err.message}` });
+        console.error(`❌ Raw 파일 로드 오류: `, err);
+        res.status(500).json({ success: false, message: `파일 로드 중 오류 발생: ${err.message} ` });
     }
 });
 
@@ -700,7 +690,7 @@ app.get('/api/load-latest-from-dir', async (req, res) => {
             return res.status(404).json({ success: false, message: "최신 파일을 찾을 수 없습니다." });
         }
 
-        console.log(`📂 [API] 폴더에서 자동 로드: ${latestFile.path}`);
+        console.log(`📂[API] 폴더에서 자동 로드: ${latestFile.path} `);
 
         // raw buffer로 반환 (브라우저에서 readExcelFile로 직접 파싱하기 위해)
         const fileBuffer = fs.readFileSync(latestFile.path);
@@ -715,7 +705,7 @@ app.get('/api/load-latest-from-dir', async (req, res) => {
 
     } catch (err) {
         console.error("❌ 폴더 자동 로드 오류:", err);
-        res.status(500).json({ success: false, message: `폴더에서 파일을 찾는 중 오류 발생: ${err.message}` });
+        res.status(500).json({ success: false, message: `폴더에서 파일을 찾는 중 오류 발생: ${err.message} ` });
     }
 });
 
@@ -727,16 +717,16 @@ app.post('/api/open-excel', async (req, res) => {
             return res.status(400).json({ success: false, message: "파일 데이터가 없습니다." });
         }
 
-        const filePath = path.join(UPLOADS_DIR, `auto_open_${fileName}`);
+        const filePath = path.join(UPLOADS_DIR, `auto_open_${fileName} `);
         const fileBuffer = Buffer.from(buffer, 'base64');
 
         fs.writeFileSync(filePath, fileBuffer);
-        console.log(`📂 [API] 자동 열기용 임시 파일 저장: ${filePath}`);
+        console.log(`📂[API] 자동 열기용 임시 파일 저장: ${filePath} `);
 
         // 시스템 기본 프로그램으로 파일 열기 (Windows: start, Mac: open, Linux: xdg-open)
         const command = process.platform === 'win32' ? `start "" "${filePath}"` :
             process.platform === 'darwin' ? `open "${filePath}"` :
-                `xdg-open "${filePath}"`;
+                `xdg - open "${filePath}"`;
 
         exec(command, (err) => {
             if (err) {
@@ -748,7 +738,7 @@ app.post('/api/open-excel', async (req, res) => {
         res.json({ success: true, message: "파일이 생성되었고 열기 명령을 전달했습니다." });
     } catch (err) {
         console.error("❌ 자동 열기 API 오류:", err);
-        res.status(500).json({ success: false, message: `파일 자동 열기 중 오류 발생: ${err.message}` });
+        res.status(500).json({ success: false, message: `파일 자동 열기 중 오류 발생: ${err.message} ` });
     }
 });
 
@@ -760,7 +750,7 @@ app.post('/api/open-excel-path', async (req, res) => {
             return res.status(400).json({ success: false, message: "파일 경로가 없습니다." });
         }
 
-        console.log(`📂 [API] 파일 경로 열기 요청: ${filePath}`);
+        console.log(`📂[API] 파일 경로 열기 요청: ${filePath} `);
 
         if (!fs.existsSync(filePath)) {
             return res.status(404).json({ success: false, message: "파일이 존재하지 않습니다." });
@@ -768,7 +758,7 @@ app.post('/api/open-excel-path', async (req, res) => {
 
         const command = process.platform === 'win32' ? `start "" "${filePath}"` :
             process.platform === 'darwin' ? `open "${filePath}"` :
-                `xdg-open "${filePath}"`;
+                `xdg - open "${filePath}"`;
 
         exec(command, (err) => {
             if (err) console.error("❌ 파일 열기 실패:", err);
@@ -784,7 +774,7 @@ app.post('/api/open-excel-path', async (req, res) => {
 // 제품 마스터 데이터 가져오기 API (DB 우선)
 app.get('/api/master-data', async (req, res) => {
     try {
-        console.log(`📡 [API] 마스터 데이터 조회 요청 (DB 우선)`);
+        console.log(`📡[API] 마스터 데이터 조회 요청(DB 우선)`);
 
         let masterData = [];
         let fetchedFromDb = false;
@@ -794,7 +784,7 @@ app.get('/api/master-data', async (req, res) => {
                 const result = await pool.query('SELECT prod_name as name, prod_type as "prodType", weight, width, depth, height, cbm, last_used_at as "lastUsedAt" FROM product_master_sync ORDER BY prod_name ASC');
                 masterData = result.rows;
                 fetchedFromDb = true;
-                console.log(`🐘 [DB] 제품 마스터 ${masterData.length}건 조회 완료`);
+                console.log(`🐘[DB] 제품 마스터 ${masterData.length}건 조회 완료`);
             } catch (dbErr) {
                 console.error("❌ [DB] 제품 마스터 조회 실패 (파일 폴백 시도):", dbErr.message);
                 // DB 조회 실패 시 에러를 던지지 않고 파일 폴백으로 넘어감
@@ -804,7 +794,7 @@ app.get('/api/master-data', async (req, res) => {
         // DB 조회에 실패했거나 데이터가 없는 경우 파일에서 읽어옴
         if (masterData.length === 0) {
             try {
-                console.log(`📂 [API] DB에 데이터가 없거나 조회 실패하여 파일에서 파싱을 시도합니다.`);
+                console.log(`📂[API] DB에 데이터가 없거나 조회 실패하여 파일에서 파싱을 시도합니다.`);
                 masterData = await parseMasterExcel();
 
                 // 파일에서 읽어왔다면 백그라운드에서 DB에 저장 시도 (다음번 조회를 위해)
@@ -851,7 +841,7 @@ async function saveMasterDataToDb(masterData) {
         }
     });
     const finalData = Array.from(uniqueMap.values());
-    console.log(`🐘 [DB] 마스터 데이터 저장 시작 (총 ${finalData.length}건)`);
+    console.log(`🐘[DB] 마스터 데이터 저장 시작(총 ${finalData.length}건)`);
 
     const client = await pool.connect();
     try {
@@ -880,21 +870,21 @@ async function saveMasterDataToDb(masterData) {
 
             const query = `
                 INSERT INTO product_master_sync
-                (prod_name, prod_type, weight, width, depth, height, cbm)
+            (prod_name, prod_type, weight, width, depth, height, cbm)
                 VALUES ${placeholders.join(', ')}
-                ON CONFLICT (prod_name) DO UPDATE SET
-                    prod_type = EXCLUDED.prod_type,
-                    weight = EXCLUDED.weight,
-                    width = EXCLUDED.width,
-                    depth = EXCLUDED.depth,
-                    height = EXCLUDED.height,
-                    cbm = EXCLUDED.cbm,
-                    updated_at = NOW()
-            `;
+                ON CONFLICT(prod_name) DO UPDATE SET
+        prod_type = EXCLUDED.prod_type,
+            weight = EXCLUDED.weight,
+            width = EXCLUDED.width,
+            depth = EXCLUDED.depth,
+            height = EXCLUDED.height,
+            cbm = EXCLUDED.cbm,
+            updated_at = NOW()
+                `;
             await client.query(query, values);
         }
         await client.query('COMMIT');
-        console.log(`✅ [DB] 마스터 데이터 ${finalData.length}건 동기화 완료 (Upsert)`);
+        console.log(`✅[DB] 마스터 데이터 ${finalData.length}건 동기화 완료(Upsert)`);
     } catch (err) {
         if (client) await client.query('ROLLBACK');
         console.error("❌ DB 저장 오류:", err);
@@ -946,18 +936,18 @@ app.post('/api/master-data/save', async (req, res) => {
 
         const pool = await getPool();
         const query = `
-            INSERT INTO product_master_sync (prod_name, prod_type, weight, width, depth, height, cbm, updated_at, last_used_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-            ON CONFLICT (prod_name) DO UPDATE 
+            INSERT INTO product_master_sync(prod_name, prod_type, weight, width, depth, height, cbm, updated_at, last_used_at)
+        VALUES($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+            ON CONFLICT(prod_name) DO UPDATE 
             SET prod_type = EXCLUDED.prod_type,
-                weight = EXCLUDED.weight,
-                width = EXCLUDED.width,
-                depth = EXCLUDED.depth,
-                height = EXCLUDED.height,
-                cbm = EXCLUDED.cbm,
-                updated_at = NOW(),
-                last_used_at = NOW()
-        `;
+            weight = EXCLUDED.weight,
+            width = EXCLUDED.width,
+            depth = EXCLUDED.depth,
+            height = EXCLUDED.height,
+            cbm = EXCLUDED.cbm,
+            updated_at = NOW(),
+            last_used_at = NOW()
+                `;
         const values = [
             prodName.trim(),
             prodType || '',
@@ -979,14 +969,14 @@ app.post('/api/master-data/save', async (req, res) => {
 // 마스터 데이터 직접 업로드 API (DB 동기화 포함)
 app.post('/api/upload-master', upload.single('masterFile'), async (req, res) => {
     try {
-        console.log(`📂 [API] 마스터 데이터 업데이트 요청 (DB 저장 방식)`);
+        console.log(`📂[API] 마스터 데이터 업데이트 요청(DB 저장 방식)`);
         if (!req.file) {
             return res.status(400).json({ success: false, message: '마스터 파일이 누락되었습니다.' });
         }
 
         // 1. 파일에서 데이터 파싱 (메모리 효율적인 XLSX 사용)
         const data = await parseMasterExcel(req.file.buffer);
-        console.log(`✅ [API] 마스터 파일 파싱 성공 (${data.length}건)`);
+        console.log(`✅[API] 마스터 파일 파싱 성공(${data.length}건)`);
 
         // 2. DB에 즉시 동기화
         try {
@@ -1009,7 +999,7 @@ app.post('/api/upload-master', upload.single('masterFile'), async (req, res) => 
         console.error("❌ 마스터 업로드 오류:", err);
         res.status(500).json({
             success: false,
-            message: `마스터 파일을 처리하는 중 오류가 발생했습니다: ${err.message}`
+            message: `마스터 파일을 처리하는 중 오류가 발생했습니다: ${err.message} `
         });
     }
 });
@@ -1127,9 +1117,9 @@ app.post('/api/sync/rules', async (req, res) => {
             await client.query('DELETE FROM auto_classify_rules');
             for (const rule of rules) {
                 await client.query(`
-                    INSERT INTO auto_classify_rules 
-                    (id, is_active, group_name, condition_operator, conditions, target_field, target_value, tag_color)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    INSERT INTO auto_classify_rules
+            (id, is_active, group_name, condition_operator, conditions, target_field, target_value, tag_color)
+        VALUES($1, $2, $3, $4, $5, $6, $7, $8)
                 `, [
                     rule.id, rule.isActive, rule.groupName, rule.conditionOperator,
                     JSON.stringify(rule.conditions), rule.targetField, rule.targetValue, rule.tagColor
@@ -1211,7 +1201,7 @@ app.post('/api/sync/product-master', async (req, res) => {
         }
     });
     const finalData = Array.from(uniqueMap.values());
-    console.log(`📡 [Sync] 제품 마스터 동기화 시작 (원본: ${masterData.length}건, 중복제거 후: ${finalData.length}건)`);
+    console.log(`📡[Sync] 제품 마스터 동기화 시작(원본: ${masterData.length}건, 중복제거 후: ${finalData.length}건)`);
 
     try {
         const pool = await getPool();
@@ -1241,18 +1231,18 @@ app.post('/api/sync/product-master', async (req, res) => {
 
                 const query = `
                     INSERT INTO product_master_sync
-                    (prod_name, prod_type, weight, width, depth, height)
+        (prod_name, prod_type, weight, width, depth, height)
                     VALUES ${placeholders.join(', ')}
-                    ON CONFLICT (prod_name) DO UPDATE SET
-                        prod_type = EXCLUDED.prod_type,
-                        weight = EXCLUDED.weight,
-                        width = EXCLUDED.width,
-                        depth = EXCLUDED.depth,
-                        height = EXCLUDED.height,
-                        updated_at = NOW()
-                `;
+                    ON CONFLICT(prod_name) DO UPDATE SET
+    prod_type = EXCLUDED.prod_type,
+        weight = EXCLUDED.weight,
+        width = EXCLUDED.width,
+        depth = EXCLUDED.depth,
+        height = EXCLUDED.height,
+        updated_at = NOW()
+            `;
                 await client.query(query, values);
-                console.log(`📦 [Sync] ${Math.min(i + BATCH_SIZE, finalData.length)} / ${finalData.length} 건 처리 완료...`);
+                console.log(`📦[Sync] ${Math.min(i + BATCH_SIZE, finalData.length)} / ${finalData.length} 건 처리 완료...`);
             }
 
             await client.query('COMMIT');
@@ -1326,8 +1316,8 @@ app.post('/api/save-to-db', async (req, res) => {
                     qty_pending, qty_remain, qty_packing,
                     cntr_type, carrier, destination, weight_mixed, etd, eta, remark,
                     prod_type, division, dims, weight_orig, weight_down, transporter, 
-                    adj1, adj1_color, adj2, saved_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, NOW())
+                    adj1, adj1_color, adj2, work_date, saved_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, NOW())
                 ON CONFLICT (job_name, cntr_no, prod_name, qty_plan) DO UPDATE SET
                     job_id = EXCLUDED.job_id,
                     seal_no = EXCLUDED.seal_no,
@@ -1351,6 +1341,7 @@ app.post('/api/save-to-db', async (req, res) => {
                     adj1 = EXCLUDED.adj1,
                     adj1_color = EXCLUDED.adj1_color,
                     adj2 = EXCLUDED.adj2,
+                    work_date = EXCLUDED.work_date,
                     saved_at = NOW()
             `;
 
@@ -1384,7 +1375,8 @@ app.post('/api/save-to-db', async (req, res) => {
                     item.transporter || '',
                     item.adj1 || '',
                     item.adj1_color || item.adj1Color || '',
-                    item.adj2 || ''
+                    item.adj2 || '',
+                    item.workDate || null
                 ]);
 
                 // 제품 마스터 사용 기록 업데이트 (last_used_at)

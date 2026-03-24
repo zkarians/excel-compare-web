@@ -1,9 +1,9 @@
 {
-  "user": "u0_a354",
-  "host": "maizen.iptime.org",
-  "database": "u0_a354",
+  "user": "root",
+  "host": "svc.sel3.cloudtype.app",
+  "database": "excel_compare",
   "password": "z456qwe12!@",
-  "port": 5432,
+  "port": 30554,
   "ssl": false,
   "connectionTimeoutMillis": 15000,
   "idleTimeoutMillis": 600000,
