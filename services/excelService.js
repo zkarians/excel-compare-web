@@ -155,10 +155,18 @@ async function parseOriginalExcel(fileInput, targetSheets = ["직선적당일", 
         ADJ2: 22        // V열
     };
 
-    workbook.worksheets.forEach(worksheet => {
+    if (source === 'rework' && workbook.worksheets.length > 1) {
+        const hasReworkSheet = workbook.worksheets.some(ws => (ws.name || "").trim().includes('재작업'));
+        if (!hasReworkSheet) {
+            throw new Error("시트명이 재작업으로 된 시트가 없습니다.");
+        }
+    }
+
+    workbook.worksheets.forEach((worksheet, sheetIndex) => {
         const sheetName = (worksheet.name || "").trim();
-        const isTarget = targetSheets.some(s => s.trim().toLowerCase() === sheetName.toLowerCase());
-        console.log(`📄 [parseOriginalExcel] 시트 발견: "${sheetName}" (대상여부: ${isTarget})`);
+        const isTarget = targetSheets.some(s => s.trim().toLowerCase() === sheetName.toLowerCase()) ||
+            (source === 'rework' && (sheetName.includes('재작업') || workbook.worksheets.length === 1));
+        console.log(`📄 [parseOriginalExcel] 시트 발견: "${sheetName}" (대상여부: ${isTarget}, Source: ${source})`);
 
         if (isTarget) {
             console.log(`🔍 [parseOriginalExcel] "${sheetName}" 시트 데이터 분석 시작...`);
@@ -248,7 +256,7 @@ async function parseOriginalExcel(fileInput, targetSheets = ["직선적당일", 
                         if (cellProd) {
                             dataStarted = true;
                         } else {
-                            if (i >= 3) {
+                            if (i >= 5) { // 3줄 -> 5줄로 완화
                                 console.log(`Sheet [${worksheet.name}] is considered EMPTY (no data started by row ${i}). Skipping.`);
                                 break;
                             }

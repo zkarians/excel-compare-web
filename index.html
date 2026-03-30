@@ -39,26 +39,15 @@
                 </button>
             </div>
 
-            <div id="backupStatusBadge" class="header-actions"
-                style="display: flex; gap: 10px; align-items: center; background: #fff1f2; padding: 6px 12px; border-radius: 10px; border: 1px solid #fecdd3; margin-left: 10px; font-size: 0.8rem; color: #9f1239;">
-                <div title="마지막 백업 시간(Cloud -> Phone)">🕒 백업: <strong id="lastBackupTime">없음</strong></div>
-                <button id="btnQuickBackup"
-                    style="background: #fb7185; color: white; border: none; padding: 2px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: background 0.2s;"
-                    onmouseover="this.style.background='#f43f5e'" onmouseout="this.style.background='#fb7185'"
-                    title="클라우드 -> 폰 즉시 전체 백업 시작">
-                    <i class="fas fa-copy" style="margin-right: 2px;"></i> 퀵백업
-                </button>
-            </div>
-
             <div class="header-actions"
                 style="display: flex; gap: 8px; align-items: center; background: #f8fafc; padding: 4px; border-radius: 10px; border: 1px solid #e2e8f0; margin-left: 16px;">
                 <button id="btnOpenSettings" class="btn btn-secondary-outline"
-                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 500;">⚙️ 선사
-                    매핑</button>
+                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 500;">⚙️
+                    선사</button>
                 <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
                 <button id="btnOpenRules" class="btn btn-primary-soft"
-                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600;">📋 자동분류
-                    규칙</button>
+                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600;">📋
+                    자동분류</button>
                 <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
                 <button id="btnOpenProductMaster" class="btn"
                     style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">
@@ -67,19 +56,19 @@
                 <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
                 <button id="btnOpenPopWeight" class="btn"
                     style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa;">
-                    <i class="fas fa-weight-hanging"></i> POP 무게
+                    <i class="fas fa-weight-hanging"></i> POP
                     <span id="popWeightBadge"
                         style="display:none; background:#ea580c; color:white; font-size:0.7rem; padding:1px 5px; border-radius:8px; margin-left:3px; font-weight:700;">0</span>
                 </button>
                 <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
                 <button id="btnOpenDbSettings" class="btn"
                     style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd;">
-                    <i class="fas fa-mobile-alt"></i> 폰 DB 설정
+                    <i class="fas fa-mobile-alt"></i> DB설정
                 </button>
                 <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
                 <button id="btnOpenEmailSettings" class="btn"
                     style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe;">
-                    <i class="fas fa-envelope"></i> 메일 설정
+                    <i class="fas fa-envelope"></i> 메일
                 </button>
             </div>
         </header>
@@ -417,100 +406,229 @@
     <div id="dbSettingsModal" class="modal">
         <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
-                <h2 style="margin: 0; color: #0284c7;">
-                    <i class="fas fa-mobile-alt"></i> 폰 DB 설정 및 데이터 동기화
+                <h2 style="margin: 0; color: #0284c7; font-size: 1rem;">
+                    <i class="fas fa-database"></i> DB 연결 및 데이터 동기화
                 </h2>
                 <span class="close-btn" id="closeDbSettingsBtn">&times;</span>
             </div>
-            <div class="modal-body" style="padding: 1.5rem;">
+            <div class="modal-body" style="padding: 1rem;">
+
+                <!-- 현재 연결 상태 (한 줄 compact) -->
                 <div
-                    style="background: #f0f9ff; padding: 15px; border-radius: 12px; border: 1px solid #bae6fd; margin-bottom: 20px;">
-                    <h3 style="margin: 0 0 10px 0; font-size: 1rem; color: #0369a1;">📱 현재 연결된 데이터베이스
-                    </h3>
-                    <div id="currentDbInfo" style="font-size: 0.9rem; color: #0c4a6e;">
-                        호스트: <strong id="currentDbHost">-</strong><br>
-                        상태: <span id="currentDbStatus" style="font-weight: 700;">확인 중...</span>
-                    </div>
+                    style="background: #f0f9ff; padding: 8px 12px; border-radius: 8px; border: 1px solid #bae6fd; margin-bottom: 12px; display:flex; align-items:center; gap:10px; font-size:0.82rem; color:#0369a1;">
+                    <i class="fas fa-circle" style="font-size:0.5rem; color:#10b981;"></i>
+                    <span>현재 DB: <strong id="currentDbHost">-</strong></span>
+                    <span id="currentDbStatus" style="font-weight:700;"></span>
                 </div>
 
-                <div style="margin-bottom: 20px;">
-                    <h4 style="font-size: 0.9rem; margin-bottom: 10px; color: #1e293b;">🔄 폰 DB 연결 설정</h4>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <div style="display: flex; gap: 10px;">
-                            <div style="flex: 3;">
-                                <label style="display:block; font-size:0.75rem; color:#64748b; margin-bottom:2px;">호스트
+                <!-- DB 전환 버튼 (3개 가로 배치) -->
+                <div style="display:flex; gap:6px; margin-bottom:12px;">
+                    <button id="switchToLocalPc" class="btn"
+                        style="flex:1; padding:7px 4px; font-size:0.8rem; font-weight:bold; background:#10b981; color:white; border:none; border-radius:6px;">
+                        <i class="fas fa-desktop"></i> 로컬 PC
+                    </button>
+                    <button id="switchToCloud" class="btn"
+                        style="flex:1; padding:7px 4px; font-size:0.8rem; font-weight:bold; background:#7c3aed; color:white; border:none; border-radius:6px;">
+                        <i class="fas fa-cloud"></i> 클라우드
+                    </button>
+                    <button id="switchToPhone" class="btn btn-primary"
+                        style="flex:1; padding:7px 4px; font-size:0.8rem; font-weight:bold; border-radius:6px;">
+                        <i class="fas fa-mobile-alt"></i> 폰 DB
+                    </button>
+                </div>
+
+                <!-- 폰 DB 연결 설정 (접기/펼치기) -->
+                <details style="margin-bottom:12px; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden;">
+                    <summary
+                        style="padding:8px 12px; font-size:0.82rem; font-weight:600; color:#475569; cursor:pointer; background:#f8fafc;">
+                        <i class="fas fa-cog"></i> 폰 DB 연결 설정
+                    </summary>
+                    <div style="padding:10px 12px; display:flex; flex-direction:column; gap:8px;">
+                        <div style="display:flex; gap:8px;">
+                            <div style="flex:3;">
+                                <label style="display:block; font-size:0.72rem; color:#64748b; margin-bottom:2px;">호스트
                                     (IP/DDNS)</label>
                                 <input type="text" id="phoneDbIp" placeholder="예: maizen.iptime.org"
-                                    style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                    style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:5px; font-size:0.82rem;">
                             </div>
-                            <div style="flex: 1;">
+                            <div style="flex:1;">
                                 <label
-                                    style="display:block; font-size:0.75rem; color:#64748b; margin-bottom:2px;">포트</label>
-                                <input type="number" id="phoneDbPort" placeholder="포트" value="5432"
-                                    style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                    style="display:block; font-size:0.72rem; color:#64748b; margin-bottom:2px;">포트</label>
+                                <input type="number" id="phoneDbPort" value="5432"
+                                    style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:5px; font-size:0.82rem;">
                             </div>
                         </div>
-                        <div style="display: flex; gap: 10px;">
-                            <div style="flex: 1;">
-                                <label style="display:block; font-size:0.75rem; color:#64748b; margin-bottom:2px;">사용자
+                        <div style="display:flex; gap:8px;">
+                            <div style="flex:1;">
+                                <label style="display:block; font-size:0.72rem; color:#64748b; margin-bottom:2px;">사용자
                                     (User)</label>
-                                <input type="text" id="phoneDbUser" placeholder="예: u0_a286"
-                                    style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                <input type="text" id="phoneDbUser" placeholder="예: excel"
+                                    style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:5px; font-size:0.82rem;">
                             </div>
-                            <div style="flex: 1;">
-                                <label style="display:block; font-size:0.75rem; color:#64748b; margin-bottom:2px;">DB명
-                                    (Database)</label>
-                                <input type="text" id="phoneDbName" placeholder="예: u0_a286"
-                                    style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            <div style="flex:1;">
+                                <label style="display:block; font-size:0.72rem; color:#64748b; margin-bottom:2px;">DB
+                                    이름</label>
+                                <input type="text" id="phoneDbName" placeholder="예: excel"
+                                    style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:5px; font-size:0.82rem;">
                             </div>
-                            <button id="btnSavePhoneIp" class="btn btn-primary"
-                                style="align-self: flex-end; padding: 8px 15px; font-size: 0.85rem; height: 38px;">정보
-                                저장</button>
                         </div>
-                        <div style="display: flex; gap: 10px; margin-top: 5px;">
-                            <button id="switchToCloud" class="btn btn-secondary-outline"
-                                style="flex: 1; padding: 10px; font-size: 0.85rem;">☁️ 클라우드로 전환</button>
-                            <button id="switchToPhone" class="btn btn-primary-soft"
-                                style="flex: 1; padding: 10px; font-size: 0.85rem;">📱 폰 DB로 전환</button>
+                        <div style="display:flex; gap:8px;">
+                            <div style="flex:1;">
+                                <label style="display:block; font-size:0.72rem; color:#64748b; margin-bottom:2px;">비밀번호
+                                    (선택)</label>
+                                <input type="password" id="phoneDbPassword" placeholder="비밀번호"
+                                    style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:5px; font-size:0.82rem;">
+                            </div>
+                        </div>
+                        <button id="btnSavePhoneDb" class="btn btn-secondary"
+                            style="padding:6px; font-size:0.8rem; align-self:flex-end;">설정 저장</button>
+                    </div>
+                </details>
+
+                <!-- 데이터 동기화 - 출발지 → 목적지 선택 -->
+                <div style="border:1px solid #e2e8f0; border-radius:8px; padding:12px; background:#fafafa;">
+                    <div style="font-size:0.82rem; font-weight:700; color:#1e293b; margin-bottom:10px;"><i
+                            class="fas fa-sync-alt"></i> 데이터 동기화</div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <!-- 출발지 -->
+                        <div style="flex:1;">
+                            <label
+                                style="display:block; font-size:0.72rem; color:#64748b; margin-bottom:4px; text-align:center;">📤
+                                출발지 (From)</label>
+                            <div id="syncSrcBtns" style="display:flex; flex-direction:column; gap:4px;">
+                                <button class="sync-node-btn" data-role="src" data-val="pc"
+                                    style="padding:6px; font-size:0.78rem; border:2px solid #e2e8f0; background:white; border-radius:6px; cursor:pointer; color:#475569;">🖥️
+                                    로컬 PC</button>
+                                <button class="sync-node-btn" data-role="src" data-val="cloud"
+                                    style="padding:6px; font-size:0.78rem; border:2px solid #e2e8f0; background:white; border-radius:6px; cursor:pointer; color:#475569;">☁️
+                                    클라우드</button>
+                                <button class="sync-node-btn" data-role="src" data-val="phone"
+                                    style="padding:6px; font-size:0.78rem; border:2px solid #e2e8f0; background:white; border-radius:6px; cursor:pointer; color:#475569;">📱
+                                    폰</button>
+                            </div>
+                        </div>
+                        <!-- 화살표 -->
+                        <div style="font-size:1.4rem; color:#94a3b8;">➜</div>
+                        <!-- 목적지 -->
+                        <div style="flex:1;">
+                            <label
+                                style="display:block; font-size:0.72rem; color:#64748b; margin-bottom:4px; text-align:center;">📥
+                                목적지 (To)</label>
+                            <div id="syncDstBtns" style="display:flex; flex-direction:column; gap:4px;">
+                                <button class="sync-node-btn" data-role="dst" data-val="pc"
+                                    style="padding:6px; font-size:0.78rem; border:2px solid #e2e8f0; background:white; border-radius:6px; cursor:pointer; color:#475569;">🖥️
+                                    로컬 PC</button>
+                                <button class="sync-node-btn" data-role="dst" data-val="cloud"
+                                    style="padding:6px; font-size:0.78rem; border:2px solid #e2e8f0; background:white; border-radius:6px; cursor:pointer; color:#475569;">☁️
+                                    클라우드</button>
+                                <button class="sync-node-btn" data-role="dst" data-val="phone"
+                                    style="padding:6px; font-size:0.78rem; border:2px solid #e2e8f0; background:white; border-radius:6px; cursor:pointer; color:#475569;">📱
+                                    폰</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 선택 결과 표시 -->
+                    <div id="syncDirectionLabel"
+                        style="text-align:center; font-size:0.8rem; color:#64748b; margin-top:8px; min-height:18px;">
+                    </div>
+
+                    <!-- 동기화 옵션 (최적화) -->
+                    <div
+                        style="margin-top:10px; padding:10px; border:1px dashed #cbd5e1; border-radius:8px; background:#fff;">
+                        <label
+                            style="display:flex; align-items:center; gap:6px; font-size:0.78rem; cursor:pointer; margin-bottom:8px; color:#475569;">
+                            <input type="checkbox" id="syncIncrementalOnly"> 🕒 최근 변경 데이터만 (증분 동기화)
+                        </label>
+
+                        <div style="font-size:0.75rem; font-weight:600; color:#64748b; margin-bottom:5px;">동기화할 테이블 선택:
+                        </div>
+                        <div id="syncTableSwitches"
+                            style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #f1f5f9;">
+                            <label
+                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
+                                <input type="checkbox" class="sync-table-chk" value="product_master_sync" checked> 제품
+                                마스터(22만)
+                            </label>
+                            <label
+                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
+                                <input type="checkbox" class="sync-table-chk" value="container_results" checked> 컨테이너 결과
+                            </label>
+                            <label
+                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
+                                <input type="checkbox" class="sync-table-chk" value="container_jobs" checked> 작업 리스트
+                            </label>
+                            <label
+                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
+                                <input type="checkbox" class="sync-table-chk" value="carrier_mappings" checked> 운송사 설정
+                            </label>
+                            <label
+                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
+                                <input type="checkbox" class="sync-table-chk" value="auto_classify_rules" checked> 자동 분류
+                                규칙
+                            </label>
+                            <label
+                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
+                                <input type="checkbox" class="sync-table-chk" value="app_configs" checked> 앱 설정
+                            </label>
+                        </div>
+
+                        <div style="font-size:0.75rem; font-weight:600; color:#64748b; margin-bottom:5px;">제품정보(Master)
+                            선택 업데이트:</div>
+                        <div id="syncColumnSwitches" style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+                            <label
+                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
+                                <input type="checkbox" class="sync-col-chk" value="weight" checked> 무게(Weight)
+                            </label>
+                            <label
+                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
+                                <input type="checkbox" class="sync-col-chk" value="width" checked> 가로(Width)
+                            </label>
+                            <label
+                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
+                                <input type="checkbox" class="sync-col-chk" value="depth" checked> 세로(Depth)
+                            </label>
+                            <label
+                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
+                                <input type="checkbox" class="sync-col-chk" value="height" checked> 높이(Height)
+                            </label>
+                            <label
+                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
+                                <input type="checkbox" class="sync-col-chk" value="prod_type" checked> 제품구분
+                            </label>
+                            <label
+                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
+                                <input type="checkbox" class="sync-col-chk" value="cbm" checked> CBM
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 전송 버튼 + 상태 -->
+                    <button id="btnStartSync"
+                        style="width:100%; margin-top:8px; padding:9px; font-size:0.85rem; font-weight:700; background:#4361ee; color:white; border:none; border-radius:7px; cursor:pointer;">
+                        <i class="fas fa-paper-plane"></i> 전송 시작
+                    </button>
+                    <div id="syncProgress"
+                        style="display:none; margin-top:10px; padding:8px; background:#f8fafc; border-radius:7px; font-size:0.78rem; border:1px solid #e2e8f0;">
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                            <i class="fas fa-circle-notch fa-spin" style="color:#4361ee;"></i>
+                            <span id="syncStatusText">동기화 진행 중...</span>
+                        </div>
+                        <div style="height:5px; background:#e2e8f0; border-radius:3px; overflow:hidden;">
+                            <div id="syncProgressBar"
+                                style="width:0%; height:100%; background:#4361ee; transition:width 0.3s;"></div>
                         </div>
                     </div>
                 </div>
 
-                <div style="border-top: 1px solid #e2e8f0; padding-top: 20px;">
-                    <h4 style="font-size: 0.9rem; margin-bottom: 10px; color: #1e293b;">📦 데이터 동기화 (Sync)</h4>
-                    <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 15px;">클라우드와 폰 DB 간에 데이터를 주고받습니다.</p>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <button id="syncToPhone" class="btn btn-success"
-                            style="padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 5px;">
-                            <i class="fas fa-cloud-download-alt" style="font-size: 1.2rem;"></i>
-                            <span style="font-size: 0.85rem; font-weight: 700;">클라우드 ➜ 폰</span>
-                            <small style="font-size: 0.7rem; font-weight: normal; opacity: 0.9;">폰으로 데이터 업로드</small>
-                        </button>
-                        <button id="syncToCloud" class="btn btn-primary"
-                            style="padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 5px;">
-                            <i class="fas fa-cloud-upload-alt" style="font-size: 1.2rem;"></i>
-                            <span style="font-size: 0.85rem; font-weight: 700;">폰 ➜ 클라우드</span>
-                            <small style="font-size: 0.7rem; font-weight: normal; opacity: 0.9;">서버로 데이터 백업</small>
-                        </button>
-                    </div>
-                    <div id="syncProgress"
-                        style="display: none; margin-top: 15px; padding: 10px; background: #f8fafc; border-radius: 8px; font-size: 0.8rem; border: 1px solid #e2e8f0;">
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                            <i class="fas fa-circle-notch fa-spin" style="color: #4361ee;"></i>
-                            <span id="syncStatusText">동기화 진행 중...</span>
-                        </div>
-                        <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
-                            <div id="syncProgressBar"
-                                style="width: 0%; height: 100%; background: #4361ee; transition: width 0.3s;"></div>
-                        </div>
-                    </div>
-                </div>
             </div>
-            <div class="modal-footer" style="text-align: right; padding-top: 1rem; border-top: 1px solid #eee;">
-                <button class="btn btn-secondary" id="closeDbSettingsBottomBtn">닫기</button>
+            <div class="modal-footer" style="text-align:right; padding-top:0.8rem; border-top:1px solid #eee;">
+                <button class="btn btn-secondary" id="closeDbSettingsBottomBtn"
+                    style="font-size:0.85rem; padding:6px 16px;">닫기</button>
             </div>
         </div>
     </div>
+
+
 
     <!-- Email Settings Modal -->
     <div id="emailSettingsModal" class="modal">
@@ -850,189 +968,206 @@
     </div>
 
     <div id="tabContentSelection" class="tab-content active">
-        <div class="card">
-            <div class="file-input-group">
-                <h3>1. 원본 파일 설정 (직사적당일/법인당일/혼적당일)</h3>
-                <div class="local-only-feature" style="display: none; margin-bottom: 8px;">
-                    <div class="path-input-wrapper" style="display: flex; gap: 8px;">
-                        <input type="text" id="pathOriginal" placeholder="파일 절대 경로 입력 (예: C:\Users\Desktop\원본.xlsx)"
-                            class="path-input" style="flex: 1;">
-                        <button id="btnAutoLoadOrig" class="btn btn-primary"
-                            style="padding: 0.6rem 1rem; white-space: nowrap; font-size: 0.85rem;">최신 파일 자동
-                            불러오기</button>
+        <!-- New selection grid layout to conserve vertical space -->
+        <div class="card selection-grid"
+            style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 1.2rem; background: #ffffff;">
+            <!-- Left Column: Source Excel files -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="file-input-group" style="margin-bottom: 0;">
+                    <h3>1. 원본 파일 설정 (직사적당일/법인당일/혼적당일)</h3>
+                    <div class="local-only-feature" style="display: none; margin-bottom: 8px;">
+                        <div class="path-input-wrapper" style="display: flex; gap: 8px;">
+                            <input type="text" id="pathOriginal" placeholder="파일 절대 경로 입력 (예: C:\Users\Desktop\원본.xlsx)"
+                                class="path-input" style="flex: 1;">
+                            <button id="btnAutoLoadOrig" class="btn btn-primary"
+                                style="padding: 0.6rem 1rem; white-space: nowrap; font-size: 0.85rem;">최신 파일 자동
+                                불러오기</button>
+                        </div>
+                    </div>
+                    <div
+                        style="margin-top: 5px; font-size: 0.82rem; color: #64748b; display: flex; align-items: center; gap: 8px;">
+                        또는 직접 업로드:
+                        <input type="file" id="fileOriginal" accept=".xlsx, .xls, .xlsm">
+                        <button id="btnNativePickerOrig" class="btn btn-secondary electron-only-picker"
+                            style="display: none; padding: 3px 8px; font-size: 0.75rem;">파일 탐색기 (폴더 기억)</button>
+                    </div>
+                    <p class="file-status" id="statusOriginal">상태: 대기 중</p>
+                    <div class="local-only-feature"
+                        style="display: none; align-items: center; gap: 8px; margin-top: 3px;">
+                        <p id="lastOrig" style="font-size: 0.8rem; color: #64748b; margin: 0;"></p>
+                        <button id="btnReloadOriginal" class="btn btn-secondary"
+                            style="padding: 2px 8px; font-size: 0.75rem; display: none;">불러오기</button>
                     </div>
                 </div>
-                <div
-                    style="margin-top: 5px; font-size: 0.82rem; color: #64748b; display: flex; align-items: center; gap: 8px;">
-                    또는 직접 업로드:
-                    <input type="file" id="fileOriginal" accept=".xlsx, .xls, .xlsm">
-                    <button id="btnNativePickerOrig" class="btn btn-secondary electron-only-picker"
-                        style="display: none; padding: 3px 8px; font-size: 0.75rem;">파일 탐색기 (폴더 기억)</button>
-                </div>
-                <p class="file-status" id="statusOriginal">상태: 대기 중</p>
-                <div class="local-only-feature" style="display: none; align-items: center; gap: 8px; margin-top: 3px;">
-                    <p id="lastOrig" style="font-size: 0.8rem; color: #64748b; margin: 0;"></p>
-                    <button id="btnReloadOriginal" class="btn btn-secondary"
-                        style="padding: 2px 8px; font-size: 0.75rem; display: none;">불러오기</button>
-                </div>
-            </div>
 
-            <!-- 재작업 파일 설정 (선택 사항) -->
-            <div class="file-input-group" style="background: #fdf2f8; border: 1px solid #fbcfe8;">
-                <h3 style="color: #db2777;">1-2. 재작업 파일 설정 (선택 사항 - '재작업당일' 시트)</h3>
-                <div class="local-only-feature" style="display: none; margin-bottom: 8px;">
-                    <div class="path-input-wrapper">
-                        <input type="text" id="pathRework" placeholder="재작업 파일 절대 경로 입력 (선택)" class="path-input">
+                <!-- 재작업 파일 설정 (선택 사항) -->
+                <div class="file-input-group" style="margin-bottom: 0; background: #fdf2f8; border: 1px solid #fbcfe8;">
+                    <h3 style="color: #db2777;">1-2. 재작업 파일 설정 (선택 사항 - '재작업당일' 시트)</h3>
+                    <div class="local-only-feature" style="display: none; margin-bottom: 8px;">
+                        <div class="path-input-wrapper">
+                            <input type="text" id="pathRework" placeholder="재작업 파일 절대 경로 입력 (선택)" class="path-input">
+                        </div>
+                    </div>
+                    <div
+                        style="margin-top: 5px; font-size: 0.82rem; color: #db2777; display: flex; align-items: center; gap: 8px;">
+                        또는 직접 업로드:
+                        <input type="file" id="fileRework" accept=".xlsx, .xls, .xlsm">
+                        <button id="btnNativePickerRework" class="btn btn-secondary electron-only-picker"
+                            style="display: none; padding: 3px 8px; font-size: 0.75rem; border-color: #f472b6; color: #db2777;">파일
+                            탐색기 (폴더 기억)</button>
+                    </div>
+                    <p class="file-status" id="statusRework">상태: 대기 중</p>
+                    <div class="local-only-feature"
+                        style="display: none; align-items: center; gap: 8px; margin-top: 3px;">
+                        <p id="lastRework" style="font-size: 0.8rem; color: #64748b; margin: 0;"></p>
+                        <button id="btnClearRework" class="btn btn-secondary"
+                            style="padding: 2px 8px; font-size: 0.75rem; display: none;">해제</button>
                     </div>
                 </div>
-                <div
-                    style="margin-top: 5px; font-size: 0.82rem; color: #db2777; display: flex; align-items: center; gap: 8px;">
-                    또는 직접 업로드:
-                    <input type="file" id="fileRework" accept=".xlsx, .xls, .xlsm">
-                    <button id="btnNativePickerRework" class="btn btn-secondary electron-only-picker"
-                        style="display: none; padding: 3px 8px; font-size: 0.75rem; border-color: #f472b6; color: #db2777;">파일
-                        탐색기 (폴더 기억)</button>
-                </div>
-                <p class="file-status" id="statusRework">상태: 대기 중</p>
-                <div class="local-only-feature" style="display: none; align-items: center; gap: 8px; margin-top: 3px;">
-                    <p id="lastRework" style="font-size: 0.8rem; color: #64748b; margin: 0;"></p>
-                    <button id="btnClearRework" class="btn btn-secondary"
-                        style="padding: 2px 8px; font-size: 0.75rem; display: none;">해제</button>
-                </div>
-            </div>
 
-            <!-- 창고재고 파일 설정 (선택 사항) -->
-            <div class="file-input-group" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
-                <h3 style="color: #15803d; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-warehouse" style="font-size: 1rem;"></i>
-                    1-3. 창고재고 파일 설정
-                    <span
-                        style="font-size: 0.78rem; color: #16a34a; font-weight: normal; background: #dcfce7; padding: 2px 8px; border-radius: 12px; border: 1px solid #86efac;">선택
-                        사항</span>
-                    <span id="dongTagBadge"
-                        style="display:none; font-size: 0.78rem; color: #7c3aed; font-weight: 600; background: #f5f3ff; padding: 2px 8px; border-radius: 12px; border: 1px solid #ddd6fe;">
-                        <i class="fas fa-tags"></i> <span id="dongPrefixCount">0</span>개 접두어 → (동) 태그 적용
-                    </span>
-                </h3>
-                <p style="color: #15803d; font-size: 0.83rem; margin: 0 0 8px 0;">
-                    업로드 시: 마스터 제품구분이 <strong>Q 또는 H</strong>인 제품 중, 창고에 <strong>동일 접두어·다른 접미어</strong> 제품이 있으면
-                    제품명
-                    옆에 <strong style="color: #7c3aed;">(동)</strong> 태그를 표시합니다.
-                </p>
-                <div
-                    style="margin-top: 5px; font-size: 0.82rem; color: #15803d; display: flex; align-items: center; gap: 8px;">
-                    직접 업로드:
-                    <input type="file" id="fileWarehouseStock" accept=".xlsx, .xls, .xlsm">
-                    <button id="btnNativePickerWarehouse" class="btn btn-secondary electron-only-picker"
-                        style="display: none; padding: 3px 8px; font-size: 0.75rem; border-color: #86efac; color: #15803d;">파일
-                        탐색기 (폴더 기억)</button>
-                </div>
-                <p class="file-status" id="statusWarehouseStock" style="color: #64748b;">상태: 대기 중 (미사용)</p>
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 3px;">
-                    <p id="lastWarehouseStock" style="font-size: 0.8rem; color: #16a34a; margin: 0; font-weight: 500;">
+                <!-- 창고재고 파일 설정 (선택 사항) -->
+                <div class="file-input-group" style="margin-bottom: 0; background: #f0fdf4; border: 1px solid #bbf7d0;">
+                    <h3 style="color: #15803d; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-warehouse" style="font-size: 1rem;"></i>
+                        1-3. 창고재고 파일 설정
+                        <span
+                            style="font-size: 0.78rem; color: #16a34a; font-weight: normal; background: #dcfce7; padding: 2px 8px; border-radius: 12px; border: 1px solid #86efac;">선택
+                            사항</span>
+                        <span id="dongTagBadge"
+                            style="display:none; font-size: 0.78rem; color: #7c3aed; font-weight: 600; background: #f5f3ff; padding: 2px 8px; border-radius: 12px; border: 1px solid #ddd6fe;">
+                            <i class="fas fa-tags"></i> <span id="dongPrefixCount">0</span>개 접두어 → (동) 태그 적용
+                        </span>
+                    </h3>
+                    <p style="color: #15803d; font-size: 0.83rem; margin: 0 0 8px 0;">
+                        업로드 시: 마스터 제품구분이 <strong>Q 또는 H</strong>인 제품 중, 창고에 <strong>동일 접두어·다른 접미어</strong> 제품이 있으면
+                        제품명
+                        옆에 <strong style="color: #7c3aed;">(동)</strong> 태그를 표시합니다.
                     </p>
-                    <button id="btnClearWarehouseStock" class="btn btn-secondary"
-                        style="padding: 2px 8px; font-size: 0.75rem; display: none; border-color: #16a34a; color: #16a34a;">해제</button>
-                </div>
-            </div>
-
-            <div class="file-input-group">
-                <h3>2. 다운로드 파일 (전산 데이터) 설정</h3>
-                <div class="local-only-feature" style="display: none; margin-bottom: 8px;">
-                    <div class="path-input-wrapper" style="display: flex; gap: 8px;">
-                        <input type="text" id="pathDownload" placeholder="파일 절대 경로 입력 (예: C:\Users\Downloads\전산.xlsx)"
-                            class="path-input" style="flex: 1;">
-                        <button id="btnAutoLoadDown" class="btn btn-primary"
-                            style="padding: 0.6rem 1rem; white-space: nowrap; font-size: 0.85rem;">최신 파일 자동
-                            불러오기</button>
+                    <div
+                        style="margin-top: 5px; font-size: 0.82rem; color: #15803d; display: flex; align-items: center; gap: 8px;">
+                        직접 업로드:
+                        <input type="file" id="fileWarehouseStock" accept=".xlsx, .xls, .xlsm">
+                        <button id="btnNativePickerWarehouse" class="btn btn-secondary electron-only-picker"
+                            style="display: none; padding: 3px 8px; font-size: 0.75rem; border-color: #86efac; color: #15803d;">파일
+                            탐색기 (폴더 기억)</button>
+                    </div>
+                    <p class="file-status" id="statusWarehouseStock" style="color: #64748b;">상태: 대기 중 (미사용)</p>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 3px;">
+                        <p id="lastWarehouseStock"
+                            style="font-size: 0.8rem; color: #16a34a; margin: 0; font-weight: 500;">
+                        </p>
+                        <button id="btnClearWarehouseStock" class="btn btn-secondary"
+                            style="padding: 2px 8px; font-size: 0.75rem; display: none; border-color: #16a34a; color: #16a34a;">해제</button>
                     </div>
                 </div>
-                <div
-                    style="margin-top: 5px; font-size: 0.82rem; color: #64748b; display: flex; align-items: center; gap: 8px;">
-                    또는 직접 업로드:
-                    <input type="file" id="fileDownload" accept=".xlsx, .xls, .xlsm">
-                    <button id="btnNativePickerDown" class="btn btn-secondary electron-only-picker"
-                        style="display: none; padding: 3px 8px; font-size: 0.75rem;">파일 탐색기 (폴더 기억)</button>
-                </div>
-                <p class="file-status" id="statusDownload">상태: 대기 중</p>
-                <div class="local-only-feature" style="display: none; align-items: center; gap: 8px; margin-top: 3px;">
-                    <p id="lastDown" style="font-size: 0.8rem; color: #64748b; margin: 0;"></p>
-                    <button id="btnReloadDownload" class="btn btn-secondary"
-                        style="padding: 2px 8px; font-size: 0.75rem; display: none;">불러오기</button>
-                </div>
-            </div>
+            </div><!-- End Left Column -->
 
-            <div class="file-input-group"
-                style="background: #f8fafc; border: 1px dashed #4361ee; padding: 0.75rem 1rem; position: relative;">
-                <div
-                    style="position: absolute; top: 10px; right: 15px; font-size: 0.7rem; color: #4361ee; background: #eff6ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #dbeafe;">
-                    <i class="fas fa-cloud"></i> 실시간 연동 중
-                </div>
-                <h3 style="margin-top: 0;">3. 제품 마스터 데이터 <span
-                        style="font-size: 0.85rem; color: #3b82f6; font-weight: normal; margin-left: 8px;">(클라우드
-                        DB
-                        우선)</span></h3>
-                <p style="color: #475569; font-size: 0.9rem; margin-bottom: 8px;">
-                    <i class="fas fa-database" style="color: #4361ee; margin-right: 4px;"></i>
-                    제품 중량 및 CBM 정보를 <strong>클라우드 데이터베이스</strong>에서 실시간으로 불러옵니다.
-                </p>
-
-                <!-- 커스텀 마스터 데이터 업로드 UI -->
-                <div
-                    style="margin-top: 8px; padding: 8px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <strong style="font-size: 0.85rem; color: #475569; display: block; margin-bottom: 8px;">신규
-                        제품 등록
-                        및 기존 정보 수정:</strong>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <input type="file" id="fileMasterUpload" accept=".xlsx, .xls" style="font-size: 0.85rem;">
-                        <button id="btnUploadMaster" class="btn btn-primary-soft"
-                            style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 6px;">
-                            <i class="fas fa-upload"></i> 일괄 업로드 (Upsert)
-                        </button>
+            <!-- Right Column: Down/System files and DB -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="file-input-group" style="margin-bottom: 0;">
+                    <h3>2. 다운로드 파일 (전산 데이터) 설정</h3>
+                    <div class="local-only-feature" style="display: none; margin-bottom: 8px;">
+                        <div class="path-input-wrapper" style="display: flex; gap: 8px;">
+                            <input type="text" id="pathDownload"
+                                placeholder="파일 절대 경로 입력 (예: C:\Users\Downloads\전산.xlsx)" class="path-input"
+                                style="flex: 1;">
+                            <button id="btnAutoLoadDown" class="btn btn-primary"
+                                style="padding: 0.6rem 1rem; white-space: nowrap; font-size: 0.85rem;">최신 파일 자동
+                                불러오기</button>
+                        </div>
                     </div>
-                    <p style="color: #64748b; font-size: 0.8rem; margin: 5px 0 0 0;">* 동일 이름 제품은
-                        <strong>업데이트</strong>, 새 제품은 <strong>추가</strong>됩니다.
+                    <div
+                        style="margin-top: 5px; font-size: 0.82rem; color: #64748b; display: flex; align-items: center; gap: 8px;">
+                        또는 직접 업로드:
+                        <input type="file" id="fileDownload" accept=".xlsx, .xls, .xlsm">
+                        <button id="btnNativePickerDown" class="btn btn-secondary electron-only-picker"
+                            style="display: none; padding: 3px 8px; font-size: 0.75rem;">파일 탐색기 (폴더 기억)</button>
+                    </div>
+                    <p class="file-status" id="statusDownload">상태: 대기 중</p>
+                    <div class="local-only-feature"
+                        style="display: none; align-items: center; gap: 8px; margin-top: 3px;">
+                        <p id="lastDown" style="font-size: 0.8rem; color: #64748b; margin: 0;"></p>
+                        <button id="btnReloadDownload" class="btn btn-secondary"
+                            style="padding: 2px 8px; font-size: 0.75rem; display: none;">불러오기</button>
+                    </div>
+                </div>
+
+                <div class="file-input-group"
+                    style="margin-bottom: 0; flex: 1; background: #f8fafc; border: 1px dashed #4361ee; padding: 0.75rem 1rem; position: relative;">
+                    <div
+                        style="position: absolute; top: 10px; right: 15px; font-size: 0.7rem; color: #4361ee; background: #eff6ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #dbeafe;">
+                        <i class="fas fa-cloud"></i> 실시간 연동 중
+                    </div>
+                    <h3 style="margin-top: 0;">3. 제품 마스터 데이터 <span
+                            style="font-size: 0.85rem; color: #3b82f6; font-weight: normal; margin-left: 8px;">(클라우드
+                            DB
+                            우선)</span></h3>
+                    <p style="color: #475569; font-size: 0.9rem; margin-bottom: 8px;">
+                        <i class="fas fa-database" style="color: #4361ee; margin-right: 4px;"></i>
+                        제품 중량 및 CBM 정보를 <strong>클라우드 데이터베이스</strong>에서 실시간으로 불러옵니다.
                     </p>
-                </div>
 
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
-                    <p class="file-status" id="statusMaster" style="margin: 0; font-weight: bold; color: #1e293b;">
-                        <i class="fas fa-sync fa-spin" style="color: #4361ee; margin-right:4px;"></i>상태: DB 연동
-                        확인
-                        중...
-                    </p>
-                </div>
+                    <!-- 커스텀 마스터 데이터 업로드 UI -->
+                    <div
+                        style="margin-top: 8px; padding: 8px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <strong style="font-size: 0.85rem; color: #475569; display: block; margin-bottom: 8px;">신규
+                            제품 등록
+                            및 기존 정보 수정:</strong>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="file" id="fileMasterUpload" accept=".xlsx, .xls" style="font-size: 0.85rem;">
+                            <button id="btnUploadMaster" class="btn btn-primary-soft"
+                                style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 6px;">
+                                <i class="fas fa-upload"></i> 일괄 업로드 (Upsert)
+                            </button>
+                        </div>
+                        <p style="color: #64748b; font-size: 0.8rem; margin: 5px 0 0 0;">* 동일 이름 제품은
+                            <strong>업데이트</strong>, 새 제품은 <strong>추가</strong>됩니다.
+                        </p>
+                    </div>
 
-                <!-- 마스터 데이터 DB 관리 (신규) -->
-                <div
-                    style="margin-top: 8px; padding: 6px 10px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-size: 0.75rem; color: #64748b;"><i class="fas fa-tools"></i> 대량 DB 관리
-                        (20만건+):</span>
-                    <div style="display: flex; gap: 6px;">
-                        <button id="btnCleanOldMaster" class="btn"
-                            style="padding: 0.25rem 0.5rem; font-size: 0.7rem; background: #fff; border: 1px solid #e2e8f0; color: #64748b; border-radius: 4px;"
-                            title="일정 기간 사용되지 않은 데이터를 삭제합니다.">
-                            <i class="fas fa-broom"></i> 미사용 데이터 정리
-                        </button>
-                        <button id="btnResetMasterDb" class="btn"
-                            style="padding: 0.25rem 0.5rem; font-size: 0.7rem; background: #fff; border: 1px solid #fee2e2; color: #ef4444; border-radius: 4px;"
-                            title="DB의 모든 마스터 데이터를 삭제합니다.">
-                            <i class="fas fa-trash-alt"></i> 전체 초기화
-                        </button>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
+                        <p class="file-status" id="statusMaster" style="margin: 0; font-weight: bold; color: #1e293b;">
+                            <i class="fas fa-sync fa-spin" style="color: #4361ee; margin-right:4px;"></i>상태: DB 연동
+                            확인
+                            중...
+                        </p>
+                    </div>
+
+                    <!-- 마스터 데이터 DB 관리 (신규) -->
+                    <div
+                        style="margin-top: 8px; padding: 6px 10px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 0.75rem; color: #64748b;"><i class="fas fa-tools"></i> 대량 DB 관리
+                            (20만건+):</span>
+                        <div style="display: flex; gap: 6px;">
+                            <button id="btnCleanOldMaster" class="btn"
+                                style="padding: 0.25rem 0.5rem; font-size: 0.7rem; background: #fff; border: 1px solid #e2e8f0; color: #64748b; border-radius: 4px;"
+                                title="일정 기간 사용되지 않은 데이터를 삭제합니다.">
+                                <i class="fas fa-broom"></i> 미사용 데이터 정리
+                            </button>
+                            <button id="btnResetMasterDb" class="btn"
+                                style="padding: 0.25rem 0.5rem; font-size: 0.7rem; background: #fff; border: 1px solid #fee2e2; color: #ef4444; border-radius: 4px;"
+                                title="DB의 모든 마스터 데이터를 삭제합니다.">
+                                <i class="fas fa-trash-alt"></i> 전체 초기화
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div style="text-align: center; margin: 1rem 0 0.5rem 0;">
-                <button id="btnCompare" class="btn primary" disabled>데이터 비교 시작</button>
-            </div>
+            </div><!-- End Right Column -->
         </div>
 
-        <div class="status-box" id="processStatus" style="display: none;">
+        <div class="status-box" id="processStatus"
+            style="display: none; margin: 1rem 0 0.5rem 0; border: 1px solid #bae6fd; box-shadow: var(--shadow-sm);">
             <div id="statusMessage">데이터 처리 중...</div>
             <div class="progress-container">
                 <div class="progress-bar" id="progressBar"></div>
             </div>
+        </div>
+
+        <div
+            style="text-align: center; margin: 0.5rem 0 1rem 0; padding: 1.5rem; background: var(--bg-card); border-radius: var(--radius-lg); box-shadow: var(--shadow-premium); border: 1px solid var(--border); display: flex; justify-content: center; align-items: center;">
+            <button id="btnCompare" class="btn primary"
+                style="width: 100%; max-width: 800px; padding: 1.2rem; font-size: 1.3rem; font-weight: 800; border-radius: 12px; background: linear-gradient(135deg, var(--primary) 0%, #312e81 100%); border: none; box-shadow: 0 8px 20px rgba(67, 97, 238, 0.35); transition: transform 0.2s ease, box-shadow 0.2s ease; letter-spacing: 0.5px; color: white;"
+                disabled>데이터 비교 시작</button>
         </div>
     </div>
 

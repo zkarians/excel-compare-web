@@ -375,7 +375,14 @@ app.post('/api/db/config', async (req, res) => {
 });
 
 // Sync logic: Cloud <-> Phone
-async function syncData(sourceConfig, targetConfig, tables) {
+async function getColumns(pool, tableName) {
+    try {
+        const res = await pool.query(`SELECT column_name FROM information_schema.columns WHERE table_name = $1`, [tableName]);
+        return res.rows.map(r => r.column_name);
+    } catch (e) { return []; }
+}
+
+async function syncData(sourceConfig, targetConfig, tables, options = {}) {
     const sourcePool = new Pool({ ...sourceConfig, connectionTimeoutMillis: 5000 });
     const targetPool = new Pool({ ...targetConfig, connectionTimeoutMillis: 5000 });
     const results = [];
@@ -384,20 +391,60 @@ async function syncData(sourceConfig, targetConfig, tables) {
         for (const tableName of tables) {
             console.log(`[Sync] Processing ${tableName}...`);
             try {
-                const resSource = await sourcePool.query(`SELECT * FROM ${tableName}`);
+                // 특정 테이블 설정 (컬럼 선택 등)
+                const tableCfg = options.tableConfigs ? options.tableConfigs[tableName] : null;
+
+                let pk = 'id';
+                if (tableName === 'product_master_sync') pk = 'prod_name';
+                else if (tableName === 'container_holds' || tableName === 'container_pops') pk = 'cntr_no';
+                else if (tableName === 'carrier_mappings') pk = 'code';
+                else if (tableName === 'container_jobs') pk = 'job_name, eta, etd';
+                else if (tableName === 'container_results') pk = 'job_name, cntr_no, prod_name, qty_plan';
+                const pkCols = pk.split(',').map(c => c.trim());
+
+                // 컬럼 결정 (소스와 목적지 교집합 + 사용자 선택)
+                const srcCols = await getColumns(sourcePool, tableName);
+                const dstCols = await getColumns(targetPool, tableName);
+                let commonCols = srcCols.filter(c => dstCols.includes(c));
+
+                if (tableCfg && tableCfg.columns && tableCfg.columns.length > 0) {
+                    // 사용자 선택 항목이 있다면 교집합 중 선택된 것 + PK만 남김
+                    const combined = new Set([...pkCols, ...tableCfg.columns]);
+                    commonCols = commonCols.filter(c => combined.has(c));
+                }
+
+                if (commonCols.length === 0) {
+                    results.push({ table: tableName, count: 0, success: true, message: 'No common columns found' });
+                    continue;
+                }
+
+                let selectCols = commonCols.join(', ');
+
+                let sourceWhere = '';
+                if (options.incrementalOnly && dstCols.includes('updated_at')) {
+                    try {
+                        const resMax = await targetPool.query(`SELECT MAX(updated_at) as last_sync FROM ${tableName}`);
+                        const lastSync = resMax.rows[0].last_sync;
+                        if (lastSync) {
+                            sourceWhere = `WHERE updated_at > '${lastSync.toISOString()}'`;
+                        }
+                    } catch (e) { }
+                }
+
+                const resSource = await sourcePool.query(`SELECT ${selectCols} FROM ${tableName} ${sourceWhere}`);
                 const rows = resSource.rows;
 
                 if (rows.length > 0) {
-                    let pk = 'id';
-                    if (tableName === 'product_master_sync') pk = 'prod_name';
-                    else if (tableName === 'container_holds' || tableName === 'container_pops') pk = 'cntr_no';
-                    else if (tableName === 'carrier_mappings') pk = 'code';
-                    else if (tableName === 'container_jobs') pk = 'job_name, eta, etd';
-                    else if (tableName === 'container_results') pk = 'job_name, cntr_no, prod_name, qty_plan';
-
-                    const columns = Object.keys(rows[0]);
+                    const columns = Object.keys(rows[0]); // commonCols와 같음
                     const colNames = columns.join(', ');
-                    const updateClause = columns.filter(c => !pk.includes(c)).map(c => `${c} = EXCLUDED.${c}`).join(', ');
+                    const nonPkColumns = columns.filter(c => !pkCols.includes(c.trim()));
+
+                    const updateClause = nonPkColumns.map(c => `${c} = EXCLUDED.${c}`).join(', ');
+                    const distinctCheckCols = nonPkColumns.map(c => `${tableName}.${c}`).join(', ');
+                    const excludedCheckCols = nonPkColumns.map(c => `EXCLUDED.${c}`).join(', ');
+                    const conflictWhere = nonPkColumns.length > 0
+                        ? `WHERE (${distinctCheckCols}) IS DISTINCT FROM (${excludedCheckCols})`
+                        : '';
 
                     for (let i = 0; i < rows.length; i += 200) {
                         const batch = rows.slice(i, i + 200);
@@ -417,7 +464,8 @@ async function syncData(sourceConfig, targetConfig, tables) {
                             INSERT INTO ${tableName} (${colNames}) 
                             VALUES ${placeholdersRows.join(', ')} 
                             ON CONFLICT (${pk}) 
-                            DO UPDATE SET ${updateClause || `${pk.split(',')[0]} = EXCLUDED.${pk.split(',')[0]}`}
+                            DO UPDATE SET ${updateClause || `${pkCols[0]} = EXCLUDED.${pkCols[0]}`}
+                            ${conflictWhere}
                         `;
                         await targetPool.query(query, values);
                     }
@@ -446,32 +494,48 @@ async function syncData(sourceConfig, targetConfig, tables) {
     return results;
 }
 
+
 const CLOUD_CONFIG = {
     user: 'root', host: 'svc.sel3.cloudtype.app', database: 'excel_compare',
     password: 'z456qwe12!@', port: 30554, ssl: false
 };
 
 app.post('/api/db/sync', async (req, res) => {
-    const { direction, phoneConfig, tables } = req.body || {};
+    const { direction, phoneConfig, pcConfig, tables, options } = req.body || {};
     const targetTables = tables || [
         'product_master_sync', 'container_holds', 'container_pops',
-        'carrier_mappings', 'auto_classify_rules', 'container_jobs', 'container_results', 'sent_emails'
+        'carrier_mappings', 'auto_classify_rules', 'container_jobs', 'container_results',
+        'sent_emails', 'app_configs'
     ];
+
+    // pcConfig 우선, 없을 경우 서버의 LOCAL_PC_CONFIG 사용
+    const LOCAL_PC = pcConfig || { host: 'localhost', user: 'postgres', port: 5432, database: 'excel', password: 'z456qwe12!@', ssl: false };
+
     let source, target;
     if (direction === 'to_phone') {
-        source = CLOUD_CONFIG;
-        target = phoneConfig;
+        source = CLOUD_CONFIG; target = phoneConfig;
+    } else if (direction === 'to_cloud') {
+        source = phoneConfig; target = CLOUD_CONFIG;
+    } else if (direction === 'pc_to_cloud') {
+        source = LOCAL_PC; target = CLOUD_CONFIG;
+    } else if (direction === 'cloud_to_pc') {
+        source = CLOUD_CONFIG; target = LOCAL_PC;
+    } else if (direction === 'pc_to_phone') {
+        source = LOCAL_PC; target = phoneConfig;
+    } else if (direction === 'phone_to_pc') {
+        source = phoneConfig; target = LOCAL_PC;
     } else {
-        source = phoneConfig;
-        target = CLOUD_CONFIG;
+        return res.status(400).json({ success: false, message: `알 수 없는 direction: ${direction}` });
     }
+
     try {
-        const syncResults = await syncData(source, target, targetTables);
+        const syncResults = await syncData(source, target, targetTables, options);
         res.json({ success: true, results: syncResults });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 

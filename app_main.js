@@ -431,7 +431,8 @@ const phoneDbIp = document.getElementById('phoneDbIp');
 const phoneDbPort = document.getElementById('phoneDbPort');
 const phoneDbUser = document.getElementById('phoneDbUser');
 const phoneDbName = document.getElementById('phoneDbName');
-const btnSavePhoneIp = document.getElementById('btnSavePhoneIp');
+const phoneDbPassword = document.getElementById('phoneDbPassword');
+const btnSavePhoneDb = document.getElementById('btnSavePhoneDb');
 const switchToCloud = document.getElementById('switchToCloud');
 const switchToPhone = document.getElementById('switchToPhone');
 const syncToPhone = document.getElementById('syncToPhone');
@@ -659,11 +660,13 @@ async function initializeApp() {
     const savedPhonePort = localStorage.getItem('phoneDbPort');
     const savedPhoneUser = localStorage.getItem('phoneDbUser') || 'u0_a354';
     const savedPhoneName = localStorage.getItem('phoneDbName') || 'u0_a354';
+    const savedPhonePassword = localStorage.getItem('phoneDbPassword') || '';
 
     if (savedPhoneIp && phoneDbIp) phoneDbIp.value = savedPhoneIp;
     if (savedPhonePort && phoneDbPort) phoneDbPort.value = savedPhonePort;
     if (phoneDbUser) phoneDbUser.value = savedPhoneUser;
     if (phoneDbName) phoneDbName.value = savedPhoneName;
+    if (phoneDbPassword) phoneDbPassword.value = savedPhonePassword;
 
     checkReadyStatus();
 }
@@ -695,11 +698,12 @@ btnOpenDbSettings.addEventListener('click', () => {
     btn.addEventListener('click', () => dbSettingsModal.style.display = 'none');
 });
 
-btnSavePhoneIp.addEventListener('click', () => {
+btnSavePhoneDb.addEventListener('click', () => {
     const ip = phoneDbIp.value.trim();
     const port = phoneDbPort.value.trim();
     const user = phoneDbUser.value.trim();
     const db = phoneDbName.value.trim();
+    const pass = phoneDbPassword ? phoneDbPassword.value.trim() : '';
 
     if (!ip || !port || !user || !db) return alert("필수 정보를 모두 입력하세요 (호스트, 포트, 사용자, DB명).");
 
@@ -707,7 +711,20 @@ btnSavePhoneIp.addEventListener('click', () => {
     localStorage.setItem('phoneDbPort', port);
     localStorage.setItem('phoneDbUser', user);
     localStorage.setItem('phoneDbName', db);
+    localStorage.setItem('phoneDbPassword', pass);
     alert("폰 접속 정보가 저장되었습니다.");
+});
+
+// 제품 마스터 테이블 체크박스 변경 시 컬럼 체크박스 활성/비활성 제어
+document.addEventListener('change', (e) => {
+    if (e.target.classList.contains('sync-table-chk') && e.target.value === 'product_master_sync') {
+        const colChks = document.querySelectorAll('.sync-col-chk');
+        colChks.forEach(chk => {
+            chk.disabled = !e.target.checked;
+            chk.parentElement.style.opacity = e.target.checked ? '1' : '0.5';
+            chk.parentElement.style.cursor = e.target.checked ? 'pointer' : 'not-allowed';
+        });
+    }
 });
 
 switchToCloud.addEventListener('click', async () => {
@@ -728,6 +745,7 @@ switchToPhone.addEventListener('click', async () => {
     const port = phoneDbPort.value.trim() || '5432';
     const user = phoneDbUser.value.trim();
     const db = phoneDbName.value.trim();
+    const pass = phoneDbPassword ? phoneDbPassword.value.trim() : '';
 
     if (!ip || !user || !db) return alert("폰 설정을 먼저 완료하고 저장해주세요.");
     if (!confirm(`폰 DB(${ip}:${port})로 전환하시겠습니까?`)) return;
@@ -735,7 +753,7 @@ switchToPhone.addEventListener('click', async () => {
     const resp = await fetch(`${API_BASE}/api/db/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ host: ip, user: user, port: Number(port), database: db, password: '', ssl: false })
+        body: JSON.stringify({ host: ip, user: user, port: Number(port), database: db, password: pass, ssl: false })
     });
     const data = await resp.json();
     alert(data.message);
@@ -743,32 +761,90 @@ switchToPhone.addEventListener('click', async () => {
     loadProductMaster(); // 마스터 새로고침
 });
 
-async function startSync(direction) {
-    const ip = phoneDbIp.value.trim();
-    const port = phoneDbPort.value.trim() || '5432';
-    if (!ip) return alert("폰 주소가 필요합니다.");
-    const msg = direction === 'to_phone' ? "클라우드 ➜ 폰 전송을 시작하시겠습니까?" : "폰 ➜ 클라우드 백업을 시작하시겠습니까?";
-    if (!confirm(msg)) return;
+// [ADD] Local PC DB Switch Logic
+const switchToLocalPc = document.getElementById('switchToLocalPc');
+if (switchToLocalPc) {
+    switchToLocalPc.addEventListener('click', async () => {
+        if (!confirm("로컬 PC DB(localhost:5432)로 전환하시겠습니까?")) return;
+        const resp = await fetch(`${API_BASE}/api/db/config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ host: 'localhost', user: 'postgres', port: 5432, database: 'excel', password: 'z456qwe12!@', ssl: false })
+        });
+        const data = await resp.json();
+        alert(data.message);
+        updateDbConfigUI(data.success, data.message);
+        loadProductMaster(); // 마스터 새로고침
+    });
+}
 
+async function startSync(srcType, dstType) {
+    const LOCAL_PC_CONFIG = { host: 'localhost', user: 'postgres', port: 5432, database: 'excel', password: 'z456qwe12!@', ssl: false };
+    const CLOUD_CFG = null; // 서버측 CLOUD_CONFIG 사용 (null = 서버 기본값)
+
+    // 폰 설정 읽기
+    const ip = document.getElementById('phoneDbIp')?.value.trim();
+    const port = document.getElementById('phoneDbPort')?.value.trim() || '5432';
+    const user = document.getElementById('phoneDbUser')?.value.trim();
+    const db = document.getElementById('phoneDbName')?.value.trim();
+    const pass = document.getElementById('phoneDbPassword')?.value.trim() || '';
+    const phoneConfig = { host: ip, user: user, port: Number(port), database: db, password: pass, ssl: false };
+
+    // 동기화 옵션 (최적화)
+    const incrementalOnly = document.getElementById('syncIncrementalOnly')?.checked || false;
+    const selectedTables = Array.from(document.querySelectorAll('.sync-table-chk:checked')).map(el => el.value);
+    const selectedColumns = Array.from(document.querySelectorAll('.sync-col-chk:checked')).map(el => el.value);
+
+    if (selectedTables.length === 0) return alert("동기화할 테이블을 최소 하나 이상 선택해주세요.");
+
+    // 폰이 포함된 경우 IP 유효성 체크
+    if ((srcType === 'phone' || dstType === 'phone') && !ip) {
+        return alert('폰 DB 주소를 먼저 입력해 주세요. (폰 DB 연결 설정 패널 참고)');
+    }
+    if (srcType === dstType) return alert('출발지와 목적지가 같습니다. 다른 대상을 선택해 주세요.');
+
+    const nameMap = { pc: '로컬 PC', cloud: '클라우드', phone: '폰' };
+    if (!confirm(`${nameMap[srcType]} ➜ ${nameMap[dstType]} 데이터 전송을 시작하시겠습니까?`)) return;
+
+    const syncProgress = document.getElementById('syncProgress');
+    const syncProgressBar = document.getElementById('syncProgressBar');
+    const syncStatusText = document.getElementById('syncStatusText');
     syncProgress.style.display = 'block';
     syncProgressBar.style.width = '0%';
-    syncStatusText.textContent = "동기화 준비 중...";
+    syncStatusText.textContent = '동기화 준비 중...';
 
-    const user = phoneDbUser.value.trim();
-    const db = phoneDbName.value.trim();
-    const phoneConfig = { host: ip, user: user, port: Number(port), database: db, password: '', ssl: false };
+    // direction 매핑: 서버 API는 source/target을 직접 받도록 수정 필요 없이 phoneConfig 기반 전송
+    // to_phone: cloud->phone, to_cloud: phone->cloud 식의 레거시 호환을 유지하면서,
+    // PC가 포함된 경우엔 새로운 direction 값을 사용
+    let direction;
+    if (srcType === 'cloud' && dstType === 'phone') direction = 'to_phone';
+    else if (srcType === 'phone' && dstType === 'cloud') direction = 'to_cloud';
+    else if (srcType === 'pc') direction = `pc_to_${dstType}`;
+    else if (dstType === 'pc') direction = `${srcType}_to_pc`;
+    else direction = `${srcType}_to_${dstType}`;
 
     try {
         const resp = await fetch(`${API_BASE}/api/db/sync`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ direction, phoneConfig })
+            body: JSON.stringify({
+                direction,
+                phoneConfig,
+                pcConfig: LOCAL_PC_CONFIG,
+                tables: selectedTables,
+                options: {
+                    incrementalOnly,
+                    tableConfigs: {
+                        'product_master_sync': { columns: selectedColumns }
+                    }
+                }
+            })
         });
         const data = await resp.json();
         if (data.success) {
             syncProgressBar.style.width = '100%';
-            syncStatusText.textContent = "동기화 완료!";
-            let resultMsg = "✅ 동기화 결과:\n";
+            syncStatusText.textContent = '동기화 완료!';
+            let resultMsg = '✅ 동기화 결과:\n';
             data.results.forEach(r => {
                 resultMsg += `- ${r.table}: ${r.success ? `${r.count}건 완료` : `실패(${r.error})`}\n`;
             });
@@ -777,74 +853,94 @@ async function startSync(direction) {
             throw new Error(data.message);
         }
     } catch (err) {
-        alert("동기화 실패: " + err.message);
-        syncStatusText.textContent = "실패: " + err.message;
+        alert('동기화 실패: ' + err.message);
+        syncStatusText.textContent = '실패: ' + err.message;
     } finally {
         setTimeout(() => { syncProgress.style.display = 'none'; }, 3000);
     }
 }
 
-syncToPhone.addEventListener('click', () => startSync('to_phone'));
-syncToCloud.addEventListener('click', () => startSync('to_cloud'));
+// --- 새 UI: sync-node-btn 선택 로직 ---
+let syncSrc = null, syncDst = null;
+const ACTIVE_SRC_STYLE = { border: '2px solid #10b981', background: '#ecfdf5', color: '#065f46', fontWeight: '600' };
+const ACTIVE_DST_STYLE = { border: '2px solid #4361ee', background: '#eef2ff', color: '#3730a3', fontWeight: '600' };
+const INACTIVE_STYLE = { border: '2px solid #e2e8f0', background: 'white', color: '#475569', fontWeight: 'normal' };
 
-// 퀵백업 (Cloud -> Phone)
-async function startQuickBackup(isAuto = false) {
-    const ip = localStorage.getItem('phoneDbIp') || (phoneDbIp ? phoneDbIp.value.trim() : '');
-    const port = localStorage.getItem('phoneDbPort') || (phoneDbPort ? phoneDbPort.value.trim() : '5432');
-    const user = localStorage.getItem('phoneDbUser') || (phoneDbUser ? phoneDbUser.value.trim() : '');
-    const db = localStorage.getItem('phoneDbName') || (phoneDbName ? phoneDbName.value.trim() : '');
-
-    if (!ip || !user || !db) {
-        if (!isAuto) alert("폰 DB 설정이 완료되지 않았습니다. [폰 DB 설정] 메뉴에서 먼저 설정해주세요.");
-        return;
-    }
-
-    if (!isAuto && !confirm("클라우드 ➜ 폰 즉시 전체 백업을 시작하시겠습니까?")) return;
-
-    if (!isAuto) {
-        syncProgress.style.display = 'block';
-        syncProgressBar.style.width = '0%';
-        syncStatusText.textContent = "백업 준비 중...";
-    }
-
-    const phoneConfig = { host: ip, user: user, port: Number(port), database: db, password: '', ssl: false };
-
-    try {
-        const resp = await fetch(`${API_BASE}/api/db/sync`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ direction: 'to_phone', phoneConfig })
-        });
-        const data = await resp.json();
-        if (data.success) {
-            const now = new Date();
-            const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-            localStorage.setItem('lastBackupTime', timeStr);
-            if (document.getElementById('lastBackupTime')) {
-                document.getElementById('lastBackupTime').textContent = timeStr;
-            }
-            if (!isAuto) {
-                syncProgressBar.style.width = '100%';
-                syncStatusText.textContent = "백업 완료!";
-                showToast("✨ 클라우드 데이터가 폰으로 백업되었습니다.");
-            } else {
-                console.log("✅ Auto-backup to phone completed.");
-            }
-        }
-    } catch (err) {
-        console.error("❌ Backup failed:", err);
-        if (!isAuto) alert("백업 실패: " + err.message);
-    } finally {
-        if (!isAuto) {
-            setTimeout(() => { syncProgress.style.display = 'none'; }, 2000);
-        }
-    }
+function applyBtnStyle(btn, styleObj) {
+    Object.assign(btn.style, styleObj);
 }
 
-const btnQuickBackup = document.getElementById('btnQuickBackup');
-if (btnQuickBackup) {
-    btnQuickBackup.addEventListener('click', () => startQuickBackup());
-}
+document.querySelectorAll('.sync-node-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const role = btn.getAttribute('data-role');
+        const val = btn.getAttribute('data-val');
+
+        if (role === 'src') {
+            syncSrc = val;
+            // 출발지 선택 하이라이트
+            document.querySelectorAll('.sync-node-btn[data-role="src"]').forEach(b => applyBtnStyle(b, INACTIVE_STYLE));
+            applyBtnStyle(btn, ACTIVE_SRC_STYLE);
+
+            // 목적지에서 같은 값 비활성화, 나머지 활성화
+            document.querySelectorAll('.sync-node-btn[data-role="dst"]').forEach(b => {
+                if (b.getAttribute('data-val') === val) {
+                    b.disabled = true;
+                    Object.assign(b.style, { border: '2px solid #e2e8f0', background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed', fontWeight: 'normal' });
+                    if (syncDst === val) { syncDst = null; } // 이미 같은 목적지 선택된 경우 초기화
+                } else {
+                    b.disabled = false;
+                    if (syncDst === b.getAttribute('data-val')) {
+                        applyBtnStyle(b, ACTIVE_DST_STYLE);
+                    } else {
+                        applyBtnStyle(b, INACTIVE_STYLE);
+                    }
+                }
+            });
+        } else {
+            syncDst = val;
+            // 목적지 선택 하이라이트
+            document.querySelectorAll('.sync-node-btn[data-role="dst"]').forEach(b => {
+                if (!b.disabled) applyBtnStyle(b, INACTIVE_STYLE);
+            });
+            applyBtnStyle(btn, ACTIVE_DST_STYLE);
+
+            // 출발지에서 같은 값 비활성화, 나머지 활성화
+            document.querySelectorAll('.sync-node-btn[data-role="src"]').forEach(b => {
+                if (b.getAttribute('data-val') === val) {
+                    b.disabled = true;
+                    Object.assign(b.style, { border: '2px solid #e2e8f0', background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed', fontWeight: 'normal' });
+                    if (syncSrc === val) { syncSrc = null; }
+                } else {
+                    b.disabled = false;
+                    if (syncSrc === b.getAttribute('data-val')) {
+                        applyBtnStyle(b, ACTIVE_SRC_STYLE);
+                    } else {
+                        applyBtnStyle(b, INACTIVE_STYLE);
+                    }
+                }
+            });
+        }
+
+        const nameMap = { pc: '로컬 PC', cloud: '클라우드', phone: '폰' };
+        const label = document.getElementById('syncDirectionLabel');
+        if (label && syncSrc && syncDst) {
+            label.textContent = `${nameMap[syncSrc]} ➜ ${nameMap[syncDst]}`;
+        } else if (label && syncSrc) {
+            label.textContent = `출발지: ${nameMap[syncSrc]} 선택됨. 목적지를 선택하세요.`;
+        } else if (label && syncDst) {
+            label.textContent = `목적지: ${nameMap[syncDst]} 선택됨. 출발지를 선택하세요.`;
+        }
+    });
+});
+
+
+document.getElementById('btnStartSync')?.addEventListener('click', () => {
+    if (!syncSrc || !syncDst) return alert('출발지와 목적지를 모두 선택해 주세요.');
+    startSync(syncSrc, syncDst);
+});
+
+
+
 
 if (document.readyState === 'loading') {
     window.addEventListener('DOMContentLoaded', initializeApp);
@@ -940,9 +1036,21 @@ async function readExcelFile(file, type) {
                 if (type === 'original' || type === 'rework') {
                     const targetSheets = type === 'original' ? ["직선적당일", "법인당일", "혼적당일"] : ["재작업당일"];
 
-                    workbook.worksheets.forEach(ws => {
+                    if (type === 'rework' && workbook.worksheets.length > 1) {
+                        const hasReworkSheet = workbook.worksheets.some(ws => (ws.name || "").trim().includes('재작업'));
+                        if (!hasReworkSheet) {
+                            reject(new Error("시트명이 재작업으로 된 시트가 없습니다."));
+                            return;
+                        }
+                    }
+
+                    workbook.worksheets.forEach((ws, sheetIndex) => {
                         const sheetName = (ws.name || "").trim();
-                        if (targetSheets.includes(sheetName)) {
+                        // 재작업 파일의 경우 시트 이름이 정확히 일치하지 않아도, '재작업'이 포함되어 있거나 시트가 하나밖에 없으면 파싱 시도
+                        const isTarget = targetSheets.includes(sheetName) ||
+                            (type === 'rework' && (sheetName.includes('재작업') || workbook.worksheets.length === 1));
+
+                        if (isTarget) {
                             // original 파싱 로직 (services/excelService.js의 parseOriginalExcel과 유사하게 구현)
                             let lastValidCntrNo = "";
                             let lastFontColor = null;
@@ -952,10 +1060,17 @@ async function readExcelFile(file, type) {
                             let lastValidE = "", lastValidN = "", lastValidO = "";
                             let lastValidP = "", lastValidQ = "", lastValidR = "";
                             let dataStarted = false;
+                            let emptyRowCount = 0; // 공백 행 카운터
+                            let lastRowNumber = 0;
 
                             const COL = { JOB_NAME: 1, DEST: 5, PROD_TYPE: 7, PROD_NAME: 9, QTY: 10, CNTR_TYPE_FALLBACK: 12, CARRIER_FALLBACK: 13, CNTR_TYPE: 14, CARRIER: 15, ETA: 16, ETD: 17, REMARK: 18, WORK_DATE: 19, CNTR_NO: 20, ADJ1: 21, ADJ2: 22 };
 
                             ws.eachRow((row, i) => {
+                                if (dataStarted && lastRowNumber > 0 && (i - lastRowNumber > 1)) {
+                                    emptyRowCount += (i - lastRowNumber - 1);
+                                }
+                                lastRowNumber = i;
+
                                 const safeGetText = (col) => {
                                     const cell = row.getCell(col);
                                     if (!cell) return "";
@@ -991,7 +1106,20 @@ async function readExcelFile(file, type) {
                                 }
 
                                 if (!dataStarted) { if (cellProd) dataStarted = true; else return; }
-                                if (!cellProd) return;
+
+                                if (!cellProd) {
+                                    emptyRowCount++;
+                                    return;
+                                } else {
+                                    if (emptyRowCount > 0) {
+                                        // 공백 행(작업 구분선)을 지나면 이전 컨테이너 정보(상속)를 초기화
+                                        lastValidCntrNo = "";
+                                        lastValidDest = ""; lastValidE = ""; lastValidN = ""; lastValidO = "";
+                                        lastValidP = ""; lastValidQ = ""; lastValidR = "";
+                                        lastFontColor = null;
+                                        emptyRowCount = 0;
+                                    }
+                                }
 
                                 let cellDest = safeGetText(COL.DEST);
                                 let cellCntrNo = safeGetText(COL.CNTR_NO);
@@ -4418,8 +4546,6 @@ if (btnSaveToDB) {
                 updateSelectionUI();
                 displayResults(comparisonResult);
                 updateDbGlobalStats();
-                // 데이터 저장 성공 시 폰 DB로 자동 백업 (Cloud -> Phone)
-                startQuickBackup(true);
             } else {
                 alert('저장 실패: ' + resData.message);
             }

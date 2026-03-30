@@ -309,7 +309,7 @@ document.querySelectorAll('#closeRulesBtn, #closeRulesBtnBottom').forEach(btn =>
         rulesModal.style.display = 'none';
         // 창을 닫을 때 현재 데이터를 기준으로 다시 비교 실행 (데이터가 있을 때만)
         if (originalData.length > 0 && downloadData.length > 0) {
-            comparisonResult = compareData(originalData, downloadData);
+            comparisonResult = compareData(originalData, downloadData, productMaster, dynamicRules, customFields, carrierMap, normalizeCarrier);
             updateDashboard();
             displayResults(comparisonResult);
         }
@@ -321,7 +321,7 @@ window.addEventListener('click', (event) => {
         rulesModal.style.display = 'none';
         // 창을 닫을 때 현재 데이터를 기준으로 다시 비교 실행 (데이터가 있을 때만)
         if (originalData.length > 0 && downloadData.length > 0) {
-            comparisonResult = compareData(originalData, downloadData);
+            comparisonResult = compareData(originalData, downloadData, productMaster, dynamicRules, customFields, carrierMap, normalizeCarrier);
             updateDashboard();
             displayResults(comparisonResult);
         }

@@ -6,6 +6,10 @@ masterrule/runtime_debug.log
 masterrule/startup_error.log
 *.xlsx
 *.xls
+*.sql
+*.zip
+*.log
+*.tmp
 .env
 .DS_Store
 # package-lock.json (Keep in Git for consistent dependencies)

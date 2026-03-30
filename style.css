@@ -160,6 +160,19 @@ input[type="file"] {
 .btn.primary:not(:disabled):hover {
     background-color: var(--primary-hover);
     transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(67, 97, 238, 0.4);
+}
+
+#btnCompare:not(:disabled):hover {
+    transform: translateY(-3px) scale(1.01) !important;
+    background: linear-gradient(135deg, #3a56d4 0%, #1e1b4b 100%) !important;
+    box-shadow: 0 10px 25px rgba(67, 97, 238, 0.4) !important;
+}
+
+#btnCompare:disabled {
+    opacity: 0.5;
+    background: #cbd5e1 !important;
+    box-shadow: none !important;
 }
 
 .btn.success {
