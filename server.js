@@ -102,20 +102,27 @@ async function connectToDb(config) {
             console.log('✅ [DB] 새로운 클라이언트가 연결되었습니다.');
         });
 
-        // 연결 테스트
+        // 연결 테스트 (단순 소켓 연결이 아닌 실제 쿼리 실행까지 확인)
         const client = await newPool.connect();
         try {
-            console.log("✅ [DB] 연결 테스트 성공!");
-            pool = newPool; // 테스트 성공 시에만 전역 pool에 할당
-            await initDb();
-            return { success: true, message: `Connected to ${currentDbConfig.host}` };
+            const testRes = await client.query('SELECT 1');
+            if (testRes.rowCount > 0) {
+                console.log(`✅ [DB] 연결 및 쿼리 성공! (${currentDbConfig.host})`);
+                pool = newPool; // 테스트 성공 시에만 전역 pool에 할당
+                await initDb();
+                return { success: true, message: `Connected to ${currentDbConfig.host} successfully.` };
+            } else {
+                throw new Error("정상적인 쿼리 결과를 받지 못했습니다.");
+            }
         } finally {
             client.release();
         }
     } catch (err) {
+        const configSummary = `Host: ${currentDbConfig.host}, Port: ${currentDbConfig.port}, User: ${currentDbConfig.user}, DB: ${currentDbConfig.database}`;
         console.error("❌ [DB] 초기 연결 및 테이블 생성 실패:", err.message);
+        console.error("🔍 [DB] 사용된 설정:", configSummary);
         pool = null; // 실패 시 확실히 null 유지
-        return { success: false, message: err.message };
+        return { success: false, message: `${err.message} (${configSummary})` };
     } finally {
         isConnecting = false;
     }
@@ -209,9 +216,14 @@ async function initDb() {
                 eta TEXT,
                 etd TEXT,
                 remark TEXT,
-                saved_at TIMESTAMP DEFAULT NOW()
+                saved_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE (job_name, eta, etd)
             )
         `);
+        // 하위 호환성: 기존 테이블에 UNIQUE 제약 조건 추가 시도
+        try {
+            await client.query(`ALTER TABLE container_jobs ADD CONSTRAINT container_jobs_unique_key UNIQUE (job_name, eta, etd)`);
+        } catch (e) { /* 이미 존재하거나 데이터 중복 시 무시 */ }
 
         // 7. 앱 설정 (이메일 등)
         await client.query(`
@@ -391,26 +403,23 @@ async function syncData(sourceConfig, targetConfig, tables, options = {}) {
         for (const tableName of tables) {
             console.log(`[Sync] Processing ${tableName}...`);
             try {
-                // 특정 테이블 설정 (컬럼 선택 등)
-                const tableCfg = options.tableConfigs ? options.tableConfigs[tableName] : null;
-
                 let pk = 'id';
                 if (tableName === 'product_master_sync') pk = 'prod_name';
                 else if (tableName === 'container_holds' || tableName === 'container_pops') pk = 'cntr_no';
                 else if (tableName === 'carrier_mappings') pk = 'code';
                 else if (tableName === 'container_jobs') pk = 'job_name, eta, etd';
                 else if (tableName === 'container_results') pk = 'job_name, cntr_no, prod_name, qty_plan';
+                else if (tableName === 'app_configs') pk = 'key';
                 const pkCols = pk.split(',').map(c => c.trim());
 
-                // 컬럼 결정 (소스와 목적지 교집합 + 사용자 선택)
+                // 컬럼 결정 (소스와 목적지 교집합)
                 const srcCols = await getColumns(sourcePool, tableName);
                 const dstCols = await getColumns(targetPool, tableName);
                 let commonCols = srcCols.filter(c => dstCols.includes(c));
 
-                if (tableCfg && tableCfg.columns && tableCfg.columns.length > 0) {
-                    // 사용자 선택 항목이 있다면 교집합 중 선택된 것 + PK만 남김
-                    const combined = new Set([...pkCols, ...tableCfg.columns]);
-                    commonCols = commonCols.filter(c => combined.has(c));
+                // [추가] container_results 동기화 시 job_id 제외 (기기마다 매칭되는 ID 가 다를 수 있음)
+                if (tableName === 'container_results') {
+                    commonCols = commonCols.filter(c => c !== 'job_id');
                 }
 
                 if (commonCols.length === 0) {
@@ -546,15 +555,16 @@ app.get('/api/health', (req, res) => {
 
 // DB 연결 상태 확인 API
 app.get('/api/db-status', async (req, res) => {
+    const configInfo = `Host: ${currentDbConfig.host}, DB: ${currentDbConfig.database}, User: ${currentDbConfig.user}`;
     if (!pool) {
-        return res.json({ success: false, message: 'DB 클라이언트 초기화 실패' });
+        return res.json({ success: false, message: `DB 클라이언트 초기화 실패 (${configInfo})` });
     }
     try {
         const client = await pool.connect();
         client.release();
-        res.json({ success: true, message: 'DB 연결 성공' });
+        res.json({ success: true, message: `DB 연결 성공 (${currentDbConfig.host})` });
     } catch (err) {
-        res.json({ success: false, message: 'DB 연결 실패: ' + err.message });
+        res.json({ success: false, message: `DB 연결 실패: ${err.message} (${configInfo})` });
     }
 });
 
@@ -1474,7 +1484,7 @@ app.get('/api/db-search', async (req, res) => {
         let queryBase = `
         SELECT r.*, j.eta as job_eta, j.etd as job_etd, j.remark as job_remark, j.job_name as job_name_master
         FROM container_results r
-        LEFT JOIN container_jobs j ON r.job_id = j.id
+        LEFT JOIN container_jobs j ON r.job_name = j.job_name AND r.eta = j.eta AND r.etd = j.etd
         WHERE 1=1
     `;
         let params = [];

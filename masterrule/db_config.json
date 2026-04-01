@@ -1,6 +1,6 @@
 {
-  "user": "aidlux",
-  "host": "maizen.iptime.org",
+  "user": "postgres",
+  "host": "localhost",
   "database": "excel",
   "password": "z456qwe12!@",
   "port": 5432,

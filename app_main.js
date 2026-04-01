@@ -404,6 +404,8 @@ const dashboardContainer = document.getElementById('dashboardContainer');
 const resultsContainer = document.getElementById('resultsContainer');
 const btnLoadExcel = document.getElementById('btnLoadExcel'); // Added from instruction
 const btnDownloadResult = document.getElementById('btnDownloadResult');
+const btnViewResult = document.getElementById('btnViewResult'); // [추가]
+const btnDbViewExcel = document.getElementById('btnDbViewExcel'); // [추가]
 // DOM 요소 (애플리케이션 구동 시점에 찾되, 필요시 함수 내에서 재확인)
 function getResultBody() {
     return document.getElementById('resultBody');
@@ -715,17 +717,6 @@ btnSavePhoneDb.addEventListener('click', () => {
     alert("폰 접속 정보가 저장되었습니다.");
 });
 
-// 제품 마스터 테이블 체크박스 변경 시 컬럼 체크박스 활성/비활성 제어
-document.addEventListener('change', (e) => {
-    if (e.target.classList.contains('sync-table-chk') && e.target.value === 'product_master_sync') {
-        const colChks = document.querySelectorAll('.sync-col-chk');
-        colChks.forEach(chk => {
-            chk.disabled = !e.target.checked;
-            chk.parentElement.style.opacity = e.target.checked ? '1' : '0.5';
-            chk.parentElement.style.cursor = e.target.checked ? 'pointer' : 'not-allowed';
-        });
-    }
-});
 
 switchToCloud.addEventListener('click', async () => {
     if (!confirm("클라우드 DB(cloudtype)로 전환하시겠습니까?")) return;
@@ -793,8 +784,6 @@ async function startSync(srcType, dstType) {
     // 동기화 옵션 (최적화)
     const incrementalOnly = document.getElementById('syncIncrementalOnly')?.checked || false;
     const selectedTables = Array.from(document.querySelectorAll('.sync-table-chk:checked')).map(el => el.value);
-    const selectedColumns = Array.from(document.querySelectorAll('.sync-col-chk:checked')).map(el => el.value);
-
     if (selectedTables.length === 0) return alert("동기화할 테이블을 최소 하나 이상 선택해주세요.");
 
     // 폰이 포함된 경우 IP 유효성 체크
@@ -833,10 +822,7 @@ async function startSync(srcType, dstType) {
                 pcConfig: LOCAL_PC_CONFIG,
                 tables: selectedTables,
                 options: {
-                    incrementalOnly,
-                    tableConfigs: {
-                        'product_master_sync': { columns: selectedColumns }
-                    }
+                    incrementalOnly
                 }
             })
         });
@@ -3850,6 +3836,336 @@ btnDownloadResult.addEventListener('click', async () => {
     }
 });
 
+/**
+ * [추가] 결과 바로보기 버튼 리스너
+ * 다운로드 창을 생략하고 엑셀 프로그램을 즉시 실행함
+ */
+if (btnViewResult) {
+    btnViewResult.addEventListener('click', async () => {
+        if (!comparisonResult || comparisonResult.length === 0) {
+            alert("조회된 데이터가 없습니다.");
+            return;
+        }
+        // 버튼 상태 변경 (로딩 표시용)
+        const originalText = btnViewResult.innerHTML;
+        btnViewResult.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 생성 중...';
+        btnViewResult.disabled = true;
+
+        try {
+            const wb = await generateComparisonWorkbook(); // Workbook 생성 로직 분리 호출
+            const buffer = await wb.xlsx.writeBuffer();
+            const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            const fileName = currentFilter === 'entry' ? `반입정보_${timestamp}.xlsx` : (currentFilter === 'entry_unclassified' ? `반입정보_미분류_${timestamp}.xlsx` : `비교결과_${timestamp}.xlsx`);
+
+            // 백엔드 API 호출하여 즉시 열기
+            const base64 = bufToBase64(buffer);
+            const response = await fetch(`${API_BASE}/api/open-excel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ buffer: base64, fileName: fileName })
+            });
+
+            if (!response.ok) throw new Error('API 호출 실패');
+            console.log('✅ 엑셀 바로보기 요청 완료');
+        } catch (err) {
+            console.error('❌ 바로보기 오류:', err);
+            alert(`엑셀을 여는 중 오류가 발생했습니다: ${err.message}`);
+        } finally {
+            btnViewResult.innerHTML = originalText;
+            btnViewResult.disabled = false;
+        }
+    });
+}
+
+/**
+ * [분리] 비교 결과 Workbook 생성 로직 (Download/View 중복 제거)
+ * 기존 btnDownloadResult 에 있던 로직을 함수화함
+ */
+async function generateComparisonWorkbook() {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('비교 결과');
+    let exportData = [];
+    let columns = [];
+
+    const searchInput = document.getElementById('inputSearch');
+    const prodSearchInput = document.getElementById('inputProdSearch');
+    const prodTypeSelect = document.getElementById('selectProdType');
+
+    const searchTerm = (searchInput ? searchInput.value : "").trim().toUpperCase();
+    const prodSearchTerm = (prodSearchInput ? prodSearchInput.value : "").trim().toUpperCase();
+    const prodTypeFilter = (prodTypeSelect ? prodTypeSelect.value : "").trim().toUpperCase();
+
+    let filteredResults = comparisonResult;
+    if (searchTerm || prodSearchTerm || prodTypeFilter) {
+        filteredResults = filteredResults.filter(r => {
+            const cntr = (r.cntrNo || "").toUpperCase();
+            const prod = (r.prodName || "").toUpperCase();
+            const type = (r.prodType || "").toUpperCase();
+            let match = true;
+            if (searchTerm && !cntr.includes(searchTerm)) match = false;
+            if (prodSearchTerm && !prod.includes(prodSearchTerm)) match = false;
+            if (prodTypeFilter && type !== prodTypeFilter) match = false;
+            return match;
+        });
+    }
+
+    if (currentFilter === 'entry' || currentFilter === 'entry_unclassified') {
+        columns = [
+            { header: '선사', key: 'carrier', width: 10 },
+            { header: '규격', key: 'cntrType', width: 10 },
+            { header: 'F.DEST', key: 'dest', width: 12 },
+            { header: 'CTNR NO', key: 'cntrNo', width: 17 },
+            { header: 'SEAL', key: 'sealNo', width: 15 },
+            { header: '합산중량', key: 'grossWeightCombined', width: 15, style: { alignment: { wrapText: true, vertical: 'middle', horizontal: 'right' } } },
+            { header: '모선항차 / 반입터미널', key: 'origRemark', width: 45 },
+            { header: '출항일', key: 'etd', width: 12 },
+            { header: '작업일', key: 'workDate', width: 12 },
+            { header: '운송사', key: 'transporter', width: 12 }
+        ];
+
+        const aggregated = new Map();
+        filteredResults.forEach(item => {
+            if (holdContainerMap.has(item.cntrNo)) return;
+
+            let isUnclassified = false;
+            let cleanTrans = (item.transporter || "").toString().replace(/\(빨강\)|\(파랑\)|\(초록\)|\(주황\)/g, "").trim();
+            if (!cleanTrans || cleanTrans === "-" || cleanTrans === "정보없음" || cleanTrans === "미분류" || cleanTrans === "미지정") {
+                isUnclassified = true;
+                cleanTrans = "미분류";
+            }
+
+            if (currentFilter === 'entry' && isUnclassified) return;
+            if (currentFilter === 'entry_unclassified' && !isUnclassified) return;
+
+            const key = (item.cntrNo || "").trim().toUpperCase();
+            if (!key || item.badgeClass === 'missing') return;
+
+            if (!aggregated.has(key)) {
+                aggregated.set(key, {
+                    carrier: item.carrierName.val,
+                    cntrType: item.cntrType.val,
+                    dest: item.destination.val,
+                    cntrNo: item.cntrNo,
+                    sealNo: item.sealNo || "",
+                    mixedWeight: item.weights.mixed === null ? 0 : (parseFloat(item.weights.mixed) || 0),
+                    origWeight: item.weights.orig === null ? 0 : (parseFloat(item.weights.orig) || 0),
+                    downWeight: item.weights.down === null ? 0 : (parseFloat(item.weights.down) || 0),
+                    isMismatch: item.weights.isMismatch,
+                    issueModels: [],
+                    origRemark: item.origRemark || "",
+                    etd: item.etd || "",
+                    workDate: item.workDate || "-",
+                    transporter: cleanTrans
+                });
+                const entry = aggregated.get(key);
+                if (item.weights.mixed === null) {
+                    entry.issueModels.push(`${item.prodName}: 제품정보없음`);
+                } else if (item.weights.isMismatch) {
+                    const diff = (parseFloat(item.weights.mixed) - parseFloat(item.weights.orig)).toFixed(2);
+                    entry.issueModels.push(`${item.prodName}: 무게정보다름(차이값:${diff > 0 ? '+' : ''}${diff})`);
+                }
+            } else {
+                const existing = aggregated.get(key);
+                existing.mixedWeight += (parseFloat(item.weights.mixed) || 0);
+                existing.origWeight += (parseFloat(item.weights.orig) || 0);
+                existing.downWeight += (parseFloat(item.weights.down) || 0);
+
+                if (item.weights.mixed === null) existing.issueModels.push(`${item.prodName}: 제품정보없음`);
+                if (item.weights.isMismatch) {
+                    existing.isMismatch = true;
+                    const diff = (parseFloat(item.weights.mixed) - parseFloat(item.weights.orig)).toFixed(2);
+                    existing.issueModels.push(`${item.prodName}: 무게정보다름(차이값:${diff > 0 ? '+' : ''}${diff})`);
+                }
+            }
+        });
+        exportData = Array.from(aggregated.values());
+        exportData.sort((a, b) => a.transporter.localeCompare(b.transporter));
+    } else {
+        columns = [
+            { header: '작업구분', key: 'type', width: 15 },
+            { header: '컨테이너번호', key: 'cntrNo', width: 20 },
+            { header: '제품구분', key: 'prodType', width: 10 },
+            { header: '사업부', key: 'division', width: 12 },
+            { header: '제품모델명', key: 'prodName', width: 30 },
+            { header: '계획수량', key: 'planQty', width: 10 },
+            { header: '적재수량', key: 'loadQty', width: 10 },
+            { header: '팬딩수량', key: 'pendingQty', width: 10 },
+            { header: '잔여수량', key: 'remainQty', width: 10 },
+            { header: '컨테이너규격', key: 'cntrSize', width: 15 },
+            { header: '제품크기', key: 'dims', width: 15 },
+            { header: '선사', key: 'carrier', width: 15 },
+            { header: '도착지', key: 'dest', width: 15 },
+            { header: '무게(계획)', key: 'mixedWeight', width: 15 },
+            { header: '상세사유', key: 'detail', width: 50 },
+            { header: '작업명', key: 'jobName', width: 20 },
+            { header: '선적일', key: 'eta', width: 15 },
+            { header: '출항일', key: 'etd', width: 15 },
+            { header: '리마크', key: 'origRemark', width: 40 }
+        ];
+
+        let filtered = filteredResults;
+        if (currentFilter === 'hold') {
+            filtered = filteredResults.filter(r => holdContainerMap.has(r.cntrNo));
+        } else {
+            filtered = filteredResults.filter(r => !holdContainerMap.has(r.cntrNo));
+            if (currentFilter === 'error') {
+                filtered = filtered.filter(r => getContainerStatus(comparisonResult, r.cntrNo) === 'error');
+            } else if (currentFilter === 'missing') {
+                filtered = filtered.filter(r => {
+                    const s = getContainerStatus(comparisonResult, r.cntrNo);
+                    return s === 'extra' || s === 'missing';
+                });
+            } else if (currentFilter === 'success') {
+                filtered = filtered.filter(r => getContainerStatus(comparisonResult, r.cntrNo) === 'success');
+            }
+        }
+
+        if (chkFullyCompletedOnly && chkFullyCompletedOnly.checked && (currentFilter === 'success' || currentFilter === 'all')) {
+            const incompleteCntrs = new Set(filtered.filter(r => {
+                return r.type === '대기' || r.type === '작업중';
+            }).map(r => r.cntrNo));
+            filtered = filtered.filter(r => !incompleteCntrs.has(r.cntrNo));
+        }
+        exportData = filtered.map(r => ({
+            type: r.type,
+            cntrNo: r.cntrNo,
+            division: r.division,
+            prodType: r.prodType,
+            prodName: r.prodName,
+            planQty: r.qtyInfo.plan,
+            loadQty: r.qtyInfo.load,
+            pendingQty: r.qtyInfo.pending,
+            remainQty: r.qtyInfo.remain,
+            cntrSize: r.cntrType.val,
+            dims: r.dims,
+            carrier: r.carrierName.val,
+            dest: r.destination.val,
+            mixedWeight: parseFloat(r.weights.mixed) || 0,
+            tags: r.tags.map(t => `[${t.text}]`).join(', '),
+            detail: r.detail.replace(/<[^>]*>/g, ''),
+            jobName: r.jobName || '',
+            eta: r.eta || '',
+            etd: r.etd || '',
+            origRemark: r.origRemark || '',
+            transporter: r.transporter
+        }));
+    }
+
+    ws.columns = columns;
+
+    const applyHeaderStyle = (row) => {
+        row.height = 30;
+        row.eachCell({ includeEmpty: false }, (cell) => {
+            cell.font = { name: 'LG Smart_Korean Regular', bold: true, color: { argb: 'FF000000' }, size: 10 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEEEEE' } };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                top: { style: 'medium', color: { argb: 'FF000000' } },
+                bottom: { style: 'medium', color: { argb: 'FF000000' } },
+                left: { style: 'thin', color: { argb: 'FFDDDDDD' } },
+                right: { style: 'thin', color: { argb: 'FFDDDDDD' } }
+            };
+        });
+    };
+
+    applyHeaderStyle(ws.getRow(1));
+    let lastTransporter = null;
+
+    exportData.forEach((data, idx) => {
+        if (currentFilter === 'entry' || currentFilter === 'entry_unclassified') {
+            if (lastTransporter !== null && lastTransporter !== data.transporter) {
+                const headerRow = ws.addRow({
+                    carrier: '선사', cntrType: '규격', dest: 'F.DEST', cntrNo: 'CTNR NO', sealNo: 'SEAL',
+                    grossWeightCombined: '합산중량', origRemark: '모선항차 / 반입터미널', etd: '출항일', workDate: '작업일', transporter: '운송사'
+                });
+                applyHeaderStyle(headerRow);
+            }
+            lastTransporter = data.transporter;
+
+            const cntrKeyExcel = (data.cntrNo || '').trim().toUpperCase();
+            const popInfoExcel = popWeightMap[cntrKeyExcel];
+            const popWeightExcel = popInfoExcel ? (parseFloat(popInfoExcel.weight) || 0) : 0;
+            const hasPopExcel = popWeightExcel > 0;
+
+            if (hasPopExcel) {
+                const d = Object.assign({}, data); // 원본 보존을 위해 복사본 사용 (필요시)
+                data.origRemark = `(POP : ${popWeightExcel.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}kg) ` + (data.origRemark || '');
+                data.transporter = `${data.transporter}\n(POP : ${popWeightExcel.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}kg 포함)`;
+            }
+
+            const choiceExcel = userSelectedWeights[cntrKeyExcel];
+            if (!choiceExcel && (data.mixedWeight === null || (data.issueModels && data.issueModels.length > 0))) {
+                let mismatchText = (data.issueModels || []).join('\n');
+                if (hasPopExcel) mismatchText += `\n+POP: ${popWeightExcel.toFixed(2)}kg`;
+                data.grossWeightCombined = mismatchText;
+            } else {
+                const wOrig = parseFloat(data.origWeight) || 0;
+                const wDown = parseFloat(data.downWeight) || 0;
+                const wMixed = parseFloat(data.mixedWeight) || 0;
+                let baseWeightToUse = wMixed;
+                let choiceNote = "";
+                if (choiceExcel === 'orig') { baseWeightToUse = wOrig; choiceNote = " (원본선택)"; }
+                else if (choiceExcel === 'down') { baseWeightToUse = wDown; choiceNote = " (전산선택)"; }
+                const totalWeightFinal = baseWeightToUse + popWeightExcel;
+                if (hasPopExcel) {
+                    data.grossWeightCombined = `${totalWeightFinal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${choiceNote}\n(기본 ${baseWeightToUse.toFixed(2)} + POP ${popWeightExcel.toFixed(2)})`;
+                } else {
+                    data.grossWeightCombined = `${totalWeightFinal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${choiceNote}`;
+                }
+            }
+        }
+
+        const row = ws.addRow(data);
+        row.height = (currentFilter === 'entry' || currentFilter === 'entry_unclassified') ? 35 : 18;
+
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            const columnKey = columns[colNumber - 1].key;
+            cell.font = { name: 'LG Smart_Korean Regular', size: 10 };
+            if (columnKey === 'cntrNo') {
+                const trans = (data.transporter || "").toString();
+                if (trans.includes('천마')) cell.font = { name: 'LG Smart_Korean Regular', size: 10, bold: true, color: { argb: 'FFE74C3C' } };
+                else if (trans.includes('BNI')) cell.font = { name: 'LG Smart_Korean Regular', size: 10, bold: true, color: { argb: 'FF3498DB' } };
+            }
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+            cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        });
+
+        if (currentFilter === 'entry' || currentFilter === 'entry_unclassified') {
+            row.getCell('grossWeightCombined').alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
+            const destCell = row.getCell('dest');
+            if (!/^(US|CA)/i.test(String(data.dest))) destCell.font = { name: 'LG Smart_Korean Regular', color: { argb: 'FFFF0000' }, bold: true, size: 10 };
+        } else {
+            ['mixedWeight', 'planQty', 'loadQty'].forEach(key => {
+                const cell = row.getCell(key);
+                cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                cell.numFmt = '#,##0.00';
+            });
+            row.getCell('detail').alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+            const pt = (data.prodType || '').toUpperCase();
+            if (pt === 'H' || pt === 'Q') {
+                const hqColor = pt === 'H' ? 'FF7C3AED' : 'FF0D9488';
+                row.getCell('prodType').font = { name: 'LG Smart_Korean Regular', size: 10, bold: true, color: { argb: hqColor } };
+                row.getCell('prodName').font = { name: 'LG Smart_Korean Regular', size: 10, bold: true, color: { argb: hqColor } };
+            }
+        }
+    });
+
+    return wb;
+}
+
+/**
+ * [추가] ArrayBuffer를 Base64로 변환
+ */
+function bufToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+}
+
 // 초기 데이터 로드 (setActiveTab 밖으로 이동)
 loadCarrierMap();
 loadDynamicRules();
@@ -4632,8 +4948,240 @@ if (btnBulkHold) {
 
 // --- DB 검색 실행 ---
 const btnDbExec = document.getElementById('btnDbSearchExec');
+const btnDbDownloadExcel = document.getElementById('btnDbDownloadExcel');
+
 if (btnDbExec) {
     btnDbExec.onclick = () => executeDbSearch();
+}
+
+if (btnDbDownloadExcel) {
+    btnDbDownloadExcel.onclick = () => downloadDbResultsAsExcel();
+}
+
+if (btnDbViewExcel) {
+    btnDbViewExcel.onclick = async () => {
+        if (!lastDbSearchResults || lastDbSearchResults.length === 0) {
+            alert("조회된 데이터가 없습니다.");
+            return;
+        }
+        const originalText = btnDbViewExcel.innerHTML;
+        btnDbViewExcel.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 생성 중...';
+        btnDbViewExcel.disabled = true;
+
+        try {
+            const wb = await generateDbResultsWorkbook();
+            const buffer = await wb.xlsx.writeBuffer();
+            const dateStr = new Date().toISOString().split('T')[0];
+            const fileName = `DB_조회_결과_${dateStr}.xlsx`;
+
+            const base64 = bufToBase64(buffer);
+            await fetch(`${API_BASE}/api/open-excel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ buffer: base64, fileName: fileName })
+            });
+        } catch (err) {
+            console.error('❌ 바로보기 오류:', err);
+            alert(`엑셀을 여는 중 오류가 발생했습니다: ${err.message}`);
+        } finally {
+            btnDbViewExcel.innerHTML = originalText;
+            btnDbViewExcel.disabled = false;
+        }
+    };
+}
+
+/**
+ * [분리] DB 조회 결과 Workbook 생성 로직
+ */
+async function generateDbResultsWorkbook() {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('DB 조회 결과');
+
+    const columns = [
+        { header: '작업구분', key: 'type', width: 15 },
+        { header: '컨테이너번호', key: 'cntrNo', width: 20 },
+        { header: '씰정보', key: 'sealNo', width: 15 },
+        { header: '제품구분', key: 'prodType', width: 10 },
+        { header: '사업부', key: 'division', width: 12 },
+        { header: '제품모델명', key: 'prodName', width: 30 },
+        { header: '계획수량', key: 'planQty', width: 10 },
+        { header: '적재수량', key: 'loadQty', width: 10 },
+        { header: '팬딩수량', key: 'pendingQty', width: 10 },
+        { header: '잔여수량', key: 'remainQty', width: 10 },
+        { header: '단위', key: 'packingQty', width: 10 },
+        { header: '컨테이너규격', key: 'cntrSize', width: 15 },
+        { header: '제품크기', key: 'dims', width: 15 },
+        { header: '선사', key: 'carrier', width: 15 },
+        { header: '도착지', key: 'dest', width: 15 },
+        { header: '무게', key: 'weight', width: 12 },
+        { header: '운송사', key: 'transporter', width: 15 },
+        { header: '작업명', key: 'jobName', width: 25 },
+        { header: '선적일(ETA)', key: 'eta', width: 12 },
+        { header: '출항일(ETD)', key: 'etd', width: 12 },
+        { header: '리마크', key: 'remark', width: 45 },
+        { header: '저장시각', key: 'savedAt', width: 22 }
+    ];
+
+    ws.columns = columns;
+
+    const headerRow = ws.getRow(1);
+    headerRow.height = 30;
+    headerRow.eachCell((cell) => {
+        cell.font = { name: 'LG Smart_Korean Regular', bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+    });
+
+    const exportData = lastDbSearchResults.map(r => ({
+        type: r.type,
+        cntrNo: r.cntrNo,
+        sealNo: r.sealNo || '-',
+        prodType: r.prodType,
+        division: r.division,
+        prodName: r.prodName,
+        planQty: r.qtyInfo.plan,
+        loadQty: r.qtyInfo.load,
+        pendingQty: r.qtyInfo.pending,
+        remainQty: r.qtyInfo.remain,
+        packingQty: r.qtyInfo.packing,
+        cntrSize: r.cntrType.val,
+        dims: r.dims,
+        carrier: r.carrierName.val,
+        dest: r.destination.val,
+        weight: r.weights.mixed,
+        transporter: r.transporter,
+        jobName: r.jobName || '-',
+        eta: r.eta || '-',
+        etd: r.etd || '-',
+        remark: r.origRemark || '-',
+        savedAt: r.dbSavedAt ? new Date(r.dbSavedAt).toLocaleString() : '-'
+    }));
+
+    exportData.forEach(data => {
+        const row = ws.addRow(data);
+        row.eachCell((cell) => {
+            cell.font = { name: 'LG Smart_Korean Regular', size: 10 };
+            cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFEEEEEE' } },
+                left: { style: 'thin', color: { argb: 'FFEEEEEE' } },
+                bottom: { style: 'thin', color: { argb: 'FFEEEEEE' } },
+                right: { style: 'thin', color: { argb: 'FFEEEEEE' } }
+            };
+        });
+    });
+
+    return wb;
+}
+
+/**
+ * DB 조회 결과를 엑셀로 내보냄
+ */
+async function downloadDbResultsAsExcel() {
+    if (!lastDbSearchResults || lastDbSearchResults.length === 0) {
+        alert("내보낼 검색 결과 데이터가 없습니다. 먼저 검색을 실행해주세요.");
+        return;
+    }
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('DB 조회 결과');
+
+    const columns = [
+        { header: '작업구분', key: 'type', width: 15 },
+        { header: '컨테이너번호', key: 'cntrNo', width: 20 },
+        { header: '씰정보', key: 'sealNo', width: 15 },
+        { header: '제품구분', key: 'prodType', width: 10 },
+        { header: '사업부', key: 'division', width: 12 },
+        { header: '제품모델명', key: 'prodName', width: 30 },
+        { header: '계획수량', key: 'planQty', width: 10 },
+        { header: '적재수량', key: 'loadQty', width: 10 },
+        { header: '팬딩수량', key: 'pendingQty', width: 10 },
+        { header: '잔여수량', key: 'remainQty', width: 10 },
+        { header: '단위', key: 'packingQty', width: 10 },
+        { header: '컨테이너규격', key: 'cntrSize', width: 15 },
+        { header: '제품크기', key: 'dims', width: 15 },
+        { header: '선사', key: 'carrier', width: 15 },
+        { header: '도착지', key: 'dest', width: 15 },
+        { header: '무게', key: 'weight', width: 12 },
+        { header: '운송사', key: 'transporter', width: 15 },
+        { header: '작업명', key: 'jobName', width: 25 },
+        { header: '선적일(ETA)', key: 'eta', width: 12 },
+        { header: '출항일(ETD)', key: 'etd', width: 12 },
+        { header: '리마크', key: 'remark', width: 45 },
+        { header: '저장시각', key: 'savedAt', width: 22 }
+    ];
+
+    ws.columns = columns;
+
+    // 헤더 스타일
+    const headerRow = ws.getRow(1);
+    headerRow.height = 30;
+    headerRow.eachCell((cell) => {
+        cell.font = { name: 'LG Smart_Korean Regular', bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF10B981' } // Green header
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
+    });
+
+    // 데이터 변환
+    const exportData = lastDbSearchResults.map(r => ({
+        type: r.type,
+        cntrNo: r.cntrNo,
+        sealNo: r.sealNo || '-',
+        prodType: r.prodType,
+        division: r.division,
+        prodName: r.prodName,
+        planQty: r.qtyInfo.plan,
+        loadQty: r.qtyInfo.load,
+        pendingQty: r.qtyInfo.pending,
+        remainQty: r.qtyInfo.remain,
+        packingQty: r.qtyInfo.packing,
+        cntrSize: r.cntrType.val,
+        dims: r.dims,
+        carrier: r.carrierName.val,
+        dest: r.destination.val,
+        weight: r.weights.mixed,
+        transporter: r.transporter,
+        jobName: r.jobName || '-',
+        eta: r.eta || '-',
+        etd: r.etd || '-',
+        remark: r.origRemark || '-',
+        savedAt: r.dbSavedAt ? new Date(r.dbSavedAt).toLocaleString() : '-'
+    }));
+
+    // 데이터 추가
+    exportData.forEach(data => {
+        const row = ws.addRow(data);
+        row.eachCell((cell) => {
+            cell.font = { name: 'LG Smart_Korean Regular', size: 10 };
+            cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFEEEEEE' } },
+                left: { style: 'thin', color: { argb: 'FFEEEEEE' } },
+                bottom: { style: 'thin', color: { argb: 'FFEEEEEE' } },
+                right: { style: 'thin', color: { argb: 'FFEEEEEE' } }
+            };
+        });
+    });
+
+    try {
+        const buf = await wb.xlsx.writeBuffer();
+        const dateStr = new Date().toISOString().split('T')[0];
+        saveAs(new Blob([buf]), `DB_조회_결과_${dateStr}.xlsx`);
+    } catch (err) {
+        console.error("엑셀 저장 중 오류:", err);
+        alert("엑셀 파일 생성 중 오류가 발생했습니다.");
+    }
 }
 
 async function executeDbSearch(confirm = false) {

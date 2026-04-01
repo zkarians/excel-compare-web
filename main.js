@@ -151,18 +151,10 @@ app.on('ready', () => {
     process.env.APP_DATA_PATH = masterRulePath;
     console.log(`📂 [Startup] Data Path: ${masterRulePath}`);
 
-    // 이전 데이터 마이그레이션 (AppData -> masterrule 최초 1회)
     const oldUserData = app.getPath('userData');
-    ['rules.json', 'products.json', 'saved_file_paths.json'].forEach(file => {
-        const oldPath = path.join(oldUserData, file);
-        const newPath = path.join(masterRulePath, file);
-        if (fs.existsSync(oldPath) && !fs.existsSync(newPath)) {
-            try { fs.copyFileSync(oldPath, newPath); } catch (e) { }
-        }
-    });
-    process.env.APP_DATA_PATH = masterRulePath;
+    const configFiles = ['db_config.json', 'mail_config.json', 'rules.json', 'products.json', 'saved_file_paths.json'];
 
-    // 로깅 시스템 초기화 및 전역 console 오버라이드
+    // [변경] 로깅 시스템을 마이그레이션 전으로 앞당겨 초기화
     const originalLog = console.log;
     const originalError = console.error;
     console.log = (...args) => {
@@ -173,6 +165,56 @@ app.on('ready', () => {
         logToFile('❌ ERROR: ' + args.join(' '));
         originalError.apply(console, args);
     };
+
+    logToFile(`🏠 [Startup] UserData Path: ${oldUserData}`);
+    logToFile(`📂 [Startup] App Data Path: ${masterRulePath}`);
+    logToFile(`📍 [Startup] __dirname: ${__dirname}`);
+
+    configFiles.forEach(file => {
+        const newPath = path.join(masterRulePath, file);
+        if (!fs.existsSync(newPath)) {
+            // 1. 이전 위치(userData root)에서 마이그레이션 시도
+            const oldPath = path.join(oldUserData, file);
+            if (fs.existsSync(oldPath)) {
+                try {
+                    fs.copyFileSync(oldPath, newPath);
+                    logToFile(`🚚 [Migration] Migrated ${file} from userData root`);
+                    return;
+                } catch (e) {
+                    logToFile(`⚠️ [Migration] Failed to migrate ${file}: ${e.message}`);
+                }
+            }
+
+            // 2. 없으면 앱 패키지 내의 기본 설정 파일 복사 (__dirname 기반)
+            const pathsToTry = [
+                path.join(__dirname, 'data', file),
+                path.join(__dirname, 'masterrule', file)
+            ];
+
+            for (const defaultPath of pathsToTry) {
+                if (fs.existsSync(defaultPath)) {
+                    try {
+                        fs.copyFileSync(defaultPath, newPath);
+                        logToFile(`📝 [Init] Initialized ${file} from package: ${defaultPath}`);
+                        break;
+                    } catch (e) {
+                        logToFile(`❌ [Init] Failed to copy ${file} from ${defaultPath}: ${e.message}`);
+                    }
+                }
+            }
+        } else {
+            // 파일이 이미 존재하더라도, db_config.json 이고 내용이 "기본값"인 경우 (host:localhost 등) 
+            // data/ 폴더에 더 나은 정보가 있다면 덮어쓰는 옵션을 고려할 수 있으나, 여기서는 로그만 남김
+            try {
+                const content = fs.readFileSync(newPath, 'utf8');
+                const parsed = JSON.parse(content);
+                logToFile(`ℹ️ [Startup] ${file} exists. Host: ${parsed.host || 'N/A'}, DB: ${parsed.database || 'N/A'}`);
+            } catch (e) {
+                logToFile(`ℹ️ [Startup] ${file} exists but could not parse: ${e.message}`);
+            }
+        }
+    });
+    process.env.APP_DATA_PATH = masterRulePath;
 
     // IPC 핸들러 등록 (ready 상태에서 등록 권장)
     ipcMain.handle('save-file-path', (event, type, filePath) => {
@@ -244,11 +286,12 @@ app.on('ready', () => {
     try {
         logToFile('🚀 서버 기동 시도 중...');
         // 각 모듈 require를 개별 try/catch로 테스트
-        let express, cors, ExcelJS, multer;
+        let express, cors, ExcelJS, multer, pg;
         try { express = require('express'); } catch (e) { throw new Error('express 로드 실패: ' + e.message); }
         try { cors = require('cors'); } catch (e) { throw new Error('cors 로드 실패: ' + e.message); }
         try { ExcelJS = require('exceljs'); } catch (e) { throw new Error('exceljs 로드 실패: ' + e.message); }
         try { multer = require('multer'); } catch (e) { throw new Error('multer 로드 실패: ' + e.message); }
+        try { pg = require('pg'); } catch (e) { throw new Error('pg 로드 실패: ' + e.message); }
 
         logToFile('✅ 필수 모듈 로드 완료');
 

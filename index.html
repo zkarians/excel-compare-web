@@ -570,36 +570,12 @@
                                 style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
                                 <input type="checkbox" class="sync-table-chk" value="app_configs" checked> 앱 설정
                             </label>
+                            <label
+                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
+                                <input type="checkbox" class="sync-table-chk" value="sent_emails" checked> 메일 발송 내역
+                            </label>
                         </div>
 
-                        <div style="font-size:0.75rem; font-weight:600; color:#64748b; margin-bottom:5px;">제품정보(Master)
-                            선택 업데이트:</div>
-                        <div id="syncColumnSwitches" style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
-                            <label
-                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
-                                <input type="checkbox" class="sync-col-chk" value="weight" checked> 무게(Weight)
-                            </label>
-                            <label
-                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
-                                <input type="checkbox" class="sync-col-chk" value="width" checked> 가로(Width)
-                            </label>
-                            <label
-                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
-                                <input type="checkbox" class="sync-col-chk" value="depth" checked> 세로(Depth)
-                            </label>
-                            <label
-                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
-                                <input type="checkbox" class="sync-col-chk" value="height" checked> 높이(Height)
-                            </label>
-                            <label
-                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
-                                <input type="checkbox" class="sync-col-chk" value="prod_type" checked> 제품구분
-                            </label>
-                            <label
-                                style="display:flex; align-items:center; gap:4px; font-size:0.75rem; cursor:pointer;">
-                                <input type="checkbox" class="sync-col-chk" value="cbm" checked> CBM
-                            </label>
-                        </div>
                     </div>
 
                     <!-- 전송 버튼 + 상태 -->
@@ -1283,6 +1259,14 @@
                         조회 결과: <strong id="dbTotalItems" style="color: var(--primary);">0</strong>개 항목
                         (컨테이너 <strong id="dbTotalCntrs" style="color: var(--primary);">0</strong>대)
                     </div>
+                    <button id="btnDbDownloadExcel" class="btn btn-excel-download"
+                        style="padding: 0.4rem 1rem; font-size: 0.82rem; border-radius: 6px; font-weight: 600; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);">
+                        <i class="fas fa-file-excel"></i> 엑셀 다운로드
+                    </button>
+                    <button id="btnDbViewExcel" class="btn"
+                        style="padding: 0.4rem 1rem; font-size: 0.82rem; border-radius: 6px; font-weight: 600; background: white; border: 1px solid #10b981; color: #059669; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-search"></i> 조회결과 바로보기
+                    </button>
                     <div id="dbBulkActions" class="db-bulk-actions"
                         style="display: none; align-items: center; gap: 8px;">
                         <input type="checkbox" id="chkDbAll" style="cursor: pointer;">
@@ -1351,6 +1335,10 @@
                     <button class="btn btn-excel-download" id="btnDownloadResult"
                         style="padding: 0.5rem 1.2rem; font-size: 0.85rem; border-radius: 6px; font-weight: 600; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; color: white; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
                         <i class="fas fa-file-excel" style="margin-right: 6px;"></i> 결과 엑셀 다운로드
+                    </button>
+                    <button class="btn" id="btnViewResult"
+                        style="padding: 0.5rem 1.2rem; font-size: 0.85rem; border-radius: 6px; font-weight: 600; background: white; border: 1px solid #6366f1; color: #4f46e5; cursor: pointer;">
+                        <i class="fas fa-search" style="margin-right: 6px;"></i> 결과 바로보기
                     </button>
                     <button id="btnBulkHold" class="btn"
                         style="padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 6px; font-weight: 600; background-color: #f8fafc; border: 1px solid #cbd5e1; color: #475569;">
