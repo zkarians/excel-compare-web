@@ -47,6 +47,30 @@ window.approveHItem = (cntrNo, prodName) => {
     if (confirm(`[${cleanCntr}] 의 ${cleanProd} 모델을 정상으로 승인하시겠습니까?`)) {
         manualApprovedItems.add(`${cleanCntr}_${cleanProd}`);
         if (typeof comparisonResult !== 'undefined' && Array.isArray(comparisonResult)) {
+            // 동일 사유 일괄 승인 로직
+            const targetItem = comparisonResult.find(r => (r.cntrNo || "").trim() === cleanCntr && (r.prodName || "").trim() === cleanProd);
+            if (targetItem && targetItem.isErrorRow && targetItem.detail) {
+                const detailReason = targetItem.detail;
+                // 에러이면서 사유가 동일하고, 컨테이너 번호가 동일하며, 아직 승인되지 않은 다른 항목들 찾기
+                const similarItems = comparisonResult.filter(r =>
+                    r.isErrorRow &&
+                    r.detail === detailReason &&
+                    (r.cntrNo || "").trim() === cleanCntr &&
+                    !((r.cntrNo || "").trim() === cleanCntr && (r.prodName || "").trim() === cleanProd) &&
+                    !manualApprovedItems.has(`${(r.cntrNo || "").trim()}_${(r.prodName || "").trim()}`)
+                );
+
+                if (similarItems.length > 0) {
+                    // HTML 태그 제거된 사유로 표시 (디스플레이용)
+                    const displayReason = detailReason.replace(/<[^>]*>?/gm, '');
+                    if (confirm(`동일오류로 인해 발생된 오류건(${similarItems.length}건)은 모두 승인하시겠습니까?\n사유: ${displayReason}`)) {
+                        similarItems.forEach(item => {
+                            manualApprovedItems.add(`${(item.cntrNo || "").trim()}_${(item.prodName || "").trim()}`);
+                        });
+                    }
+                }
+            }
+
             updateDashboard(); // 상단 요약 갱신
             displayResults(comparisonResult, false); // 테이블 갱신
         }
@@ -2379,6 +2403,8 @@ btnCompare.addEventListener('click', async () => {
 
         // 5. 결과 표시 (기본값을 '정상컨테이너만 보기'로 변경)
         updateDashboard();
+        // [자동 저장 추가] 정상 컨테이너 자동 저장
+        autoSaveSuccessContainers(comparisonResult);
         setActiveTab('success');
         switchMainTab('results'); // 결과 탭으로 자동 전환
 
@@ -4785,6 +4811,27 @@ if (selectAllChk) {
     };
 }
 
+// --- 원격 DB 동기화 토글 스위치 동작 ---
+const chkRemoteSync = document.getElementById('chkRemoteSync');
+const remoteSyncStatusText = document.getElementById('remoteSyncStatusText');
+if (chkRemoteSync) {
+    const sliderBg = chkRemoteSync.nextElementSibling;
+    const sliderDot = sliderBg ? sliderBg.nextElementSibling : null;
+    function updateToggleVisual() {
+        if (chkRemoteSync.checked) {
+            if (sliderBg) sliderBg.style.backgroundColor = '#0284c7';
+            if (sliderDot) sliderDot.style.transform = 'translateX(20px)';
+            if (remoteSyncStatusText) { remoteSyncStatusText.textContent = 'ON'; remoteSyncStatusText.style.color = '#0284c7'; }
+        } else {
+            if (sliderBg) sliderBg.style.backgroundColor = '#cbd5e1';
+            if (sliderDot) sliderDot.style.transform = 'translateX(0)';
+            if (remoteSyncStatusText) { remoteSyncStatusText.textContent = 'OFF'; remoteSyncStatusText.style.color = '#94a3b8'; }
+        }
+    }
+    updateToggleVisual();
+    chkRemoteSync.addEventListener('change', updateToggleVisual);
+}
+
 // --- 제품 마스터 데이터 정리 (오래된/미사용 데이터) ---
 const btnCleanOldMaster = document.getElementById('btnCleanOldMaster');
 if (btnCleanOldMaster) {
@@ -4829,6 +4876,48 @@ if (btnResetMasterDb) {
     };
 }
 
+/* =========================================================================
+ *  AUTOMATIC DB SAVING FOR SUCCESS CONTAINERS
+ * ========================================================================= */
+async function autoSaveSuccessContainers(results) {
+    if (!results || results.length === 0) return;
+
+    // 정상 컨테이너 항목만 추출 (보류 제외)
+    // getContainerStatus는 내부적으로 rows.every/some을 사용하므로 동일 컨테이너의 모든 행이 성공인 경우만 'success' 반환
+    const itemsToSave = results.filter(r => {
+        const ck = (r.cntrNo || "").trim().toUpperCase();
+        if (holdContainerMap.has(ck)) return false;
+        return getContainerStatus(results, r.cntrNo) === 'success';
+    });
+
+    if (itemsToSave.length === 0) {
+        console.log("📡 [Auto-Save] 저장할 정상 컨테이너 항목이 없습니다.");
+        return;
+    }
+
+    console.log(`📡 [Auto-Save] ${itemsToSave.length}개의 정상 항목 자동 저장 시도...`);
+
+    try {
+        const enableRemoteSync = document.getElementById('chkRemoteSync')?.checked ?? true;
+        const resp = await fetch(`${API_BASE}/api/save-to-db`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: itemsToSave, enableRemoteSync })
+        });
+        const resData = await resp.json();
+
+        if (resData.success) {
+            const msg = resData.message || `정상 컨테이너 ${resData.count}건이 자동 저장되었습니다.`;
+            showToast(`✅ ${msg}`);
+            if (typeof updateDbGlobalStats === 'function') updateDbGlobalStats();
+        } else {
+            console.error('❌ [Auto-Save] 저장 실패:', resData.message);
+        }
+    } catch (err) {
+        console.error('❌ [Auto-Save] 서버 통신 오류:', err.message);
+    }
+}
+
 const btnSaveToDB = document.getElementById('btnSaveToDB');
 if (btnSaveToDB) {
     btnSaveToDB.onclick = async () => {
@@ -4849,15 +4938,17 @@ if (btnSaveToDB) {
             btnSaveToDB.disabled = true;
             btnSaveToDB.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 저장 중...';
 
+            const enableRemoteSync = document.getElementById('chkRemoteSync')?.checked ?? true;
             const resp = await fetch(`${API_BASE}/api/save-to-db`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items: itemsToSave })
+                body: JSON.stringify({ items: itemsToSave, enableRemoteSync })
             });
             const resData = await resp.json();
 
             if (resData.success) {
-                alert(`${resData.count}개의 항목이 성공적으로 저장되었습니다.`);
+                const msg = resData.message || `${resData.count}개의 항목이 성공적으로 저장되었습니다.`;
+                alert(`✅ ${msg}`);
                 selectedItems.clear();
                 updateSelectionUI();
                 displayResults(comparisonResult);

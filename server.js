@@ -29,6 +29,16 @@ let currentDbConfig = {
     application_name: 'ExcelCompareApp'
 };
 
+const REMOTE_DB_CONFIG = {
+    user: 'postgres',
+    host: 'ungdong.iptime.org',
+    database: 'excel',
+    password: 'z456qwe12!@',
+    port: 5433,
+    ssl: false,
+    connectionTimeoutMillis: 5000,
+};
+
 // --- DB 연결 유틸리티 ---
 async function getPool() {
     if (!pool) {
@@ -207,6 +217,7 @@ async function initDb() {
 
         await client.query(`ALTER TABLE carrier_mappings ADD COLUMN IF NOT EXISTS names JSONB`);
         await client.query(`ALTER TABLE carrier_mappings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()`);
+        await client.query(`ALTER TABLE carrier_mappings ADD COLUMN IF NOT EXISTS id SERIAL`);
 
         // 6. 작업 JOB 정보
         await client.query(`
@@ -400,8 +411,34 @@ async function syncData(sourceConfig, targetConfig, tables, options = {}) {
     const results = [];
 
     try {
+        // [추가] 동기화 전 타겟 DB 제약조건 자동 보정 (Self-healing)
+        try {
+            console.log("[Sync] 타겟 DB 제약조건 보정 시도...");
+            const pkQueries = [
+                `ALTER TABLE product_master_sync ADD PRIMARY KEY (prod_name)`,
+                `ALTER TABLE container_holds ADD PRIMARY KEY (cntr_no)`,
+                `ALTER TABLE container_pops ADD PRIMARY KEY (cntr_no)`,
+                `ALTER TABLE carrier_mappings ADD PRIMARY KEY (code)`,
+                `ALTER TABLE auto_classify_rules ADD PRIMARY KEY (id)`,
+                `ALTER TABLE app_configs ADD PRIMARY KEY (key)`,
+                `ALTER TABLE sent_emails ADD PRIMARY KEY (id)`
+            ];
+            for (let q of pkQueries) {
+                // 이미 존재하면 에러가 발생하지만, 무시하고 진행
+                await targetPool.query(q).catch(() => { });
+            }
+            await targetPool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_container_jobs_upsert ON container_jobs (job_name, eta, etd)`).catch(() => { });
+            await targetPool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_container_results_upsert ON container_results (job_name, cntr_no, prod_name, qty_plan)`).catch(() => { });
+        } catch (e) {
+            console.warn("⚠️ [Sync] 타겟 DB 제약조건 보정 중 오류 (무시됨):", e.message);
+        }
+
         for (const tableName of tables) {
             console.log(`[Sync] Processing ${tableName}...`);
+            // [추가] 동기화 전 타겟 DB 스키마 체크 및 보정 (특히 폰 환경의 carrier_mappings id 누락 방지)
+            if (tableName === 'carrier_mappings') {
+                await targetPool.query(`ALTER TABLE carrier_mappings ADD COLUMN IF NOT EXISTS id SERIAL`).catch(() => { });
+            }
             try {
                 let pk = 'id';
                 if (tableName === 'product_master_sync') pk = 'prod_name';
@@ -417,7 +454,12 @@ async function syncData(sourceConfig, targetConfig, tables, options = {}) {
                 const dstCols = await getColumns(targetPool, tableName);
                 let commonCols = srcCols.filter(c => dstCols.includes(c));
 
-                // [추가] container_results 동기화 시 job_id 제외 (기기마다 매칭되는 ID 가 다를 수 있음)
+                // [추가] 자연 키(Natural Key)를 사용하는 주요 테이블은 동기화 시 id 제외 (기기마다 고유 ID가 충돌하는 것 방지)
+                // 작업 리스트와 컨테이너 결과는 id가 아닌 자연 키를 사용하므로 id를 빼서 충돌을 방지합니다.
+                if (tableName === 'container_jobs' || tableName === 'container_results') {
+                    commonCols = commonCols.filter(c => c !== 'id');
+                }
+                // container_results는 부모 키인 job_id도 제외 (동기화 후 자동 복구 로직이 처리함)
                 if (tableName === 'container_results') {
                     commonCols = commonCols.filter(c => c !== 'job_id');
                 }
@@ -429,19 +471,27 @@ async function syncData(sourceConfig, targetConfig, tables, options = {}) {
 
                 let selectCols = commonCols.join(', ');
 
+                // [추가] 증분 동기화 및 최신 데이터 판별을 위한 타임스탬프 컬럼 찾기
+                const tsCol = dstCols.find(c => ['updated_at', 'saved_at', 'created_at', 'sent_at'].includes(c));
+
                 let sourceWhere = '';
-                if (options.incrementalOnly && dstCols.includes('updated_at')) {
+                if (options.incrementalOnly && tsCol) {
                     try {
-                        const resMax = await targetPool.query(`SELECT MAX(updated_at) as last_sync FROM ${tableName}`);
+                        const resMax = await targetPool.query(`SELECT MAX(${tsCol}) as last_sync FROM ${tableName}`);
                         const lastSync = resMax.rows[0].last_sync;
                         if (lastSync) {
-                            sourceWhere = `WHERE updated_at > '${lastSync.toISOString()}'`;
+                            sourceWhere = `WHERE ${tsCol} > '${lastSync.toISOString()}'`;
                         }
                     } catch (e) { }
                 }
 
-                const resSource = await sourcePool.query(`SELECT ${selectCols} FROM ${tableName} ${sourceWhere}`);
-                const rows = resSource.rows;
+                let resSource = await sourcePool.query(`SELECT ${selectCols} FROM ${tableName} ${sourceWhere}`);
+                let rows = resSource.rows;
+
+                // [추가] app_configs 동기화 시 로컬 전용 설정(mail_config) 제외
+                if (tableName === 'app_configs') {
+                    rows = rows.filter(r => r.key !== 'mail_config');
+                }
 
                 if (rows.length > 0) {
                     const columns = Object.keys(rows[0]); // commonCols와 같음
@@ -451,9 +501,15 @@ async function syncData(sourceConfig, targetConfig, tables, options = {}) {
                     const updateClause = nonPkColumns.map(c => `${c} = EXCLUDED.${c}`).join(', ');
                     const distinctCheckCols = nonPkColumns.map(c => `${tableName}.${c}`).join(', ');
                     const excludedCheckCols = nonPkColumns.map(c => `EXCLUDED.${c}`).join(', ');
-                    const conflictWhere = nonPkColumns.length > 0
+
+                    // [개선] 데이터가 실제로 다르고 && 서브 데이터(EXCLUDED)의 타임스탬프가 현재 더 최신이거나 현재 값이 NULL인 경우에만 업데이트
+                    let conflictWhere = nonPkColumns.length > 0
                         ? `WHERE (${distinctCheckCols}) IS DISTINCT FROM (${excludedCheckCols})`
                         : '';
+
+                    if (conflictWhere && tsCol) {
+                        conflictWhere += ` AND (EXCLUDED.${tsCol} > ${tableName}.${tsCol} OR ${tableName}.${tsCol} IS NULL)`;
+                    }
 
                     for (let i = 0; i < rows.length; i += 200) {
                         const batch = rows.slice(i, i + 200);
@@ -480,6 +536,18 @@ async function syncData(sourceConfig, targetConfig, tables, options = {}) {
                     }
                 }
                 results.push({ table: tableName, count: rows.length, success: true });
+
+                // [추가] container_results 동기화 후 job_id 물리적 관계 복구
+                if (tableName === 'container_results' && rows.length > 0) {
+                    await targetPool.query(`
+                        UPDATE container_results r
+                        SET job_id = j.id
+                        FROM container_jobs j
+                        WHERE r.job_name = j.job_name AND r.eta = j.eta AND r.etd = j.etd
+                        AND r.job_id IS DISTINCT FROM j.id
+                    `);
+                    console.log(`[Sync] Restored job_id relationships for container_results`);
+                }
             } catch (err) {
                 console.error(`[Sync] Error in ${tableName}:`, err.message);
                 results.push({ table: tableName, error: err.message, success: false });
@@ -791,16 +859,16 @@ app.post('/api/open-excel', async (req, res) => {
             return res.status(400).json({ success: false, message: "파일 데이터가 없습니다." });
         }
 
-        const filePath = path.join(UPLOADS_DIR, `auto_open_${fileName} `);
+        const filePath = path.join(UPLOADS_DIR, `auto_open_${fileName}`);
         const fileBuffer = Buffer.from(buffer, 'base64');
 
         fs.writeFileSync(filePath, fileBuffer);
-        console.log(`📂[API] 자동 열기용 임시 파일 저장: ${filePath} `);
+        console.log(`📂[API] 자동 열기용 임시 파일 저장: ${filePath}`);
 
         // 시스템 기본 프로그램으로 파일 열기 (Windows: start, Mac: open, Linux: xdg-open)
         const command = process.platform === 'win32' ? `start "" "${filePath}"` :
             process.platform === 'darwin' ? `open "${filePath}"` :
-                `xdg - open "${filePath}"`;
+                `xdg-open "${filePath}"`;
 
         exec(command, (err) => {
             if (err) {
@@ -1337,6 +1405,7 @@ app.post('/api/sync/product-master', async (req, res) => {
 
 app.post('/api/save-to-db', async (req, res) => {
     const items = req.body.items;
+    const enableRemoteSync = req.body.enableRemoteSync !== false; // 기본값 true
     if (!items || !Array.isArray(items)) {
         return res.status(400).json({ success: false, message: "저장할 데이터가 없습니다." });
     }
@@ -1462,7 +1531,65 @@ app.post('/api/save-to-db', async (req, res) => {
                 }
             }
             await client.query('COMMIT');
-            res.json({ success: true, count: items.length });
+
+            // --- 원격 DB 동기화 (추가) ---
+            let remoteSyncMessage = "";
+            if (!enableRemoteSync) {
+                console.log("⏭️ [Remote DB] 원격 동기화 비활성화 상태 - 건너뜀");
+                remoteSyncMessage = " (원격 DB 동기화 OFF)";
+            } else try {
+                const remotePool = new Pool(REMOTE_DB_CONFIG);
+                const remoteClient = await remotePool.connect();
+                try {
+                    await remoteClient.query('BEGIN');
+                    // 로컬과 동일한 로직으로 저장 (이미 insertQuery와 jobIdsMap은 준비됨)
+                    for (const [key, job] of jobsMap.entries()) {
+                        const jobCheck = await remoteClient.query(
+                            "SELECT id FROM container_jobs WHERE job_name = $1 AND eta = $2 AND etd = $3 ORDER BY saved_at DESC LIMIT 1",
+                            [job.jobName, job.eta, job.etd]
+                        );
+                        let jobId;
+                        if (jobCheck.rows.length > 0) jobId = jobCheck.rows[0].id;
+                        else {
+                            const jobInsert = await remoteClient.query(
+                                "INSERT INTO container_jobs (job_name, eta, etd, remark) VALUES ($1, $2, $3, $4) RETURNING id",
+                                [job.jobName, job.eta, job.etd, job.remark]
+                            );
+                            jobId = jobInsert.rows[0].id;
+                        }
+                        jobIdsMap.set(key, jobId); // 원격용 jobId로 맵 업데이트
+                    }
+
+                    for (const item of items) {
+                        const jobKey = `${item.jobName || ''}_${item.eta || ''}_${item.etd || ''}`;
+                        const jobId = jobIdsMap.get(jobKey);
+                        await remoteClient.query(insertQuery, [
+                            jobId, item.jobName || '', item.cntrNo || '', item.sealNo || '', item.prodName || '',
+                            item.qtyInfo?.plan || 0, item.qtyInfo?.load || 0, item.qtyInfo?.pending || 0,
+                            item.qtyInfo?.remain || 0, item.qtyInfo?.packing || 0, item.cntrType?.val || '',
+                            item.carrierName?.val || '', item.destination?.val || '', item.weights?.mixed || 0,
+                            item.etd || '', item.eta || '', item.origRemark || '', item.prodType || '',
+                            item.division || '', item.dims || '', item.weights?.orig || 0, item.weights?.down || 0,
+                            item.transporter || '', item.adj1 || '', item.adj1_color || item.adj1Color || '',
+                            item.adj2 || '', item.workDate || null
+                        ]);
+                    }
+                    await remoteClient.query('COMMIT');
+                    console.log("✅ [Remote DB] 동기화 성공");
+                } catch (remoteErr) {
+                    await remoteClient.query('ROLLBACK');
+                    console.error("❌ [Remote DB] 저장 오류:", remoteErr.message);
+                    remoteSyncMessage = " (원격 DB 저장 실패)";
+                } finally {
+                    remoteClient.release();
+                    await remotePool.end();
+                }
+            } catch (connErr) {
+                console.error("❌ [Remote DB] 연결 오류:", connErr.message);
+                remoteSyncMessage = " (원격 DB 연결 실패)";
+            }
+
+            res.json({ success: true, count: items.length, message: `성공${remoteSyncMessage}` });
         } catch (err) {
             await client.query('ROLLBACK');
             throw err;
