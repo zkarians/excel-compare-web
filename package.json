@@ -47,6 +47,7 @@
       "masterrule/",
       "master_data/",
       "data/",
+      "build/",
       "node_modules/**/*",
       "!node_modules/electron/**/*",
       "!node_modules/electron-builder/**/*"

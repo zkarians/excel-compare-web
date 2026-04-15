@@ -610,6 +610,7 @@ async function initializeApp() {
     let savedPathOrig = localStorage.getItem('pathOrig');
     let savedPathRework = localStorage.getItem('pathRework');
     let savedPathDown = localStorage.getItem('pathDown');
+    let savedPathWarehouse = localStorage.getItem('pathWarehouse');
 
     // Electron 환경에서 디스크에 저장된 경로 정보가 있다면 우선 사용
     if (window.electronAPI) {
@@ -620,12 +621,6 @@ async function initializeApp() {
         if (diskOrig) savedPathOrig = diskOrig;
         if (diskRework) savedPathRework = diskRework;
         if (diskDown) savedPathDown = diskDown;
-        if (diskWarehouse) savedPathWarehouse = diskWarehouse;
-    }
-
-    let savedPathWarehouse = localStorage.getItem('pathWarehouse');
-    if (window.electronAPI) {
-        const diskWarehouse = await window.electronAPI.getFilePath('warehouse');
         if (diskWarehouse) savedPathWarehouse = diskWarehouse;
     }
 
