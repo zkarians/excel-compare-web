@@ -9,9 +9,11 @@ const API_BASE = (window.isElectron || window.location.hostname === 'localhost')
 let originalFile = null;
 let reworkFile = null; // 재작업 파일 (선택)
 let downloadFile = null;
+let warehouseFile = null; // 창고재고 파일 정보
 let masterFileBuffer = null; // 마스터 파일 버퍼
 
 // 창고재고 관련 전역 상태
+let warehouseData = []; // 창고재고 데이터 (파싱됨)
 let warehouseStockDongPrefixes = new Set(); // 창고재고 파일에서 파싱한 (동) 태그 접두어 집합
 let warehouseStockLoaded = false; // 창고재고 파일 업로드 여부
 
@@ -19,6 +21,7 @@ let warehouseStockLoaded = false; // 창고재고 파일 업로드 여부
 let popWeightMap = {};
 
 let originalData = [];
+let reworkData = []; // 파싱된 재작업 데이터
 let downloadData = [];
 let comparisonResult = [];
 let displayData = []; // 현재 화면에 표시 중인 (필터링된) 전체 데이터
@@ -421,6 +424,8 @@ const btnReloadOriginal = document.getElementById('btnReloadOriginal');
 const btnReloadDownload = document.getElementById('btnReloadDownload');
 const btnAutoLoadOrig = document.getElementById('btnAutoLoadOrig');
 const btnAutoLoadDown = document.getElementById('btnAutoLoadDown');
+const btnAutoLoadRework = document.getElementById('btnAutoLoadRework');
+const btnReloadRework = document.getElementById('btnReloadRework');
 const btnCompare = document.getElementById('btnCompare');
 const btnClearRework = document.getElementById('btnClearRework');
 const processStatus = document.getElementById('processStatus');
@@ -428,8 +433,14 @@ const dashboardContainer = document.getElementById('dashboardContainer');
 const resultsContainer = document.getElementById('resultsContainer');
 const btnLoadExcel = document.getElementById('btnLoadExcel'); // Added from instruction
 const btnDownloadResult = document.getElementById('btnDownloadResult');
-const btnViewResult = document.getElementById('btnViewResult'); // [추가]
-const btnDbViewExcel = document.getElementById('btnDbViewExcel'); // [추가]
+const btnViewResult = document.getElementById('btnViewResult');
+const btnDbViewExcel = document.getElementById('btnDbViewExcel');
+const btnClearOriginal = document.getElementById('btnClearOriginal');
+const btnClearDown = document.getElementById('btnClearDown');
+// Warehouse Stock Elements
+const pathWarehouse = document.getElementById('pathWarehouse');
+const btnAutoLoadWarehouse = document.getElementById('btnAutoLoadWarehouse');
+const btnReloadWarehouse = document.getElementById('btnReloadWarehouse');
 // DOM 요소 (애플리케이션 구동 시점에 찾되, 필요시 함수 내에서 재확인)
 function getResultBody() {
     return document.getElementById('resultBody');
@@ -605,9 +616,17 @@ async function initializeApp() {
         const diskOrig = await window.electronAPI.getFilePath('original');
         const diskRework = await window.electronAPI.getFilePath('rework');
         const diskDown = await window.electronAPI.getFilePath('download');
+        const diskWarehouse = await window.electronAPI.getFilePath('warehouse');
         if (diskOrig) savedPathOrig = diskOrig;
         if (diskRework) savedPathRework = diskRework;
         if (diskDown) savedPathDown = diskDown;
+        if (diskWarehouse) savedPathWarehouse = diskWarehouse;
+    }
+
+    let savedPathWarehouse = localStorage.getItem('pathWarehouse');
+    if (window.electronAPI) {
+        const diskWarehouse = await window.electronAPI.getFilePath('warehouse');
+        if (diskWarehouse) savedPathWarehouse = diskWarehouse;
     }
 
     // 마지막 백업 시간 로드
@@ -637,8 +656,8 @@ async function initializeApp() {
     if (savedPathOrig) {
         if (await isPathValid(savedPathOrig)) {
             pathOriginal.value = savedPathOrig;
-            statusOriginal.textContent = "상태: 원본 경로 로드됨";
-            statusOriginal.style.color = '#059669';
+            statusOriginal.innerHTML = `<i class="fas fa-folder-open" style="color:#4361ee; margin-right:4px;"></i>상태: 원본 경로 준비됨`;
+            statusOriginal.style.color = '#4361ee';
             // Electron API에도 다시 동기화
             if (window.electronAPI) window.electronAPI.saveFilePath('original', savedPathOrig);
         } else {
@@ -649,8 +668,8 @@ async function initializeApp() {
     if (savedPathRework) {
         if (await isPathValid(savedPathRework)) {
             pathRework.value = savedPathRework;
-            statusRework.textContent = "상태: 재작업 경로 로드됨";
-            statusRework.style.color = '#059669';
+            statusRework.innerHTML = `<i class="fas fa-folder-open" style="color:#db2777; margin-right:4px;"></i>상태: 재작업 경로 준비됨`;
+            statusRework.style.color = '#db2777';
             if (btnClearRework) btnClearRework.style.display = 'inline-block';
             if (window.electronAPI) window.electronAPI.saveFilePath('rework', savedPathRework);
         } else {
@@ -661,11 +680,23 @@ async function initializeApp() {
     if (savedPathDown) {
         if (await isPathValid(savedPathDown)) {
             pathDownload.value = savedPathDown;
-            statusDownload.textContent = "상태: 전산 경로 로드됨";
-            statusDownload.style.color = '#059669';
+            statusDownload.innerHTML = `<i class="fas fa-folder-open" style="color:#0284c7; margin-right:4px;"></i>상태: 전산 경로 준비됨`;
+            statusDownload.style.color = '#0284c7';
             if (window.electronAPI) window.electronAPI.saveFilePath('download', savedPathDown);
         } else {
             localStorage.removeItem('pathDown');
+        }
+    }
+
+    if (savedPathWarehouse) {
+        if (await isPathValid(savedPathWarehouse)) {
+            pathWarehouse.value = savedPathWarehouse;
+            statusWarehouseStock.innerHTML = `<i class="fas fa-folder-open" style="color:#16a34a; margin-right:4px;"></i>상태: 창고 경로 준비됨`;
+            statusWarehouseStock.style.color = '#16a34a';
+            if (btnReloadWarehouse) btnReloadWarehouse.style.display = 'inline-block';
+            if (window.electronAPI) window.electronAPI.saveFilePath('warehouse', savedPathWarehouse);
+        } else {
+            localStorage.removeItem('pathWarehouse');
         }
     }
 
@@ -1426,7 +1457,7 @@ pathOriginal.addEventListener('input', () => {
         if (window.electronAPI) {
             window.electronAPI.saveFilePath('original', val);
         }
-        statusOriginal.textContent = "상태: 경로 입력됨 (자동 로드)";
+        statusOriginal.innerHTML = `<i class="fas fa-folder-open" style="color:#059669; margin-right:4px;"></i>상태: 경로 입력됨 (자동 로드)`;
         statusOriginal.style.color = '#059669';
     } else {
         localStorage.removeItem('pathOrig');
@@ -1444,7 +1475,7 @@ pathRework.addEventListener('input', () => {
         if (window.electronAPI) {
             window.electronAPI.saveFilePath('rework', val);
         }
-        statusRework.textContent = "상태: 경로 입력됨 (자동 로드)";
+        statusRework.innerHTML = `<i class="fas fa-folder-open" style="color:#059669; margin-right:4px;"></i>상태: 경로 입력됨 (자동 로드)`;
         statusRework.style.color = '#059669';
         if (btnClearRework) btnClearRework.style.display = 'inline-block';
     } else {
@@ -1464,7 +1495,7 @@ pathDownload.addEventListener('input', () => {
         if (window.electronAPI) {
             window.electronAPI.saveFilePath('download', val);
         }
-        statusDownload.textContent = "상태: 경로 입력됨 (자동 로드)";
+        statusDownload.innerHTML = `<i class="fas fa-folder-open" style="color:#059669; margin-right:4px;"></i>상태: 경로 입력됨 (자동 로드)`;
         statusDownload.style.color = '#059669';
     } else {
         localStorage.removeItem('pathDown');
@@ -1498,11 +1529,41 @@ if (btnClearRework) {
     btnClearRework.addEventListener('click', () => {
         reworkFile = null;
         pathRework.value = "";
-        fileRework.value = ""; // Reset the input file so it can trigger 'change' again
+        fileRework.value = "";
         localStorage.removeItem('pathRework');
+        if (window.electronAPI) window.electronAPI.saveFilePath('rework', null);
         statusRework.textContent = "상태: 대기 중";
         statusRework.style.color = '#64748b';
         btnClearRework.style.display = 'none';
+        if (btnReloadRework) btnReloadRework.style.display = 'none';
+        checkReadyStatus();
+    });
+}
+
+// 원본/전산 해제 버튼
+if (btnClearOriginal) {
+    btnClearOriginal.addEventListener('click', () => {
+        originalData = [];
+        originalFile = null;
+        pathOriginal.value = "";
+        localStorage.removeItem('pathOrig');
+        if (window.electronAPI) window.electronAPI.saveFilePath('original', null);
+        statusOriginal.textContent = "상태: 대기 중";
+        statusOriginal.style.color = '#64748b';
+        btnClearOriginal.style.display = 'none';
+        checkReadyStatus();
+    });
+}
+if (btnClearDown) {
+    btnClearDown.addEventListener('click', () => {
+        downloadData = [];
+        downloadFile = null;
+        pathDownload.value = "";
+        localStorage.removeItem('pathDown');
+        if (window.electronAPI) window.electronAPI.saveFilePath('download', null);
+        statusDownload.textContent = "상태: 대기 중";
+        statusDownload.style.color = '#64748b';
+        btnClearDown.style.display = 'none';
         checkReadyStatus();
     });
 }
@@ -1587,17 +1648,47 @@ if (btnClearRework) {
             warehouseStockDongPrefixes = new Set();
             warehouseStockLoaded = false;
             fileWarehouseStock.value = '';
+            pathWarehouse.value = '';
+            localStorage.removeItem('pathWarehouse');
+            if (window.electronAPI) window.electronAPI.saveFilePath('warehouse', null);
             statusWarehouseStock.textContent = '상태: 대기 중 (미사용)';
             statusWarehouseStock.style.color = '#64748b';
             lastWarehouseStock.textContent = '';
             btnClearWarehouseStock.style.display = 'none';
+            if (btnReloadWarehouse) btnReloadWarehouse.style.display = 'none';
             if (dongTagBadge) dongTagBadge.style.display = 'none';
             // 비교 결과 재렌더링 ((동) 태그 제거)
             if (comparisonResult && comparisonResult.length > 0) {
                 displayResults(comparisonResult, false);
             }
-            console.log('🗑️ 창고재고 파일 해제됨');
+            console.log('🗑️ 창고재고 파일 해제됨 및 영구 삭제');
         });
+    }
+
+    if (pathWarehouse) {
+        pathWarehouse.addEventListener('input', () => {
+            const val = pathWarehouse.value.trim();
+            if (val) {
+                localStorage.setItem('pathWarehouse', val);
+                if (window.electronAPI) window.electronAPI.saveFilePath('warehouse', val);
+                statusWarehouseStock.innerHTML = `<i class="fas fa-folder-open" style="color:#16a34a; margin-right:4px;"></i>상태: 경로 입력됨 (자동 로드)`;
+                statusWarehouseStock.style.color = '#16a34a';
+                if (btnReloadWarehouse) btnReloadWarehouse.style.display = 'inline-block';
+            } else {
+                localStorage.removeItem('pathWarehouse');
+                if (window.electronAPI) window.electronAPI.saveFilePath('warehouse', null);
+                statusWarehouseStock.textContent = '상태: 대기 중 (미사용)';
+                statusWarehouseStock.style.color = '#64748b';
+                if (btnReloadWarehouse) btnReloadWarehouse.style.display = 'none';
+            }
+        });
+    }
+
+    if (btnAutoLoadWarehouse) {
+        btnAutoLoadWarehouse.addEventListener('click', () => handleAutoLoad('warehouse'));
+    }
+    if (btnReloadWarehouse) {
+        btnReloadWarehouse.addEventListener('click', () => reloadLatestFile('warehouse'));
     }
 })();
 
@@ -1730,11 +1821,11 @@ loadPopWeights();
 
 
 async function reloadLatestFile(type) {
-    const statusEl = type === 'original' ? statusOriginal : statusDownload;
-    const originalText = statusEl.textContent;
+    const statusEl = type === 'original' ? statusOriginal : (type === 'download' ? statusDownload : (type === 'warehouse' ? statusWarehouseStock : statusRework));
+    const originalText = statusEl.innerHTML;
 
     try {
-        statusEl.textContent = `상태: ${type === 'original' ? '원본' : '전산'} 데이터 불러오는 중...`;
+        statusEl.innerHTML = `<i class="fas fa-spinner fa-spin" style="color:#3b82f6; margin-right:4px;"></i>상태: ${type === 'warehouse' ? '창고' : (type === 'original' ? '원본' : '전산')} 데이터 불러오는 중...`;
         statusEl.style.color = '#3b82f6';
 
         // 1. Electron IPC로 저장된 파일 경로 가져오기
@@ -1745,9 +1836,10 @@ async function reloadLatestFile(type) {
 
         // 2. IPC 경로가 없으면 입력창 경로 사용
         if (!filePath) {
-            filePath = type === 'original'
-                ? pathOriginal.value.trim()
-                : pathDownload.value.trim();
+            if (type === 'original') filePath = pathOriginal.value.trim();
+            else if (type === 'download') filePath = pathDownload.value.trim();
+            else if (type === 'rework') filePath = pathRework.value.trim();
+            else if (type === 'warehouse') filePath = pathWarehouse.value.trim();
         }
 
         if (!filePath) {
@@ -1791,20 +1883,34 @@ async function reloadLatestFile(type) {
 
             if (type === 'original') {
                 originalData = parsedData.filter(item => (item.qty || 0) > 0);
-                statusOriginal.textContent = `상태: 최신 원본 파일 불러오기 성공 (${originalData.length}건)`;
+                statusOriginal.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${originalData.length}건)`;
                 statusOriginal.style.color = '#059669';
-                originalFile = { name: localStorage.getItem('lastOrigName') || fileName, isReloaded: true };
+                originalFile = { name: localStorage.getItem('lastOrigName') || fileName, path: filePath, isReloaded: true };
                 // 경로 저장
                 localStorage.setItem('pathOrig', filePath);
                 if (window.electronAPI) window.electronAPI.saveFilePath('original', filePath);
-            } else {
+            } else if (type === 'download') {
                 downloadData = parsedData;
-                statusDownload.textContent = `상태: 최신 전산 파일 불러오기 성공 (${downloadData.length}건)`;
+                statusDownload.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${downloadData.length}건)`;
                 statusDownload.style.color = '#059669';
-                downloadFile = { name: localStorage.getItem('lastDownName') || fileName, isReloaded: true };
+                downloadFile = { name: localStorage.getItem('lastDownName') || fileName, path: filePath, isReloaded: true };
                 // 경로 저장
                 localStorage.setItem('pathDown', filePath);
                 if (window.electronAPI) window.electronAPI.saveFilePath('download', filePath);
+            } else if (type === 'warehouse') {
+                warehouseData = parsedData;
+                statusWarehouseStock.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${warehouseData.length}건)`;
+                statusWarehouseStock.style.color = '#059669';
+                warehouseFile = { name: fileName, path: filePath, isReloaded: true };
+                localStorage.setItem('pathWarehouse', filePath);
+                if (window.electronAPI) window.electronAPI.saveFilePath('warehouse', filePath);
+            } else if (type === 'rework') {
+                reworkData = parsedData.filter(item => (item.qty || 0) > 0);
+                statusRework.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${reworkData.length}건)`;
+                statusRework.style.color = '#059669';
+                reworkFile = { name: localStorage.getItem('lastReworkName') || fileName, path: filePath, isReloaded: true };
+                localStorage.setItem('pathRework', filePath);
+                if (window.electronAPI) window.electronAPI.saveFilePath('rework', filePath);
             }
             checkReadyStatus();
         } else {
@@ -1812,10 +1918,10 @@ async function reloadLatestFile(type) {
         }
     } catch (err) {
         console.error(`❌ ${type} 불러오기 실패:`, err);
-        statusEl.textContent = `상태: ${type === 'original' ? '원본' : '전산'} 불러오기 실패 (${err.message})`;
+        statusEl.innerHTML = `<i class="fas fa-exclamation-circle" style="color:#ef4444; margin-right:4px;"></i>상태: 로드 실패 (${err.message})`;
         statusEl.style.color = '#ef4444';
         setTimeout(() => {
-            statusEl.textContent = originalText;
+            statusEl.innerHTML = originalText;
             statusEl.style.color = '#64748b';
         }, 3000);
     }
@@ -1826,11 +1932,17 @@ btnReloadDownload.addEventListener('click', () => reloadLatestFile('download'));
 
 // 공통 자동 불러오기 로직
 async function handleAutoLoad(type) {
-    const inputEl = type === 'original' ? pathOriginal : pathDownload;
-    const statusEl = type === 'original' ? statusOriginal : statusDownload;
-    const lastEl = type === 'original' ? lastOrig : lastDown;
-    const reloadBtn = type === 'original' ? btnReloadOriginal : btnReloadDownload;
-    const storageKey = type === 'original' ? 'dirOrig' : 'dirDown';
+    let inputEl, statusEl, lastEl, reloadBtn, storageKey;
+
+    if (type === 'original') {
+        inputEl = pathOriginal; statusEl = statusOriginal; lastEl = lastOrig; reloadBtn = btnReloadOriginal; storageKey = 'dirOrig';
+    } else if (type === 'download') {
+        inputEl = pathDownload; statusEl = statusDownload; lastEl = lastDown; reloadBtn = btnReloadDownload; storageKey = 'dirDown';
+    } else if (type === 'rework') {
+        inputEl = pathRework; statusEl = statusRework; lastEl = lastRework; reloadBtn = btnReloadRework; storageKey = 'dirRework';
+    } else {
+        inputEl = pathWarehouse; statusEl = statusWarehouseStock; lastEl = lastWarehouseStock; reloadBtn = btnReloadWarehouse; storageKey = 'dirWarehouse';
+    }
 
     let pathVal = inputEl.value.trim();
     let dirPath = "";
@@ -1895,13 +2007,25 @@ async function handleAutoLoad(type) {
                 originalData = parsed.filter(item => (item.qty || 0) > 0);
                 originalFile = { name: result.fileName, path: result.fullPath, isAutoLoaded: true, isReloaded: true };
                 localStorage.setItem('lastOrigName', result.fileName);
-            } else {
+                if (btnClearOriginal) btnClearOriginal.style.display = 'inline-block';
+            } else if (type === 'download') {
                 downloadData = parsed;
                 downloadFile = { name: result.fileName, path: result.fullPath, isAutoLoaded: true, isReloaded: true };
                 localStorage.setItem('lastDownName', result.fileName);
+                if (btnClearDown) btnClearDown.style.display = 'inline-block';
+            } else if (type === 'rework') {
+                reworkData = parsed.filter(item => (item.qty || 0) > 0);
+                reworkFile = { name: result.fileName, path: result.fullPath, isAutoLoaded: true, isReloaded: true };
+                localStorage.setItem('lastReworkName', result.fileName);
+                if (btnClearRework) btnClearRework.style.display = 'inline-block';
+            } else if (type === 'warehouse') {
+                // 창고재고는 parsed 데이터 외에 추가 처리 필요 (dongPrefixes 등)
+                // loadNativeWarehouseFile 로직과 합치는게 좋음
+                await loadNativeWarehouseFile(result.fullPath);
+                return; // loadNativeWarehouseFile에서 UI 업데이트함
             }
 
-            statusEl.textContent = `상태: 최신 파일 로드 성공 (${result.fileName})`;
+            statusEl.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${result.fileName})`;
             statusEl.style.color = '#059669';
             lastEl.textContent = `최근 사용: ${result.fileName}`;
             reloadBtn.style.display = 'inline-block';
@@ -1927,6 +2051,8 @@ async function handleAutoLoad(type) {
 
 btnAutoLoadOrig.addEventListener('click', () => handleAutoLoad('original'));
 btnAutoLoadDown.addEventListener('click', () => handleAutoLoad('download'));
+if (btnAutoLoadRework) btnAutoLoadRework.addEventListener('click', () => handleAutoLoad('rework'));
+if (btnReloadRework) btnReloadRework.addEventListener('click', () => reloadLatestFile('rework'));
 
 function checkReadyStatus() {
     const hasOrig = (pathOriginal.value.trim() !== "" || (originalFile !== null && originalFile !== undefined));
@@ -2131,6 +2257,12 @@ function evaluateMathString(currentVal, expr) {
                 const dirPath = lastSlash !== -1 ? filePath.substring(0, lastSlash) : filePath;
                 localStorage.setItem(p.storageKey, dirPath);
 
+                // 해당 UI 입력창에도 경로 표시
+                if (p.type === 'original') pathOriginal.value = filePath;
+                else if (p.type === 'rework') pathRework.value = filePath;
+                else if (p.type === 'download') pathDownload.value = filePath;
+                else if (p.type === 'warehouse') pathWarehouse.value = filePath;
+
                 // 파일 로드 시도
                 if (p.type === 'warehouse') {
                     // 창고재고는 별도 로직 (서버 사이드 파싱)
@@ -2180,15 +2312,24 @@ async function reloadNativeFileFromPath(type, filePath) {
                 document.getElementById('lastDown').textContent = `최근 사용: ${result.fileName}`;
                 document.getElementById('btnReloadDownload').style.display = 'inline-block';
             } else if (type === 'rework') {
-                reworkFile = file;
+                reworkData = parsed.filter(item => (item.qty || 0) > 0);
+                reworkFile = { name: result.fileName, path: filePath, isReloaded: true };
                 localStorage.setItem('pathRework', filePath);
-                document.getElementById('pathRework').value = filePath;
-                document.getElementById('lastRework').textContent = `최근 사용: ${result.fileName}`;
-                document.getElementById('btnClearRework').style.display = 'inline-block';
+                if (document.getElementById('pathRework')) document.getElementById('pathRework').value = filePath;
+                if (document.getElementById('lastRework')) document.getElementById('lastRework').textContent = `최근 사용: ${result.fileName}`;
+                if (document.getElementById('btnClearRework')) document.getElementById('btnClearRework').style.display = 'inline-block';
+                if (document.getElementById('btnReloadRework')) document.getElementById('btnReloadRework').style.display = 'inline-block';
             }
 
-            statusEl.textContent = `상태: 로드 성공 (${result.fileName})`;
+
+            const itemCount = type === 'original' ? originalData.length : (type === 'download' ? downloadData.length : (type === 'rework' ? reworkData.length : "- "));
+            statusEl.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${itemCount}건)`;
             statusEl.style.color = '#059669';
+
+            // 불러오기 성공 시 해제 버튼 활성화
+            if (type === 'original' && btnClearOriginal) btnClearOriginal.style.display = 'inline-block';
+            if (type === 'download' && btnClearDown) btnClearDown.style.display = 'inline-block';
+
             checkReadyStatus();
         }
     } catch (err) {
@@ -2223,9 +2364,11 @@ async function loadNativeWarehouseFile(filePath) {
             if (result.success) {
                 warehouseStockDongPrefixes = new Set(result.dongPrefixes.map(p => p.toUpperCase()));
                 warehouseStockLoaded = true;
-                statusEl.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a; margin-right:4px;"></i>상태: 완료 (${result.fileName})`;
+                if (pathWarehouse) pathWarehouse.value = filePath;
+                statusEl.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a; margin-right:4px;"></i>상태: 분석 완료 (${result.fileName})`;
                 document.getElementById('lastWarehouseStock').textContent = `고유제품 ${result.totalProducts}개 분석 완료`;
-                document.getElementById('btnClearWarehouseStock').style.display = 'inline-block';
+                if (btnClearWarehouseStock) btnClearWarehouseStock.style.display = 'inline-block';
+                if (btnReloadWarehouse) btnReloadWarehouse.style.display = 'inline-block';
                 if (document.getElementById('dongTagBadge')) {
                     document.getElementById('dongPrefixCount').textContent = result.dongPrefixes.length;
                     document.getElementById('dongTagBadge').style.display = 'inline-flex';
@@ -2348,8 +2491,11 @@ btnCompare.addEventListener('click', async () => {
         setProcessStatus("전산 데이터 분석 완료. 재작업 데이터 확인 중...", 60);
 
         // 3. 재작업 데이터 로드
-        if (reworkFile) {
+        if (reworkFile && (reworkFile.isReloaded || reworkFile.isAutoLoaded)) {
+            finalReworkList = reworkData;
+        } else if (reworkFile) {
             finalReworkList = await readExcelFile(reworkFile, 'rework'); // 재작업 파일은 '재작업당일' 시트를 읽어야 함
+            finalReworkList = finalReworkList.filter(item => (item.qty || 0) > 0);
         } else if (pathRework.value.trim()) {
             // 경로 기반 재작업 파일 로드: raw 파일을 받아서 브라우저에서 파싱
             const filePath = pathRework.value.trim();

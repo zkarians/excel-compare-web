@@ -28,6 +28,7 @@
       "output": "dist"
     },
     "win": {
+      "icon": "build/icon.png",
       "target": [
         "portable",
         "nsis"
