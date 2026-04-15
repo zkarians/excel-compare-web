@@ -1,26 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --success: #059669;
-    --success-hover: #047857;
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --success: #10b981;
+    --success-hover: #059669;
     --danger: #ef4444;
     --danger-hover: #dc2626;
-    --warning: #d97706;
-    --info: #0ea5e9;
+    --warning: #f59e0b;
+    --info: #3b82f6;
     --text-main: #0f172a;
     --text-muted: #64748b;
-    --bg-body: #f8fafc;
-    --bg-card: rgba(255, 255, 255, 0.95);
-    --border: rgba(203, 213, 225, 0.5);
+    --bg-body: #f1f5f9;
+    --bg-card: #ffffff;
+    --border: #e2e8f0;
     --radius-sm: 8px;
     --radius-md: 16px;
-    --radius-lg: 20px;
+    --radius-lg: 24px;
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-premium: 0 8px 30px rgba(0, 0, 0, 0.04), 0 4px 10px rgba(0, 0, 0, 0.02);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -2px rgba(0, 0, 0, 0.02);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+    --shadow-premium: 0 12px 32px -4px rgba(0, 0, 0, 0.05), 0 4px 10px -2px rgba(0, 0, 0, 0.02);
 }
 
 * {
@@ -71,13 +71,13 @@ header p {
 }
 
 .file-input-group {
-    background: rgba(255, 255, 255, 0.6);
-    padding: 1.2rem;
+    background: #ffffff;
+    padding: 1.1rem 1.4rem;
     border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    transition: all 0.3s ease;
+    border: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     margin-bottom: 1rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    box-shadow: var(--shadow-md);
 }
 
 .path-input-wrapper {
@@ -86,20 +86,22 @@ header p {
 
 .path-input {
     width: 100%;
-    padding: 7px 12px;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
     font-family: inherit;
-    font-size: 0.9rem;
-    background: white;
+    font-size: 0.85rem;
+    background: var(--bg-body);
     transition: all 0.2s;
     box-sizing: border-box;
+    color: var(--text-main);
 }
 
 .path-input:focus {
     outline: none;
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    border-color: var(--primary);
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
 }
 
 .path-input::placeholder {
@@ -121,14 +123,44 @@ header p {
 
 .file-input-group h3 {
     margin-bottom: 0.5rem;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: -0.3px;
+}
+
+.file-input-group h3 .sub-desc {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #64748b;
+    margin-left: 2px;
 }
 
 input[type="file"] {
     display: inline-block;
     width: auto;
-    margin-bottom: 0.25rem;
-    font-size: 0.82rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+input[type="file"]::file-selector-button {
+    border: none;
+    background: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 6px;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+input[type="file"]::file-selector-button:hover {
+    background: #e2e8f0;
+    color: var(--text-main);
 }
 
 .file-status {
@@ -151,7 +183,7 @@ input[type="file"] {
     cursor: pointer;
     font-weight: 600;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .btn:disabled {
@@ -161,14 +193,16 @@ input[type="file"] {
 }
 
 .btn.primary {
-    background-color: var(--primary);
+    background: linear-gradient(135deg, var(--primary) 0%, #3730a3 100%);
     color: white;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+    border: none;
 }
 
 .btn.primary:not(:disabled):hover {
-    background-color: var(--primary-hover);
+    background: linear-gradient(135deg, var(--primary-hover) 0%, #312e81 100%);
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
 }
 
 #btnCompare {
@@ -176,12 +210,14 @@ input[type="file"] {
     font-size: 1.2rem;
     padding: 1rem 3rem;
     border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    border: none;
 }
 
 #btnCompare:not(:disabled):hover {
     transform: translateY(-3px) scale(1.02) !important;
-    background: linear-gradient(135deg, var(--primary-hover) 0%, #1e1b4b 100%) !important;
-    box-shadow: 0 12px 30px rgba(37, 99, 235, 0.35) !important;
+    background: linear-gradient(135deg, #4338ca 0%, #0f172a 100%) !important;
+    box-shadow: 0 12px 24px rgba(79, 70, 229, 0.4) !important;
 }
 
 #btnCompare:disabled {
@@ -211,26 +247,27 @@ input[type="file"] {
 }
 
 .btn-secondary-outline {
-    background: white;
+    background: #ffffff;
     border: 1px solid var(--border) !important;
     color: var(--text-main) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .btn-secondary-outline:hover {
-    background: var(--bg-body) !important;
-    border-color: #94a3b8 !important;
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
     transform: translateY(-1px);
 }
 
 .btn-primary-soft {
-    background: #eff6ff !important;
-    color: var(--primary) !important;
-    border: 1px solid #bfdbfe !important;
+    background: #e0e7ff !important;
+    color: #4f46e5 !important;
+    border: 1px solid #c7d2fe !important;
 }
 
 .btn-primary-soft:hover {
-    background: #dbeafe !important;
-    border-color: #93c5fd !important;
+    background: #c7d2fe !important;
+    border-color: #a5b4fc !important;
     transform: translateY(-1px);
 }
 
@@ -262,6 +299,12 @@ input[type="file"] {
 .summary-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-premium);
+}
+
+.selection-grid {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .summary-card h4 {
@@ -1814,6 +1857,9 @@ tr.border-group td {
     padding: 6px;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .main-tab-btn {
