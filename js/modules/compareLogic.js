@@ -441,7 +441,13 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                 }
             } else {
                 stats.success++;
-                if (down.loadQtySum === 0) { rowType = '대기'; rowBadge = 'pending'; }
+                if (down.loadQtySum === 0) {
+                    if (down.prodName === 'NONASSET.ITEM') {
+                        rowType = '완료'; rowBadge = 'success';
+                    } else {
+                        rowType = '대기'; rowBadge = 'pending';
+                    }
+                }
                 else if (down.loadQtySum >= down.planQtySum) { rowType = '완료'; rowBadge = 'success'; }
                 else { rowType = '작업중'; rowBadge = 'progress'; }
                 if (errorDetails.length === 0) errorDetails.push('');
