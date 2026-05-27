@@ -1345,6 +1345,122 @@ async function readExcelFile(file, type) {
                         SEAL_NO: _colLetterToIndex(mapping.dl_sealNo) || colMap.sealNo || 17
                     };
 
+                    // --- 전산 파일 레이아웃 변경 감지 및 알림 ---
+                    const _indexToColLetter = (index) => {
+                        if (!index || index <= 0) return "";
+                        let temp = index;
+                        let letter = "";
+                        while (temp > 0) {
+                            let modulo = (temp - 1) % 26;
+                            letter = String.fromCharCode(65 + modulo) + letter;
+                            temp = Math.floor((temp - modulo) / 26);
+                        }
+                        return letter;
+                    };
+
+                    const DCOL_LABELS = {
+                        DIVISION: '사업부',
+                        LOAD_TYPE: '작업구분',
+                        CNTR_NO: '컨테이너 번호',
+                        STATUS: '상태',
+                        OQC: 'OQC상태',
+                        PENDING_QTY: '보류수량',
+                        PROD_NAME: '품목명',
+                        PLAN_QTY: '계획수량',
+                        LOAD_QTY: '적재수량',
+                        VOLUME: 'CBM',
+                        WEIGHT: '중량',
+                        PACKING_QTY: '포장수량',
+                        REMAIN_QTY: '잔여수량',
+                        CNTR_TYPE: '규격(컨테이너)',
+                        CARRIER_CODE: '선사코드',
+                        CARRIER_NAME: '선사명',
+                        TRUCK_CARRIER_CODE: '트럭코드',
+                        TRUCK_CARRIER_NAME: '트럭명',
+                        PORT: '상차지',
+                        DEST: '도착지',
+                        LOAD_PLAN_NO: '작업지시번호',
+                        REMARK: '비고',
+                        SEAL_NO: '씰번호'
+                    };
+
+                    const currentTargetMapping = {};
+                    for (const key in DCOL) {
+                        currentTargetMapping[key] = _indexToColLetter(DCOL[key]);
+                    }
+
+                    try {
+                        const prevTargetMappingStr = localStorage.getItem('lastTargetMapping');
+                        const prevTargetMapping = prevTargetMappingStr ? JSON.parse(prevTargetMappingStr) : null;
+                        
+                        if (prevTargetMapping) {
+                            const keyFieldsToNotify = ['CNTR_NO', 'PROD_NAME', 'PLAN_QTY', 'LOAD_QTY', 'WEIGHT', 'REMARK', 'SEAL_NO', 'DEST'];
+                            const changes = [];
+                            
+                            keyFieldsToNotify.forEach(key => {
+                                const prevCol = prevTargetMapping[key];
+                                const currCol = currentTargetMapping[key];
+                                if (prevCol && currCol && prevCol !== currCol) {
+                                    changes.push(`${DCOL_LABELS[key] || key} (${prevCol}열 ➡️ ${currCol}열)`);
+                                }
+                            });
+
+                            if (changes.length > 0) {
+                                const notifyDiv = document.createElement('div');
+                                notifyDiv.style.position = 'fixed';
+                                notifyDiv.style.top = '24px';
+                                notifyDiv.style.right = '24px';
+                                notifyDiv.style.zIndex = '999999';
+                                notifyDiv.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+                                notifyDiv.style.backdropFilter = 'blur(10px)';
+                                notifyDiv.style.borderLeft = '5px solid #3b82f6';
+                                notifyDiv.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)';
+                                notifyDiv.style.borderRadius = '8px';
+                                notifyDiv.style.padding = '16px 20px';
+                                notifyDiv.style.maxWidth = '400px';
+                                notifyDiv.style.fontFamily = "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
+                                notifyDiv.style.animation = 'slideIn 0.3s ease-out';
+                                
+                                notifyDiv.innerHTML = `
+                                    <div style="display: flex; align-items: flex-start; gap: 14px;">
+                                        <div style="color: #3b82f6; font-size: 1.3rem; margin-top: 2px;"><i class="fas fa-exclamation-triangle"></i></div>
+                                        <div style="flex: 1;">
+                                            <h4 style="margin: 0 0 6px 0; font-size: 0.95rem; font-weight: 700; color: #1e293b; letter-spacing: -0.3px;">전산 엑셀 열 배치 변경 감지!</h4>
+                                            <p style="margin: 0 0 10px 0; font-size: 0.82rem; color: #64748b; line-height: 1.4;">업로드된 전산 파일의 열 위치 변경을 자동 인식하여 정상 매핑했습니다.</p>
+                                            <div style="display: flex; flex-direction: column; gap: 5px; background: rgba(241, 245, 249, 0.8); padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 0.78rem; color: #334155; font-weight: 600;">
+                                                ${changes.map(c => `<div><i class="fas fa-check" style="color: #10b981; margin-right: 4px;"></i> ${c}</div>`).join('')}
+                                            </div>
+                                        </div>
+                                        <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1rem; padding: 0 2px;"><i class="fas fa-times"></i></button>
+                                    </div>
+                                `;
+                                document.body.appendChild(notifyDiv);
+                                
+                                if (!document.getElementById('notify-keyframe-style')) {
+                                    const style = document.createElement('style');
+                                    style.id = 'notify-keyframe-style';
+                                    style.innerHTML = `
+                                        @keyframes slideIn {
+                                            from { transform: translateX(120%); opacity: 0; }
+                                            to { transform: translateX(0); opacity: 1; }
+                                        }
+                                    `;
+                                    document.head.appendChild(style);
+                                }
+                                
+                                setTimeout(() => {
+                                    notifyDiv.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                                    notifyDiv.style.opacity = '0';
+                                    notifyDiv.style.transform = 'translateX(20px)';
+                                    setTimeout(() => notifyDiv.remove(), 500);
+                                }, 8000);
+                            }
+                        }
+                        localStorage.setItem('lastTargetMapping', JSON.stringify(currentTargetMapping));
+                    } catch (e) {
+                        console.error("Target mapping verification failed", e);
+                    }
+
                     ws.eachRow((row, i) => {
                         if (i <= 1) return;
                         const safeGetText = (col) => {
