@@ -1374,10 +1374,10 @@ async function readExcelFile(file, type) {
                         REMAIN_QTY: '잔여수량',
                         CNTR_TYPE: '규격(컨테이너)',
                         CARRIER_CODE: '선사코드',
-                        CARRIER_NAME: '선사명',
+                        CARRIER_NAME: '선사(Carrier)',
                         TRUCK_CARRIER_CODE: '트럭코드',
-                        TRUCK_CARRIER_NAME: '트럭명',
-                        PORT: '상차지',
+                        TRUCK_CARRIER_NAME: '포워더(Forwarder)',
+                        PORT: '적재지(Departure Place)',
                         DEST: '도착지',
                         LOAD_PLAN_NO: '작업지시번호',
                         REMARK: '비고',
@@ -1394,7 +1394,7 @@ async function readExcelFile(file, type) {
                         const prevTargetMapping = prevTargetMappingStr ? JSON.parse(prevTargetMappingStr) : null;
                         
                         if (prevTargetMapping) {
-                            const keyFieldsToNotify = ['CNTR_NO', 'PROD_NAME', 'PLAN_QTY', 'LOAD_QTY', 'WEIGHT', 'REMARK', 'SEAL_NO', 'DEST'];
+                            const keyFieldsToNotify = ['CNTR_NO', 'PROD_NAME', 'PLAN_QTY', 'LOAD_QTY', 'WEIGHT', 'REMARK', 'SEAL_NO', 'DEST', 'CARRIER_NAME', 'TRUCK_CARRIER_NAME', 'PORT'];
                             const changes = [];
                             
                             keyFieldsToNotify.forEach(key => {
