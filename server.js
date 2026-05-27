@@ -16,10 +16,10 @@ const MAIL_CONFIG_FILE = path.join(DATA_DIR, 'mail_config.json');
 let pool = null;
 let isConnecting = false;
 let currentDbConfig = {
-    user: process.env.PGUSER || 'u0_a354',
+    user: process.env.PGUSER || 'postgres',
     host: process.env.PGHOST || 'localhost',
-    database: process.env.PGDATABASE || 'u0_a354',
-    password: process.env.PGPASSWORD || '',
+    database: process.env.PGDATABASE || 'excel',
+    password: process.env.PGPASSWORD || 'z456qwe12!@',
     port: Number(process.env.PGPORT) || 5432,
     ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false,
     connectionTimeoutMillis: 15000, // 연결 시도 타임아웃 15초
@@ -585,8 +585,8 @@ app.post('/api/db/sync', async (req, res) => {
         'sent_emails', 'app_configs'
     ];
 
-    // pcConfig 우선, 없을 경우 서버의 LOCAL_PC_CONFIG 사용
-    const LOCAL_PC = pcConfig || { host: 'localhost', user: 'postgres', port: 5432, database: 'excel', password: 'z456qwe12!@', ssl: false };
+    // 클라이언트에서 보낸 하드코딩된 pcConfig 대신 현재 앱이 연결된 DB(currentDbConfig)를 동기화 대상으로 사용
+    const LOCAL_PC = currentDbConfig || pcConfig || { host: 'localhost', user: 'postgres', port: 5432, database: 'excel', password: 'z456qwe12!@', ssl: false };
 
     let source, target;
     if (direction === 'to_phone') {
@@ -949,13 +949,10 @@ app.get('/api/master-data', async (req, res) => {
             }
         }
 
-        // 만약 두 방법 모두 실패하여 데이터가 최종적으로 0건이라면, 
-        // 성공 응답 대신 명확한 에러를 주어 프론트엔드가 기존 데이터를 지우지 않게 함
+        // 데이터가 0건이더라도 에러(503)를 반환하지 않고, 빈 배열을 반환하여
+        // 프론트엔드에서 '0건 로드 완료'로 정상 표시되도록 수정함.
         if (masterData.length === 0) {
-            return res.status(503).json({
-                success: false,
-                message: "제품 마스터 데이터를 DB나 파일에서 불러올 수 없습니다. 연결 상태를 확인해주세요."
-            });
+            console.warn("⚠️ [API] DB 및 파일 모두에 제품 마스터 데이터가 없습니다 (0건).");
         }
 
         res.json({ success: true, masterData });
@@ -2128,8 +2125,23 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.listen(port, '0.0.0.0', () => {
+app.post('/api/debug', (req, res) => {
+    const fs = require('fs');
+    fs.writeFileSync('C:\\Users\\Administrator\\Desktop\\debug.json', JSON.stringify(req.body, null, 2));
+    res.json({success:true});
+});
+
+const server = app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 API 서버가 http://0.0.0.0:${port} 에서 실행 중입니다.`);
     console.log(`🌐 로컬 접속: http://localhost:${port}`);
     console.log(`📱 네트워크 접속: http://192.168.0.24:${port}`);
+});
+
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`❌ [FATAL] 포트 ${port}가 이미 사용 중입니다. 백그라운드에 프로세스가 남아있거나 다른 프로그램이 사용 중입니다.`);
+        process.exit(1);
+    } else {
+        console.error(`❌ [FATAL] 서버 오류 발생:`, err);
+    }
 });

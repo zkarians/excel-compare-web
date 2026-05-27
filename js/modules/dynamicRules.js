@@ -97,45 +97,49 @@ async function saveDynamicRules() {
 function createConditionRow() {
     const row = document.createElement('div');
     row.style.display = 'flex';
-    row.style.gap = '8px';
-    row.style.alignItems = 'center';
+    row.style.flexDirection = 'column';
+    row.style.gap = '4px';
     row.className = 'condition-row';
 
     row.innerHTML = `
-        <select class="cond-field" style="padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px;">
-            <option value="remark">비고/리마크 (원본 전체)</option>
-            <option value="origRemark">[원본] 리마크</option>
-            <option value="downRemark">[전산] 리마크</option>
-            <option value="downLoadType">[전산] Load Type (B열)</option>
-            <option value="downPlanQty">[전산] Load Plan Qty (J열)</option>
-            <option value="downPendingQty">[전산] Pending Qty (M열)</option>
-            <option value="downPackingQty">[전산] Packing Qty (N열)</option>
-            <option value="downSealNo">[전산] Seal No (R열)</option>
-            <option value="downForwarder">[전산] 포워더 (V열)</option>
-            <option value="downCarrier">[전산] 선사 (X열)</option>
-            <option value="downPort">[전산] L.Port (AB열)</option>
-            <option value="prodName">제품명 (I열)</option>
-            <option value="dest">도착지</option>
-            <option value="prodType">제품구분 (예: CDZ, CVZ)</option>
-            <!-- 다이나믹 필드 추가 -->
-            ${customFields.map(cf => `<option value="${cf.id}">${cf.source === 'down' ? '[전산]' : '[원본]'} ${cf.name} (${cf.colLetter})</option>`).join('')}
-        </select>
-        <span style="font-size: 0.9rem; color: #475569;">의 값이</span>
-        <input type="text" class="cond-value" placeholder="예: 쇼링, 서부물류" style="flex: 1; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px;">
-        <select class="cond-operator" style="padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px;">
-            <option value="includes">포함</option>
-            <option value="notIncludes">미포함</option>
-            <option value="startsWith">시작함</option>
-            <option value="exact">정확히 일치</option>
-            <option value="gte">이상 (>=)</option>
-            <option value="gt">초과 (> )</option>
-            <option value="lte">이하 (<=)</option>
-            <option value="lt">미만 (< )</option>
-            <option value="numEq">수치 동일 (=)</option>
-            <option value="regexMatch">Regex 일치</option>
-            <option value="regexNotMatch">Regex 미일치</option>
-        </select>
-        <button type="button" class="btn btn-danger btn-remove-cond" style="padding: 0.4rem 0.6rem; font-size: 0.8rem;">삭제</button>
+        <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
+            <select class="cond-field" style="flex: 1; min-width: 0; padding: 0.25rem 0.4rem; font-size: 0.78rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+                <option value="remark">비고/리마크</option>
+                <option value="origRemark">[원본] 리마크</option>
+                <option value="downRemark">[전산] 리마크</option>
+                <option value="downLoadType">[전산] Load Type</option>
+                <option value="downPlanQty">[전산] Load Plan Qty</option>
+                <option value="downPendingQty">[전산] Pending Qty</option>
+                <option value="downPackingQty">[전산] Packing Qty</option>
+                <option value="downSealNo">[전산] Seal No</option>
+                <option value="downForwarder">[전산] 포워더</option>
+                <option value="downCarrier">[전산] Carrier</option>
+                <option value="downPort">[전산] L.Port</option>
+                <option value="prodName">제품명</option>
+                <option value="dest">목적지 (도착지)</option>
+                <option value="prodType">제품구분 (CDZ, CVZ)</option>
+                <!-- 다이나믹 필드 추가 -->
+                ${customFields.map(cf => '<option value="' + cf.id + '">' + (cf.source === 'down' ? '[전산]' : '[원본]') + ' ' + cf.name + ' (' + cf.colLetter + ')</option>').join('')}
+            </select>
+            <span style="font-size: 0.72rem; color: #94a3b8; white-space: nowrap;">의 값이</span>
+        </div>
+        <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
+            <input type="text" class="cond-value" placeholder="예: 쇼링, 서부물류" style="flex: 1; min-width: 0; padding: 0.25rem 0.4rem; font-size: 0.78rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+            <select class="cond-operator" style="flex: 0 0 auto; padding: 0.25rem 0.3rem; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+                <option value="includes">포함</option>
+                <option value="notIncludes">미포함</option>
+                <option value="startsWith">시작함</option>
+                <option value="exact">정확히 일치</option>
+                <option value="gte">이상 (>=)</option>
+                <option value="gt">초과 (>)</option>
+                <option value="lte">이하 (<=)</option>
+                <option value="lt">미만 (<)</option>
+                <option value="numEq">수치 동일 (=)</option>
+                <option value="regexMatch">Regex 일치</option>
+                <option value="regexNotMatch">Regex 미일치</option>
+            </select>
+            <button type="button" class="btn btn-danger btn-remove-cond" style="flex-shrink: 0; padding: 0.2rem 0.5rem; font-size: 0.72rem; border-radius: 4px;"><i class="fas fa-times"></i></button>
+        </div>
     `;
 
     row.querySelector('.btn-remove-cond').addEventListener('click', () => {
@@ -198,11 +202,11 @@ function renderRulesTable() {
                 else if (cond.field === 'downPlanQty') { fText = '계획수량(J)'; iconClass = 'fa-calculator'; }
                 else if (cond.field === 'downPendingQty') { fText = '팬딩수량(M)'; iconClass = 'fa-clock'; }
                 else if (cond.field === 'downPackingQty') { fText = '단위수량(N)'; iconClass = 'fa-boxes'; }
-                else if (cond.field === 'downSealNo') { fText = 'Seal(R)'; iconClass = 'fa-lock'; }
-                else if (cond.field === 'downForwarder') { fText = '포워더(V)'; iconClass = 'fa-shipping-fast'; }
-                else if (cond.field === 'downCarrier') { fText = '선사(X)'; iconClass = 'fa-ship'; }
-                else if (cond.field === 'downPort') { fText = 'L.Port(AB)'; iconClass = 'fa-anchor'; }
-                else if (cond.field === 'dest') { fText = '도착지'; iconClass = 'fa-map-marker-alt'; }
+                else if (cond.field === 'downSealNo') { fText = 'Seal'; iconClass = 'fa-lock'; }
+                else if (cond.field === 'downForwarder') { fText = '포워더'; iconClass = 'fa-shipping-fast'; }
+                else if (cond.field === 'downCarrier') { fText = 'Carrier'; iconClass = 'fa-ship'; }
+                else if (cond.field === 'downPort') { fText = 'L.Port'; iconClass = 'fa-anchor'; }
+                else if (cond.field === 'dest') { fText = '목적지'; iconClass = 'fa-map-marker-alt'; }
                 else if (cond.field === 'prodName') { fText = '제품명'; iconClass = 'fa-box'; }
                 else if (cond.field === 'prodType') { fText = '품목'; iconClass = 'fa-cube'; }
                 else if (cond.field.startsWith('f_')) {
@@ -260,16 +264,18 @@ function renderRulesTable() {
             <td style="text-align: center;">
                 <input type="checkbox" class="rule-active-toggle" data-index="${index}" ${rule.isActive ? 'checked' : ''}>
             </td>
-            <td style="font-weight: 600; color: #1e293b;">${rule.groupName || '-'}</td>
-            <td style="padding: 12px 10px;">
-                <div style="margin-bottom: 6px; padding: 3px 8px; background: ${opBadgeColor}; color: white; border-radius: 6px; display: inline-block; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px;">${opTextDisplay}</div>
+            <td style="font-weight: 600; color: #1e293b; padding: 6px 4px;">${rule.groupName || '-'}</td>
+            <td style="padding: 6px 4px;">
+                <div style="margin-bottom: 4px; padding: 2px 6px; background: ${opBadgeColor}; color: white; border-radius: 4px; display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px;">${opTextDisplay}</div>
                 ${conditionsHtml}
             </td>
-            <td>${targetText}</td>
-            <td style="text-align: center; white-space: nowrap;">
-                <button class="btn btn-secondary-outline btn-edit-rule" data-index="${index}" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 4px; margin-right: 4px;">수정</button>
-                <button class="btn btn-copy-rule" data-index="${index}" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 4px; margin-right: 4px; background-color: #e0f2fe; color: #0284c7; border: 1px solid #7dd3fc; cursor: pointer;" title="이 규칙을 복사합니다"><i class="fas fa-copy"></i> 복사</button>
-                <button class="btn btn-danger btn-delete-rule" data-index="${index}" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border-radius: 4px; background-color: #fee2e2; color: #dc2626;">삭제</button>
+            <td style="padding: 6px 4px;">${targetText}</td>
+            <td style="text-align: center; white-space: nowrap; padding: 6px 4px; width: 240px;">
+                <div style="display: flex; gap: 6px; justify-content: center; align-items: center; width: 100%;">
+                    <button class="btn btn-secondary-outline btn-edit-rule" data-index="${index}"><i class="fas fa-edit"></i> 수정</button>
+                    <button class="btn btn-copy-rule" data-index="${index}" style="background-color: #e0f2fe; color: #0284c7; border: 1px solid #7dd3fc; cursor: pointer;" title="이 규칙을 복사합니다"><i class="fas fa-copy"></i> 복사</button>
+                    <button class="btn btn-danger btn-delete-rule" data-index="${index}" style="background-color: #fee2e2; color: #dc2626;"><i class="fas fa-trash-alt"></i> 삭제</button>
+                </div>
             </td>
         `;
         tbody.appendChild(tr);

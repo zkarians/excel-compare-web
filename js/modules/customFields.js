@@ -71,15 +71,15 @@ function updateAllConditionDropdowns() {
             <option value="remark">비고/리마크 (원본 전체)</option>
             <option value="origRemark">[원본] 리마크</option>
             <option value="downRemark">[전산] 리마크</option>
-            <option value="downLoadType">[전산] Load Type (B열)</option>
-            <option value="downPlanQty">[전산] Load Plan Qty (J열)</option>
-            <option value="downPackingQty">[전산] Packing Qty (N열)</option>
-            <option value="downSealNo">[전산] Seal No (R열)</option>
-            <option value="downForwarder">[전산] 포워더 (V열)</option>
-            <option value="downCarrier">[전산] 선사 (X열)</option>
-            <option value="downPort">[전산] L.Port (AB열)</option>
-            <option value="prodName">제품명 (I열)</option>
-            <option value="dest">도착지</option>
+            <option value="downLoadType">[전산] Load Type</option>
+            <option value="downPlanQty">[전산] Load Plan Qty</option>
+            <option value="downPackingQty">[전산] Packing Qty</option>
+            <option value="downSealNo">[전산] Seal No</option>
+            <option value="downForwarder">[전산] 포워더</option>
+            <option value="downCarrier">[전산] Carrier</option>
+            <option value="downPort">[전산] L.Port</option>
+            <option value="prodName">제품명</option>
+            <option value="dest">목적지 (도착지)</option>
             <option value="prodType">제품구분 (예: CDZ, CVZ)</option>
         `;
         const dynamicOptions = customFields.map(cf => `

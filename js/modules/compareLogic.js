@@ -62,8 +62,7 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
         let cleanCntr = (orig.cntrNo || "").trim().toUpperCase();
         let effectiveProdName = (orig.prodName || "").trim().toUpperCase();
         const isNumeric = /^\d+$/.test(effectiveProdName);
-        const hasNoDot = !effectiveProdName.includes('.');
-        if (isNumeric || (effectiveProdName && hasNoDot)) {
+        if (isNumeric) {
             effectiveProdName = NON_ASSET_ID;
         }
 
@@ -89,6 +88,10 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
     downList.forEach(down => {
         let cleanCntr = (down.cntrNo || "").trim().toUpperCase();
         let cleanProdName = (down.prodName || "").trim().toUpperCase();
+        const isNumeric = /^\d+$/.test(cleanProdName);
+        if (isNumeric) {
+            cleanProdName = NON_ASSET_ID;
+        }
         const key = cleanCntr + "|" + cleanProdName;
         if (!downGrouped[key]) {
             downGrouped[key] = {
@@ -145,6 +148,8 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
     const workDateStr = `${today.getMonth() + 1}월 ${today.getDate()}일`;
 
     const downKeys = Object.keys(downGrouped);
+    
+
     downKeys.forEach(key => {
         const down = downGrouped[key];
         const matchedOrig = origGrouped[key];
@@ -649,7 +654,7 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
             resultObj.type = "원본누락";
             resultObj.cssClass = "row-extra";
             resultObj.badgeClass = "extra";
-            resultObj.qtyInfo = { plan: down.planQtySum, origPlan: 0 };
+            resultObj.qtyInfo = { plan: down.planQtySum, load: down.loadQtySum, pending: down.pendingQtySum, remain: down.remainQtySum, packing: down.packingQtySum || 0, origPlan: 0 };
         } else {
             resultObj.type = "정상(부)";
             resultObj.isErrorRow = isError;
@@ -687,7 +692,7 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                 division: orig.prodType || '-', // 원본의 G열(사업부)
                 prodType: prod ? (prod.prodType || '-') : (orig.prodType || '-'),
                 prodName: orig.prodName,
-                qtyInfo: { plan: orig.qtySum, load: 0, remain: orig.qtySum, packing: 0, origPlan: orig.qtySum, isMismatch: false },
+                qtyInfo: { plan: orig.qtySum, load: 0, pending: 0, remain: orig.qtySum, packing: 0, origPlan: orig.qtySum, isMismatch: false },
                 cntrType: { val: '-', orig: orig.cntrType, isMismatch: true },
                 carrierName: {
                     val: '-',

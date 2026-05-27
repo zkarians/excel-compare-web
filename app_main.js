@@ -1099,7 +1099,36 @@ async function readExcelFile(file, type) {
                             let emptyRowCount = 0; // 공백 행 카운터
                             let lastRowNumber = 0;
 
-                            const COL = { JOB_NAME: 1, DEST: 5, PROD_TYPE: 7, PROD_NAME: 9, QTY: 10, CNTR_TYPE_FALLBACK: 12, CARRIER_FALLBACK: 13, CNTR_TYPE: 14, CARRIER: 15, ETA: 16, ETD: 17, REMARK: 18, WORK_DATE: 19, CNTR_NO: 20, ADJ1: 21, ADJ2: 22 };
+                            const _colLetterToIndex = (letters) => {
+                                if (!letters) return undefined;
+                                letters = letters.toUpperCase();
+                                let idx = 0;
+                                for (let i = 0; i < letters.length; i++) {
+                                    idx = idx * 26 + (letters.charCodeAt(i) - 64);
+                                }
+                                return idx;
+                            };
+                            
+                            const mapping = (window.mappingManager && typeof window.mappingManager.getActiveMapping === 'function') ? window.mappingManager.getActiveMapping() : {};
+
+                            const COL = { 
+                                JOB_NAME: _colLetterToIndex(mapping.jobName) || 1, 
+                                DEST: _colLetterToIndex(mapping.dest) || 5, 
+                                PROD_TYPE: _colLetterToIndex(mapping.prodType) || 7, 
+                                PROD_NAME: _colLetterToIndex(mapping.prodName) || 9, 
+                                QTY: _colLetterToIndex(mapping.qty) || 10, 
+                                CNTR_TYPE_FALLBACK: 12, 
+                                CARRIER_FALLBACK: 13, 
+                                CNTR_TYPE: _colLetterToIndex(mapping.cntrType) || 14, 
+                                CARRIER: _colLetterToIndex(mapping.carrier) || 15, 
+                                ETA: _colLetterToIndex(mapping.eta) || 16, 
+                                ETD: _colLetterToIndex(mapping.etd) || 17, 
+                                REMARK: _colLetterToIndex(mapping.remark) || 18, 
+                                WORK_DATE: 19, 
+                                CNTR_NO: _colLetterToIndex(mapping.cntrNo) || 20, 
+                                ADJ1: 21, 
+                                ADJ2: 22 
+                            };
 
                             ws.eachRow((row, i) => {
                                 if (dataStarted && lastRowNumber > 0 && (i - lastRowNumber > 1)) {
@@ -1185,7 +1214,13 @@ async function readExcelFile(file, type) {
                                 let cntrNo = isNewCntr ? cellCntrNo : lastValidCntrNo;
                                 if (!cntrNo || cntrNo.toUpperCase().includes("WAIT")) return;
 
-                                let qty = parseInt(row.getCell(COL.QTY).value) || 0;
+                                let qty = 0;
+                                try {
+                                    qty = parseInt(row.getCell(COL.QTY).value);
+                                    if (isNaN(qty) || qty === 0) throw new Error();
+                                } catch (e) {
+                                    qty = parseInt(safeGetText(COL.QTY)) || 0;
+                                }
                                 if (qty <= 0) return;
 
                                 let transporter = "미분류";
@@ -1212,27 +1247,102 @@ async function readExcelFile(file, type) {
                 } else {
                     // download 파싱 로직
                     const ws = workbook.worksheets[0];
+                    
+                    // --- Dynamic Column Mapping for Download file ---
+                    const headers = ws.getRow(1);
+                    const colMap = {};
+                    headers.eachCell((cell, colNumber) => {
+                        const rawText = String(cell.text || "").trim().toUpperCase();
+                        const title = rawText.replace(/[\s\._-]/g, ""); // Remove spaces, dots, dashes, underscores
+                        
+                        if (title.includes("BUSINESSAREA") || title.includes("사업부")) colMap.division = colNumber;
+                        if (title.includes("LOADINGTYPE") || title.includes("LOADTYPE")) colMap.loadType = colNumber;
+                        if (title.includes("CONTAINERNO")) colMap.cntrNo = colNumber;
+                        if (title.includes("STATUSDESCRIPTION") || title.includes("STATUS")) colMap.status = colNumber;
+                        if (title.includes("OQCSTATUS")) colMap.oqc = colNumber;
+                        if (title.includes("OQCPENDING") || title.includes("PENDINGQTY")) colMap.pendingQty = colNumber;
+                        if (title === "MODEL" || title === "PRODNAME" || title === "모델") colMap.prodName = colNumber;
+                        if (title.includes("LOADPLANQTY") || title.includes("PLANQTY")) colMap.planQty = colNumber;
+                        if (title.includes("LOADEDQTY") || title.includes("STACKEDQTY") || title.includes("LOADINGQTY")) colMap.loadQty = colNumber;
+                        if (title.includes("VOLUME")) colMap.volume = colNumber;
+                        if (title.includes("WEIGHT") || title.includes("GROSSWEIGHT")) colMap.grossWeight = colNumber;
+                        
+                        // Spec / Cntr Type
+                        if (title.includes("CONTAINERSPEC") || title.includes("CONTAINERSIZE") || title.includes("CNTRTYPE")) colMap.cntrType = colNumber;
+                        
+                        // Shipping Line (Ocean Carrier, e.g., MSK) - S열, T열
+                        if (title === "SHIPPINGLINE" || title === "선사") {
+                            colMap.carrierCode = colNumber;
+                        } else if (title === "SHIPPINGLINENAME" || title === "선사명") {
+                            colMap.carrierName = colNumber;
+                        }
+                        
+                        // Trucking Carrier - W열, X열
+                        if (title === "CARRIER") {
+                            colMap.truckCarrierCode = colNumber;
+                        } else if (title === "CARRIERNAME") {
+                            colMap.truckCarrierName = colNumber;
+                        }
+                        
+                        // Port Code / Loading Port
+                        if (title.includes("PORTCODE") || title.includes("LOADINGPORT")) colMap.port = colNumber;
+                        
+                        // F.Dest / Destination
+                        if (title === "FDEST" || title === "DESTINATION" || title === "도착지") colMap.dest = colNumber;
+                        
+                        // Load Plan No. / Instruction No.
+                        if (title.includes("LOADPLANNO") || title.includes("INSTRUCTIONNO")) colMap.loadPlanNo = colNumber;
+                        
+                        // Remark
+                        if (title === "LOADREMARK") {
+                            colMap.remark = colNumber;
+                        } else if (title === "REMARK" && !colMap.remark) {
+                            colMap.remark = colNumber;
+                        }
+                        
+                        // Seal No.
+                        if (title.includes("SEALNO")) colMap.sealNo = colNumber;
+                        
+                        // Packing Quantity / Packing Type / Remain Qty
+                        if (title.includes("PACKINGQUANTITY") || title.includes("PACKQTY")) colMap.packingQty = colNumber;
+                        if (title.includes("REMAINQTY")) colMap.remainQty = colNumber;
+                    });
+
+                    const mapping = (window.mappingManager && typeof window.mappingManager.getActiveMapping === 'function') ? window.mappingManager.getActiveMapping() : {};
+                    const _colLetterToIndex = (letters) => {
+                        if (!letters) return undefined;
+                        letters = letters.toUpperCase();
+                        let idx = 0;
+                        for (let i = 0; i < letters.length; i++) {
+                            idx = idx * 26 + (letters.charCodeAt(i) - 64);
+                        }
+                        return idx;
+                    };
+
                     const DCOL = {
-                        DIVISION: 1,      // 사업부 (A열)
-                        LOAD_TYPE: 2,
-                        CNTR_NO: 3,
-                        STATUS: 4,
-                        OQC: 6,
-                        PENDING_QTY: 7,
-                        PROD_NAME: 9,
-                        PLAN_QTY: 10,
-                        LOAD_QTY: 11,
-                        VOLUME: 12,
-                        WEIGHT: 13,
-                        PACKING_QTY: 14,
-                        SEAL_NO: 18,
-                        CNTR_TYPE: 19,
-                        CARRIER_CODE: 20,
-                        CARRIER_NAME: 21,
-                        PORT: 28,
-                        DEST: 29,
-                        LOAD_PLAN_NO: 32,
-                        REMARK: 40
+                        DIVISION: _colLetterToIndex(mapping.dl_division) || colMap.division || 1,
+                        LOAD_TYPE: _colLetterToIndex(mapping.dl_loadType) || colMap.loadType || 2,
+                        CNTR_NO: colMap.cntrNo || 3,           // ← mapping.cntrNo 제거 (원본파일 전용 설정이므로)
+                        STATUS: _colLetterToIndex(mapping.dl_status) || colMap.status || 4,
+                        OQC: _colLetterToIndex(mapping.dl_oqc) || colMap.oqc || 6,
+                        PENDING_QTY: _colLetterToIndex(mapping.dl_pendingQty) || colMap.pendingQty || 7,
+                        PROD_NAME: colMap.prodName || 9,        // ← mapping.prodName 제거 (원본파일 전용 설정이므로)
+                        PLAN_QTY: _colLetterToIndex(mapping.dl_planQty) || colMap.planQty || 10,
+                        LOAD_QTY: _colLetterToIndex(mapping.dl_loadQty) || colMap.loadQty || 11,
+                        VOLUME: _colLetterToIndex(mapping.dl_volume) || colMap.volume || 12,
+                        WEIGHT: _colLetterToIndex(mapping.dl_weight) || colMap.grossWeight || 13,
+                        PACKING_QTY: _colLetterToIndex(mapping.dl_packingQty) || colMap.packingQty || 65,
+                        REMAIN_QTY: _colLetterToIndex(mapping.dl_remainQty) || colMap.remainQty || 15,
+                        CNTR_TYPE: colMap.cntrType || 18,       // ← mapping.cntrType 제거
+                        CARRIER_CODE: _colLetterToIndex(mapping.dl_carrierCode) || colMap.carrierCode || 19,
+                        CARRIER_NAME: _colLetterToIndex(mapping.dl_carrierName) || colMap.carrierName || 20,
+                        TRUCK_CARRIER_CODE: _colLetterToIndex(mapping.dl_truckCode) || colMap.truckCarrierCode || 23,
+                        TRUCK_CARRIER_NAME: _colLetterToIndex(mapping.dl_truckName) || colMap.truckCarrierName || 24,
+                        PORT: _colLetterToIndex(mapping.dl_port) || colMap.port || 27,
+                        DEST: _colLetterToIndex(mapping.dl_dest) || colMap.dest || 28,
+                        LOAD_PLAN_NO: _colLetterToIndex(mapping.dl_loadPlanNo) || colMap.loadPlanNo || 31,
+                        REMARK: colMap.remark || 41,            // ← mapping.remark 제거
+                        SEAL_NO: _colLetterToIndex(mapping.dl_sealNo) || colMap.sealNo || 17
                     };
 
                     ws.eachRow((row, i) => {
@@ -2396,11 +2506,26 @@ btnCompare.addEventListener('click', async () => {
         let finalDownList = [];
         let finalReworkList = [];
 
-        // 1. 원본 데이터 로드
-        if (originalFile && originalFile.isReloaded) {
-            finalOrigList = originalData;
+        // 1. 원본 데이터 로드 (항상 새로 파싱 - 캐시 미사용)
+        if (originalFile && originalFile.path) {
+            const filePath = originalFile.path;
+            const resp = await fetch(`${API_BASE}/api/load-file-raw?path=${encodeURIComponent(filePath)}&t=${Date.now()}`);
+            if (!resp.ok) throw new Error("서버 경로(원본)를 찾을 수 없습니다.");
+            const res = await resp.json();
+            if (res.success) {
+                const binaryStr = atob(res.base64);
+                const bytes = new Uint8Array(binaryStr.length);
+                for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+                const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const fObj = new File([blob], res.fileName || 'original.xlsx', { type: blob.type });
+                finalOrigList = await readExcelFile(fObj, 'original');
+                finalOrigList = finalOrigList.filter(item => (item.qty || 0) > 0);
+            } else {
+                throw new Error("원본 경로에서 파일을 읽을 수 없습니다.");
+            }
         } else if (originalFile) {
             finalOrigList = await readExcelFile(originalFile, 'original');
+            finalOrigList = finalOrigList.filter(item => (item.qty || 0) > 0);
         } else if (pathOriginal.value.trim()) {
             const filePath = pathOriginal.value.trim();
             const isLocalPath = /^[a-zA-Z]:\\/.test(filePath) || filePath.startsWith('\\\\');
@@ -2429,9 +2554,35 @@ btnCompare.addEventListener('click', async () => {
 
         setProcessStatus("원본 데이터 분석 완료. 전산 데이터 로드 중...", 40);
 
-        // 2. 전산 데이터 로드
-        if (downloadFile && (downloadFile.isReloaded || downloadFile.isAutoLoaded)) {
-            finalDownList = downloadData;
+        // 2. 전산 데이터 로드 (항상 새로 파싱 - 캐시 미사용)
+        if (downloadFile && downloadFile.path) {
+            const filePath = downloadFile.path;
+            const isDir = !filePath.match(/\.(xlsx|xls|xlsm)$/i);
+            if (isDir) {
+                const resp = await fetch(`${API_BASE}/api/load-latest-from-dir?dirPath=${encodeURIComponent(filePath)}&t=${Date.now()}`);
+                if (!resp.ok) throw new Error("서버 경로(전산 폴더)를 찾을 수 없습니다.");
+                const res = await resp.json();
+                if (res.success) {
+                    const binaryStr = atob(res.base64);
+                    const bytes = new Uint8Array(binaryStr.length);
+                    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+                    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    const fObj = new File([blob], res.fileName || 'download.xlsx', { type: blob.type });
+                    finalDownList = await readExcelFile(fObj, 'download');
+                } else throw new Error("폴더에서 전산 파일을 찾을 수 없습니다.");
+            } else {
+                const resp = await fetch(`${API_BASE}/api/load-file-raw?path=${encodeURIComponent(filePath)}&t=${Date.now()}`);
+                if (!resp.ok) throw new Error("서버 경로(전산)를 찾을 수 없습니다.");
+                const res = await resp.json();
+                if (res.success) {
+                    const binaryStr = atob(res.base64);
+                    const bytes = new Uint8Array(binaryStr.length);
+                    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+                    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    const fObj = new File([blob], res.fileName || 'download.xlsx', { type: blob.type });
+                    finalDownList = await readExcelFile(fObj, 'download');
+                } else throw new Error("전산 경로에서 파일을 읽을 수 없습니다.");
+            }
         } else if (downloadFile) {
             finalDownList = await readExcelFile(downloadFile, 'download');
         } else if (pathDownload.value.trim()) {
@@ -2528,6 +2679,15 @@ btnCompare.addEventListener('click', async () => {
         }
 
         setProcessStatus("데이터 비교 알고리즘 실행 중...", 80);
+
+        // [DEBUG] 파싱 결과 콘솔 출력
+        const _origU = [...new Set(finalOrigList.map(r=>(r.cntrNo||'').trim().toUpperCase()))];
+        const _downU = [...new Set(finalDownList.map(r=>(r.cntrNo||'').trim().toUpperCase()))];
+        console.log('[DEBUG] 원본:', finalOrigList.length, '행 /', _origU.length, '개 컨테이너');
+        console.log('[DEBUG] 전산:', finalDownList.length, '행 /  ', _downU.length, '개 컨테이너');
+        console.log('[DEBUG] 원본 샘플:', finalOrigList.slice(0,3).map(r=>r.cntrNo+'|'+r.prodName));
+        console.log('[DEBUG] 전산 샘플:', finalDownList.slice(0,3).map(r=>r.cntrNo+'|'+r.prodName));
+        console.log('[DEBUG] 매칭 컨테이너:', _origU.filter(c=>_downU.includes(c)));
 
         // 4. 비교 로직 실행 (compareLogic.js의 함수 호출)
         comparisonResult = compareData(

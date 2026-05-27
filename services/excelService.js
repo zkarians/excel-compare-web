@@ -465,53 +465,87 @@ async function parseDownloadExcel(fileInput) {
     const headers = worksheet.getRow(1);
     const colMap = {};
     headers.eachCell((cell, colNumber) => {
-        const title = String(cell.text || "").trim().toUpperCase();
-        if (title.includes("BUSINESS AREA") || title.includes("사업부")) colMap.division = colNumber;
-        if (title.includes("LOADING TYPE") || title.includes("LOAD TYPE")) colMap.loadType = colNumber;
-        if (title.includes("CONTAINER NO")) colMap.cntrNo = colNumber;
-        if (title.includes("STATUS DESCRIPTION") || title.includes("STATUS")) colMap.status = colNumber;
-        if (title.includes("OQC STATUS")) colMap.oqc = colNumber;
-        if (title.includes("OQC PENDING") || title.includes("PENDING QTY")) colMap.pendingQty = colNumber;
-        if (title.includes("MODEL") || title.includes("PROD NAME")) colMap.prodName = colNumber;
-        if (title.includes("LOAD PLAN QTY") || title.includes("PLAN QTY")) colMap.planQty = colNumber;
-        if (title.includes("LOADED QTY") || title.includes("STACKED QTY") || title.includes("LOADING QTY")) colMap.loadQty = colNumber;
+        const rawText = String(cell.text || "").trim().toUpperCase();
+        const title = rawText.replace(/[\s\._-]/g, ""); // Remove spaces, dots, dashes, underscores
+        
+        if (title.includes("BUSINESSAREA") || title.includes("사업부")) colMap.division = colNumber;
+        if (title.includes("LOADINGTYPE") || title.includes("LOADTYPE")) colMap.loadType = colNumber;
+        if (title.includes("CONTAINERNO")) colMap.cntrNo = colNumber;
+        if (title.includes("STATUSDESCRIPTION") || title.includes("STATUS")) colMap.status = colNumber;
+        if (title.includes("OQCSTATUS")) colMap.oqc = colNumber;
+        if (title.includes("OQCPENDING") || title.includes("PENDINGQTY")) colMap.pendingQty = colNumber;
+        if (title === "MODEL" || title === "PRODNAME" || title === "모델") colMap.prodName = colNumber;
+        if (title.includes("LOADPLANQTY") || title.includes("PLANQTY")) colMap.planQty = colNumber;
+        if (title.includes("LOADEDQTY") || title.includes("STACKEDQTY") || title.includes("LOADINGQTY")) colMap.loadQty = colNumber;
         if (title.includes("VOLUME")) colMap.volume = colNumber;
-        if (title.includes("WEIGHT") || title.includes("GROSS WEIGHT")) colMap.grossWeight = colNumber;
-        if (title.includes("CONTAINER SIZE") || title.includes("CNTR TYPE")) colMap.cntrType = colNumber;
-        if (title.includes("CARRIER CODE")) colMap.carrierCode = colNumber;
-        if (title.includes("CARRIER NAME")) colMap.carrierName = colNumber;
-        if (title.includes("PORT CODE")) colMap.port = colNumber;
-        if (title.includes("F.DEST") || title.includes("VESSEL F.DEST") || title.includes("DESTINATION")) colMap.dest = colNumber;
-        if (title.includes("INSTRUCTION NO") || title.includes("LOAD PLAN NO")) colMap.loadPlanNo = colNumber;
-        if (title.includes("REMARK")) colMap.remark = colNumber;
-        if (title.includes("SEAL NO")) colMap.sealNo = colNumber;
-        if (title.includes("PACKING QUANTITY") || title.includes("PACK QTY")) colMap.packingQty = colNumber;
-        if (title.includes("REMAIN QTY")) colMap.remainQty = colNumber;
+        if (title.includes("WEIGHT") || title.includes("GROSSWEIGHT")) colMap.grossWeight = colNumber;
+        
+        // Spec / Cntr Type
+        if (title.includes("CONTAINERSPEC") || title.includes("CONTAINERSIZE") || title.includes("CNTRTYPE")) colMap.cntrType = colNumber;
+        
+        // Shipping Line (Ocean Carrier, e.g., MSK) - S열, T열
+        if (title === "SHIPPINGLINE" || title === "선사") {
+            colMap.carrierCode = colNumber;
+        } else if (title === "SHIPPINGLINENAME" || title === "선사명") {
+            colMap.carrierName = colNumber;
+        }
+        
+        // Trucking Carrier - W열, X열
+        if (title === "CARRIER") {
+            colMap.truckCarrierCode = colNumber;
+        } else if (title === "CARRIERNAME") {
+            colMap.truckCarrierName = colNumber;
+        }
+        
+        // Port Code / Loading Port
+        if (title.includes("PORTCODE") || title.includes("LOADINGPORT")) colMap.port = colNumber;
+        
+        // F.Dest / Destination
+        if (title === "FDEST" || title === "DESTINATION" || title === "도착지") colMap.dest = colNumber;
+        
+        // Load Plan No. / Instruction No.
+        if (title.includes("LOADPLANNO") || title.includes("INSTRUCTIONNO")) colMap.loadPlanNo = colNumber;
+        
+        // Remark
+        if (title === "LOADREMARK") {
+            colMap.remark = colNumber;
+        } else if (title === "REMARK" && !colMap.remark) {
+            colMap.remark = colNumber;
+        }
+        
+        // Seal No.
+        if (title.includes("SEALNO")) colMap.sealNo = colNumber;
+        
+        // Packing Quantity / Packing Type / Remain Qty
+        if (title.includes("PACKINGQUANTITY") || title.includes("PACKQTY")) colMap.packingQty = colNumber;
+        if (title.includes("REMAINQTY")) colMap.remainQty = colNumber;
     });
 
     // Fallback and Default column mapping (in case header detection fails for some columns)
     const DCOL = {
-        DIVISION: colMap.division || 1, // 사업부 (A열)
-        LOAD_TYPE: colMap.loadType || 2,
-        CNTR_NO: colMap.cntrNo || 3,
-        STATUS: colMap.status || 4,
-        OQC: colMap.oqc || 6,
-        PENDING_QTY: colMap.pendingQty || 7, // 팬딩적재 (G열)
-        PROD_NAME: colMap.prodName || 9,
-        PLAN_QTY: colMap.planQty || 10,   // 계획수량 (J열)
-        LOAD_QTY: colMap.loadQty || 11,   // 적재수량 (K열)
-        VOLUME: colMap.volume || 12,
-        WEIGHT: colMap.grossWeight || 13,
-        PACKING_QTY: colMap.packingQty || 14, // 단위 (N열 = Packing Quantity)
-        REMAIN_QTY: colMap.remainQty || 16,   // 잔여수량 (P열)
-        CNTR_TYPE: colMap.cntrType || 19,
-        CARRIER_CODE: colMap.carrierCode || 20,
-        CARRIER_NAME: colMap.carrierName || 21,
-        PORT: colMap.port || 28,
-        DEST: colMap.dest || 29,
-        LOAD_PLAN_NO: colMap.loadPlanNo || 32,
-        REMARK: colMap.remark || 40,
-        SEAL_NO: colMap.sealNo || 18
+        DIVISION: colMap.division || 1,        // 1열: Business Area
+        LOAD_TYPE: colMap.loadType || 2,       // 2열: Loading Type
+        CNTR_NO: colMap.cntrNo || 3,           // 3열: Container No.
+        STATUS: colMap.status || 4,           // 4열: Status Description
+        OQC: colMap.oqc || 6,                  // 6열: OQC Status
+        PENDING_QTY: colMap.pendingQty || 7,  // 7열: OQC Pending
+        PROD_NAME: colMap.prodName || 9,       // 9열: Model
+        PLAN_QTY: colMap.planQty || 10,        // 10열: Load Plan Qty
+        LOAD_QTY: colMap.loadQty || 11,        // 11열: Loaded Qty
+        VOLUME: colMap.volume || 12,           // 12열: Volume
+        WEIGHT: colMap.grossWeight || 13,      // 13열: Gross Weight
+        PACKING_QTY: colMap.packingQty || 65,  // 65열: Packing Quantity
+        REMAIN_QTY: colMap.remainQty || 15,    // 15열: Remain Qty
+        CNTR_TYPE: colMap.cntrType || 18,      // 18열: Container Spec
+        CARRIER_CODE: colMap.carrierCode || 19,// 19열: Shipping Line
+        CARRIER_NAME: colMap.carrierName || 20,// 20열: Shipping Line Name
+        TRUCK_CARRIER_CODE: colMap.truckCarrierCode || 23, // 23열: Carrier
+        TRUCK_CARRIER_NAME: colMap.truckCarrierName || 24, // 24열: Carrier Name
+        PORT: colMap.port || 27,               // 27열: Loading Port
+        DEST: colMap.dest || 28,               // 28열: F. Dest
+        LOAD_PLAN_NO: colMap.loadPlanNo || 31, // 31열: Load Plan No.
+        REMARK: colMap.remark || 41,           // 41열: Remark
+        SEAL_NO: colMap.sealNo || 17           // 17열: Seal No.
     };
 
     worksheet.eachRow((row, rowNumber) => {

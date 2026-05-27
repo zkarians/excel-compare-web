@@ -60,6 +60,22 @@ if (!app && typeof electron === 'string') {
 if (!app) {
     console.error('Critical Error: Electron app module is undefined.');
     console.log('Final electron type:', typeof electron);
+} else {
+    // --- Single Instance Lock ---
+    const gotTheLock = app.requestSingleInstanceLock();
+    if (!gotTheLock) {
+        console.log('Another instance is already running. Quitting this instance to prevent port conflicts.');
+        app.quit();
+        process.exit(0);
+    } else {
+        app.on('second-instance', (event, commandLine, workingDirectory) => {
+            // Someone tried to run a second instance, we should focus our window.
+            if (mainWindow) {
+                if (mainWindow.isMinimized()) mainWindow.restore();
+                mainWindow.focus();
+            }
+        });
+    }
 }
 
 let mainWindow;
