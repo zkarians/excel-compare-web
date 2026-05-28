@@ -4658,9 +4658,9 @@ function bufToBase64(buffer) {
     return window.btoa(binary);
 }
 
-// 초기 데이터 로드 (setActiveTab 밖으로 이동)
-loadCarrierMap();
-loadDynamicRules();
+// 초기 데이터 로드 (setActiveTab 밖으로 이동 - initializeApp에서 수행되므로 전역 호출은 비활성화)
+// loadCarrierMap();
+// loadDynamicRules();
 
 // --- HTML 이메일 서식 생성 공통 함수 ---
 function generateEntryMailHtml(transporterName) {
@@ -4864,7 +4864,13 @@ if (btnOpenEmailSettings) {
     });
 }
 [closeEmailSettingsBtn, closeEmailSettingsBottomBtn].forEach(btn => {
-    if (btn) btn.onclick = () => emailSettingsModal.style.display = 'none';
+    if (btn) {
+        btn.onclick = async () => {
+            // 모달을 닫을 때 이메일 설정을 자동으로 파일에 저장합니다. (사용자가 닫기 버튼만 눌러도 자동 저장)
+            await saveEmailConfig(false);
+            emailSettingsModal.style.display = 'none';
+        };
+    }
 });
 
 // 미리보기 모달 닫기
@@ -4926,36 +4932,53 @@ async function loadEmailConfig() {
     }
 }
 
+async function saveEmailConfig(showSuccessAlert = true) {
+    const hostEl = document.getElementById('emailSmtpHost');
+    const portEl = document.getElementById('emailSmtpPort');
+    const secureEl = document.getElementById('emailSmtpSecure');
+    const userEl = document.getElementById('emailSmtpUser');
+    const passEl = document.getElementById('emailSmtpPass');
+    const toChunmaEl = document.getElementById('emailChunmaTo');
+    const toBniEl = document.getElementById('emailBniTo');
+    const subjectChunmaEl = document.getElementById('emailChunmaSubject');
+    const subjectBniEl = document.getElementById('emailBniSubject');
+
+    const config = {
+        host: hostEl ? hostEl.value : '',
+        port: portEl ? (parseInt(portEl.value) || 465) : 465,
+        secure: secureEl ? secureEl.checked : true,
+        user: userEl ? userEl.value : '',
+        pass: passEl ? passEl.value : '',
+        toChunma: toChunmaEl ? toChunmaEl.value : '',
+        toBni: toBniEl ? toBniEl.value : '',
+        subjectChunma: subjectChunmaEl ? subjectChunmaEl.value : '',
+        subjectBni: subjectBniEl ? subjectBniEl.value : ''
+    };
+
+    try {
+        const res = await fetch(`${API_BASE}/api/email/config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (showSuccessAlert) alert('이메일 설정이 성공적으로 저장되었습니다.');
+            return true;
+        } else {
+            if (showSuccessAlert) alert('저장 실패: ' + data.message);
+            return false;
+        }
+    } catch (err) {
+        if (showSuccessAlert) console.error('이메일 설정 자동 저장 실패:', err);
+        return false;
+    }
+}
+
 if (btnSaveEmailConfig) {
     btnSaveEmailConfig.addEventListener('click', async () => {
-        const config = {
-            host: document.getElementById('emailSmtpHost').value,
-            port: parseInt(document.getElementById('emailSmtpPort').value),
-            secure: document.getElementById('emailSmtpSecure').checked,
-            user: document.getElementById('emailSmtpUser').value,
-            pass: document.getElementById('emailSmtpPass').value,
-            toChunma: document.getElementById('emailChunmaTo').value,
-            toBni: document.getElementById('emailBniTo').value,
-            subjectChunma: document.getElementById('emailChunmaSubject').value,
-            subjectBni: document.getElementById('emailBniSubject').value
-        };
-
-        try {
-            const res = await fetch(`${API_BASE}/api/email/config`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(config)
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('이메일 설정이 저장되었습니다.');
-                emailSettingsModal.style.display = 'none';
-            } else {
-                alert('저장 실패: ' + data.message);
-            }
-        } catch (err) {
-            alert('서버 통신 오류가 발생했습니다.');
-        }
+        const success = await saveEmailConfig(true);
+        if (success) emailSettingsModal.style.display = 'none';
     });
 }
 

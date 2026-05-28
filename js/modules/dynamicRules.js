@@ -541,7 +541,6 @@ function resetRuleForm() {
     container.appendChild(createConditionRow());
 }
 
-document.getElementById('ruleBtnGroup').appendChild(btnCancelEdit); // Fragment 대신 직접 추가? 아님 이미 있으니 리스너만.
 // 취소 버튼
 document.getElementById('btnCancelRuleEdit').addEventListener('click', resetRuleForm);
 

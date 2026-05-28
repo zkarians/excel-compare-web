@@ -40,6 +40,17 @@ class MappingManager {
             { id: 'dl_loadPlanNo', name: '[전산] 작업지시번호 (열)', defaultCol: 'AE' },
             { id: 'dl_packingQty', name: '[전산] 포장수량 (열)', defaultCol: 'BM' },
         ];
+
+        // Ensure default mapping exists synchronously to prevent race conditions during load
+        this.profiles['default'] = {
+            id: 'default',
+            name: '기본 프로필 (Standard)',
+            mapping: {}
+        };
+        this.standardFields.forEach(f => {
+            this.profiles['default'].mapping[f.id] = f.defaultCol;
+        });
+
         this.init();
     }
 
@@ -52,7 +63,7 @@ class MappingManager {
         try {
             const resp = await fetch('/api/mappings');
             const data = await resp.json();
-            if (data.success && data.profiles) {
+            if (data.success && data.profiles && Object.keys(data.profiles).length > 0) {
                 this.profiles = data.profiles;
                 this.activeProfileId = data.activeProfileId || 'default';
             }
@@ -91,7 +102,13 @@ class MappingManager {
     }
 
     getActiveMapping() {
-        return this.profiles[this.activeProfileId].mapping;
+        if (!this.profiles || !this.activeProfileId || !this.profiles[this.activeProfileId]) {
+            if (this.profiles && this.profiles['default']) {
+                return this.profiles['default'].mapping || {};
+            }
+            return {};
+        }
+        return this.profiles[this.activeProfileId].mapping || {};
     }
 
     initUI() {
