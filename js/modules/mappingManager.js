@@ -97,7 +97,6 @@ class MappingManager {
         this.btnDelete = document.getElementById('btnDeleteMappingProfile');
         this.inputName = document.getElementById('mappingProfileNameInput');
         this.btnSaveName = document.getElementById('btnSaveMappingProfileName');
-        this.tbodyFields = document.getElementById('mappingFieldsBody');
         this.btnSaveSettings = document.getElementById('btnSaveMappingProfileSettings');
 
         if (this.btnOpen) {
@@ -165,7 +164,7 @@ class MappingManager {
 
         if (this.btnSaveSettings) {
             this.btnSaveSettings.addEventListener('click', () => {
-                const inputs = this.tbodyFields.querySelectorAll('.mapping-col-input');
+                const inputs = this.modal.querySelectorAll('.mapping-col-input');
                 const newMapping = {};
                 inputs.forEach(input => {
                     newMapping[input.dataset.fieldId] = input.value.trim().toUpperCase();
@@ -192,38 +191,110 @@ class MappingManager {
     }
 
     renderFields() {
-        if (!this.tbodyFields) return;
-        this.tbodyFields.innerHTML = '';
+        const containerOrig = document.getElementById('mappingFieldsOriginal');
+        const containerDown = document.getElementById('mappingFieldsDownload');
+        if (!containerOrig || !containerDown) return;
+
+        containerOrig.innerHTML = '';
+        containerDown.innerHTML = '';
+        
         const currentMapping = this.profiles[this.activeProfileId].mapping;
 
         this.standardFields.forEach(f => {
-            const tr = document.createElement('tr');
+            // Determine if original or download field
+            // "[원본]" or "[원본/전산]" fields go to Original, "[전산]" fields go to Download
+            const isOrig = f.name.includes('[원본]');
             
-            const td1 = document.createElement('td');
-            td1.style.padding = '10px';
-            td1.style.borderBottom = '1px solid #cbd5e1';
-            td1.innerHTML = `<strong>${f.name}</strong> <br><span style="font-size:0.75rem;color:#64748b;">내부 필드: ${f.id}</span>`;
+            const card = document.createElement('div');
+            card.className = 'mapping-card';
+            card.style.display = 'flex';
+            card.style.alignItems = 'center';
+            card.style.justifyContent = 'space-between';
+            card.style.padding = '6px 10px';
+            card.style.background = 'white';
+            card.style.border = '1px solid #e2e8f0';
+            card.style.borderRadius = '6px';
+            card.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
+            card.style.gap = '10px';
+            card.style.transition = 'all 0.15s ease';
             
-            const td2 = document.createElement('td');
-            td2.style.padding = '10px';
-            td2.style.borderBottom = '1px solid #cbd5e1';
+            // Hover styling
+            card.addEventListener('mouseenter', () => {
+                card.style.borderColor = isOrig ? '#bfdbfe' : '#e9d5ff';
+                card.style.background = isOrig ? '#f0f7ff' : '#faf5ff';
+                card.style.transform = 'translateY(-1px)';
+                card.style.boxShadow = '0 3px 6px rgba(0,0,0,0.04)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.borderColor = '#e2e8f0';
+                card.style.background = 'white';
+                card.style.transform = 'none';
+                card.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
+            });
+
+            // Clean display name (remove brackets like [원본], [전산], [원본/전산])
+            const cleanName = f.name.replace(/\[(원본|전산|원본\/전산)\]\s*/g, '');
+            
+            const infoDiv = document.createElement('div');
+            infoDiv.style.display = 'flex';
+            infoDiv.style.flexDirection = 'column';
+            infoDiv.style.flex = '1';
+            infoDiv.style.minWidth = '0';
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.style.fontWeight = '600';
+            nameSpan.style.fontSize = '0.82rem';
+            nameSpan.style.color = '#1e293b';
+            nameSpan.style.whiteSpace = 'nowrap';
+            nameSpan.style.overflow = 'hidden';
+            nameSpan.style.textOverflow = 'ellipsis';
+            nameSpan.textContent = cleanName;
+            nameSpan.title = f.name;
+            
+            const idSpan = document.createElement('span');
+            idSpan.style.fontSize = '0.68rem';
+            idSpan.style.color = '#94a3b8';
+            idSpan.style.fontFamily = 'monospace';
+            idSpan.textContent = f.id;
+            
+            infoDiv.appendChild(nameSpan);
+            infoDiv.appendChild(idSpan);
             
             const input = document.createElement('input');
             input.type = 'text';
             input.className = 'mapping-col-input';
             input.dataset.fieldId = f.id;
             input.value = currentMapping[f.id] || '';
-            input.placeholder = `예: ${f.defaultCol} (또는 열 이름)`;
-            input.style.width = '100%';
-            input.style.padding = '0.5rem';
-            input.style.borderRadius = '6px';
+            input.placeholder = `예: ${f.defaultCol}`;
+            input.style.width = '90px';
+            input.style.padding = '4px 8px';
+            input.style.borderRadius = '5px';
             input.style.border = '1px solid #cbd5e1';
+            input.style.fontSize = '0.82rem';
+            input.style.fontWeight = 'bold';
+            input.style.textAlign = 'center';
+            input.style.textTransform = 'uppercase';
+            input.style.transition = 'all 0.15s ease';
             
-            td2.appendChild(input);
+            // Input focus styles
+            input.addEventListener('focus', () => {
+                input.style.outline = 'none';
+                input.style.borderColor = isOrig ? '#3b82f6' : '#8b5cf6';
+                input.style.boxShadow = isOrig ? '0 0 0 3px rgba(59, 130, 246, 0.15)' : '0 0 0 3px rgba(139, 92, 246, 0.15)';
+            });
+            input.addEventListener('blur', () => {
+                input.style.borderColor = '#cbd5e1';
+                input.style.boxShadow = 'none';
+            });
             
-            tr.appendChild(td1);
-            tr.appendChild(td2);
-            this.tbodyFields.appendChild(tr);
+            card.appendChild(infoDiv);
+            card.appendChild(input);
+            
+            if (isOrig) {
+                containerOrig.appendChild(card);
+            } else {
+                containerDown.appendChild(card);
+            }
         });
     }
 }

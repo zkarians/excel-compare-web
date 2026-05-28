@@ -212,6 +212,26 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                     else if (cond.field === 'prodType') {
                         targetText = matchedOrig ? (matchedOrig.prodType || down.prodType || "").toUpperCase().trim() : (down.prodType || "").toUpperCase().trim();
                     }
+                    // [혁신 연동] 하드코딩되지 않은 모든 매핑 필드(dl_ 등)도 조건에서 자동 작동하도록 동적 매칭 추가
+                    else {
+                        if (down && down[cond.field] !== undefined) {
+                            targetText = String(down[cond.field]).toUpperCase().trim();
+                        } else {
+                            let lookupField = cond.field;
+                            if (lookupField.startsWith('dl_')) {
+                                const stripped = lookupField.replace('dl_', '');
+                                if (down && down[stripped] !== undefined) {
+                                    targetText = String(down[stripped]).toUpperCase().trim();
+                                } else if (down && down[lookupField] !== undefined) {
+                                    targetText = String(down[lookupField]).toUpperCase().trim();
+                                }
+                            } else {
+                                if (matchedOrig && matchedOrig[cond.field] !== undefined) {
+                                    targetText = String(matchedOrig[cond.field]).toUpperCase().trim();
+                                }
+                            }
+                        }
+                    }
                     const keyword = (cond.value || "").toUpperCase();
                     const rawValue = cond.value || "";
 

@@ -1,35 +1,183 @@
 [
   {
-    "id": "rule_down_remark_empty",
+    "id": "rule_bukhang_hbct",
     "isActive": true,
-    "groupName": "기본 정보 체크",
+    "groupName": "북항조건",
     "conditionOperator": "AND",
     "conditions": [
       {
-        "field": "downRemark",
+        "field": "remark",
+        "value": "HBCT",
+        "operator": "includes"
+      },
+      {
+        "field": "downPort",
+        "value": "KRPUS",
+        "operator": "notIncludes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "주의북항변경요망",
+    "tagColor": "danger"
+  },
+  {
+    "id": "rule_4side_vinyl",
+    "isActive": true,
+    "groupName": "비닐막",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "remark",
+        "value": "4면",
+        "operator": "includes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "4면비닐",
+    "tagColor": "info"
+  },
+  {
+    "id": "rule_nz",
+    "isActive": true,
+    "groupName": "뉴질랜드",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "dest",
+        "value": "NZ",
+        "operator": "startsWith"
+      },
+      {
+        "field": "prodType",
+        "value": "CDZ",
+        "operator": "exact"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "뉴질랜드 노실카",
+    "tagColor": "info"
+  },
+  {
+    "id": "rule_kit",
+    "isActive": true,
+    "groupName": "특수모델 키트",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "prodName",
+        "value": "D-",
+        "operator": "startsWith"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "키트작업",
+    "tagColor": "secondary"
+  },
+  {
+    "id": "rule_bukhang_pct",
+    "isActive": true,
+    "groupName": "북항조건",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "remark",
+        "value": "PCT",
+        "operator": "includes"
+      },
+      {
+        "field": "downPort",
+        "value": "KRPUS",
+        "operator": "notIncludes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "주의북항변경요망",
+    "tagColor": "danger"
+  },
+  {
+    "id": "1779385340811",
+    "isActive": true,
+    "groupName": "북항",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "remark",
+        "value": "KGCT",
+        "operator": "includes"
+      },
+      {
+        "field": "downPort",
+        "value": "KRPUS",
+        "operator": "notIncludes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "주의북항변경요망",
+    "tagColor": "danger"
+  },
+  {
+    "id": "1779385340420",
+    "isActive": true,
+    "groupName": "북항조건",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "remark",
+        "value": "KBCT",
+        "operator": "includes"
+      },
+      {
+        "field": "downPort",
+        "value": "KRPUS",
+        "operator": "notIncludes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "주의북항변경요망",
+    "tagColor": "danger"
+  },
+  {
+    "id": "1775468885677",
+    "isActive": true,
+    "groupName": "Carrier확인",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "f_1779877227459",
+        "value": "KR055202",
+        "operator": "notIncludes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "Carrier 오류",
+    "tagColor": "danger"
+  },
+  {
+    "id": "1777545707743",
+    "isActive": true,
+    "groupName": "선사확인",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "f_1779878453380",
         "value": "^$",
         "operator": "regexMatch"
       }
     ],
-    "targetField": "errorDetail",
-    "targetValue": "전산 리마크 누락",
+    "targetField": "tags",
+    "targetValue": "전산 선사 누락",
     "tagColor": "danger"
   },
   {
-    "id": "rule_psm",
+    "id": "rule_kstk_tag",
     "isActive": true,
-    "groupName": "",
-    "conditionOperator": "OR",
+    "groupName": "특수모델",
+    "conditionOperator": "AND",
     "conditions": [
       {
         "field": "prodName",
-        "value": "PSM04N25G0.ECWCH00",
-        "operator": "includes"
-      },
-      {
-        "field": "prodName",
-        "value": "KSTK",
-        "operator": "includes"
+        "operator": "includes",
+        "value": "KSTK"
       }
     ],
     "targetField": "tags",
@@ -37,67 +185,46 @@
     "tagColor": "secondary"
   },
   {
-    "id": "rule_pilsu",
+    "id": "1777540541059",
     "isActive": true,
-    "groupName": "",
+    "groupName": "목적지체크",
     "conditionOperator": "AND",
     "conditions": [
       {
-        "field": "remark",
-        "value": "필수",
-        "operator": "includes"
+        "field": "f_1779877296443",
+        "value": "^$",
+        "operator": "regexMatch"
       }
     ],
     "targetField": "tags",
-    "targetValue": "필수장입",
-    "tagColor": "info"
+    "targetValue": "주의 목적지누락",
+    "tagColor": "danger"
   },
   {
-    "id": "rule_lra_cvz",
+    "id": "b8x9p2m",
     "isActive": true,
-    "groupName": "",
+    "groupName": "특수모델 FSS-002.AETC",
     "conditionOperator": "AND",
     "conditions": [
       {
         "field": "prodName",
-        "value": "LRA",
+        "value": "FSS-002.AETC",
         "operator": "includes"
       },
       {
-        "field": "downPackingQty",
-        "value": "downPlanQty:0.1",
+        "field": "downPlanQty",
+        "value": "downPackingQty:36",
         "operator": ""
       }
     ],
     "targetField": "errorDetail",
-    "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 확인 요망</span>",
+    "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 1:36 오류 확인 요망</span>",
     "tagColor": null
   },
   {
-    "id": "1772512463111",
+    "id": "rule_kstk",
     "isActive": true,
-    "groupName": "(복사)",
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "prodName",
-        "value": "D-",
-        "operator": "startsWith"
-      },
-      {
-        "field": "downPackingQty",
-        "value": "downPlanQty:0.1",
-        "operator": ""
-      }
-    ],
-    "targetField": "errorDetail",
-    "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 확인 요망</span>",
-    "tagColor": null
-  },
-  {
-    "id": "1772512388304",
-    "isActive": true,
-    "groupName": "(복사)",
+    "groupName": "특수모델 KSTK",
     "conditionOperator": "AND",
     "conditions": [
       {
@@ -116,9 +243,241 @@
     "tagColor": null
   },
   {
+    "id": "rule_confirm",
+    "isActive": true,
+    "groupName": "로컨금지",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "remark",
+        "value": "컨펌",
+        "operator": "includes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "로컨금지",
+    "tagColor": "secondary"
+  },
+  {
+    "id": "rule_dp_release",
+    "isActive": true,
+    "groupName": "DP컨",
+    "conditionOperator": "OR",
+    "conditions": [
+      {
+        "field": "remark",
+        "value": "DP",
+        "operator": "includes"
+      },
+      {
+        "field": "remark",
+        "value": "RELEASE",
+        "operator": "includes"
+      },
+      {
+        "field": "remark",
+        "value": "릴리즈",
+        "operator": "includes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "DP컨",
+    "tagColor": "success"
+  },
+  {
+    "id": "rule_banding",
+    "isActive": true,
+    "groupName": "밴딩제거",
+    "conditionOperator": "OR",
+    "conditions": [
+      {
+        "field": "remark",
+        "value": "밴딩",
+        "operator": "includes"
+      },
+      {
+        "field": "remark",
+        "value": "벤딩",
+        "operator": "includes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "밴딩제거",
+    "tagColor": "warning"
+  },
+  {
+    "id": "rule_bukhang_dpct",
+    "isActive": true,
+    "groupName": "북항조건",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "remark",
+        "value": "DPCT",
+        "operator": "includes"
+      },
+      {
+        "field": "downPort",
+        "value": "KRPUS",
+        "operator": "notIncludes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "주의북항변경요망",
+    "tagColor": "danger"
+  },
+  {
+    "id": "1779385284749",
+    "isActive": true,
+    "groupName": "북항조건",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "remark",
+        "value": "BICT",
+        "operator": "includes"
+      },
+      {
+        "field": "downPort",
+        "value": "KRPUS",
+        "operator": "notIncludes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "주의북항변경요망",
+    "tagColor": "danger"
+  },
+  {
+    "id": "rule_down_remark_empty",
+    "isActive": true,
+    "groupName": "씰넘버체크",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "downSealNo",
+        "value": "^$",
+        "operator": "regexMatch"
+      }
+    ],
+    "targetField": "errorDetail",
+    "targetValue": "전산 씰넘버 누락",
+    "tagColor": null
+  },
+  {
+    "id": "1777545840222",
+    "isActive": true,
+    "groupName": "포워더체크",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "f_1779878491732",
+        "value": "^$",
+        "operator": "regexMatch"
+      }
+    ],
+    "targetField": "errorDetail",
+    "targetValue": "전산 포워더 누락",
+    "tagColor": null
+  },
+  {
+    "id": "1777545858237",
+    "isActive": true,
+    "groupName": "Carrier 누락",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "f_1779877227459",
+        "value": "^$",
+        "operator": "regexMatch"
+      }
+    ],
+    "targetField": "errorDetail",
+    "targetValue": "전산 Carrier 누락",
+    "tagColor": null
+  },
+  {
+    "id": "1777545937174",
+    "isActive": true,
+    "groupName": "적재지 누락",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "f_1779878581620",
+        "value": "^$",
+        "operator": "regexMatch"
+      }
+    ],
+    "targetField": "errorDetail",
+    "targetValue": "전산 적재지 누락",
+    "tagColor": null
+  },
+  {
+    "id": "1773917135663",
+    "isActive": true,
+    "groupName": "PSM04N25G0.ECWCH00",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "prodName",
+        "value": "PSM04N25G0",
+        "operator": "includes"
+      },
+      {
+        "field": "downPlanQty",
+        "value": "downPackingQty:18",
+        "operator": ""
+      }
+    ],
+    "targetField": "errorDetail",
+    "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 1:18 오류 확인 요망</span>",
+    "tagColor": null
+  },
+  {
+    "id": "1778840936885",
+    "isActive": true,
+    "groupName": "LT1000P2.AETC1",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "prodName",
+        "value": "LT1000P2.AETC1",
+        "operator": "includes"
+      },
+      {
+        "field": "downPlanQty",
+        "value": "downPackingQty:18",
+        "operator": ""
+      }
+    ],
+    "targetField": "errorDetail",
+    "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 1:18 오류 확인 요망</span>",
+    "tagColor": null
+  },
+  {
+    "id": "rule_bukhang_bpt",
+    "isActive": true,
+    "groupName": "북항조건",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "remark",
+        "value": "BPT",
+        "operator": "includes"
+      },
+      {
+        "field": "downPort",
+        "value": "KRPUS",
+        "operator": "notIncludes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "주의북항변경요망",
+    "tagColor": "danger"
+  },
+  {
     "id": "rule_kbdr_qty",
     "isActive": true,
-    "groupName": null,
+    "groupName": "특수모델 KBDR",
     "conditionOperator": "AND",
     "conditions": [
       {
@@ -129,17 +488,17 @@
       {
         "field": "downPackingQty",
         "value": "downPlanQty:0.1",
-        "operator": "ratioMismatch"
+        "operator": ""
       }
     ],
     "targetField": "errorDetail",
     "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 확인 요망</span>",
-    "tagColor": "danger"
+    "tagColor": null
   },
   {
     "id": "rule_fwd_taewoong",
     "isActive": true,
-    "groupName": null,
+    "groupName": "포워더 태웅",
     "conditionOperator": "AND",
     "conditions": [
       {
@@ -160,7 +519,7 @@
   {
     "id": "rule_fwd_lotte",
     "isActive": true,
-    "groupName": null,
+    "groupName": "포워더 롯데",
     "conditionOperator": "AND",
     "conditions": [
       {
@@ -181,7 +540,7 @@
   {
     "id": "rule_good_item",
     "isActive": true,
-    "groupName": null,
+    "groupName": "양품",
     "conditionOperator": "AND",
     "conditions": [
       {
@@ -197,7 +556,7 @@
   {
     "id": "rule_silka_x",
     "isActive": true,
-    "groupName": "",
+    "groupName": "노실카",
     "conditionOperator": "OR",
     "conditions": [
       {
@@ -218,21 +577,11 @@
   {
     "id": "1772772495061",
     "isActive": true,
-    "groupName": "",
+    "groupName": "양품",
     "conditionOperator": "OR",
     "conditions": [
       {
-        "field": "f_1772772418981",
-        "value": "양품",
-        "operator": "includes"
-      },
-      {
         "field": "remark",
-        "value": "양품",
-        "operator": "includes"
-      },
-      {
-        "field": "f_1772772453348",
         "value": "양품",
         "operator": "includes"
       }
@@ -244,7 +593,7 @@
   {
     "id": "1772772523692",
     "isActive": true,
-    "groupName": "(복사)",
+    "groupName": "SK양품",
     "conditionOperator": "AND",
     "conditions": [
       {
@@ -253,7 +602,7 @@
         "operator": "includes"
       },
       {
-        "field": "remark",
+        "field": "origRemark",
         "value": "SK",
         "operator": "includes"
       }
@@ -265,7 +614,7 @@
   {
     "id": "1772772700289",
     "isActive": true,
-    "groupName": "",
+    "groupName": "대만향",
     "conditionOperator": "AND",
     "conditions": [
       {
@@ -281,16 +630,16 @@
   {
     "id": "1772834439419",
     "isActive": true,
-    "groupName": "",
+    "groupName": "팬딩장입",
     "conditionOperator": "AND",
     "conditions": [
       {
-        "field": "f_1772772418981",
+        "field": "origRemark",
         "value": "양품",
         "operator": "includes"
       },
       {
-        "field": "f_1772772629121",
+        "field": "downPendingQty",
         "value": "0",
         "operator": "gt"
       }
@@ -337,6 +686,159 @@
     "tagColor": null
   },
   {
+    "id": "rule_bukhang_bict",
+    "isActive": true,
+    "groupName": "북항조건",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "remark",
+        "value": "BICT",
+        "operator": "includes"
+      },
+      {
+        "field": "downPort",
+        "value": "KRPUS",
+        "operator": "notIncludes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "주의북항변경요망",
+    "tagColor": "danger"
+  },
+  {
+    "id": "rule_cdz2",
+    "isActive": true,
+    "groupName": "비닐막",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "remark",
+        "value": "비닐",
+        "operator": "includes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "비닐막",
+    "tagColor": "success"
+  },
+  {
+    "id": "rule_cdz3",
+    "isActive": true,
+    "groupName": "완충/비닐",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "remark",
+        "value": "완충",
+        "operator": "includes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "비닐막/완충",
+    "tagColor": "success"
+  },
+  {
+    "id": "rule_psm",
+    "isActive": true,
+    "groupName": "",
+    "conditionOperator": "OR",
+    "conditions": [
+      {
+        "field": "prodName",
+        "value": "PSM04N25G0.ECWCH00",
+        "operator": "includes"
+      },
+      {
+        "field": "prodName",
+        "value": "KSTK",
+        "operator": "includes"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "특수모델",
+    "tagColor": "secondary"
+  },
+  {
+    "id": "rule_pilsu",
+    "isActive": true,
+    "groupName": "필수작업",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "remark",
+        "operator": "includes",
+        "value": "필수"
+      }
+    ],
+    "targetField": "tags",
+    "targetValue": "필수장입",
+    "tagColor": "info"
+  },
+  {
+    "id": "rule_lra_cvz",
+    "isActive": true,
+    "groupName": "특수모델 LRA",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "prodName",
+        "value": "LRA",
+        "operator": "includes"
+      },
+      {
+        "field": "downPackingQty",
+        "value": "downPlanQty:0.1",
+        "operator": ""
+      }
+    ],
+    "targetField": "errorDetail",
+    "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 확인 요망</span>",
+    "tagColor": null
+  },
+  {
+    "id": "1772512463111",
+    "isActive": true,
+    "groupName": "특수모델 D-",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "prodName",
+        "operator": "startsWith",
+        "value": "D-"
+      },
+      {
+        "field": "downPackingQty",
+        "operator": "",
+        "value": "downPlanQty:0.1"
+      }
+    ],
+    "targetField": "errorDetail",
+    "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 확인 요망</span>",
+    "tagColor": null
+  },
+  {
+    "id": "1772512388304",
+    "isActive": true,
+    "groupName": "KSTK 특수모델",
+    "conditionOperator": "AND",
+    "conditions": [
+      {
+        "field": "prodName",
+        "operator": "includes",
+        "value": "KSTK"
+      },
+      {
+        "field": "downPackingQty",
+        "operator": "",
+        "value": "downPlanQty:0.1"
+      }
+    ],
+    "targetField": "errorDetail",
+    "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 확인 요망</span>",
+    "tagColor": null
+  },
+  {
     "id": "1772512298918",
     "isActive": true,
     "groupName": "LT1000P2.AETC1",
@@ -358,309 +860,9 @@
     "tagColor": null
   },
   {
-    "id": "1773917135663",
-    "isActive": true,
-    "groupName": "PSM04N25G0.ECWCH00",
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "prodName",
-        "value": "PSM04N25G0",
-        "operator": "includes"
-      },
-      {
-        "field": "downPlanQty",
-        "value": "downPackingQty:18",
-        "operator": ""
-      }
-    ],
-    "targetField": "errorDetail",
-    "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 1:18 오류 확인 요망</span>",
-    "tagColor": null
-  },
-  {
-    "id": "b8x9p2m",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "prodName",
-        "value": "FSS-002.AETC",
-        "operator": "includes"
-      },
-      {
-        "field": "downPlanQty",
-        "value": "downPackingQty:36",
-        "operator": "ratioMismatch"
-      }
-    ],
-    "targetField": "errorDetail",
-    "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 1:36 오류 확인 요망</span>",
-    "tagColor": "danger"
-  },
-  {
-    "id": "rule_kstk",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "prodName",
-        "value": "KSTK",
-        "operator": "includes"
-      },
-      {
-        "field": "downPackingQty",
-        "value": "downPlanQty:0.1",
-        "operator": "ratioMismatch"
-      }
-    ],
-    "targetField": "errorDetail",
-    "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 확인 요망</span>",
-    "tagColor": "danger"
-  },
-  {
-    "id": "rule_confirm",
-    "isActive": true,
-    "groupName": "",
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "remark",
-        "value": "컨펌",
-        "operator": "includes"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "로컨금지",
-    "tagColor": "secondary"
-  },
-  {
-    "id": "rule_dp_release",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "OR",
-    "conditions": [
-      {
-        "field": "remark",
-        "value": "DP",
-        "operator": "includes"
-      },
-      {
-        "field": "remark",
-        "value": "RELEASE",
-        "operator": "includes"
-      },
-      {
-        "field": "remark",
-        "value": "릴리즈",
-        "operator": "includes"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "DP컨",
-    "tagColor": "success"
-  },
-  {
-    "id": "rule_banding",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "OR",
-    "conditions": [
-      {
-        "field": "remark",
-        "value": "밴딩",
-        "operator": "includes"
-      },
-      {
-        "field": "remark",
-        "value": "벤딩",
-        "operator": "includes"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "밴딩제거",
-    "tagColor": "warning"
-  },
-  {
-    "id": "rule_bukhang1",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "remark",
-        "value": "WESTWOOD",
-        "operator": "includes"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "북항체크",
-    "tagColor": "info"
-  },
-  {
-    "id": "rule_bukhang_dpct",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "remark",
-        "value": "DPCT",
-        "operator": "includes"
-      },
-      {
-        "field": "downPort",
-        "value": "KRPUS",
-        "operator": "notIncludes"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "주의북항변경요망",
-    "tagColor": "danger"
-  },
-  {
-    "id": "rule_bukhang_bpt",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "remark",
-        "value": "BPT",
-        "operator": "includes"
-      },
-      {
-        "field": "downPort",
-        "value": "KRPUS",
-        "operator": "notIncludes"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "주의북항변경요망",
-    "tagColor": "danger"
-  },
-  {
-    "id": "rule_bukhang_hbct",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "remark",
-        "value": "HBCT",
-        "operator": "includes"
-      },
-      {
-        "field": "downPort",
-        "value": "KRPUS",
-        "operator": "notIncludes"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "주의북항변경요망",
-    "tagColor": "danger"
-  },
-  {
-    "id": "rule_4side_vinyl",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "remark",
-        "value": "4면",
-        "operator": "includes"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "4면비닐",
-    "tagColor": "info"
-  },
-  {
-    "id": "rule_nz",
-    "isActive": true,
-    "groupName": "",
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "dest",
-        "value": "NZ",
-        "operator": "startsWith"
-      },
-      {
-        "field": "prodType",
-        "value": "CDZ",
-        "operator": "exact"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "뉴질랜드 노실카",
-    "tagColor": "info"
-  },
-  {
-    "id": "rule_kit",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "prodName",
-        "value": "D-",
-        "operator": "startsWith"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "키트작업",
-    "tagColor": "secondary"
-  },
-  {
-    "id": "rule_bukhang_pct",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "remark",
-        "value": "PCT",
-        "operator": "includes"
-      },
-      {
-        "field": "downPort",
-        "value": "KRPUS",
-        "operator": "notIncludes"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "주의북항변경요망",
-    "tagColor": "danger"
-  },
-  {
-    "id": "rule_bukhang_bict",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "remark",
-        "value": "BICT",
-        "operator": "includes"
-      },
-      {
-        "field": "downPort",
-        "value": "KRPUS",
-        "operator": "notIncludes"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "주의북항변경요망",
-    "tagColor": "danger"
-  },
-  {
     "id": "rule_gwangyang_err",
     "isActive": true,
-    "groupName": null,
+    "groupName": "광양조건",
     "conditionOperator": "AND",
     "conditions": [
       {
@@ -679,25 +881,9 @@
     "tagColor": "danger"
   },
   {
-    "id": "rule_gwangyang_check",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "remark",
-        "value": "KRKAN",
-        "operator": "includes"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "광양체크",
-    "tagColor": "info"
-  },
-  {
     "id": "rule_pop_box1",
     "isActive": true,
-    "groupName": "",
+    "groupName": "POP",
     "conditionOperator": "OR",
     "conditions": [
       {
@@ -723,13 +909,23 @@
   {
     "id": "rule_photo_shoring",
     "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
+    "groupName": "쇼링주의",
+    "conditionOperator": "OR",
     "conditions": [
       {
+        "field": "origRemark",
+        "operator": "includes",
+        "value": "쇼링"
+      },
+      {
         "field": "remark",
-        "value": "쇼링",
-        "operator": "includes"
+        "operator": "includes",
+        "value": "TCR"
+      },
+      {
+        "field": "origRemark",
+        "operator": "includes",
+        "value": "X자"
       }
     ],
     "targetField": "tags",
@@ -739,13 +935,18 @@
   {
     "id": "rule_photo_line",
     "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
+    "groupName": "1줄식기",
+    "conditionOperator": "OR",
     "conditions": [
       {
         "field": "remark",
-        "value": "한줄",
-        "operator": "includes"
+        "operator": "includes",
+        "value": "한줄"
+      },
+      {
+        "field": "remark",
+        "operator": "includes",
+        "value": "1줄"
       }
     ],
     "targetField": "tags",
@@ -755,18 +956,18 @@
   {
     "id": "rule_photo_scan",
     "isActive": true,
-    "groupName": "",
+    "groupName": "수작업",
     "conditionOperator": "OR",
     "conditions": [
       {
         "field": "remark",
-        "value": "스캔",
-        "operator": "includes"
+        "operator": "includes",
+        "value": "스캔"
       },
       {
         "field": "remark",
-        "value": "수작업",
-        "operator": "includes"
+        "operator": "includes",
+        "value": "수작업"
       }
     ],
     "targetField": "tags",
@@ -776,50 +977,18 @@
   {
     "id": "rule_cdz1",
     "isActive": true,
-    "groupName": null,
+    "groupName": "비닐막",
     "conditionOperator": "AND",
     "conditions": [
       {
         "field": "prodType",
-        "value": "CDZ",
-        "operator": "exact"
+        "operator": "exact",
+        "value": "CDZ"
       },
       {
         "field": "dest",
-        "value": "CA",
-        "operator": "startsWith"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "비닐막/완충",
-    "tagColor": "success"
-  },
-  {
-    "id": "rule_cdz2",
-    "isActive": true,
-    "groupName": "",
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "remark",
-        "value": "비닐",
-        "operator": "includes"
-      }
-    ],
-    "targetField": "tags",
-    "targetValue": "비닐막",
-    "tagColor": "success"
-  },
-  {
-    "id": "rule_cdz3",
-    "isActive": true,
-    "groupName": null,
-    "conditionOperator": "AND",
-    "conditions": [
-      {
-        "field": "remark",
-        "value": "완충",
-        "operator": "includes"
+        "operator": "startsWith",
+        "value": "CA"
       }
     ],
     "targetField": "tags",

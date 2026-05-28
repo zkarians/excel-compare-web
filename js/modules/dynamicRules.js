@@ -4,6 +4,32 @@
 let dynamicRules = [];
 const rulesModal = document.getElementById('rulesModal');
 
+// 매핑 매니저로부터 필드의 열 문자를 동적으로 가져오는 헬퍼 함수
+function getMappedColLetter(field) {
+    if (!window.mappingManager) return '';
+    const mapping = window.mappingManager.getActiveMapping();
+    if (!mapping) return '';
+    
+    // 규칙용 고유 필드명과 매핑 매니저의 필드명 매칭 딕셔너리
+    const fieldToMapKey = {
+        'origRemark': 'remark',
+        'downRemark': 'remark',
+        'downLoadType': 'dl_loadType',
+        'downPlanQty': 'dl_planQty',
+        'downPendingQty': 'dl_pendingQty',
+        'downPackingQty': 'dl_packingQty',
+        'downSealNo': 'dl_sealNo',
+        'downCarrier': 'dl_carrierName',
+        'downPort': 'dl_port',
+    };
+
+    const mapKey = fieldToMapKey[field] || field;
+    if (mapping[mapKey]) {
+        return mapping[mapKey];
+    }
+    return '';
+}
+
 async function loadDynamicRules() {
     try {
         // 1순위: DB에서 규칙 로딩 시도
@@ -101,23 +127,72 @@ function createConditionRow() {
     row.style.gap = '4px';
     row.className = 'condition-row';
 
+    // 1. 기본 제공되는 레거시 및 특수 조건들
+    const specialOptions = [
+        { value: 'remark', label: '비고/리마크(전체)' },
+        { value: 'origRemark', label: '[원본] 리마크' },
+        { value: 'downRemark', label: '[전산] 리마크' },
+        { value: 'downLoadType', label: '[전산] Load Type' },
+        { value: 'downPlanQty', label: '[전산] Load Plan Qty' },
+        { value: 'downPendingQty', label: '[전산] Pending Qty' },
+        { value: 'downPackingQty', label: '[전산] Packing Qty' },
+        { value: 'downSealNo', label: '[전산] Seal No' },
+        { value: 'downForwarder', label: '[전산] 포워더' },
+        { value: 'downCarrier', label: '[전산] Carrier' },
+        { value: 'downPort', label: '[전산] L.Port' }
+    ];
+
+    // 중복 방지를 위한 매핑 ID 셋
+    const addedIds = new Set(specialOptions.map(o => {
+        const fieldToMapKey = {
+            'origRemark': 'remark',
+            'downRemark': 'remark',
+            'downLoadType': 'dl_loadType',
+            'downPlanQty': 'dl_planQty',
+            'downPendingQty': 'dl_pendingQty',
+            'downPackingQty': 'dl_packingQty',
+            'downSealNo': 'dl_sealNo',
+            'downCarrier': 'dl_carrierName',
+            'downPort': 'dl_port'
+        };
+        return fieldToMapKey[o.value] || o.value;
+    }));
+
+    // 2. mappingManager의 모든 필드를 추가 옵션으로 구성
+    const standardOptions = [];
+    if (window.mappingManager && window.mappingManager.standardFields) {
+        window.mappingManager.standardFields.forEach(f => {
+            if (!addedIds.has(f.id)) {
+                standardOptions.push({
+                    value: f.id,
+                    label: f.name
+                });
+            }
+        });
+    }
+
+    // 최종 옵션 합치기
+    const allOptions = [...specialOptions, ...standardOptions];
+
+    // 옵션 HTML 동적 빌드
+    const optionsHtml = allOptions.map(opt => {
+        const colLetter = getMappedColLetter(opt.value);
+        const colText = colLetter ? ` (${colLetter})` : '';
+        let cleanLabel = opt.label;
+        if (!cleanLabel.startsWith('[') && !cleanLabel.includes('비고/리마크')) {
+            if (cleanLabel.toLowerCase().includes('original') || cleanLabel.includes('원본')) {
+                cleanLabel = `[원본] ${cleanLabel.replace(/\[원본\]\s*/g, '')}`;
+            } else {
+                cleanLabel = `[전산] ${cleanLabel.replace(/\[전산\]\s*/g, '')}`;
+            }
+        }
+        return `<option value="${opt.value}">${cleanLabel}${colText}</option>`;
+    }).join('');
+
     row.innerHTML = `
         <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
             <select class="cond-field" style="flex: 1; min-width: 0; padding: 0.25rem 0.4rem; font-size: 0.78rem; border: 1px solid #cbd5e1; border-radius: 4px;">
-                <option value="remark">비고/리마크</option>
-                <option value="origRemark">[원본] 리마크</option>
-                <option value="downRemark">[전산] 리마크</option>
-                <option value="downLoadType">[전산] Load Type</option>
-                <option value="downPlanQty">[전산] Load Plan Qty</option>
-                <option value="downPendingQty">[전산] Pending Qty</option>
-                <option value="downPackingQty">[전산] Packing Qty</option>
-                <option value="downSealNo">[전산] Seal No</option>
-                <option value="downForwarder">[전산] 포워더</option>
-                <option value="downCarrier">[전산] Carrier</option>
-                <option value="downPort">[전산] L.Port</option>
-                <option value="prodName">제품명</option>
-                <option value="dest">목적지 (도착지)</option>
-                <option value="prodType">제품구분 (CDZ, CVZ)</option>
+                ${optionsHtml}
                 <!-- 다이나믹 필드 추가 -->
                 ${customFields.map(cf => '<option value="' + cf.id + '">' + (cf.source === 'down' ? '[전산]' : '[원본]') + ' ' + cf.name + ' (' + cf.colLetter + ')</option>').join('')}
             </select>
@@ -195,24 +270,43 @@ function renderRulesTable() {
             rule.conditions.forEach(cond => {
                 let iconClass = 'fa-tag';
                 let fText = cond.field;
-                if (cond.field === 'remark') { fText = '비고(전체)'; iconClass = 'fa-sticky-note'; }
-                else if (cond.field === 'origRemark') { fText = '원본비고'; iconClass = 'fa-comment-alt'; }
-                else if (cond.field === 'downRemark') { fText = '전산비고'; iconClass = 'fa-comment'; }
-                else if (cond.field === 'downLoadType') { fText = 'LoadType(B)'; iconClass = 'fa-truck-loading'; }
-                else if (cond.field === 'downPlanQty') { fText = '계획수량(J)'; iconClass = 'fa-calculator'; }
-                else if (cond.field === 'downPendingQty') { fText = '팬딩수량(M)'; iconClass = 'fa-clock'; }
-                else if (cond.field === 'downPackingQty') { fText = '단위수량(N)'; iconClass = 'fa-boxes'; }
-                else if (cond.field === 'downSealNo') { fText = 'Seal'; iconClass = 'fa-lock'; }
+                const colLetter = getMappedColLetter(cond.field);
+                const colSuffix = colLetter ? `(${colLetter})` : '';
+
+                if (cond.field === 'remark') { fText = `비고(전체)${colSuffix}`; iconClass = 'fa-sticky-note'; }
+                else if (cond.field === 'origRemark') { fText = `원본비고${colSuffix}`; iconClass = 'fa-comment-alt'; }
+                else if (cond.field === 'downRemark') { fText = `전산비고${colSuffix}`; iconClass = 'fa-comment'; }
+                else if (cond.field === 'downLoadType') { fText = `LoadType${colSuffix}`; iconClass = 'fa-truck-loading'; }
+                else if (cond.field === 'downPlanQty') { fText = `계획수량${colSuffix}`; iconClass = 'fa-calculator'; }
+                else if (cond.field === 'downPendingQty') { fText = `팬딩수량${colSuffix}`; iconClass = 'fa-clock'; }
+                else if (cond.field === 'downPackingQty') { fText = `단위수량${colSuffix}`; iconClass = 'fa-boxes'; }
+                else if (cond.field === 'downSealNo') { fText = `Seal${colSuffix}`; iconClass = 'fa-lock'; }
                 else if (cond.field === 'downForwarder') { fText = '포워더'; iconClass = 'fa-shipping-fast'; }
-                else if (cond.field === 'downCarrier') { fText = 'Carrier'; iconClass = 'fa-ship'; }
-                else if (cond.field === 'downPort') { fText = 'L.Port'; iconClass = 'fa-anchor'; }
-                else if (cond.field === 'dest') { fText = '목적지'; iconClass = 'fa-map-marker-alt'; }
-                else if (cond.field === 'prodName') { fText = '제품명'; iconClass = 'fa-box'; }
-                else if (cond.field === 'prodType') { fText = '품목'; iconClass = 'fa-cube'; }
+                else if (cond.field === 'downCarrier') { fText = `Carrier${colSuffix}`; iconClass = 'fa-ship'; }
+                else if (cond.field === 'downPort') { fText = `L.Port${colSuffix}`; iconClass = 'fa-anchor'; }
+                else if (cond.field === 'dest') { fText = `목적지${colSuffix}`; iconClass = 'fa-map-marker-alt'; }
+                else if (cond.field === 'prodName') { fText = `제품명${colSuffix}`; iconClass = 'fa-box'; }
+                else if (cond.field === 'prodType') { fText = `품목${colSuffix}`; iconClass = 'fa-cube'; }
                 else if (cond.field.startsWith('f_')) {
                     const cf = customFields.find(f => f.id === cond.field);
-                    fText = cf ? cf.name : '알수없는필드';
+                    fText = cf ? `${cf.name}(${cf.colLetter})` : '알수없는필드';
                     iconClass = 'fa-plus-circle';
+                }
+                else {
+                    if (window.mappingManager && window.mappingManager.standardFields) {
+                        const matchedField = window.mappingManager.standardFields.find(f => f.id === cond.field);
+                        if (matchedField) {
+                            fText = `${matchedField.name}${colSuffix}`;
+                            const nm = matchedField.name;
+                            if (nm.includes('수량') || nm.includes('Qty')) iconClass = 'fa-calculator';
+                            else if (nm.includes('비고') || nm.includes('Remark')) iconClass = 'fa-comment';
+                            else if (nm.includes('번호') || nm.includes('No')) iconClass = 'fa-hashtag';
+                            else if (nm.includes('코드') || nm.includes('Code')) iconClass = 'fa-barcode';
+                            else if (nm.includes('날짜') || nm.includes('Date') || nm.includes('ETA') || nm.includes('ETD')) iconClass = 'fa-calendar';
+                            else if (nm.includes('선사') || nm.includes('트럭') || nm.includes('Carrier')) iconClass = 'fa-ship';
+                            else iconClass = 'fa-database';
+                        }
+                    }
                 }
 
                 let opText = '';

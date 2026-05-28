@@ -1821,19 +1821,38 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
             return res.status(400).json({ success: false, message: '파일에 시트가 없습니다.' });
         }
 
-        // H열(8번째 열, 1-indexed) 제품명 수집
+        // H열(8번째 열) 제품명 + P열(16번째 열) Block Qty 동시 수집
         const productNamesInWarehouse = new Set();
+        const blockProductNames = new Set(); // Block Qty > 0 인 제품명 세트
+
         worksheet.eachRow((row, rowNumber) => {
             if (rowNumber <= 1) return; // 헤더 스킵
-            const cell = row.getCell(8); // H열
-            const val = cell.text || String(cell.value || '');
+
+            // H열: 제품명
+            const cellH = row.getCell(8);
+            const val = cellH.text || String(cellH.value || '');
             const name = val.trim().toUpperCase();
+
+            // P열: Block Qty
+            const cellP = row.getCell(16);
+            const rawP = cellP.value;
+            let blockQty = 0;
+            if (typeof rawP === 'number') {
+                blockQty = rawP;
+            } else if (rawP !== null && rawP !== undefined) {
+                blockQty = parseFloat(String(rawP).replace(/,/g, '')) || 0;
+            }
+
             if (name && name.includes('.')) {
                 productNamesInWarehouse.add(name);
+                if (blockQty > 0) {
+                    blockProductNames.add(name);
+                }
             }
         });
 
         console.log(`📦 [API] 창고재고: 총 ${productNamesInWarehouse.size}개 고유 제품명 수집`);
+        console.log(`📦 [API] Block Qty > 0 대상 제품: ${blockProductNames.size}개`);
 
         // 접두어별로 그룹화 (마지막 '.' 기준)
         const prefixMap = {};
@@ -1859,6 +1878,7 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
         res.json({
             success: true,
             dongPrefixes: Array.from(dongPrefixSet), // 프론트에서 Set으로 변환하여 사용
+            blockProductNames: Array.from(blockProductNames), // Block Qty > 0 제품명 목록
             totalProducts: productNamesInWarehouse.size,
             fileName: req.file.originalname
         });

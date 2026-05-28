@@ -15,6 +15,7 @@ let masterFileBuffer = null; // 마스터 파일 버퍼
 // 창고재고 관련 전역 상태
 let warehouseData = []; // 창고재고 데이터 (파싱됨)
 let warehouseStockDongPrefixes = new Set(); // 창고재고 파일에서 파싱한 (동) 태그 접두어 집합
+let warehouseStockBlockProducts = new Set(); // Block Qty > 0 인 제품명 집합 (H 배지 표시용)
 let warehouseStockLoaded = false; // 창고재고 파일 업로드 여부
 
 // POP 샘플 무게 전역 상태 { "CNTR_NO": { weight: 150.5, memo: "샘플" } }
@@ -1830,6 +1831,10 @@ if (btnClearDown) {
 
             if (result.success) {
                 warehouseStockDongPrefixes = new Set(result.dongPrefixes.map(p => p.toUpperCase()));
+                // Block Qty > 0 제품명 세트 업데이트
+                warehouseStockBlockProducts = new Set(
+                    (result.blockProductNames || []).map(p => p.toUpperCase())
+                );
                 warehouseStockLoaded = true;
 
                 statusWarehouseStock.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a; margin-right:4px;"></i>상태: 업로드 완료 (${result.fileName})`;
@@ -1845,7 +1850,7 @@ if (btnClearDown) {
                     dongTagBadge.style.gap = '4px';
                 }
 
-                console.log(`✅ 창고재고 파싱 완료: (동) 접두어 ${result.dongPrefixes.length}개`);
+                console.log(`✅ 창고재고 파싱 완료: (동) 접두어 ${result.dongPrefixes.length}개 / Block Qty 대상 ${warehouseStockBlockProducts.size}개`);
 
                 // 이미 비교 결과가 있으면 (동) 태그 즉시 재적용
                 if (comparisonResult && comparisonResult.length > 0) {
@@ -1860,6 +1865,7 @@ if (btnClearDown) {
             statusWarehouseStock.style.color = '#ef4444';
             warehouseStockLoaded = false;
             warehouseStockDongPrefixes = new Set();
+            warehouseStockBlockProducts = new Set();
             alert(`창고재고 파일 파싱 실패: ${err.message}`);
         }
     });
@@ -1867,6 +1873,7 @@ if (btnClearDown) {
     if (btnClearWarehouseStock) {
         btnClearWarehouseStock.addEventListener('click', () => {
             warehouseStockDongPrefixes = new Set();
+            warehouseStockBlockProducts = new Set();
             warehouseStockLoaded = false;
             fileWarehouseStock.value = '';
             pathWarehouse.value = '';
@@ -2584,6 +2591,10 @@ async function loadNativeWarehouseFile(filePath) {
 
             if (result.success) {
                 warehouseStockDongPrefixes = new Set(result.dongPrefixes.map(p => p.toUpperCase()));
+                // Block Qty > 0 제품명 세트 업데이트 (자동 로드 경로)
+                warehouseStockBlockProducts = new Set(
+                    (result.blockProductNames || []).map(p => p.toUpperCase())
+                );
                 warehouseStockLoaded = true;
                 if (pathWarehouse) pathWarehouse.value = filePath;
                 statusEl.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a; margin-right:4px;"></i>상태: 분석 완료 (${result.fileName})`;
@@ -2594,6 +2605,8 @@ async function loadNativeWarehouseFile(filePath) {
                     document.getElementById('dongPrefixCount').textContent = result.dongPrefixes.length;
                     document.getElementById('dongTagBadge').style.display = 'inline-flex';
                 }
+                console.log(`✅ [자동로드] 창고재고 완료: Block Qty 대상 ${warehouseStockBlockProducts.size}개`);
+                if (comparisonResult && comparisonResult.length > 0) displayResults(comparisonResult, false);
             }
         }
     } catch (err) {
@@ -2874,6 +2887,16 @@ function displayResults(results, isDbMode = false) {
         const prefix = nameUpper.substring(0, dotIdx);
         if (warehouseStockDongPrefixes.has(prefix)) {
             return `<span style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#7c3aed; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4;">동</span>`;
+        }
+        return '';
+    };
+
+    // [H] 배지 헬퍼: 창고재고 P열 Block Qty > 0 인 제품에 붉은색 H 로고 표시
+    const getBlockHoldTag = (prodName) => {
+        if (!warehouseStockLoaded || warehouseStockBlockProducts.size === 0) return '';
+        const nameUpper = (prodName || '').toUpperCase().trim();
+        if (warehouseStockBlockProducts.has(nameUpper)) {
+            return `<span title="Block Qty 존재 (창고재고 P열 > 0)" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#ef4444; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em;">H</span>`;
         }
         return '';
     };
@@ -3499,7 +3522,7 @@ function displayResults(results, isDbMode = false) {
                         style="cursor: pointer; ${(res.prodType || '').toUpperCase() === 'H' ? 'color: #7c3aed; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'Q' ? 'color: #0d9488; font-weight: 700;' : ''}"
                         title="클릭하여 제품명 복사"
                         class="copyable-item">
-                        ${res.prodName}${getDongTag(res.prodName, res.prodType)}
+                        ${res.prodName}${getDongTag(res.prodName, res.prodType)}${getBlockHoldTag(res.prodName)}
                     </td>
                     <td class="col-qty" style="font-size: 0.9em;">${renderQtyMismatch(res.qtyInfo)}</td>
                     <td class="col-spec">${renderMismatch(res.cntrType.orig, res.cntrType.val, res.cntrType.isMismatch)}</td>
