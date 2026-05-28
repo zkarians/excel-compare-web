@@ -40,20 +40,24 @@ class MappingManager {
             { id: 'dl_loadPlanNo', name: '[전산] 작업지시번호 (열)', defaultCol: 'AE' },
             { id: 'dl_packingQty', name: '[전산] 포장수량 (열)', defaultCol: 'BM' },
         ];
-        this.loadProfiles();
+        this.init();
+    }
+
+    async init() {
+        await this.loadProfiles();
         this.initUI();
     }
 
-    loadProfiles() {
+    async loadProfiles() {
         try {
-            const data = localStorage.getItem('mappingProfiles');
-            if (data) {
-                const parsed = JSON.parse(data);
-                this.profiles = parsed.profiles || {};
-                this.activeProfileId = parsed.activeProfileId || 'default';
+            const resp = await fetch('/api/mappings');
+            const data = await resp.json();
+            if (data.success && data.profiles) {
+                this.profiles = data.profiles;
+                this.activeProfileId = data.activeProfileId || 'default';
             }
         } catch (e) {
-            console.error("Failed to load mapping profiles", e);
+            console.error("Failed to load mapping profiles from server", e);
         }
 
         // Ensure default exists
@@ -69,16 +73,20 @@ class MappingManager {
         }
     }
 
-    saveProfiles() {
-        const dataStr = JSON.stringify({
+    async saveProfiles() {
+        const dataObj = {
             profiles: this.profiles,
             activeProfileId: this.activeProfileId
-        }, null, 2);
+        };
 
         try {
-            localStorage.setItem('mappingProfiles', dataStr);
+            await fetch('/api/mappings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataObj)
+            });
         } catch (e) {
-            console.error("Failed to save mapping profiles", e);
+            console.error("Failed to save mapping profiles to server", e);
         }
     }
 

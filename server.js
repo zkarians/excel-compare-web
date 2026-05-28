@@ -358,6 +358,7 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const RULES_FILE = path.join(DATA_DIR, 'rules.json');
+const MAPPINGS_FILE = path.join(DATA_DIR, 'mapping_profiles.json');
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
@@ -1171,6 +1172,34 @@ app.post('/api/rules', (req, res) => {
         res.json({ success: true, message: "규칙이 성공적으로 저장되었습니다." });
     } catch (err) {
         res.status(500).json({ success: false, message: "규칙 저장에 실패했습니다." });
+    }
+});
+
+// 매핑 로드 API
+app.get('/api/mappings', (req, res) => {
+    try {
+        if (!fs.existsSync(MAPPINGS_FILE)) {
+            return res.json({ success: true, profiles: null });
+        }
+        const data = fs.readFileSync(MAPPINGS_FILE, 'utf8');
+        try {
+            const parsed = JSON.parse(data);
+            res.json({ success: true, ...parsed });
+        } catch (e) {
+            res.json({ success: true, profiles: null });
+        }
+    } catch (err) {
+        res.status(500).json({ success: false, message: "매핑 설정을 불러오지 못했습니다." });
+    }
+});
+
+// 매핑 저장 API
+app.post('/api/mappings', (req, res) => {
+    try {
+        fs.writeFileSync(MAPPINGS_FILE, JSON.stringify(req.body, null, 2), 'utf8');
+        res.json({ success: true, message: "매핑 설정이 성공적으로 저장되었습니다." });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "매핑 설정 저장에 실패했습니다." });
     }
 });
 

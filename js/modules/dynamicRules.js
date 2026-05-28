@@ -682,7 +682,7 @@ document.getElementById('btnDownloadRulesFromDb')?.addEventListener('click', asy
 });
 
 document.getElementById('btnUploadRulesToDb')?.addEventListener('click', async () => {
-    if (confirm("현재 규칙들을 클라우드 DB에 등록(백업)하시겠습니까? 기존 DB 데이터가 대체됩니다.")) {
+    if (confirm("현재 규칙들을 로컬 DB (excel)에 등록(백업)하시겠습니까? 기존 DB 데이터가 대체됩니다.")) {
         try {
             const response = await fetch(`${API_BASE}/api/sync/rules`, {
                 method: 'POST',
@@ -691,10 +691,10 @@ document.getElementById('btnUploadRulesToDb')?.addEventListener('click', async (
             });
             const data = await response.json();
             if (data.success) {
-                alert("성공적으로 DB에 등록되었습니다.");
+                alert("✅ 로컬 DB (excel)에 성공적으로 등록되었습니다.");
                 if (window.updateDbGlobalStats) window.updateDbGlobalStats();
             } else {
-                alert("DB 등록 실패: " + data.message);
+                alert("❌ 로컬 DB 등록 실패: " + data.message);
             }
         } catch (err) {
             console.error(err);
