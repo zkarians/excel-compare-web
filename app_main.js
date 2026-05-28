@@ -4982,18 +4982,18 @@ if (btnSaveEmailConfig) {
     });
 }
 
-// --- 이메일 설정 클라우드 동기화 (업로드/다운로드) ---
+// --- 이메일 설정 서버 동기화 (업로드/다운로드) ---
 const btnUploadEmailConfig = document.getElementById('btnUploadEmailConfig');
 if (btnUploadEmailConfig) {
     btnUploadEmailConfig.addEventListener('click', async () => {
-        if (!confirm('현재 화면의 설정을 클라우드 DB에 백업하시겠습니까?\n(나중에 다른 PC에서 동일하게 불러올 수 있습니다.)')) return;
+        if (!confirm('현재 화면의 설정을 서버 DB에 백업하시겠습니까?\n(나중에 다른 PC에서 동일하게 불러올 수 있습니다.)')) return;
 
         try {
             // 먼저 설정을 서버에 저장(파일)한 후, 서버가 그 파일을 읽어서 DB에 올리도록 요청
             const resp = await fetch(`${API_BASE}/api/sync/email-config`, { method: 'POST' });
             const data = await resp.json();
             if (data.success) {
-                alert('✅ 백업 성공! 이메일 설정이 클라우드 DB에 저장되었습니다.');
+                alert('✅ 백업 성공! 이메일 설정이 서버 DB에 백업되었습니다.');
             } else {
                 alert('❌ 백업 실패: ' + data.message);
             }
@@ -5006,7 +5006,7 @@ if (btnUploadEmailConfig) {
 const btnDownloadEmailConfig = document.getElementById('btnDownloadEmailConfig');
 if (btnDownloadEmailConfig) {
     btnDownloadEmailConfig.addEventListener('click', async () => {
-        if (!confirm('클라우드 DB에서 설정을 불러와 현재 설정을 덮어쓰시겠습니까?')) return;
+        if (!confirm('서버 DB에서 설정을 불러와 현재 설정을 덮어쓰시겠습니까?')) return;
 
         try {
             const resp = await fetch(`${API_BASE}/api/sync/email-config`);
@@ -5021,7 +5021,7 @@ if (btnDownloadEmailConfig) {
                 const saveData = await saveResp.json();
 
                 if (saveData.success) {
-                    alert('✅ 복구 성공! 클라우드 설정을 불러왔습니다.');
+                    alert('✅ 복구 성공! 서버에서 백업 설정을 불러왔습니다.');
                     await loadEmailConfig(); // 화면 갱신
                 } else {
                     alert('❌ 복구 실패(저장오류): ' + saveData.message);
