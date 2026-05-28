@@ -16,6 +16,7 @@ let masterFileBuffer = null; // 마스터 파일 버퍼
 let warehouseData = []; // 창고재고 데이터 (파싱됨)
 let warehouseStockDongPrefixes = new Set(); // 창고재고 파일에서 파싱한 (동) 태그 접두어 집합
 let warehouseStockBlockProducts = new Set(); // Block Qty > 0 인 제품명 집합 (H 배지 표시용)
+let warehouseStockQtyMap = {}; // 제품명별 실물재고, 사용불가재고, 사용가능재고 맵 { "PROD": { physical, block, available } }
 let warehouseStockLoaded = false; // 창고재고 파일 업로드 여부
 
 // POP 샘플 무게 전역 상태 { "CNTR_NO": { weight: 150.5, memo: "샘플" } }
@@ -1835,6 +1836,8 @@ if (btnClearDown) {
                 warehouseStockBlockProducts = new Set(
                     (result.blockProductNames || []).map(p => p.toUpperCase())
                 );
+                // 실물재고, 사용불가재고, 사용가능재고 데이터 업데이트
+                warehouseStockQtyMap = result.stockMap || {};
                 warehouseStockLoaded = true;
 
                 statusWarehouseStock.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a; margin-right:4px;"></i>상태: 업로드 완료 (${result.fileName})`;
@@ -1866,6 +1869,7 @@ if (btnClearDown) {
             warehouseStockLoaded = false;
             warehouseStockDongPrefixes = new Set();
             warehouseStockBlockProducts = new Set();
+            warehouseStockQtyMap = {};
             alert(`창고재고 파일 파싱 실패: ${err.message}`);
         }
     });
@@ -1874,6 +1878,7 @@ if (btnClearDown) {
         btnClearWarehouseStock.addEventListener('click', () => {
             warehouseStockDongPrefixes = new Set();
             warehouseStockBlockProducts = new Set();
+            warehouseStockQtyMap = {};
             warehouseStockLoaded = false;
             fileWarehouseStock.value = '';
             pathWarehouse.value = '';
@@ -2595,6 +2600,7 @@ async function loadNativeWarehouseFile(filePath) {
                 warehouseStockBlockProducts = new Set(
                     (result.blockProductNames || []).map(p => p.toUpperCase())
                 );
+                warehouseStockQtyMap = result.stockMap || {};
                 warehouseStockLoaded = true;
                 if (pathWarehouse) pathWarehouse.value = filePath;
                 statusEl.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a; margin-right:4px;"></i>상태: 분석 완료 (${result.fileName})`;
@@ -2897,6 +2903,25 @@ function displayResults(results, isDbMode = false) {
         const nameUpper = (prodName || '').toUpperCase().trim();
         if (warehouseStockBlockProducts.has(nameUpper)) {
             return `<span title="Block Qty 존재 (창고재고 P열 > 0)" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#ef4444; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em;">H</span>`;
+        }
+        return '';
+    };
+
+    // 재고부족 배지 헬퍼: 사용가능재고보다 원본파일 계획수량이 크면 주황색/붉은색으로 부족 개수 표시
+    const getStockShortageBadge = (prodName, origPlan) => {
+        if (!warehouseStockLoaded || !warehouseStockQtyMap) return '';
+        const nameUpper = (prodName || '').toUpperCase().trim();
+        const stockInfo = warehouseStockQtyMap[nameUpper];
+        if (!stockInfo) return '';
+        const available = stockInfo.available;
+        const plan = Number(origPlan) || 0;
+        if (plan > available) {
+            const shortage = plan - available;
+            return `
+                <div class="stock-shortage-badge" title="실물재고: ${stockInfo.physical} EA / 사용불가: ${stockInfo.block} EA / 사용가능: ${available} EA / 계획수량: ${plan} EA">
+                    <i class="fas fa-exclamation-triangle"></i> 재고부족 (-${shortage} EA)
+                </div>
+            `;
         }
         return '';
     };
@@ -3523,6 +3548,7 @@ function displayResults(results, isDbMode = false) {
                         title="클릭하여 제품명 복사"
                         class="copyable-item">
                         ${res.prodName}${getDongTag(res.prodName, res.prodType)}${getBlockHoldTag(res.prodName)}
+                        ${getStockShortageBadge(res.prodName, res.qtyInfo.origPlan)}
                     </td>
                     <td class="col-qty" style="font-size: 0.9em;">${renderQtyMismatch(res.qtyInfo)}</td>
                     <td class="col-spec">${renderMismatch(res.cntrType.orig, res.cntrType.val, res.cntrType.isMismatch)}</td>

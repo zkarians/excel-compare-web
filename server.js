@@ -1850,9 +1850,10 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
             return res.status(400).json({ success: false, message: '파일에 시트가 없습니다.' });
         }
 
-        // H열(8번째 열) 제품명 + P열(16번째 열) Block Qty 동시 수집
+        // H열(8번째 열) 제품명 + I열(9번째 열) Physical Qty + P열(16번째 열) Block Qty 수집 및 합산
         const productNamesInWarehouse = new Set();
         const blockProductNames = new Set(); // Block Qty > 0 인 제품명 세트
+        const stockMap = {}; // 제품명별 재고 합산 맵 { name: { physical: 0, block: 0, available: 0 } }
 
         worksheet.eachRow((row, rowNumber) => {
             if (rowNumber <= 1) return; // 헤더 스킵
@@ -1861,6 +1862,20 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
             const cellH = row.getCell(8);
             const val = cellH.text || String(cellH.value || '');
             const name = val.trim().toUpperCase();
+
+            if (!name || !name.includes('.')) return;
+
+            productNamesInWarehouse.add(name);
+
+            // I열: Physical Qty
+            const cellI = row.getCell(9);
+            const rawI = cellI.value;
+            let physicalQty = 0;
+            if (typeof rawI === 'number') {
+                physicalQty = rawI;
+            } else if (rawI !== null && rawI !== undefined) {
+                physicalQty = parseFloat(String(rawI).replace(/,/g, '')) || 0;
+            }
 
             // P열: Block Qty
             const cellP = row.getCell(16);
@@ -1872,12 +1887,17 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
                 blockQty = parseFloat(String(rawP).replace(/,/g, '')) || 0;
             }
 
-            if (name && name.includes('.')) {
-                productNamesInWarehouse.add(name);
-                if (blockQty > 0) {
-                    blockProductNames.add(name);
-                }
+            if (blockQty > 0) {
+                blockProductNames.add(name);
             }
+
+            // 재고 데이터 합산
+            if (!stockMap[name]) {
+                stockMap[name] = { physical: 0, block: 0, available: 0 };
+            }
+            stockMap[name].physical += physicalQty;
+            stockMap[name].block += blockQty;
+            stockMap[name].available = stockMap[name].physical - stockMap[name].block;
         });
 
         console.log(`📦 [API] 창고재고: 총 ${productNamesInWarehouse.size}개 고유 제품명 수집`);
@@ -1908,6 +1928,7 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
             success: true,
             dongPrefixes: Array.from(dongPrefixSet), // 프론트에서 Set으로 변환하여 사용
             blockProductNames: Array.from(blockProductNames), // Block Qty > 0 제품명 목록
+            stockMap: stockMap, // 제품명별 실물재고, 사용불가재고, 사용가능재고 맵
             totalProducts: productNamesInWarehouse.size,
             fileName: req.file.originalname
         });
