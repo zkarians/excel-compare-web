@@ -24,6 +24,7 @@ let popWeightMap = {};
 
 let originalData = [];
 let reworkData = []; // 파싱된 재작업 데이터
+let reworkContainers = new Set(); // 재작업 파일에 존재하는 컨테이너 번호 집합
 let downloadData = [];
 let comparisonResult = [];
 let displayData = []; // 현재 화면에 표시 중인 (필터링된) 전체 데이터
@@ -2677,6 +2678,7 @@ btnCompare.addEventListener('click', async () => {
 
         setProcessStatus("데이터 처리 준비 중...", 10);
         userSelectedWeights = {}; // 새로운 비교 시작 시 초기화
+        reworkContainers.clear(); // 새로운 비교 시작 시 초기화
 
         let finalOrigList = [];
         let finalDownList = [];
@@ -2846,6 +2848,13 @@ btnCompare.addEventListener('click', async () => {
                 }
             }
         }
+
+        // 재작업 컨테이너 번호 집합 생성
+        reworkContainers = new Set(
+            finalReworkList
+                .map(item => (item.cntrNo || "").trim().toUpperCase())
+                .filter(Boolean)
+        );
 
         // 재작업 데이터가 있으면 원본 데이터에 합침
         if (finalReworkList.length > 0) {
@@ -3508,6 +3517,7 @@ function displayResults(results, isDbMode = false) {
                                     style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
                                     title="클릭하여 컨테이너 복사"
                                     class="copyable-item">${res.cntrNo}</strong>
+                            ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; margin-left:3px; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
                             ${hasPop ? `<span style="display:inline-block;margin-left:3px;font-size:0.65rem;background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;border-radius:4px;padding:0px 4px;vertical-align:middle;">POP</span>` : ''}
                         </div>
                     </td>
@@ -3603,6 +3613,7 @@ function displayResults(results, isDbMode = false) {
                                     style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
                                     class="copyable-item"
                                     title="클릭하여 컨테이너 복사">${res.cntrNo}</strong>
+                            ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; margin-left:4px; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
                         </div>
                         ${tagsHtml ? `<div style="display: flex; flex-direction: column; gap: 2px; justify-content: center; line-height: 1;">${tagsHtml}</div>` : ''}
                     </td>
