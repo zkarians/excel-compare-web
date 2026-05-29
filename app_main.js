@@ -1201,6 +1201,7 @@ async function readExcelFile(file, type) {
                                 if (isNewCntr) {
                                     if (cellCntrNo !== lastValidCntrNo) {
                                         lastValidDest = ""; lastValidE = ""; lastValidN = ""; lastValidO = ""; lastValidQ = ""; lastValidR = "";
+                                        lastValidWorkDate = ""; // [FIX] 새로운 컨테이너가 시작될 때 이전 컨테이너의 작업일(Work Date) 상속 차단
                                     }
                                     lastValidCntrNo = cellCntrNo;
                                     try { lastFontColor = row.getCell(COL.CNTR_NO).font?.color?.argb || null; } catch (e) { }
@@ -2811,6 +2812,31 @@ btnCompare.addEventListener('click', async () => {
             finalReworkList.forEach(item => { item.source = 'rework'; });
             finalOrigList = [...finalOrigList, ...finalReworkList];
             console.log(`✅ 재작업 데이터 ${finalReworkList.length}건이 원본에 통합되었습니다.`);
+        }
+
+        // [사용자 요청] 원본파일, 재작업대상 파일의 S열(작업일)값에 날짜가 없는 경우 작업대상에서 제외 처리
+        const excludedContainers = new Set();
+        finalOrigList.forEach(item => {
+            const cntr = (item.cntrNo || "").trim().toUpperCase();
+            if (cntr && !item.workDate) {
+                excludedContainers.add(cntr);
+            }
+        });
+
+        if (excludedContainers.size > 0) {
+            console.log(`⚠️ 작업일(S열)이 없어 작업대상에서 제외되는 컨테이너 목록:`, [...excludedContainers]);
+            // 원본 리스트에서 제외
+            finalOrigList = finalOrigList.filter(item => {
+                const cntr = (item.cntrNo || "").trim().toUpperCase();
+                return !excludedContainers.has(cntr);
+            });
+            // 전산 리스트에서도 제외 (원본누락 등으로 노출되는 것을 방지)
+            if (finalDownList) {
+                finalDownList = finalDownList.filter(item => {
+                    const cntr = (item.cntrNo || "").trim().toUpperCase();
+                    return !excludedContainers.has(cntr);
+                });
+            }
         }
 
         setProcessStatus("데이터 비교 알고리즘 실행 중...", 80);
