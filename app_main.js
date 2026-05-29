@@ -2635,6 +2635,46 @@ btnCompare.addEventListener('click', async () => {
             return;
         }
 
+        // [사용자 요청] 비교 시작 시 기존 검색 필터 및 체크된 선택 항목(승인/보류 건 예외) 초기화
+        // 1. 검색 필터 초기화
+        const searchInput = document.getElementById('inputSearch');
+        const prodSearchInput = document.getElementById('inputProdSearch');
+        const prodTypeSelect = document.getElementById('selectProdType');
+        const chkFullyCompletedOnly = document.getElementById('chkFullyCompletedOnly');
+        
+        if (searchInput) searchInput.value = "";
+        if (prodSearchInput) prodSearchInput.value = "";
+        if (prodTypeSelect) prodTypeSelect.value = "";
+        if (chkFullyCompletedOnly) chkFullyCompletedOnly.checked = false;
+
+        // 2. 체크박스 선택 항목 초기화 (승인 건과 보류 건은 예외로 유지)
+        const keepKeys = [];
+        selectedItems.forEach(itemKey => {
+            const [cntr, prod] = itemKey.split('_');
+            const isApproved = manualApprovedItems.has(itemKey);
+            const isHold = holdContainerMap.has(cntr);
+            let isDataApproved = false;
+            let isDataHeld = false;
+            if (window.comparisonResult) {
+                const row = window.comparisonResult.find(r => 
+                    (r.cntrNo || "").trim() === cntr && (r.prodName || "").trim() === prod
+                );
+                if (row) {
+                    isDataApproved = row.isApproved;
+                    isDataHeld = row.isHeld;
+                }
+            }
+            if (isApproved || isDataApproved || isHold || isDataHeld) {
+                keepKeys.push(itemKey);
+            }
+        });
+        selectedItems.clear();
+        keepKeys.forEach(k => selectedItems.add(k));
+
+        // 3. UI 체크박스 전체선택 상태도 해제
+        const selectAllCheckbox = document.getElementById('selectAll');
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+
         setProcessStatus("데이터 처리 준비 중...", 10);
         userSelectedWeights = {}; // 새로운 비교 시작 시 초기화
 
