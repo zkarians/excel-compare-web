@@ -6152,11 +6152,13 @@ async function loadEmailHistory() {
                 const dateStr = new Date(item.sent_at).toLocaleString('ko-KR', {
                     month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
                 });
+                const escapedSubject = (item.subject || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                const escapedRecipient = (item.recipient || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
                 return `
                     <tr style="border-bottom: 1px solid #f1f5f9;">
                         <td style="padding: 10px; color: #64748b; white-space: nowrap;">${dateStr}</td>
-                        <td style="padding: 10px; color: #1e293b; font-weight: 500;">${item.recipient}</td>
-                        <td style="padding: 10px; color: #1e293b; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.subject || '(제목 없음)'}</td>
+                        <td style="padding: 10px; color: #1e293b; font-weight: 500; word-break: break-all; line-height: 1.4;" title="${escapedRecipient}">${item.recipient}</td>
+                        <td style="padding: 10px; color: #1e293b; word-break: break-all; line-height: 1.4;" title="${escapedSubject}">${item.subject || '(제목 없음)'}</td>
                         <td style="padding: 10px; text-align: center;">
                             <div style="display: flex; gap: 4px; justify-content: center;">
                                 <button onclick="window.viewEmailHistoryDetail(${item.id})" class="btn" style="padding: 4px 8px; font-size: 0.75rem; background: #f1f5f9; color: #4361ee; border: 1px solid #dbeafe;">보기</button>
