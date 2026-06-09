@@ -28,6 +28,7 @@ let reworkContainers = new Set(); // 재작업 파일에 존재하는 컨테이�
 let downloadData = [];
 let comparisonResult = [];
 let displayData = []; // 현재 화면에 표시 중인 (필터링된) 전체 데이터
+let excludedList = []; // 제외된 컨테이너 목록 (작업일 없음)
 let lastDbSearchResults = []; // 마지막 DB 검색 결과 (탭 전환 시 유지용)
 let currentFilter = 'success';
 let selectedItems = new Set(); // DB 저장을 위해 선택된 항목
@@ -1243,7 +1244,7 @@ async function readExcelFile(file, type) {
                                 try { adj1Color = row.getCell(COL.ADJ1).font?.color?.argb || null; } catch (e) { }
 
                                 results.push({
-                                    sheetName: ws.name, jobName: lastValidJobName, dest: lastValidDest || lastValidE, prodType: safeGetText(COL.PROD_TYPE), prodName: cellProd, qty, cntrType: rawCntrType, carrier: rawCarrier, remark: lastValidR, eta: lastValidP, etd: cellQ || lastValidQ, adj1: safeGetText(COL.ADJ1), adj1Color, adj2: safeGetText(COL.ADJ2), cntrNo, transporter, source: type, tags: [], rawRow: row.values ? [...row.values] : [], workDate: lastValidWorkDate
+                                    sheetName: ws.name, rowNumber: i, jobName: lastValidJobName, dest: lastValidDest || lastValidE, prodType: safeGetText(COL.PROD_TYPE), prodName: cellProd, qty, cntrType: rawCntrType, carrier: rawCarrier, remark: lastValidR, eta: lastValidP, etd: cellQ || lastValidQ, adj1: safeGetText(COL.ADJ1), adj1Color, adj2: safeGetText(COL.ADJ2), cntrNo, transporter, source: type, tags: [], rawRow: row.values ? [...row.values] : [], workDate: lastValidWorkDate
                                 });
                             });
                         }
@@ -2356,6 +2357,7 @@ function updateDashboard() {
     const valErrorCntr = document.getElementById('valErrorCntr');
     const valDownExtraCntr = document.getElementById('valDownExtraCntr');
     const valOrigExtraCntr = document.getElementById('valOrigExtraCntr');
+    const valExcludedCntr = document.getElementById('valExcludedCntr');
     const valUpdate = document.getElementById('valUpdate');
     const holdCountEl = document.getElementById('holdCount');
 
@@ -2364,6 +2366,9 @@ function updateDashboard() {
     if (valErrorCntr) valErrorCntr.textContent = errorCntrs.size;
     if (valDownExtraCntr) valDownExtraCntr.textContent = extraCntrs.size;
     if (valOrigExtraCntr) valOrigExtraCntr.textContent = missingCntrs.size;
+    if (valExcludedCntr) {
+        valExcludedCntr.textContent = new Set(excludedList.map(item => item.cntrNo)).size;
+    }
     if (holdCountEl) holdCountEl.textContent = holdCntrs.size;
     if (valUpdate) valUpdate.textContent = (missingProductsSet ? missingProductsSet.size : 0) + (weightMismatchSet ? weightMismatchSet.size : 0);
 
@@ -2863,12 +2868,24 @@ btnCompare.addEventListener('click', async () => {
             console.log(`✅ 재작업 데이터 ${finalReworkList.length}건이 원본에 통합되었습니다.`);
         }
 
+        // 동적 매핑 및 창 닫기 시 재비교 연동을 위해 글로벌 변수 동기화
+        originalData = finalOrigList.filter(item => item.source !== 'rework');
+        downloadData = [...finalDownList];
+        reworkData = [...finalReworkList];
+
         // [사용자 요청] 원본파일, 재작업대상 파일의 S열(작업일)값에 날짜가 없는 경우 작업대상에서 제외 처리
+        excludedList = [];
         const excludedContainers = new Set();
         finalOrigList.forEach(item => {
             const cntr = (item.cntrNo || "").trim().toUpperCase();
             if (cntr && !item.workDate) {
                 excludedContainers.add(cntr);
+                excludedList.push({
+                    cntrNo: cntr,
+                    sheetName: item.sheetName || "-",
+                    rowNumber: item.rowNumber || "-",
+                    prodName: item.prodName || "-"
+                });
             }
         });
 
@@ -2935,6 +2952,66 @@ btnCompare.addEventListener('click', async () => {
         setProcessStatus("오류 발생", 0);
     }
 });
+
+// [사용자 요청] 필터링 조건(작업일 없는 컨테이너 제외)을 적용하여 대조를 재실행하는 함수
+function reCompareFilteredData() {
+    if (!originalData || originalData.length === 0 || !downloadData || downloadData.length === 0) return;
+
+    let finalOrigList = [...originalData];
+    let finalDownList = [...downloadData];
+    let finalReworkList = typeof reworkData !== 'undefined' ? [...reworkData] : [];
+
+    // 재작업 데이터가 있으면 원본 데이터에 합침
+    if (finalReworkList.length > 0) {
+        finalReworkList.forEach(item => { item.source = 'rework'; });
+        // 중복 방지를 위해 source가 rework인 항목은 제외 후 합침
+        finalOrigList = finalOrigList.filter(item => item.source !== 'rework');
+        finalOrigList = [...finalOrigList, ...finalReworkList];
+    }
+
+    // [사용자 요청] 원본파일, 재작업대상 파일의 S열(작업일)값에 날짜가 없는 경우 작업대상에서 제외 처리
+    excludedList = [];
+    const excludedContainers = new Set();
+    finalOrigList.forEach(item => {
+        const cntr = (item.cntrNo || "").trim().toUpperCase();
+        if (cntr && !item.workDate) {
+            excludedContainers.add(cntr);
+            excludedList.push({
+                cntrNo: cntr,
+                sheetName: item.sheetName || "-",
+                rowNumber: item.rowNumber || "-",
+                prodName: item.prodName || "-"
+            });
+        }
+    });
+
+    if (excludedContainers.size > 0) {
+        // 원본 리스트에서 제외
+        finalOrigList = finalOrigList.filter(item => {
+            const cntr = (item.cntrNo || "").trim().toUpperCase();
+            return !excludedContainers.has(cntr);
+        });
+        // 전산 리스트에서도 제외 (원본누락 등으로 노출되는 것을 방지)
+        finalDownList = finalDownList.filter(item => {
+            const cntr = (item.cntrNo || "").trim().toUpperCase();
+            return !excludedContainers.has(cntr);
+        });
+    }
+
+    comparisonResult = compareData(
+        finalOrigList,
+        finalDownList,
+        productMaster,
+        dynamicRules,
+        customFields,
+        carrierMap,
+        normalizeCarrier
+    );
+
+    updateDashboard();
+    displayResults(comparisonResult);
+}
+window.reCompareFilteredData = reCompareFilteredData;
 
 // 비교 로직 메인
 // Helper to categorize a container's rows (matches updateDashboard logic)
@@ -6590,3 +6667,64 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+// 제외된 컨테이너 모달 설정 및 렌더링 함수
+(function setupExcludedModal() {
+    const modal = document.getElementById('excludedModal');
+    const cardExcluded = document.getElementById('cardExcluded');
+    const btnClose = document.getElementById('closeExcludedModalBtn');
+    const btnCloseBottom = document.getElementById('closeExcludedModalBottom');
+
+    if (cardExcluded) {
+        cardExcluded.addEventListener('click', () => {
+            if (modal) {
+                renderExcludedModalTable();
+                modal.style.display = 'block';
+            }
+        });
+    }
+
+    const closeModal = () => {
+        if (modal) modal.style.display = 'none';
+    };
+
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (btnCloseBottom) btnCloseBottom.addEventListener('click', closeModal);
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+    }
+
+    // ESC 키로 닫기 지원
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal && modal.style.display === 'block') {
+            closeModal();
+        }
+    });
+})();
+
+function renderExcludedModalTable() {
+    const tbody = document.getElementById('excludedContainersBody');
+    if (!tbody) return;
+
+    if (!excludedList || excludedList.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="padding: 20px; text-align: center; color: #94a3b8;">
+                    제외된 컨테이너가 없습니다.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = excludedList.map(item => `
+        <tr style="border-bottom: 1px solid #e2e8f0; height: 35px;">
+            <td style="padding: 8px; text-align: center; font-weight: 600; color: #1e293b;">${item.cntrNo}</td>
+            <td style="padding: 8px; text-align: center; color: #475569;">${item.sheetName}</td>
+            <td style="padding: 8px; text-align: center; color: #475569;">${item.rowNumber}행</td>
+            <td style="padding: 8px; text-align: left; color: #1e293b; font-family: monospace;">${item.prodName}</td>
+        </tr>
+    `).join('');
+}
