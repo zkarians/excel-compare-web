@@ -2884,7 +2884,9 @@ btnCompare.addEventListener('click', async () => {
                     cntrNo: cntr,
                     sheetName: item.sheetName || "-",
                     rowNumber: item.rowNumber || "-",
-                    prodName: item.prodName || "-"
+                    prodName: item.prodName || "-",
+                    qty: item.qty || 0,
+                    transporter: item.transporter || "미분류"
                 });
             }
         });
@@ -2980,7 +2982,9 @@ function reCompareFilteredData() {
                 cntrNo: cntr,
                 sheetName: item.sheetName || "-",
                 rowNumber: item.rowNumber || "-",
-                prodName: item.prodName || "-"
+                prodName: item.prodName || "-",
+                qty: item.qty || 0,
+                transporter: item.transporter || "미분류"
             });
         }
     });
@@ -6711,7 +6715,7 @@ function renderExcludedModalTable() {
     if (!excludedList || excludedList.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="4" style="padding: 20px; text-align: center; color: #94a3b8;">
+                <td colspan="5" style="padding: 20px; text-align: center; color: #94a3b8;">
                     제외된 컨테이너가 없습니다.
                 </td>
             </tr>
@@ -6719,12 +6723,22 @@ function renderExcludedModalTable() {
         return;
     }
 
-    tbody.innerHTML = excludedList.map(item => `
-        <tr style="border-bottom: 1px solid #e2e8f0; height: 35px;">
-            <td style="padding: 8px; text-align: center; font-weight: 600; color: #1e293b;">${item.cntrNo}</td>
-            <td style="padding: 8px; text-align: center; color: #475569;">${item.sheetName}</td>
-            <td style="padding: 8px; text-align: center; color: #475569;">${item.rowNumber}행</td>
-            <td style="padding: 8px; text-align: left; color: #1e293b; font-family: monospace;">${item.prodName}</td>
-        </tr>
-    `).join('');
+    tbody.innerHTML = excludedList.map(item => {
+        let cntrColor = '#1e293b'; // 기본 색상
+        if (item.transporter === '천마(빨강)' || (item.transporter && item.transporter.includes('천마'))) {
+            cntrColor = '#e74c3c';
+        } else if (item.transporter === 'BNI(파랑)' || (item.transporter && item.transporter.includes('BNI'))) {
+            cntrColor = '#3498db';
+        }
+
+        return `
+            <tr style="border-bottom: 1px solid #e2e8f0; height: 35px;">
+                <td style="padding: 8px; text-align: center; font-weight: 600; color: ${cntrColor};">${item.cntrNo}</td>
+                <td style="padding: 8px; text-align: center; color: #475569;">${item.sheetName}</td>
+                <td style="padding: 8px; text-align: center; color: #475569;">${item.rowNumber}행</td>
+                <td style="padding: 8px; text-align: center; color: #475569; font-weight: 600;">${item.qty != null ? item.qty : '-'}</td>
+                <td style="padding: 8px; text-align: left; color: #1e293b; font-family: monospace;">${item.prodName}</td>
+            </tr>
+        `;
+    }).join('');
 }
