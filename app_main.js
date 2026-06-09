@@ -3038,6 +3038,17 @@ function getContainerStatus(results, cntrNo) {
 
 function displayResults(results, isDbMode = false) {
 
+    // [사용자 요청] 전체 컨테이너에 대해 동일 제품별 잔여 필요수량(remain)을 합산하여 맵핑
+    window.totalProductRemainMap = {};
+    if (window.comparisonResult && window.comparisonResult.length > 0) {
+        window.comparisonResult.forEach(r => {
+            if (!r.prodName) return;
+            const nameUpper = r.prodName.toUpperCase().trim();
+            const remain = Number(r.qtyInfo ? r.qtyInfo.remain : 0) || 0;
+            window.totalProductRemainMap[nameUpper] = (window.totalProductRemainMap[nameUpper] || 0) + remain;
+        });
+    }
+
     // (동) 태그 헬퍼: 창고재고 업로드 시 + 마스터 prodType Q/H 이면 + 동일접두어 존재 시 표시
     const getDongTag = (prodName, masterProdType) => {
         if (!warehouseStockLoaded || warehouseStockDongPrefixes.size === 0) return '';
@@ -3063,18 +3074,25 @@ function displayResults(results, isDbMode = false) {
         return '';
     };
 
-    // 재고부족 배지 헬퍼: 사용가능재고보다 원본파일 계획수량이 크면 주황색/붉은색으로 부족 개수 표시
-    const getStockShortageBadge = (prodName, origPlan) => {
+    // 재고부족 배지 헬퍼: 전체 합산 필요 수량과 사용 가능 재고를 대조하여 부족분을 표시 (해당 행의 필요 수량이 0인 완료 건은 미노출)
+    const getStockShortageBadge = (prodName, rowRemain) => {
         if (!warehouseStockLoaded || !warehouseStockQtyMap) return '';
         const nameUpper = (prodName || '').toUpperCase().trim();
         const stockInfo = warehouseStockQtyMap[nameUpper];
         if (!stockInfo) return '';
+        
         const available = stockInfo.available;
-        const plan = Number(origPlan) || 0;
-        if (plan > available) {
-            const shortage = plan - available;
+        const totalNeeded = window.totalProductRemainMap ? (window.totalProductRemainMap[nameUpper] || 0) : 0;
+        const thisRowRemain = Number(rowRemain) || 0;
+
+        // 본인 행의 잔여 필요 수량이 0 이하이면 표시 안 함 (적재 완료 건 제외)
+        if (thisRowRemain <= 0) return '';
+
+        // 합산 필요 수량이 창고의 사용 가능 재고보다 큰 경우에만 재고 부족 표시
+        if (totalNeeded > available) {
+            const shortage = totalNeeded - available;
             return `
-                <div class="stock-shortage-badge" title="실물재고: ${stockInfo.physical} EA / 사용불가: ${stockInfo.block} EA / 사용가능: ${available} EA / 계획수량: ${plan} EA">
+                <div class="stock-shortage-badge" title="실물재고: ${stockInfo.physical} EA / 사용불가: ${stockInfo.block} EA / 사용가능: ${available} EA / 합산잔여필요수량: ${totalNeeded} EA">
                     <i class="fas fa-exclamation-triangle"></i> 재고부족 (-${shortage} EA)
                 </div>
             `;
@@ -3706,7 +3724,7 @@ function displayResults(results, isDbMode = false) {
                         title="클릭하여 제품명 복사"
                         class="copyable-item">
                         ${res.prodName}${getDongTag(res.prodName, res.prodType)}${getBlockHoldTag(res.prodName)}
-                        ${getStockShortageBadge(res.prodName, res.qtyInfo.origPlan)}
+                        ${getStockShortageBadge(res.prodName, res.qtyInfo.remain)}
                     </td>
                     <td class="col-qty" style="font-size: 0.9em;">${renderQtyMismatch(res.qtyInfo)}</td>
                     <td class="col-spec">${renderMismatch(res.cntrType.orig, res.cntrType.val, res.cntrType.isMismatch)}</td>
