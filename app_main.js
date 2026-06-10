@@ -1492,6 +1492,7 @@ async function readExcelFile(file, type) {
                             prodName: safeGetText(DCOL.PROD_NAME),
                             planQty: Number(row.getCell(DCOL.PLAN_QTY).value) || 0,
                             loadQty: Number(row.getCell(DCOL.LOAD_QTY).value) || 0,
+                            remainQty: Number(row.getCell(DCOL.REMAIN_QTY).value) || 0,
                             volume: Number(row.getCell(DCOL.VOLUME).value) || 0,
                             grossWeight: Number(row.getCell(DCOL.WEIGHT).value) || 0,
                             cntrType: safeGetText(DCOL.CNTR_TYPE),
