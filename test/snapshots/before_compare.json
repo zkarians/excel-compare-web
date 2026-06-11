@@ -1,0 +1,4810 @@
+[
+  {
+    "type": "원본누락",
+    "cntrNo": "FCIU7006660",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LDEL7324YE.BSTLLGA",
+    "qtyInfo": {
+      "plan": 8,
+      "load": 8,
+      "pending": 0,
+      "remain": 0,
+      "packing": 8,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W25//MSC/PNC/0616CLS/0622ETD/BK:096KR1030076/MSC BARI/GO624N/USTXW/110030136/6/11 웅동 / Y2016",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "FJ27329502",
+    "eta": "06월 16일",
+    "etd": "06월 22일",
+    "jobName": "INST24260611208",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260611208",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 824,
+      "mixed": 824
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "FCIU7006660",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LDGL6924Y.BSTELGA",
+    "qtyInfo": {
+      "plan": 76,
+      "load": 76,
+      "pending": 0,
+      "remain": 0,
+      "packing": 76,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W25//MSC/PNC/0616CLS/0622ETD/BK:096KR1030076/MSC BARI/GO624N/USTXW/110030136/6/11 웅동 / Y2016",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "FJ27329502",
+    "eta": "06월 16일",
+    "etd": "06월 22일",
+    "jobName": "INST24260611208",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260611208",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 8512,
+      "mixed": 8512
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "CAIU9898546",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "CBED2415B.ABKLLNA",
+    "qtyInfo": {
+      "plan": 8,
+      "load": 0,
+      "pending": 0,
+      "remain": 8,
+      "packing": 8,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SML ↔ 전산:에스엠상선(주)한국지점) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W26//SM/HJNC/0618CLS/0621ETD/BK:SEL6C8398300/SM LONG BEACH/2604E/USLOT/110029960/6/11 웅동",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "SM896063",
+    "eta": "06월 18일",
+    "etd": "06월 21일",
+    "jobName": "INST24260611207",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260611207",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "CAIU9898546",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LDGL6924Y.BSTELGA",
+    "qtyInfo": {
+      "plan": 68,
+      "load": 0,
+      "pending": 0,
+      "remain": 68,
+      "packing": 68,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SML ↔ 전산:에스엠상선(주)한국지점) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W26//SM/HJNC/0618CLS/0621ETD/BK:SEL6C8398300/SM LONG BEACH/2604E/USLOT/110029960/6/11 웅동",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "SM896063",
+    "eta": "06월 18일",
+    "etd": "06월 21일",
+    "jobName": "INST24260611207",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260611207",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "CAIU9898546",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "SKSCV3012MT.BTTLSGN",
+    "qtyInfo": {
+      "plan": 8,
+      "load": 0,
+      "pending": 0,
+      "remain": 8,
+      "packing": 8,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SML ↔ 전산:에스엠상선(주)한국지점) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W26//SM/HJNC/0618CLS/0621ETD/BK:SEL6C8398300/SM LONG BEACH/2604E/USLOT/110029960/6/11 웅동",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "SM896063",
+    "eta": "06월 18일",
+    "etd": "06월 21일",
+    "jobName": "INST24260611207",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260611207",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "CAIU9898546",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "SKSDV3002S.BSTLSGN",
+    "qtyInfo": {
+      "plan": 4,
+      "load": 0,
+      "pending": 0,
+      "remain": 4,
+      "packing": 4,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SML ↔ 전산:에스엠상선(주)한국지점) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W26//SM/HJNC/0618CLS/0621ETD/BK:SEL6C8398300/SM LONG BEACH/2604E/USLOT/110029960/6/11 웅동",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "SM896063",
+    "eta": "06월 18일",
+    "etd": "06월 21일",
+    "jobName": "INST24260611207",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260611207",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "FESU5202800",
+    "division": "CNZ",
+    "prodType": "-",
+    "prodName": "GR-B922FEBM.ASEQCIS",
+    "qtyInfo": {
+      "plan": 51,
+      "load": 0,
+      "pending": 0,
+      "remain": 51,
+      "packing": 51,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "동해해운",
+      "orig": "FEO",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "BYMSQ",
+      "orig": "BYMSQ",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:FEO ↔ 전산:동해해운) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "CIS/[TCR]/★수작업 시리얼 관리 필요/HYUNDAI PUSAN NEWPORT 에서 해당 부킹 넘버로 COC 반출 (LINE: FESCO / 선사코드: FEO) / Y2019",
+    "adj1": "X자쇼링 / TCR사진양식",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "F278042",
+    "eta": "6월 12일",
+    "etd": "06월 13일",
+    "jobName": "INST24260610242",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610242",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SMCU1046917",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LTIS7338XE.BRSLLGA",
+    "qtyInfo": {
+      "plan": 37,
+      "load": 37,
+      "pending": 0,
+      "remain": 0,
+      "packing": 37,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SML ↔ 전산:에스엠상선(주)한국지점) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W25//SM/HJNC/0618CLS/0621ETD/BK:SEL6C8398300/SM LONG BEACH/2604E/USLOT/110029989/6/10 웅동 / Y2017",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "SM939858",
+    "eta": "06월 18일",
+    "etd": "06월 21일",
+    "jobName": "INST24260610215",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610215",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 4070,
+      "mixed": 4070
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SMCU1046917",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "WDEP9423F.BRSLLGA",
+    "qtyInfo": {
+      "plan": 32,
+      "load": 32,
+      "pending": 0,
+      "remain": 0,
+      "packing": 32,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SML ↔ 전산:에스엠상선(주)한국지점) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W25//SM/HJNC/0618CLS/0621ETD/BK:SEL6C8398300/SM LONG BEACH/2604E/USLOT/110029989/6/10 웅동 / Y2017",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "SM939858",
+    "eta": "06월 18일",
+    "etd": "06월 21일",
+    "jobName": "INST24260610215",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610215",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 4320,
+      "mixed": 4320
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SMCU1046917",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "WSEP4727F.BRSLLGA",
+    "qtyInfo": {
+      "plan": 13,
+      "load": 13,
+      "pending": 0,
+      "remain": 0,
+      "packing": 13,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SML ↔ 전산:에스엠상선(주)한국지점) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W25//SM/HJNC/0618CLS/0621ETD/BK:SEL6C8398300/SM LONG BEACH/2604E/USLOT/110029989/6/10 웅동 / Y2017",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "SM939858",
+    "eta": "06월 18일",
+    "etd": "06월 21일",
+    "jobName": "INST24260610215",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610215",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 1066,
+      "mixed": 1066
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "KOCU4883506",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LSGL6335Z.BBDELGA",
+    "qtyInfo": {
+      "plan": 14,
+      "load": 14,
+      "pending": 0,
+      "remain": 0,
+      "packing": 14,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "현대상선(주)",
+      "orig": "HMM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USFON",
+      "orig": "USFON",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W26//HMM/HPNT/0619CLS/0625ETD/BK:SELM58911700/YM WILLPOWER/0002E/USFON/110030149/6/10 웅동 / Y2021",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "25H0420110",
+    "eta": "06월 19일",
+    "etd": "06월 25일",
+    "jobName": "INST24260610214",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610214",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 1428,
+      "mixed": 1428
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "KOCU4883506",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LSGL6337X.BRSELGA",
+    "qtyInfo": {
+      "plan": 63,
+      "load": 63,
+      "pending": 0,
+      "remain": 0,
+      "packing": 63,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "현대상선(주)",
+      "orig": "HMM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USFON",
+      "orig": "USFON",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W26//HMM/HPNT/0619CLS/0625ETD/BK:SELM58911700/YM WILLPOWER/0002E/USFON/110030149/6/10 웅동 / Y2021",
+    "adj1": "SKS양품만",
+    "adj1Color": null,
+    "adj2": "풀오버쇼티지 1대 63(64)",
+    "transporter": "BNI(파랑)",
+    "sealNo": "25H0420110",
+    "eta": "06월 19일",
+    "etd": "06월 25일",
+    "jobName": "INST24260610214",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610214",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 6615,
+      "mixed": 6615
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "KOCU4883506",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "SKSGR480GS.BSTESGN",
+    "qtyInfo": {
+      "plan": 3,
+      "load": 3,
+      "pending": 0,
+      "remain": 0,
+      "packing": 3,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "현대상선(주)",
+      "orig": "HMM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USFON",
+      "orig": "USFON",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W26//HMM/HPNT/0619CLS/0625ETD/BK:SELM58911700/YM WILLPOWER/0002E/USFON/110030149/6/10 웅동 / Y2021",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "25H0420110",
+    "eta": "06월 19일",
+    "etd": "06월 25일",
+    "jobName": "INST24260610214",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610214",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 981,
+      "mixed": 981
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "KOCU4456274",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "CBGJ3627S.BSTELNA",
+    "qtyInfo": {
+      "plan": 45,
+      "load": 45,
+      "pending": 0,
+      "remain": 0,
+      "packing": 45,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "현대상선(주)",
+      "orig": "HMM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USFON",
+      "orig": "USFON",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W22//HMM/HPNT/0611CLS/0617ETD/BK:SELM30490000/ONE FOCUS/0008E/USFON/110026979/6/10 웅동 / Y2020",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "26H1549241",
+    "eta": "06월 11일",
+    "etd": "06월 17일",
+    "jobName": "INST24260610212",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610212",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 1274.85,
+      "mixed": 1274.85
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "KOCU4456274",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LPGU6319Y.BSTELGA",
+    "qtyInfo": {
+      "plan": 17,
+      "load": 17,
+      "pending": 9,
+      "remain": 0,
+      "packing": 17,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "현대상선(주)",
+      "orig": "HMM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USFON",
+      "orig": "USFON",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W22//HMM/HPNT/0611CLS/0617ETD/BK:SELM30490000/ONE FOCUS/0008E/USFON/110026979/6/10 웅동 / Y2020",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "26H1549241",
+    "eta": "06월 11일",
+    "etd": "06월 17일",
+    "jobName": "INST24260610212",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610212",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 3051.5,
+      "mixed": 3051.5
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "KOCU4456274",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LSGL6337X.BRSELGA",
+    "qtyInfo": {
+      "plan": 42,
+      "load": 42,
+      "pending": 0,
+      "remain": 0,
+      "packing": 42,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "현대상선(주)",
+      "orig": "HMM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USFON",
+      "orig": "USFON",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W22//HMM/HPNT/0611CLS/0617ETD/BK:SELM30490000/ONE FOCUS/0008E/USFON/110026979/6/10 웅동 / Y2020",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "26H1549241",
+    "eta": "06월 11일",
+    "etd": "06월 17일",
+    "jobName": "INST24260610212",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610212",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 4410,
+      "mixed": 4410
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "KOCU4456274",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LSIU6339XE.BRSLLGA",
+    "qtyInfo": {
+      "plan": 1,
+      "load": 1,
+      "pending": 0,
+      "remain": 0,
+      "packing": 1,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "현대상선(주)",
+      "orig": "HMM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USFON",
+      "orig": "USFON",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W22//HMM/HPNT/0611CLS/0617ETD/BK:SELM30490000/ONE FOCUS/0008E/USFON/110026979/6/10 웅동 / Y2020",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "26H1549241",
+    "eta": "06월 11일",
+    "etd": "06월 17일",
+    "jobName": "INST24260610212",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610212",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 107,
+      "mixed": 107
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "KOCU4456274",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "WDEP9423F.BRSLLGA",
+    "qtyInfo": {
+      "plan": 2,
+      "load": 2,
+      "pending": 0,
+      "remain": 0,
+      "packing": 2,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "현대상선(주)",
+      "orig": "HMM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USFON",
+      "orig": "USFON",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W22//HMM/HPNT/0611CLS/0617ETD/BK:SELM30490000/ONE FOCUS/0008E/USFON/110026979/6/10 웅동 / Y2020",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "26H1549241",
+    "eta": "06월 11일",
+    "etd": "06월 17일",
+    "jobName": "INST24260610212",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610212",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 270,
+      "mixed": 270
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "EGSU1487311",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "CBGJ3023D.BBDELNA",
+    "qtyInfo": {
+      "plan": 6,
+      "load": 6,
+      "pending": 0,
+      "remain": 0,
+      "packing": 6,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "(주)에버그린코리아",
+      "orig": "EMC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USDNN",
+      "orig": "USDNN",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:EMC ↔ 전산:(주)에버그린코리아) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/EVER/BNCT/0617CLS/0620ETD/BK:040600329071/EVER LASTING/0018/USDNN/110028904/6/10 웅동",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "EMCFAX8105",
+    "eta": "06월 17일",
+    "etd": "06월 20일",
+    "jobName": "INST24260610208",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610208",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 151.5,
+      "mixed": 151.5
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "EGSU1487311",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LSIS6338FE.BRSLSTD",
+    "qtyInfo": {
+      "plan": 22,
+      "load": 22,
+      "pending": 0,
+      "remain": 0,
+      "packing": 22,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "(주)에버그린코리아",
+      "orig": "EMC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USDNN",
+      "orig": "USDNN",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:EMC ↔ 전산:(주)에버그린코리아) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/EVER/BNCT/0617CLS/0620ETD/BK:040600329071/EVER LASTING/0018/USDNN/110028904/6/10 웅동",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "EMCFAX8105",
+    "eta": "06월 17일",
+    "etd": "06월 20일",
+    "jobName": "INST24260610208",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610208",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 2200,
+      "mixed": 2200
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "EGSU1487311",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "SKSGT3654S.BSTESNA",
+    "qtyInfo": {
+      "plan": 14,
+      "load": 14,
+      "pending": 0,
+      "remain": 0,
+      "packing": 14,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "(주)에버그린코리아",
+      "orig": "EMC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USDNN",
+      "orig": "USDNN",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:EMC ↔ 전산:(주)에버그린코리아) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/EVER/BNCT/0617CLS/0620ETD/BK:040600329071/EVER LASTING/0018/USDNN/110028904/6/10 웅동",
+    "adj1": "태웅 / SKS양품만",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "EMCFAX8105",
+    "eta": "06월 17일",
+    "etd": "06월 20일",
+    "jobName": "INST24260610208",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610208",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 484.25999999999993,
+      "mixed": 484.25999999999993
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "EGSU1487311",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "WDEP9423F.BRSLLGA",
+    "qtyInfo": {
+      "plan": 42,
+      "load": 42,
+      "pending": 0,
+      "remain": 0,
+      "packing": 42,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "(주)에버그린코리아",
+      "orig": "EMC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USDNN",
+      "orig": "USDNN",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:EMC ↔ 전산:(주)에버그린코리아) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/EVER/BNCT/0617CLS/0620ETD/BK:040600329071/EVER LASTING/0018/USDNN/110028904/6/10 웅동",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "EMCFAX8105",
+    "eta": "06월 17일",
+    "etd": "06월 20일",
+    "jobName": "INST24260610208",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610208",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 5670,
+      "mixed": 5670
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "ONEU5405749",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LSGL6335X.BRSELGA",
+    "qtyInfo": {
+      "plan": 17,
+      "load": 0,
+      "pending": 0,
+      "remain": 17,
+      "packing": 17,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": "ONE",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USGYR",
+      "orig": "USGYR",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 직거래선///W26//ONE/HPNT/0617CLS/0622ETD/BK:SELG99855400/HMM HANUL/026E/USGYR/110027280/6/10 웅동 / Y2024",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "KRAX76463",
+    "eta": "06월 17일",
+    "etd": "06월 22일",
+    "jobName": "INST24260610205",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610205",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "ONEU5405749",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LSGL6337X.BRSELGA",
+    "qtyInfo": {
+      "plan": 11,
+      "load": 0,
+      "pending": 0,
+      "remain": 11,
+      "packing": 11,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": "ONE",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USGYR",
+      "orig": "USGYR",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 직거래선///W26//ONE/HPNT/0617CLS/0622ETD/BK:SELG99855400/HMM HANUL/026E/USGYR/110027280/6/10 웅동 / Y2024",
+    "adj1": "실카X",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "KRAX76463",
+    "eta": "06월 17일",
+    "etd": "06월 22일",
+    "jobName": "INST24260610205",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610205",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "ONEU5405749",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LTGL6937F.BR1ELGA",
+    "qtyInfo": {
+      "plan": 49,
+      "load": 0,
+      "pending": 0,
+      "remain": 49,
+      "packing": 49,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": "ONE",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USGYR",
+      "orig": "USGYR",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 직거래선///W26//ONE/HPNT/0617CLS/0622ETD/BK:SELG99855400/HMM HANUL/026E/USGYR/110027280/6/10 웅동 / Y2024",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "KRAX76463",
+    "eta": "06월 17일",
+    "etd": "06월 22일",
+    "jobName": "INST24260610205",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610205",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MSDU6148335",
+    "division": "CNZ",
+    "prodType": "-",
+    "prodName": "LF26C8210S.ASTCNA0",
+    "qtyInfo": {
+      "plan": 28,
+      "load": 28,
+      "pending": 0,
+      "remain": 0,
+      "packing": 28,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "096KR1030076 / MSC BARI/GO624N / PNC",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "FJ27329484",
+    "eta": "6월 16일",
+    "etd": "6월 22일",
+    "jobName": "W24법인콤프015",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610176",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 3696,
+      "mixed": 3696
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MSDU6148335",
+    "division": "DHZ",
+    "prodType": "-",
+    "prodName": "YPM031KAA.A61JCI",
+    "qtyInfo": {
+      "plan": 320,
+      "load": 320,
+      "pending": 0,
+      "remain": 0,
+      "packing": 20,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "096KR1030076 / MSC BARI/GO624N / PNC",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "FJ27329484",
+    "eta": "6월 16일",
+    "etd": "6월 22일",
+    "jobName": "W24법인콤프015",
+    "workDate": "6월 12일",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 8192,
+      "mixed": 8192
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MSNU6565067",
+    "division": "CNZ",
+    "prodType": "-",
+    "prodName": "LF29H8330S.ASTCNA0",
+    "qtyInfo": {
+      "plan": 26,
+      "load": 0,
+      "pending": 0,
+      "remain": 26,
+      "packing": 26,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "096KR1030076 / MSC BARI/GO624N / PNC / Y2024",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "FJ27329507",
+    "eta": "6월 16일",
+    "etd": "6월 22일",
+    "jobName": "W24법인콤프022",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610174",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MSNU6565067",
+    "division": "DHZ",
+    "prodType": "-",
+    "prodName": "YBH042WAA.A61JCI",
+    "qtyInfo": {
+      "plan": 64,
+      "load": 0,
+      "pending": 0,
+      "remain": 64,
+      "packing": 4,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "096KR1030076 / MSC BARI/GO624N / PNC / Y2024",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "FJ27329507",
+    "eta": "6월 16일",
+    "etd": "6월 22일",
+    "jobName": "W24법인콤프022",
+    "workDate": "6월 12일",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MSNU6565067",
+    "division": "DHZ",
+    "prodType": "-",
+    "prodName": "YBH051KAA.A61JCI",
+    "qtyInfo": {
+      "plan": 255,
+      "load": 0,
+      "pending": 0,
+      "remain": 255,
+      "packing": 16,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "096KR1030076 / MSC BARI/GO624N / PNC / Y2024",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "FJ27329507",
+    "eta": "6월 16일",
+    "etd": "6월 22일",
+    "jobName": "W24법인콤프022",
+    "workDate": "6월 12일",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "CAIU9017346",
+    "division": "CNZ",
+    "prodType": "-",
+    "prodName": "LF29H8330S.ASTCNA0",
+    "qtyInfo": {
+      "plan": 26,
+      "load": 0,
+      "pending": 0,
+      "remain": 26,
+      "packing": 26,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "096KR1030076 / MSC BARI/GO624N / PNC / Y2012",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "FJ27329505",
+    "eta": "6월 16일",
+    "etd": "6월 22일",
+    "jobName": "W24법인콤프021",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610173",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "CAIU9017346",
+    "division": "DHZ",
+    "prodType": "-",
+    "prodName": "YBH039KAA.A61TRN",
+    "qtyInfo": {
+      "plan": 320,
+      "load": 0,
+      "pending": 0,
+      "remain": 320,
+      "packing": 20,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "096KR1030076 / MSC BARI/GO624N / PNC / Y2012",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "FJ27329505",
+    "eta": "6월 16일",
+    "etd": "6월 22일",
+    "jobName": "W24법인콤프021",
+    "workDate": "6월 12일",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SEKU6823308",
+    "division": "CNZ",
+    "prodType": "-",
+    "prodName": "LF29H8330S.ASTCNA0",
+    "qtyInfo": {
+      "plan": 26,
+      "load": 0,
+      "pending": 0,
+      "remain": 26,
+      "packing": 26,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "096KR1030076 / MSC BARI/GO624N / PNC / Y2024",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "FJ24868888",
+    "eta": "6월 16일",
+    "etd": "6월 22일",
+    "jobName": "W24법인콤프020",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610172",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SEKU6823308",
+    "division": "DHZ",
+    "prodType": "-",
+    "prodName": "YBH039KAA.A61TRN",
+    "qtyInfo": {
+      "plan": 320,
+      "load": 0,
+      "pending": 0,
+      "remain": 320,
+      "packing": 20,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "096KR1030076 / MSC BARI/GO624N / PNC / Y2024",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "FJ24868888",
+    "eta": "6월 16일",
+    "etd": "6월 22일",
+    "jobName": "W24법인콤프020",
+    "workDate": "6월 12일",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MEDU7338630",
+    "division": "CNZ",
+    "prodType": "-",
+    "prodName": "LF29H8330S.ASTCNA0",
+    "qtyInfo": {
+      "plan": 26,
+      "load": 26,
+      "pending": 24,
+      "remain": 0,
+      "packing": 26,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "096KR1030076 / MSC BARI/GO624N / PNC",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "FJ24920875",
+    "eta": "6월 16일",
+    "etd": "6월 22일",
+    "jobName": "W24법인콤프019",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610111",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 3952,
+      "mixed": 3952
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MEDU7338630",
+    "division": "DHZ",
+    "prodType": "-",
+    "prodName": "YBH039KAA.A61TRN",
+    "qtyInfo": {
+      "plan": 320,
+      "load": 320,
+      "pending": 0,
+      "remain": 0,
+      "packing": 20,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "096KR1030076 / MSC BARI/GO624N / PNC",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "FJ24920875",
+    "eta": "6월 16일",
+    "etd": "6월 22일",
+    "jobName": "W24법인콤프019",
+    "workDate": "6월 12일",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 10624,
+      "mixed": 10624
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SMCU1254660",
+    "division": "DHZ",
+    "prodType": "-",
+    "prodName": "ABH051KAA.A61CTCR",
+    "qtyInfo": {
+      "plan": 320,
+      "load": 0,
+      "pending": 0,
+      "remain": 320,
+      "packing": 20,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": null
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": null
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": null
+    },
+    "detail": "원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 법인/W24법인콤프006//W25//SM//0100CLS/0100ETD/BK://USLOT/110030321/12155/Y2021",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "미분류",
+    "sealNo": "SM939803",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
+    "workDate": "6월 12일",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SMCU1254660",
+    "division": "CNZ",
+    "prodType": "-",
+    "prodName": "LF29H8330S.ASTCNA0",
+    "qtyInfo": {
+      "plan": 26,
+      "load": 0,
+      "pending": 0,
+      "remain": 26,
+      "packing": 26,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": null
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": null
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": null
+    },
+    "detail": "원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 법인/W24법인콤프006//W25//SM//0100CLS/0100ETD/BK://USLOT/110030321/12155/Y2021",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "미분류",
+    "sealNo": "SM939803",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260610108",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "ONEU5364681",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "CBEW3017BE.BBKLLCA",
+    "qtyInfo": {
+      "plan": 4,
+      "load": 4,
+      "pending": 0,
+      "remain": 0,
+      "packing": 4,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": "ONE",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "CADL4",
+      "orig": "CADL4",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "캐나다///W26//ONE/HJNC/0618CLS/0624ETD/BK:SELGA0040800/HYUNDAI SUPREME/158E/CADL4/110029801/6/9 웅동 / Y2024",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "KRAX19852",
+    "eta": "06월 18일",
+    "etd": "06월 24일",
+    "jobName": "INST24260609236",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260609236",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 75.72,
+      "mixed": 75.72
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "ONEU5364681",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LSGL6335X.BRSELCA",
+    "qtyInfo": {
+      "plan": 84,
+      "load": 84,
+      "pending": 0,
+      "remain": 0,
+      "packing": 84,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": "ONE",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "CADL4",
+      "orig": "CADL4",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "캐나다///W26//ONE/HJNC/0618CLS/0624ETD/BK:SELGA0040800/HYUNDAI SUPREME/158E/CADL4/110029801/6/9 웅동 / Y2024",
+    "adj1": "비닐막",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "KRAX19852",
+    "eta": "06월 18일",
+    "etd": "06월 24일",
+    "jobName": "INST24260609236",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260609236",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 7896,
+      "mixed": 7896
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SMCU1056746",
+    "division": "DHZ",
+    "prodType": "-",
+    "prodName": "ABH039KAA.A61CTCR",
+    "qtyInfo": {
+      "plan": 64,
+      "load": 0,
+      "pending": 0,
+      "remain": 64,
+      "packing": 4,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SM ↔ 전산:에스엠상선(주)한국지점) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "SEL6C8398300 / SM LONG BEACH/2604E / HJNC / Y2017",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "SM895293",
+    "eta": "6월 18일",
+    "etd": "6월 21일",
+    "jobName": "W23법인콤프020",
+    "workDate": "6월 12일",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SMCU1056746",
+    "division": "DHZ",
+    "prodType": "-",
+    "prodName": "ABH042KAA.A70SVC",
+    "qtyInfo": {
+      "plan": 125,
+      "load": 0,
+      "pending": 0,
+      "remain": 125,
+      "packing": 8,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SM ↔ 전산:에스엠상선(주)한국지점) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "SEL6C8398300 / SM LONG BEACH/2604E / HJNC / Y2017",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "SM895293",
+    "eta": "6월 18일",
+    "etd": "6월 21일",
+    "jobName": "W23법인콤프020",
+    "workDate": "6월 12일",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SMCU1056746",
+    "division": "DHZ",
+    "prodType": "-",
+    "prodName": "ABH051KAA.A70SVC",
+    "qtyInfo": {
+      "plan": 128,
+      "load": 0,
+      "pending": 0,
+      "remain": 128,
+      "packing": 8,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SM ↔ 전산:에스엠상선(주)한국지점) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "SEL6C8398300 / SM LONG BEACH/2604E / HJNC / Y2017",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "SM895293",
+    "eta": "6월 18일",
+    "etd": "6월 21일",
+    "jobName": "W23법인콤프020",
+    "workDate": "6월 12일",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SMCU1056746",
+    "division": "CNZ",
+    "prodType": "-",
+    "prodName": "LF26C6230V.ANSCNA0",
+    "qtyInfo": {
+      "plan": 30,
+      "load": 0,
+      "pending": 0,
+      "remain": 30,
+      "packing": 30,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SM ↔ 전산:에스엠상선(주)한국지점) | 리마크 불일치 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "SEL6C8398300 / SM LONG BEACH/2604E / HJNC / Y2017",
+    "adj1": "하단",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "SM895293",
+    "eta": "6월 18일",
+    "etd": "6월 21일",
+    "jobName": "W23법인콤프020",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260609011",
+    "tags": [
+      {
+        "text": "리마크 불일치",
+        "type": "warning"
+      }
+    ],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "KOCU4044240",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "CBGJ3023D.BBDELNA",
+    "qtyInfo": {
+      "plan": 8,
+      "load": 0,
+      "pending": 0,
+      "remain": 8,
+      "packing": 8,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "현대상선(주)",
+      "orig": "HMM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USSOJ",
+      "orig": "USSOJ",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/HPNT/0616CLS/0621ETD/BK:SELM35912100/YM TIPTOP /0024E/USSOJ/110028914/6/8 웅동 / Y2019",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "25H0415165",
+    "eta": "06월 16일",
+    "etd": "06월 21일",
+    "jobName": "INST24260608257",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260608257",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "KOCU4044240",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LDEL7324YE.BSTLLGA",
+    "qtyInfo": {
+      "plan": 14,
+      "load": 0,
+      "pending": 0,
+      "remain": 14,
+      "packing": 14,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "현대상선(주)",
+      "orig": "HMM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USSOJ",
+      "orig": "USSOJ",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/HPNT/0616CLS/0621ETD/BK:SELM35912100/YM TIPTOP /0024E/USSOJ/110028914/6/8 웅동 / Y2019",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "25H0415165",
+    "eta": "06월 16일",
+    "etd": "06월 21일",
+    "jobName": "INST24260608257",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260608257",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "KOCU4044240",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LSGL6337X.BRSELGA",
+    "qtyInfo": {
+      "plan": 58,
+      "load": 0,
+      "pending": 0,
+      "remain": 58,
+      "packing": 58,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "현대상선(주)",
+      "orig": "HMM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USSOJ",
+      "orig": "USSOJ",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/HPNT/0616CLS/0621ETD/BK:SELM35912100/YM TIPTOP /0024E/USSOJ/110028914/6/8 웅동 / Y2019",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "25H0415165",
+    "eta": "06월 16일",
+    "etd": "06월 21일",
+    "jobName": "INST24260608257",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260608257",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "KOCU4044240",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "SKSSV3001S.BSTLSGN",
+    "qtyInfo": {
+      "plan": 7,
+      "load": 0,
+      "pending": 0,
+      "remain": 7,
+      "packing": 7,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "현대상선(주)",
+      "orig": "HMM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USSOJ",
+      "orig": "USSOJ",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/HPNT/0616CLS/0621ETD/BK:SELM35912100/YM TIPTOP /0024E/USSOJ/110028914/6/8 웅동 / Y2019",
+    "adj1": "태웅 / SKS양품만",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "25H0415165",
+    "eta": "06월 16일",
+    "etd": "06월 21일",
+    "jobName": "INST24260608257",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260608257",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "KOCU4044240",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "WSED3023B.BBKLLNA",
+    "qtyInfo": {
+      "plan": 10,
+      "load": 0,
+      "pending": 0,
+      "remain": 10,
+      "packing": 10,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "현대상선(주)",
+      "orig": "HMM",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USSOJ",
+      "orig": "USSOJ",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/HPNT/0616CLS/0621ETD/BK:SELM35912100/YM TIPTOP /0024E/USSOJ/110028914/6/8 웅동 / Y2019",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "25H0415165",
+    "eta": "06월 16일",
+    "etd": "06월 21일",
+    "jobName": "INST24260608257",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260608257",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SELU4008510",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "CBGJ3023S.BSTELNA",
+    "qtyInfo": {
+      "plan": 20,
+      "load": 20,
+      "pending": 20,
+      "remain": 0,
+      "packing": 20,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SML ↔ 전산:에스엠상선(주)한국지점) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W22//SM/HJNC/0618CLS/0621ETD/BK:SEL6C8398300/SM LONG BEACH/2604E/USLOT/110027859/6/8 웅동",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "SM898671",
+    "eta": "06월 18일",
+    "etd": "06월 21일",
+    "jobName": "INST24260608253",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260608253",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 505,
+      "mixed": 505
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SELU4008510",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "CBIH3613BE.BB2ELNA",
+    "qtyInfo": {
+      "plan": 17,
+      "load": 17,
+      "pending": 0,
+      "remain": 0,
+      "packing": 17,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SML ↔ 전산:에스엠상선(주)한국지점) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W22//SM/HJNC/0618CLS/0621ETD/BK:SEL6C8398300/SM LONG BEACH/2604E/USLOT/110027859/6/8 웅동",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "SM898671",
+    "eta": "06월 18일",
+    "etd": "06월 21일",
+    "jobName": "INST24260608253",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260608253",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 443.7,
+      "mixed": 443.7
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SELU4008510",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "LSIU6339XE.BRSLLGA",
+    "qtyInfo": {
+      "plan": 10,
+      "load": 10,
+      "pending": 0,
+      "remain": 0,
+      "packing": 10,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SML ↔ 전산:에스엠상선(주)한국지점) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W22//SM/HJNC/0618CLS/0621ETD/BK:SEL6C8398300/SM LONG BEACH/2604E/USLOT/110027859/6/8 웅동",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "SM898671",
+    "eta": "06월 18일",
+    "etd": "06월 21일",
+    "jobName": "INST24260608253",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260608253",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 1070,
+      "mixed": 1070
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SELU4008510",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "WCEP6423D.BBDLLGA",
+    "qtyInfo": {
+      "plan": 16,
+      "load": 16,
+      "pending": 0,
+      "remain": 0,
+      "packing": 16,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SML ↔ 전산:에스엠상선(주)한국지점) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W22//SM/HJNC/0618CLS/0621ETD/BK:SEL6C8398300/SM LONG BEACH/2604E/USLOT/110027859/6/8 웅동",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "SM898671",
+    "eta": "06월 18일",
+    "etd": "06월 21일",
+    "jobName": "INST24260608253",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260608253",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 1638.4,
+      "mixed": 1638.4
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SELU4008510",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "WCEP6423F.BRSLLGA",
+    "qtyInfo": {
+      "plan": 26,
+      "load": 26,
+      "pending": 0,
+      "remain": 0,
+      "packing": 26,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SML ↔ 전산:에스엠상선(주)한국지점) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W22//SM/HJNC/0618CLS/0621ETD/BK:SEL6C8398300/SM LONG BEACH/2604E/USLOT/110027859/6/8 웅동",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "SM898671",
+    "eta": "06월 18일",
+    "etd": "06월 21일",
+    "jobName": "INST24260608253",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260608253",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 2662.4,
+      "mixed": 2662.4
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "SELU4008510",
+    "division": "CVZ",
+    "prodType": "-",
+    "prodName": "WDEP9423F.BRSLLGA",
+    "qtyInfo": {
+      "plan": 12,
+      "load": 12,
+      "pending": 0,
+      "remain": 0,
+      "packing": 12,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "에스엠상선(주)한국지점",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USLOT",
+      "orig": "USLOT",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SML ↔ 전산:에스엠상선(주)한국지점) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "북미 법인///W22//SM/HJNC/0618CLS/0621ETD/BK:SEL6C8398300/SM LONG BEACH/2604E/USLOT/110027859/6/8 웅동",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "SM898671",
+    "eta": "06월 18일",
+    "etd": "06월 21일",
+    "jobName": "INST24260608253",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260608253",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 1620,
+      "mixed": 1620
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "CAAU8143028",
+    "division": "CNZ",
+    "prodType": "-",
+    "prodName": "GT-B6085EP.AEPQESL",
+    "qtyInfo": {
+      "plan": 51,
+      "load": 51,
+      "pending": 0,
+      "remain": 0,
+      "packing": 51,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "한국머스크(주)",
+      "orig": "MSK",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "BNMUA",
+      "orig": "BNMUA",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSK ↔ 전산:한국머스크(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "아주///W24/MSK//BUSAN NEW PORT TERMINAL CO.LTD/0616CLS/0620ETD/BK:270889636/MAERSK CAP JERVIS/625S/BNMUA/110029226//",
+    "adj1": "지정",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "BNI(파랑)",
+    "sealNo": "MLKR1180623",
+    "eta": "06월 16일",
+    "etd": "06월 20일",
+    "jobName": "INST24260608032",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST24260608032",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 4794,
+      "mixed": 4794
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MSNU7124750",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "WD300CB.BBLEEUS",
+    "qtyInfo": {
+      "plan": 43,
+      "load": 43,
+      "pending": 0,
+      "remain": 0,
+      "packing": 43,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "6G1P007C/0//MSC/23CLS/29ETD/096KR1031403/PNC/MSC DANIELA/GO625N//USTXW / Y2022",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "FJ27329469",
+    "eta": "06월 23일",
+    "etd": "06월 29일",
+    "jobName": "INST00260611182",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST00260611182",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 2292.76,
+      "mixed": 2292.76
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MSNU7124750",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "WDP6W.ABWEEUS",
+    "qtyInfo": {
+      "plan": 210,
+      "load": 210,
+      "pending": 0,
+      "remain": 0,
+      "packing": 210,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "6G1P007C/0//MSC/23CLS/29ETD/096KR1031403/PNC/MSC DANIELA/GO625N//USTXW / Y2022",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "FJ27329469",
+    "eta": "06월 23일",
+    "etd": "06월 29일",
+    "jobName": "INST00260611182",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST00260611182",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 5943,
+      "mixed": 5943
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "TRHU8543810",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "WDP8B.ABSEEUS",
+    "qtyInfo": {
+      "plan": 33,
+      "load": 33,
+      "pending": 0,
+      "remain": 0,
+      "packing": 33,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "6G1P0084/0//MSC/23CLS/29ETD/096KR1031403/PNC/MSC DANIELA/GO625N//USTXW / Y2021",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "FJ27329462",
+    "eta": "06월 23일",
+    "etd": "06월 29일",
+    "jobName": "INST00260611126",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST00260611126",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 1003.2,
+      "mixed": 1003.2
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "TRHU8543810",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "WDP8S.ANDEEUS",
+    "qtyInfo": {
+      "plan": 135,
+      "load": 135,
+      "pending": 0,
+      "remain": 0,
+      "packing": 135,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USTXW",
+      "orig": "USTXW",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "6G1P0084/0//MSC/23CLS/29ETD/096KR1031403/PNC/MSC DANIELA/GO625N//USTXW / Y2021",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "FJ27329462",
+    "eta": "06월 23일",
+    "etd": "06월 29일",
+    "jobName": "INST00260611126",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST00260611126",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 4104,
+      "mixed": 4104
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "HPCU4153370",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DC90V5V9S.APTPCOM",
+    "qtyInfo": {
+      "plan": 70,
+      "load": 70,
+      "pending": 0,
+      "remain": 0,
+      "packing": 70,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "장금상선(주)",
+      "orig": "SKR",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "KZALA",
+      "orig": "KZALA",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SKR ↔ 전산:장금상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "/혼,70+20+100+1+1+10,,,W23,CIS,KZALA,E0M/40HC/12CLS/17ETD/SNKO010260501120 /BPT 신선대/SAWASDEE PACIFIC/2618W/KZALA",
+    "adj1": "서중 / 북북 / X자쇼링 / TCR사진양식 / 사진메일공유",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "276574",
+    "eta": "6월 12일",
+    "etd": "06월 17일",
+    "jobName": "INST00260608272",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST00260608272",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 3990,
+      "mixed": 3990
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "HPCU4153370",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DC90V9V9E.BBWPCOM",
+    "qtyInfo": {
+      "plan": 20,
+      "load": 20,
+      "pending": 0,
+      "remain": 0,
+      "packing": 20,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "장금상선(주)",
+      "orig": "SKR",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "KZALA",
+      "orig": "KZALA",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SKR ↔ 전산:장금상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "/혼,70+20+100+1+1+10,,,W23,CIS,KZALA,E0M/40HC/12CLS/17ETD/SNKO010260501120 /BPT 신선대/SAWASDEE PACIFIC/2618W/KZALA",
+    "adj1": "KRSHG>KRPUS LSP 수정 / 포워더 KR055758 수정 / 막대 씰 사용 (가운대 책상 위에 있음)",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "276574",
+    "eta": "6월 12일",
+    "etd": "06월 17일",
+    "jobName": "INST00260608272",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST00260608272",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 1200,
+      "mixed": 1200
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "HPCU4153370",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DK1W.ABWNCOM",
+    "qtyInfo": {
+      "plan": 100,
+      "load": 0,
+      "pending": 0,
+      "remain": 100,
+      "packing": 100,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "장금상선(주)",
+      "orig": "SKR",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "KZALA",
+      "orig": "KZALA",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SKR ↔ 전산:장금상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "/혼,70+20+100+1+1+10,,,W23,CIS,KZALA,E0M/40HC/12CLS/17ETD/SNKO010260501120 /BPT 신선대/SAWASDEE PACIFIC/2618W/KZALA",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "276574",
+    "eta": "6월 12일",
+    "etd": "06월 17일",
+    "jobName": "INST00260608272",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST00260608272",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "HPCU4153370",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "S3MFC.BLMPCOM",
+    "qtyInfo": {
+      "plan": 1,
+      "load": 1,
+      "pending": 0,
+      "remain": 0,
+      "packing": 1,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "장금상선(주)",
+      "orig": "SKR",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "KZALA",
+      "orig": "KZALA",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SKR ↔ 전산:장금상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "/혼,70+20+100+1+1+10,,,W23,CIS,KZALA,E0M/40HC/12CLS/17ETD/SNKO010260501120 /BPT 신선대/SAWASDEE PACIFIC/2618W/KZALA",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "276574",
+    "eta": "6월 12일",
+    "etd": "06월 17일",
+    "jobName": "INST00260608272",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST00260608272",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 86,
+      "mixed": 86
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "HPCU4153370",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "S3WER.BLWPCOM",
+    "qtyInfo": {
+      "plan": 1,
+      "load": 1,
+      "pending": 0,
+      "remain": 0,
+      "packing": 1,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "장금상선(주)",
+      "orig": "SKR",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "KZALA",
+      "orig": "KZALA",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SKR ↔ 전산:장금상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "/혼,70+20+100+1+1+10,,,W23,CIS,KZALA,E0M/40HC/12CLS/17ETD/SNKO010260501120 /BPT 신선대/SAWASDEE PACIFIC/2618W/KZALA",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "276574",
+    "eta": "6월 12일",
+    "etd": "06월 17일",
+    "jobName": "INST00260608272",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST00260608272",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 86,
+      "mixed": 86
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "HPCU4153370",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "W1S1CVKK2HM.ABGPCOM",
+    "qtyInfo": {
+      "plan": 10,
+      "load": 10,
+      "pending": 0,
+      "remain": 0,
+      "packing": 10,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "장금상선(주)",
+      "orig": "SKR",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "KZALA",
+      "orig": "KZALA",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:SKR ↔ 전산:장금상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "/혼,70+20+100+1+1+10,,,W23,CIS,KZALA,E0M/40HC/12CLS/17ETD/SNKO010260501120 /BPT 신선대/SAWASDEE PACIFIC/2618W/KZALA",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "천마(빨강)",
+    "sealNo": "276574",
+    "eta": "6월 12일",
+    "etd": "06월 17일",
+    "jobName": "INST00260608272",
+    "workDate": "6월 12일",
+    "loadPlanNo": "INST00260608272",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 1720,
+      "mixed": 1720
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "16",
+    "division": "-",
+    "prodType": "-",
+    "prodName": "ABG036KAC.A70SVC",
+    "qtyInfo": {
+      "plan": 256,
+      "load": 0,
+      "pending": 0,
+      "remain": 256,
+      "packing": 0,
+      "origPlan": 256,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "-",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "-",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USLOT",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "SEL6C8398300 / SM LONG BEACH/2604E / HJNC",
+    "adj1": "하단",
+    "adj2": "",
+    "workDate": "6월 12일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "6월 18일",
+    "etd": "6월 21일",
+    "jobName": "W24법인콤프005"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "20",
+    "division": "-",
+    "prodType": "-",
+    "prodName": "YBM051RAA.A62LEX",
+    "qtyInfo": {
+      "plan": 320,
+      "load": 0,
+      "pending": 0,
+      "remain": 320,
+      "packing": 0,
+      "origPlan": 320,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "-",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "-",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USTXW",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "096KR1030076 / MSC BARI/GO624N / PNC",
+    "adj1": "하단",
+    "adj2": "",
+    "workDate": "6월 12일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "6월 16일",
+    "etd": "6월 22일",
+    "jobName": "W24법인콤프025"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "4",
+    "division": "-",
+    "prodType": "-",
+    "prodName": "ABG036KAC.A70SVC",
+    "qtyInfo": {
+      "plan": 64,
+      "load": 0,
+      "pending": 0,
+      "remain": 64,
+      "packing": 0,
+      "origPlan": 64,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "-",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "-",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USLOT",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "SEL6C8398300 / SM LONG BEACH/2604E / HJNC",
+    "adj1": "하단",
+    "adj2": "",
+    "workDate": "6월 12일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "6월 18일",
+    "etd": "6월 21일",
+    "jobName": "W24법인콤프005"
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "CMAU3891418",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DLEX6700B.ABLEEUS",
+    "qtyInfo": {
+      "plan": 50,
+      "load": 50,
+      "pending": 0,
+      "remain": 0,
+      "packing": 50,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "CMA - CGM",
+      "orig": "CMA",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USSLC",
+      "orig": "USSLC",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "6G1R028H/쇼티지금지/동방작업 (4모델)★혼R.479(50+35+9(WD300CB)+4(WD300CV)),,,W24,NA,USSLC,NXD/CMA/00CLS/00ETD////USSLC",
+    "adj1": "실카X",
+    "adj1Color": null,
+    "adj2": "6G1R028H",
+    "transporter": "천마(빨강)",
+    "sealNo": "M6427055",
+    "eta": "미정",
+    "etd": "미정",
+    "jobName": "안현태-W24-260526-25",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 2950,
+      "mixed": 2950
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "CMAU3891418",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DLEX8600BE.AEBEEUS",
+    "qtyInfo": {
+      "plan": 35,
+      "load": 35,
+      "pending": 0,
+      "remain": 0,
+      "packing": 35,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "CMA - CGM",
+      "orig": "CMA",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USSLC",
+      "orig": "USSLC",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "6G1R0293/쇼티지금지/동방작업 (4모델)★혼R.479(50+35+9(WD300CB)+4(WD300CV)),,,W24,NA,USSLC,NXD//00CLS/00ETD////USSLC",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "6G1R0293",
+    "transporter": "천마(빨강)",
+    "sealNo": "M6427055",
+    "eta": "미정",
+    "etd": "미정",
+    "jobName": "안현태-W24-260526-25",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 2124.85,
+      "mixed": 2124.85
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "CMAU3891418",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "WD300CB.BBLEEUS",
+    "qtyInfo": {
+      "plan": 9,
+      "load": 9,
+      "pending": 0,
+      "remain": 0,
+      "packing": 9,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "CMA - CGM",
+      "orig": "CMA",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USSLC",
+      "orig": "USSLC",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "6G1M0048/쇼티지금지/동방작업 (4모델)★혼R.479(50+35+9(WD300CB)+4(WD300CV)),,,W24,NA,USSLC,NXD//00CLS/00ETD////USSLC",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "6G1M0048",
+    "transporter": "천마(빨강)",
+    "sealNo": "M6427055",
+    "eta": "미정",
+    "etd": "미정",
+    "jobName": "안현태-W24-260526-25",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 479.88,
+      "mixed": 479.88
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "CMAU3891418",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "WD300CV.BSSEEUS",
+    "qtyInfo": {
+      "plan": 4,
+      "load": 4,
+      "pending": 0,
+      "remain": 0,
+      "packing": 4,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "CMA - CGM",
+      "orig": "CMA",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USSLC",
+      "orig": "USSLC",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "6G1M004C/쇼티지금지/동방작업 (4모델)★혼R.479(50+35+9(WD300CB)+4(WD300CV)),,,W24,NA,USSLC,NXD//00CLS/00ETD////USSLC",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "6G1M004C",
+    "transporter": "천마(빨강)",
+    "sealNo": "M6427055",
+    "eta": "미정",
+    "etd": "미정",
+    "jobName": "안현태-W24-260526-25",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 213.28,
+      "mixed": 213.28
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MSMU5373127",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DLGX6701B.ABLEEUS",
+    "qtyInfo": {
+      "plan": 15,
+      "load": 0,
+      "pending": 0,
+      "remain": 15,
+      "packing": 15,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USHNZ",
+      "orig": "USHNZ",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "6G1R028T/쇼티지금지/동방작업 (6모델)★혼R.534(15+17+15+12+5+7(WD300CB)),,,W24,NA,USHNZ,NXD/MSC/00CLS/00ETD////USHNZ / Y2021",
+    "adj1": "실카X",
+    "adj1Color": null,
+    "adj2": "6G1R028T",
+    "transporter": "천마(빨강)",
+    "sealNo": "FJ27329565",
+    "eta": "미정",
+    "etd": "미정",
+    "jobName": "안현태-W24-260526-26",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MSMU5373127",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DLGX8601BE.AEBEEUS",
+    "qtyInfo": {
+      "plan": 17,
+      "load": 0,
+      "pending": 0,
+      "remain": 17,
+      "packing": 17,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USHNZ",
+      "orig": "USHNZ",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "6G1R028K/쇼티지금지/동방작업 (6모델)★혼R.534(15+17+15+12+5+7(WD300CB)),,,W24,NA,USHNZ,NXD//00CLS/00ETD////USHNZ",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "6G1R028K",
+    "transporter": "천마(빨강)",
+    "sealNo": "FJ27329565",
+    "eta": "미정",
+    "etd": "미정",
+    "jobName": "안현태-W24-260526-26",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MSMU5373127",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DLGX8901B.ABLEEUS",
+    "qtyInfo": {
+      "plan": 15,
+      "load": 0,
+      "pending": 0,
+      "remain": 15,
+      "packing": 15,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USHNZ",
+      "orig": "USHNZ",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "6G1R028Y/쇼티지금지/동방작업 (6모델)★혼R.534(15+17+15+12+5+7(WD300CB)),,,W24,NA,USHNZ,NXD//00CLS/00ETD////USHNZ",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "6G1R028Y",
+    "transporter": "천마(빨강)",
+    "sealNo": "FJ27329565",
+    "eta": "미정",
+    "etd": "미정",
+    "jobName": "안현태-W24-260526-26",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MSMU5373127",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "WD300CB.BBLEEUS",
+    "qtyInfo": {
+      "plan": 7,
+      "load": 0,
+      "pending": 0,
+      "remain": 7,
+      "packing": 7,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USHNZ",
+      "orig": "USHNZ",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "6G1M004A/쇼티지금지/동방작업 (6모델)★혼R.534(15+17+15+12+5+7(WD300CB)),,,W24,NA,USHNZ,NXD//00CLS/00ETD////USHNZ",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "6G1M004A",
+    "transporter": "천마(빨강)",
+    "sealNo": "FJ27329565",
+    "eta": "미정",
+    "etd": "미정",
+    "jobName": "안현태-W24-260526-26",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MSMU5373127",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "WKGX301HBA.ABLEEUS",
+    "qtyInfo": {
+      "plan": 5,
+      "load": 0,
+      "pending": 0,
+      "remain": 5,
+      "packing": 5,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USHNZ",
+      "orig": "USHNZ",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "6G1W00TU/쇼티지금지/동방작업 (6모델)★혼R.534(15+17+15+12+5+7(WD300CB)),,,W24,NA,USHNZ,NXD//00CLS/00ETD////USHNZ",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "6G1W00TU",
+    "transporter": "천마(빨강)",
+    "sealNo": "FJ27329565",
+    "eta": "미정",
+    "etd": "미정",
+    "jobName": "안현태-W24-260526-26",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "MSMU5373127",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "WM8900HBA.ABLEEUS",
+    "qtyInfo": {
+      "plan": 12,
+      "load": 0,
+      "pending": 0,
+      "remain": 12,
+      "packing": 12,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "엠에스씨코리아(주)",
+      "orig": "MSC",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USHNZ",
+      "orig": "USHNZ",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "6G1F00EE/쇼티지금지/동방작업 (6모델)★혼R.534(15+17+15+12+5+7(WD300CB)),,,W24,NA,USHNZ,NXD//00CLS/00ETD////USHNZ",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "6G1F00EE",
+    "transporter": "천마(빨강)",
+    "sealNo": "FJ27329565",
+    "eta": "미정",
+    "etd": "미정",
+    "jobName": "안현태-W24-260526-26",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "TCLU8260358",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DLEX6500W.ABWEEUS",
+    "qtyInfo": {
+      "plan": 18,
+      "load": 0,
+      "pending": 0,
+      "remain": 18,
+      "packing": 18,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": "ONE",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USGRX",
+      "orig": "USGRX",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "혼적(11 + 36(S3WFBN)),,,W25,NA,USGRX,NXD",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "6G1R02BP",
+    "transporter": "천마(빨강)",
+    "sealNo": "KRAX16311",
+    "eta": "6월 11일",
+    "etd": "6월 17일",
+    "jobName": "박진수-W25-260602-14",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "TCLU8260358",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DLEX8600WE.AEWEEUS",
+    "qtyInfo": {
+      "plan": 25,
+      "load": 0,
+      "pending": 0,
+      "remain": 25,
+      "packing": 25,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": "ONE",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USGRX",
+      "orig": "USGRX",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "동방작업 (6모델)★혼CO655(11+18+25+9+60(WDP6W)+7(WD300CB)),,,W25,NA,USGRX,NXD",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "6G1R02BA",
+    "transporter": "천마(빨강)",
+    "sealNo": "KRAX16311",
+    "eta": "6월 11일",
+    "etd": "6월 17일",
+    "jobName": "박진수-W25-260602-14",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "TCLU8260358",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DLGX6501W.ABWEEUS",
+    "qtyInfo": {
+      "plan": 11,
+      "load": 0,
+      "pending": 0,
+      "remain": 11,
+      "packing": 11,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": "ONE",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USGRX",
+      "orig": "USGRX",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "동방작업 (6모델)★혼CO655(11+18+25+9+60(WDP6W)+7(WD300CB)),,,W25,NA,USGRX,NXD",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "6G1R02AV",
+    "transporter": "천마(빨강)",
+    "sealNo": "KRAX16311",
+    "eta": "6월 11일",
+    "etd": "6월 17일",
+    "jobName": "박진수-W25-260602-14",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "TCLU8260358",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DLGX8601BE.AEBEEUS",
+    "qtyInfo": {
+      "plan": 9,
+      "load": 0,
+      "pending": 0,
+      "remain": 9,
+      "packing": 9,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": "ONE",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USGRX",
+      "orig": "USGRX",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "동방작업 (6모델)★혼CO655(11+18+25+9+60(WDP6W)+7(WD300CB)),,,W25,NA,USGRX,NXD",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "6G1R02B5",
+    "transporter": "천마(빨강)",
+    "sealNo": "KRAX16311",
+    "eta": "6월 11일",
+    "etd": "6월 17일",
+    "jobName": "박진수-W25-260602-14",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "TCLU8260358",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "WD300CB.BBLEEUS",
+    "qtyInfo": {
+      "plan": 7,
+      "load": 0,
+      "pending": 0,
+      "remain": 7,
+      "packing": 7,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": "ONE",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USGRX",
+      "orig": "USGRX",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "ONE/HJNC/2026-06-11/2026-06-17/SELG94165700/ONE HUMEN/100E/동방작업 (6모델)★혼CO655(11+18+25+9+60(WDP6W)+7(WD300CB)),,,W25,NA,USGRX,NXD / Y2011",
+    "adj1": "실카X",
+    "adj1Color": null,
+    "adj2": "6G1M0047",
+    "transporter": "천마(빨강)",
+    "sealNo": "KRAX16311",
+    "eta": "6월 11일",
+    "etd": "6월 17일",
+    "jobName": "박진수-W25-260602-14",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "TCLU8260358",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "WDP6W.ABWEEUS",
+    "qtyInfo": {
+      "plan": 60,
+      "load": 0,
+      "pending": 0,
+      "remain": 60,
+      "packing": 60,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": "HC",
+      "isMismatch": false
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": "ONE",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "USGRX",
+      "orig": "USGRX",
+      "isMismatch": false
+    },
+    "detail": "선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "동방작업 (6모델)★혼CO655(11+18+25+9+60(WDP6W)+7(WD300CB)),,,W25,NA,USGRX,NXD",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "6G1P0064",
+    "transporter": "천마(빨강)",
+    "sealNo": "KRAX16311",
+    "eta": "6월 11일",
+    "etd": "6월 17일",
+    "jobName": "박진수-W25-260602-14",
+    "workDate": "6월 12일",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "TCNU3597390",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DLEX6500W.ABWEEUS",
+    "qtyInfo": {
+      "plan": 30,
+      "load": 0,
+      "pending": 0,
+      "remain": 30,
+      "packing": 30,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": null
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": null
+    },
+    "destination": {
+      "val": "USMDE",
+      "orig": null
+    },
+    "detail": "원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 110028451 / 동방작업 (5모델)★혼IN451(15+10+30+15+20),,,W26,NA,USMDE,NXD/ONE/HPNT/2026-06-19/2026-06-25/SELGA0302900/HMM AQUAMARINE/012E /Y2017",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "미분류",
+    "sealNo": "KRAX72313",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
+    "workDate": "6월 12일",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "TCNU3597390",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DLEX6700B.ABLEEUS",
+    "qtyInfo": {
+      "plan": 10,
+      "load": 0,
+      "pending": 0,
+      "remain": 10,
+      "packing": 10,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": null
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": null
+    },
+    "destination": {
+      "val": "USMDE",
+      "orig": null
+    },
+    "detail": "원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 110028451 / 동방작업 (5모델)★혼IN451(15+10+30+15+20),,,W26,NA,USMDE,NXD/ONE/HPNT/2026-06-19/2026-06-25/SELGA0302900/HMM AQUAMARINE/012E /Y2017",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "미분류",
+    "sealNo": "KRAX72313",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
+    "workDate": "6월 12일",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "TCNU3597390",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DLEX8600BE.AEBEEUS",
+    "qtyInfo": {
+      "plan": 20,
+      "load": 0,
+      "pending": 0,
+      "remain": 20,
+      "packing": 20,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": null
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": null
+    },
+    "destination": {
+      "val": "USMDE",
+      "orig": null
+    },
+    "detail": "원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 110028451 / 동방작업 (5모델)★혼IN451(15+10+30+15+20),,,W26,NA,USMDE,NXD/ONE/HPNT/2026-06-19/2026-06-25/SELGA0302900/HMM AQUAMARINE/012E /Y2017",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "미분류",
+    "sealNo": "KRAX72313",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
+    "workDate": "6월 12일",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "TCNU3597390",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DLEX8600WE.AEWEEUS",
+    "qtyInfo": {
+      "plan": 15,
+      "load": 0,
+      "pending": 0,
+      "remain": 15,
+      "packing": 15,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": null
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": null
+    },
+    "destination": {
+      "val": "USMDE",
+      "orig": null
+    },
+    "detail": "원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 110028451 / 동방작업 (5모델)★혼IN451(15+10+30+15+20),,,W26,NA,USMDE,NXD/ONE/HPNT/2026-06-19/2026-06-25/SELGA0302900/HMM AQUAMARINE/012E /Y2017",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "미분류",
+    "sealNo": "KRAX72313",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
+    "workDate": "6월 12일",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "원본누락",
+    "cntrNo": "TCNU3597390",
+    "division": "DFZ",
+    "prodType": "-",
+    "prodName": "DLGX6701B.ABLEEUS",
+    "qtyInfo": {
+      "plan": 15,
+      "load": 0,
+      "pending": 0,
+      "remain": 15,
+      "packing": 15,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
+      "orig": null
+    },
+    "carrierName": {
+      "val": "오션네트워크익스프레스코리아 주식회사",
+      "orig": null
+    },
+    "destination": {
+      "val": "USMDE",
+      "orig": null
+    },
+    "detail": "원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 110028451 / 동방작업 (5모델)★혼IN451(15+10+30+15+20),,,W26,NA,USMDE,NXD/ONE/HPNT/2026-06-19/2026-06-25/SELGA0302900/HMM AQUAMARINE/012E /Y2017",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "미분류",
+    "sealNo": "KRAX72313",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
+    "workDate": "6월 12일",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  }
+]

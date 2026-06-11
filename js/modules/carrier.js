@@ -149,170 +149,160 @@ function renderCarrierSettings() {
     });
 }
 
-// 수정 완료 버튼
-document.getElementById('btnUpdateCarrier')?.addEventListener('click', () => {
-    const originalCode = document.getElementById('editOriginalCode').value;
-    const newCode = document.getElementById('inputRawCode').value.trim().toUpperCase();
-    const newNamesRaw = document.getElementById('inputMappedName').value.trim();
+if (typeof document !== 'undefined') {
+    // 수정 완료 버튼
+    document.getElementById('btnUpdateCarrier')?.addEventListener('click', () => {
+        const originalCode = document.getElementById('editOriginalCode').value;
+        const newCode = document.getElementById('inputRawCode').value.trim().toUpperCase();
+        const newNamesRaw = document.getElementById('inputMappedName').value.trim();
 
-    if (!newCode || !newNamesRaw) {
-        alert("원문 코드와 바뀔 이름들을 모두 입력해주세요.");
-        return;
-    }
+        if (!newCode || !newNamesRaw) {
+            alert("원문 코드와 바뀔 이름들을 모두 입력해주세요.");
+            return;
+        }
 
-    // 이름들 분리 (쉼표 및 공백 처리)
-    const newNames = newNamesRaw.split(',').map(n => n.trim()).filter(n => n !== "");
+        // 이름들 분리 (쉼표 및 공백 처리)
+        const newNames = newNamesRaw.split(',').map(n => n.trim()).filter(n => n !== "");
 
-    // 원래 키와 다르면 기존 키 삭제
-    if (originalCode !== newCode) {
-        delete carrierMap[originalCode];
-    }
+        // 원래 키와 다르면 기존 키 삭제
+        if (originalCode !== newCode) {
+            delete carrierMap[originalCode];
+        }
 
-    carrierMap[newCode] = newNames;
+        carrierMap[newCode] = newNames;
 
-    saveCarrierMap();
-    renderCarrierSettings();
-    resetSettingsInput();
-    alert("수정되었습니다.");
-});
+        saveCarrierMap();
+        renderCarrierSettings();
+        resetSettingsInput();
+        alert("수정되었습니다.");
+    });
 
-// 취소 버튼
-document.getElementById('btnCancelEdit')?.addEventListener('click', () => {
-    resetSettingsInput();
-});
+    // 취소 버튼
+    document.getElementById('btnCancelEdit')?.addEventListener('click', () => {
+        resetSettingsInput();
+    });
 
-function resetSettingsInput() {
-    const editCode = document.getElementById('editOriginalCode');
-    const inputRaw = document.getElementById('inputRawCode');
-    const inputMapped = document.getElementById('inputMappedName');
-    const btnAdd = document.getElementById('btnAddCarrier');
-    const btnUpdate = document.getElementById('btnUpdateCarrier');
-    const btnCancel = document.getElementById('btnCancelEdit');
+    // 모달 로직
+    const settingsModal = document.getElementById('settingsModal');
+    document.getElementById('btnOpenSettings')?.addEventListener('click', async () => {
+        await loadCarrierMap();
+        renderCarrierSettings();
+        if (settingsModal) settingsModal.style.display = 'block';
+    });
 
-    if (editCode) editCode.value = '';
-    if (inputRaw) inputRaw.value = '';
-    if (inputMapped) inputMapped.value = '';
-    if (btnAdd) btnAdd.style.display = 'inline-block';
-    if (btnUpdate) btnUpdate.style.display = 'none';
-    if (btnCancel) btnCancel.style.display = 'none';
-}
+    document.querySelectorAll('.close-btn, .close-btn-bottom').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (settingsModal) settingsModal.style.display = 'none';
+            // 창을 닫을 때 현재 데이터를 기준으로 다시 비교 실행 (데이터가 있을 때만)
+            if (typeof window.reCompareFilteredData === 'function') {
+                window.reCompareFilteredData();
+            } else if (typeof originalData !== 'undefined' && originalData.length > 0 && typeof downloadData !== 'undefined' && downloadData.length > 0) {
+                comparisonResult = compareData(originalData, downloadData, productMaster, dynamicRules, customFields, carrierMap, normalizeCarrier);
+                updateDashboard();
+                displayResults(comparisonResult);
+            }
+        });
+    });
 
-// 모달 로직
-const settingsModal = document.getElementById('settingsModal');
-document.getElementById('btnOpenSettings')?.addEventListener('click', async () => {
-    await loadCarrierMap();
-    renderCarrierSettings();
-    if (settingsModal) settingsModal.style.display = 'block';
-});
-
-document.querySelectorAll('.close-btn, .close-btn-bottom').forEach(btn => {
-    btn.addEventListener('click', () => {
-        if (settingsModal) settingsModal.style.display = 'none';
-        // 창을 닫을 때 현재 데이터를 기준으로 다시 비교 실행 (데이터가 있을 때만)
-        if (typeof window.reCompareFilteredData === 'function') {
-            window.reCompareFilteredData();
-        } else if (typeof originalData !== 'undefined' && originalData.length > 0 && typeof downloadData !== 'undefined' && downloadData.length > 0) {
-            comparisonResult = compareData(originalData, downloadData, productMaster, dynamicRules, customFields, carrierMap, normalizeCarrier);
-            updateDashboard();
-            displayResults(comparisonResult);
+    window.addEventListener('click', (event) => {
+        if (event.target == settingsModal) {
+            if (settingsModal) settingsModal.style.display = 'none';
+            if (typeof window.reCompareFilteredData === 'function') {
+                window.reCompareFilteredData();
+            } else if (typeof originalData !== 'undefined' && originalData.length > 0 && typeof downloadData !== 'undefined' && downloadData.length > 0) {
+                comparisonResult = compareData(originalData, downloadData, productMaster, dynamicRules, customFields, carrierMap, normalizeCarrier);
+                updateDashboard();
+                displayResults(comparisonResult);
+            }
         }
     });
-});
 
-window.addEventListener('click', (event) => {
-    if (event.target == settingsModal) {
-        if (settingsModal) settingsModal.style.display = 'none';
-        if (typeof window.reCompareFilteredData === 'function') {
-            window.reCompareFilteredData();
-        } else if (typeof originalData !== 'undefined' && originalData.length > 0 && typeof downloadData !== 'undefined' && downloadData.length > 0) {
-            comparisonResult = compareData(originalData, downloadData, productMaster, dynamicRules, customFields, carrierMap, normalizeCarrier);
-            updateDashboard();
-            displayResults(comparisonResult);
+    // 새로운 선사 맵핑 추가 로직
+    document.getElementById('btnAddCarrier')?.addEventListener('click', () => {
+        const rawCode = document.getElementById('inputRawCode').value.trim().toUpperCase();
+        const mappedNameRaw = document.getElementById('inputMappedName').value.trim();
+
+        if (!rawCode || !mappedNameRaw) {
+            alert("원문 코드와 표출될 이름을 모두 입력해주세요.");
+            return;
         }
-    }
-});
 
-// 새로운 선사 맵핑 추가 로직
-document.getElementById('btnAddCarrier')?.addEventListener('click', () => {
-    const rawCode = document.getElementById('inputRawCode').value.trim().toUpperCase();
-    const mappedNameRaw = document.getElementById('inputMappedName').value.trim();
+        const newNames = mappedNameRaw.split(',').map(n => n.trim()).filter(n => n !== "");
 
-    if (!rawCode || !mappedNameRaw) {
-        alert("원문 코드와 표출될 이름을 모두 입력해주세요.");
-        return;
-    }
+        // 이미 존재하는 코드인지 확인
+        if (carrierMap[rawCode]) {
+            alert("이미 존재하는 코드입니다. 수정 기능을 이용해주세요.");
+            return;
+        } else {
+            // 새 코드 생성
+            carrierMap[rawCode] = newNames;
+        }
 
-    const newNames = mappedNameRaw.split(',').map(n => n.trim()).filter(n => n !== "");
+        saveCarrierMap();
+        renderCarrierSettings();
 
-    // 이미 존재하는 코드인지 확인
-    if (carrierMap[rawCode]) {
-        alert("이미 존재하는 코드입니다. 수정 기능을 이용해주세요.");
-        return;
-    } else {
-        // 새 코드 생성
-        carrierMap[rawCode] = newNames;
-    }
+        // 입력창 초기화
+        document.getElementById('inputRawCode').value = '';
+        document.getElementById('inputMappedName').value = '';
+    });
 
-    saveCarrierMap();
-    renderCarrierSettings();
-
-    // 입력창 초기화
-    document.getElementById('inputRawCode').value = '';
-    document.getElementById('inputMappedName').value = '';
-});
-
-
-// --- DB Sync Manual Buttons ---
-document.getElementById('btnDownloadCarriersFromDb')?.addEventListener('click', async () => {
-    if (confirm("로컬 DB (excel)에서 선사 매핑을 불러오시겠습니까? 현재 로컬 데이터가 덮어씌워질 수 있습니다.")) {
-        try {
-            const response = await fetch(`${API_BASE}/api/sync/carriers`);
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.mapping) {
-                    carrierMap = data.mapping;
-                    localStorage.setItem('carrierMapPrefs', JSON.stringify(carrierMap));
-                    renderCarrierSettings();
-                    alert("✅ 로컬 DB (excel)에서 선사 매핑을 성공적으로 불러왔습니다.");
+    // --- DB Sync Manual Buttons ---
+    document.getElementById('btnDownloadCarriersFromDb')?.addEventListener('click', async () => {
+        if (confirm("로컬 DB (excel)에서 선사 매핑을 불러오시겠습니까? 현재 로컬 데이터가 덮어씌워질 수 있습니다.")) {
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/carriers`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.mapping) {
+                        carrierMap = data.mapping;
+                        localStorage.setItem('carrierMapPrefs', JSON.stringify(carrierMap));
+                        renderCarrierSettings();
+                        alert("✅ 로컬 DB (excel)에서 선사 매핑을 성공적으로 불러왔습니다.");
+                    } else {
+                        alert("로컬 DB에 저장된 데이터가 없습니다.");
+                    }
                 } else {
-                    alert("로컬 DB에 저장된 데이터가 없습니다.");
+                    alert("로컬 DB 연동 실패");
                 }
-            } else {
-                alert("로컬 DB 연동 실패");
+            } catch (err) {
+                console.error(err);
+                alert("오류 발생: " + err.message);
             }
-        } catch (err) {
-            console.error(err);
-            alert("오류 발생: " + err.message);
         }
-    }
-});
+    });
 
-document.getElementById('btnUploadCarriersToDb')?.addEventListener('click', async () => {
-    if (confirm("현재 선사 매핑을 로컬 DB (excel)에 등록(백업)하시겠습니까? 기존 DB 데이터가 대체됩니다.")) {
-        try {
-            const response = await fetch(`${API_BASE}/api/sync/carriers`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mapping: carrierMap })
-            });
-            const data = await response.json();
-            if (data.success) {
-                alert("✅ 로컬 DB (excel)에 성공적으로 등록되었습니다.");
-                if (window.updateDbGlobalStats) window.updateDbGlobalStats();
-            } else {
-                alert("❌ 로컬 DB 등록 실패: " + data.message);
+    document.getElementById('btnUploadCarriersToDb')?.addEventListener('click', async () => {
+        if (confirm("현재 선사 매핑을 로컬 DB (excel)에 등록(백업)하시겠습니까? 기존 DB 데이터가 대체됩니다.")) {
+            try {
+                const response = await fetch(`${API_BASE}/api/sync/carriers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mapping: carrierMap })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert("✅ 로컬 DB (excel)에 성공적으로 등록되었습니다.");
+                    if (window.updateDbGlobalStats) window.updateDbGlobalStats();
+                } else {
+                    alert("❌ 로컬 DB 등록 실패: " + data.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("오류 발생: " + err.message);
             }
-        } catch (err) {
-            console.error(err);
-            alert("오류 발생: " + err.message);
         }
-    }
-});
+    });
+}
 
 // --- Export ---
-window.carrierMap = carrierMap;
-window.loadCarrierMap = loadCarrierMap;
-window.saveCarrierMap = saveCarrierMap;
-window.normalizeCarrier = normalizeCarrier;
-window.renderCarrierSettings = renderCarrierSettings;
-window.resetSettingsInput = resetSettingsInput;
+if (typeof window !== 'undefined') {
+    window.carrierMap = carrierMap;
+    window.loadCarrierMap = loadCarrierMap;
+    window.saveCarrierMap = saveCarrierMap;
+    window.normalizeCarrier = normalizeCarrier;
+    window.renderCarrierSettings = renderCarrierSettings;
+    window.resetSettingsInput = resetSettingsInput;
+}
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    module.exports = { loadCarrierMap, normalizeCarrier, carrierMap };
+}

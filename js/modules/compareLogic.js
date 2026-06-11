@@ -788,3 +788,6 @@ if (typeof window !== 'undefined') {
     window.evaluateMathString = evaluateMathString;
     window.checkIsNonAsset = checkIsNonAsset;
 }
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    module.exports = { compareData, evaluateMathString, checkIsNonAsset };
+}
