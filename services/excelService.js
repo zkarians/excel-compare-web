@@ -352,7 +352,11 @@ async function parseOriginalExcel(fileInput, targetSheets = ["직선적당일", 
                     let qty = 0;
                     try {
                         const cellQty = row.getCell(COL.QTY);
-                        qty = parseInt(cellQty.value) || 0;
+                        if (cellQty && cellQty.master && cellQty.address !== cellQty.master.address) {
+                            qty = 0;
+                        } else {
+                            qty = parseInt(cellQty.value) || 0;
+                        }
                     } catch (e) {
                         qty = parseInt(safeGetText(COL.QTY)) || 0;
                     }

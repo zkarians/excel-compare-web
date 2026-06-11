@@ -1221,10 +1221,19 @@ async function readExcelFile(file, type) {
 
                                 let qty = 0;
                                 try {
-                                    qty = parseInt(row.getCell(COL.QTY).value);
-                                    if (isNaN(qty) || qty === 0) throw new Error();
-                                } catch (e) {
-                                    qty = parseInt(safeGetText(COL.QTY)) || 0;
+                                    const cellQty = row.getCell(COL.QTY);
+                                    if (cellQty && cellQty.master && cellQty.address !== cellQty.master.address) {
+                                        qty = 0;
+                                    } else {
+                                        try {
+                                            qty = parseInt(cellQty.value);
+                                            if (isNaN(qty) || qty === 0) throw new Error();
+                                        } catch (e) {
+                                            qty = parseInt(safeGetText(COL.QTY)) || 0;
+                                        }
+                                    }
+                                } catch (outerErr) {
+                                    qty = 0;
                                 }
                                 if (qty <= 0) return;
 
