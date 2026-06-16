@@ -34,7 +34,7 @@ async function run() {
     if (fs.existsSync(rulesFile)) {
         try {
             const rulesContent = JSON.parse(fs.readFileSync(rulesFile, 'utf8'));
-            dynamicRules = rulesContent.rules || [];
+            dynamicRules = Array.isArray(rulesContent) ? rulesContent : (rulesContent.rules || []);
         } catch (e) {
             console.warn('⚠️ Failed to load rules.json, using empty array');
         }

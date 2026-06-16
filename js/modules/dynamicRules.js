@@ -174,48 +174,118 @@ function createConditionRow() {
     // 최종 옵션 합치기
     const allOptions = [...specialOptions, ...standardOptions];
 
-    // 옵션 HTML 동적 빌드
-    const optionsHtml = allOptions.map(opt => {
+    // 분류별 옵션 분리
+    const mixedGroup = [];
+    const origGroup = [];
+    const downGroup = [];
+    const customGroup = [];
+
+    allOptions.forEach(opt => {
         const colLetter = getMappedColLetter(opt.value);
         const colText = colLetter ? ` (${colLetter})` : '';
-        let cleanLabel = opt.label;
-        if (!cleanLabel.startsWith('[') && !cleanLabel.includes('비고/리마크')) {
-            if (cleanLabel.toLowerCase().includes('original') || cleanLabel.includes('원본')) {
-                cleanLabel = `[원본] ${cleanLabel.replace(/\[원본\]\s*/g, '')}`;
+        let label = opt.label;
+        
+        // 이름 정제
+        if (!label.startsWith('[') && !label.includes('비고/리마크')) {
+            if (label.toLowerCase().includes('original') || label.includes('원본')) {
+                label = `[원본] ${label.replace(/\[원본\]\s*/g, '')}`;
             } else {
-                cleanLabel = `[전산] ${cleanLabel.replace(/\[전산\]\s*/g, '')}`;
+                label = `[전산] ${label.replace(/\[전산\]\s*/g, '')}`;
             }
         }
-        return `<option value="${opt.value}">${cleanLabel}${colText}</option>`;
-    }).join('');
+        
+        const optionHtml = `<option value="${opt.value}">${label}${colText}</option>`;
+        
+        if (opt.value === 'remark') {
+            mixedGroup.push(optionHtml);
+        } else if (opt.value.startsWith('orig') || label.includes('[원본]')) {
+            origGroup.push(optionHtml);
+        } else {
+            downGroup.push(optionHtml);
+        }
+    });
+
+    customFields.forEach(cf => {
+        const optionHtml = `<option value="${cf.id}">${cf.source === 'down' ? '[전산]' : '[원본]'} ${cf.name} (${cf.colLetter})</option>`;
+        customGroup.push(optionHtml);
+    });
+
+    // <optgroup>으로 감싸서 동적 빌드
+    let optionsHtml = '';
+    if (mixedGroup.length > 0) {
+        optionsHtml += `<optgroup label="공통 필드">${mixedGroup.join('')}</optgroup>`;
+    }
+    if (origGroup.length > 0) {
+        optionsHtml += `<optgroup label="원본 파일 필드 (엑셀)">${origGroup.join('')}</optgroup>`;
+    }
+    if (downGroup.length > 0) {
+        optionsHtml += `<optgroup label="전산 파일 필드 (다운로드)">${downGroup.join('')}</optgroup>`;
+    }
+    if (customGroup.length > 0) {
+        optionsHtml += `<optgroup label="사용자 정의 필드 (커스텀)">${customGroup.join('')}</optgroup>`;
+    }
 
     row.innerHTML = `
         <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
             <select class="cond-field" style="flex: 1; min-width: 0; padding: 0.25rem 0.4rem; font-size: 0.78rem; border: 1px solid #cbd5e1; border-radius: 4px;">
                 ${optionsHtml}
-                <!-- 다이나믹 필드 추가 -->
-                ${customFields.map(cf => '<option value="' + cf.id + '">' + (cf.source === 'down' ? '[전산]' : '[원본]') + ' ' + cf.name + ' (' + cf.colLetter + ')</option>').join('')}
             </select>
             <span style="font-size: 0.72rem; color: #94a3b8; white-space: nowrap;">의 값이</span>
         </div>
         <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
-            <input type="text" class="cond-value" placeholder="예: 쇼링, 서부물류" style="flex: 1; min-width: 0; padding: 0.25rem 0.4rem; font-size: 0.78rem; border: 1px solid #cbd5e1; border-radius: 4px;">
             <select class="cond-operator" style="flex: 0 0 auto; padding: 0.25rem 0.3rem; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 4px;">
                 <option value="includes">포함</option>
                 <option value="notIncludes">미포함</option>
                 <option value="startsWith">시작함</option>
                 <option value="exact">정확히 일치</option>
+                <option value="isEmpty">비어 있음</option>
+                <option value="isNotEmpty">비어 있지 않음</option>
                 <option value="gte">이상 (>=)</option>
                 <option value="gt">초과 (>)</option>
                 <option value="lte">이하 (<=)</option>
                 <option value="lt">미만 (<)</option>
                 <option value="numEq">수치 동일 (=)</option>
+                <option value="ratioMismatch">비율 불일치</option>
                 <option value="regexMatch">Regex 일치</option>
                 <option value="regexNotMatch">Regex 미일치</option>
             </select>
+            <div class="cond-val-wrapper" style="flex: 1; min-width: 0; display: flex; align-items: center;">
+                <input type="text" class="cond-value" placeholder="예: 쇼링, 서부물류" style="width: 100%; padding: 0.25rem 0.4rem; font-size: 0.78rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+                <!-- 비율 비교 전용 UI (기본 숨김) -->
+                <div class="ratio-inputs" style="display: none; align-items: center; gap: 4px; width: 100%;">
+                    <select class="ratio-field" style="padding: 0.25rem 0.3rem; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 4px; flex: 1; min-width: 0;">
+                        <option value="downPackingQty">[전산] 단위수량</option>
+                        <option value="downPlanQty">[전산] 계획수량</option>
+                        <option value="downLoadQty">[전산] 적재수량</option>
+                    </select>
+                    <span style="font-size: 0.72rem; color: #64748b;">의</span>
+                    <input type="number" class="ratio-mult" placeholder="배수(예: 25)" style="width: 75px; padding: 0.25rem 0.4rem; font-size: 0.78rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+                    <span style="font-size: 0.72rem; color: #64748b; white-space: nowrap;">배가 아님</span>
+                </div>
+            </div>
             <button type="button" class="btn btn-danger btn-remove-cond" style="flex-shrink: 0; padding: 0.2rem 0.5rem; font-size: 0.72rem; border-radius: 4px;"><i class="fas fa-times"></i></button>
         </div>
     `;
+
+    const operatorSelect = row.querySelector('.cond-operator');
+    const valueInput = row.querySelector('.cond-value');
+    const ratioInputs = row.querySelector('.ratio-inputs');
+
+    const updateValueUI = () => {
+        const op = operatorSelect.value;
+        if (op === 'isEmpty' || op === 'isNotEmpty') {
+            valueInput.style.display = 'none';
+            ratioInputs.style.display = 'none';
+        } else if (op === 'ratioMismatch') {
+            valueInput.style.display = 'none';
+            ratioInputs.style.display = 'flex';
+        } else {
+            valueInput.style.display = 'block';
+            ratioInputs.style.display = 'none';
+        }
+    };
+    operatorSelect.addEventListener('change', updateValueUI);
+    updateValueUI();
 
     row.querySelector('.btn-remove-cond').addEventListener('click', () => {
         row.remove();
@@ -309,25 +379,54 @@ function renderRulesTable() {
                     }
                 }
 
+                let actualOp = cond.operator;
+                if (!actualOp && cond.value && cond.value.includes(':') && (cond.value.startsWith('downPackingQty:') || cond.value.startsWith('downPlanQty:') || cond.value.startsWith('downLoadQty:'))) {
+                    actualOp = 'ratioMismatch';
+                }
+
                 let opText = '';
-                if (cond.operator === 'includes') opText = '포함';
-                else if (cond.operator === 'notIncludes') opText = '미포함';
-                else if (cond.operator === 'startsWith') opText = '시작';
-                else if (cond.operator === 'exact') opText = '일치';
-                else if (cond.operator === 'gte') opText = '>=';
-                else if (cond.operator === 'gt') opText = '>';
-                else if (cond.operator === 'lte') opText = '<=';
-                else if (cond.operator === 'lt') opText = '<';
-                else if (cond.operator === 'numEq') opText = '=';
-                else if (cond.operator === 'regexMatch') opText = 'Regex일치';
-                else if (cond.operator === 'regexNotMatch') opText = 'Regex미일치';
+                if (actualOp === 'includes') opText = '포함';
+                else if (actualOp === 'notIncludes') opText = '미포함';
+                else if (actualOp === 'startsWith') opText = '시작';
+                else if (actualOp === 'exact') opText = '일치';
+                else if (actualOp === 'isEmpty') opText = '비어 있음';
+                else if (actualOp === 'isNotEmpty') opText = '비어 있지 않음';
+                else if (actualOp === 'gte') opText = '>=';
+                else if (actualOp === 'gt') opText = '>';
+                else if (actualOp === 'lte') opText = '<=';
+                else if (actualOp === 'lt') opText = '<';
+                else if (actualOp === 'numEq') opText = '=';
+                else if (actualOp === 'ratioMismatch') opText = '비율 불일치';
+                else if (actualOp === 'regexMatch') opText = 'Regex일치';
+                else if (actualOp === 'regexNotMatch') opText = 'Regex미일치';
+
+                let badgeBody = '';
+                if (actualOp === 'ratioMismatch') {
+                    const parts = cond.value.split(':');
+                    if (parts.length === 2) {
+                        const otherField = parts[0];
+                        const ratio = parts[1];
+                        let otherFieldName = otherField;
+                        if (otherField === 'downPackingQty') otherFieldName = '단위수량';
+                        else if (otherField === 'downPlanQty') otherFieldName = '계획수량';
+                        else if (otherField === 'downLoadQty') otherFieldName = '적재수량';
+
+                        badgeBody = `<span style="color: #64748b; margin-right: 2px;">${fText}:</span> <strong>${otherFieldName}의 ${ratio}배가 아님</strong>`;
+                    } else {
+                        badgeBody = `<span style="color: #64748b; margin-right: 2px;">${fText}:</span> <strong>비율 불일치 (${cond.value})</strong>`;
+                    }
+                } else if (actualOp === 'isEmpty') {
+                    badgeBody = `<span style="color: #64748b; margin-right: 2px;">${fText}:</span> <strong>비어 있음</strong>`;
+                } else if (actualOp === 'isNotEmpty') {
+                    badgeBody = `<span style="color: #64748b; margin-right: 2px;">${fText}:</span> <strong>비어 있지 않음</strong>`;
+                } else {
+                    badgeBody = `<span style="color: #64748b; margin-right: 2px;">${fText}:</span> <strong>${cond.value}</strong> <small style="color: #94a3b8; margin-left: 2px;">(${opText})</small>`;
+                }
 
                 conditionsHtml += `
                     <div class="rule-condition-badge" title="${fText}">
                         <i class="fas ${iconClass}"></i>
-                        <span style="color: #64748b; margin-right: 2px;">${fText}:</span>
-                        <strong>${cond.value}</strong>
-                        <small style="color: #94a3b8; margin-left: 2px;">(${opText})</small>
+                        ${badgeBody}
                     </div>`;
             });
         }
@@ -465,7 +564,20 @@ document.getElementById('btnAddRule').addEventListener('click', () => {
     rows.forEach(row => {
         const field = row.querySelector('.cond-field').value;
         const operator = row.querySelector('.cond-operator').value;
-        const value = row.querySelector('.cond-value').value.trim();
+        let value = "";
+
+        if (operator === 'ratioMismatch') {
+            const rField = row.querySelector('.ratio-field').value;
+            const rMult = row.querySelector('.ratio-mult').value.trim();
+            if (rMult) {
+                value = `${rField}:${rMult}`;
+            }
+        } else if (operator === 'isEmpty' || operator === 'isNotEmpty') {
+            value = "-"; // Dummy value to pass validation
+        } else {
+            value = row.querySelector('.cond-value').value.trim();
+        }
+
         if (value) {
             conditions.push({ field, operator, value });
         }
@@ -646,8 +758,28 @@ document.getElementById('rulesTableBody').addEventListener('click', (e) => {
             rule.conditions.forEach(c => {
                 const row = createConditionRow();
                 row.querySelector('.cond-field').value = c.field;
-                row.querySelector('.cond-operator').value = c.operator;
-                row.querySelector('.cond-value').value = c.value;
+
+                const opSelect = row.querySelector('.cond-operator');
+                let actualOp = c.operator;
+                if (!actualOp && c.value && c.value.includes(':') && (c.value.startsWith('downPackingQty:') || c.value.startsWith('downPlanQty:') || c.value.startsWith('downLoadQty:'))) {
+                    actualOp = 'ratioMismatch';
+                }
+
+                opSelect.value = actualOp || 'includes';
+
+                if (actualOp === 'ratioMismatch') {
+                    const parts = (c.value || "").split(':');
+                    if (parts.length === 2) {
+                        row.querySelector('.ratio-field').value = parts[0];
+                        row.querySelector('.ratio-mult').value = parts[1];
+                    }
+                } else if (actualOp === 'isEmpty' || actualOp === 'isNotEmpty') {
+                    row.querySelector('.cond-value').value = '';
+                } else {
+                    row.querySelector('.cond-value').value = c.value || '';
+                }
+
+                opSelect.dispatchEvent(new Event('change'));
                 container.appendChild(row);
             });
         } else {

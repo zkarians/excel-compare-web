@@ -924,9 +924,9 @@ tr.border-group td {
 }
 
 .row-success-manual {
-    color: #065f46;
-    background-color: #ecfdf5 !important;
-    border-left: 4px solid #10b981;
+    color: #5b21b6;
+    background-color: #f5f3ff !important;
+    border-left: 4px solid #8b5cf6;
 }
 
 .row-noproduct {
@@ -970,6 +970,12 @@ tr.border-group td {
 .badge.success {
     background-color: #d1fae5;
     color: #065f46;
+}
+
+.badge.approved {
+    background-color: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #d8b4fe;
 }
 
 .badge.progress {

@@ -311,6 +311,22 @@ window.openWeightMismatchPopup = (cntrNo) => {
             </div>`;
     }
 
+    // 4.5 개별 CBM 불일치
+    if (details.cbmDiffs && details.cbmDiffs.length > 0) {
+        detailHtml += `
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin: 0 0 8px 0; color: #0284c7; font-size: 0.9rem;"><i class="fas fa-cube"></i> 개별 CBM 상이 품목</h4>
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                    <tr style="background: #f0f9ff; color: #0369a1;">
+                        <th style="padding: 6px; border: 1px solid #bae6fd; text-align: left;">제품명</th>
+                        <th style="padding: 6px; border: 1px solid #bae6fd; text-align: center;">DB기준</th>
+                        <th style="padding: 6px; border: 1px solid #bae6fd; text-align: center;">실측(전산)</th>
+                    </tr>
+                    ${details.cbmDiffs.map(p => `<tr><td style="padding:6px; border:1px solid #bae6fd;">${p.name}</td><td style="padding:6px; border:1px solid #bae6fd; text-align:center;">${(parseFloat(p.db) || 0).toFixed(3)}</td><td style="padding:6px; border:1px solid #bae6fd; text-align:center; font-weight:700; color:#0284c7;">${(parseFloat(p.current) || 0).toFixed(3)}</td></tr>`).join('')}
+                </table>
+            </div>`;
+    }
+
     // 5. DB 정보 없음
     if (details.noWeightInfo && details.noWeightInfo.length > 0) {
         detailHtml += `
@@ -393,6 +409,7 @@ let userSelectedWeights = {}; // 반입정보 생성 탭에서 사용자가 선�
 
 let missingProductsSet = new Set(); // 마스터에 없는 제품명 수집용
 let weightMismatchSet = new Set();  // 중량 정보 불일치 제품명 수집용
+let weightMismatchDetails = {};    // 중량/CBM 불일치 상세 정보 수집용 { prodName: { dbWeight, downWeight, dbCbm, downCbm, hasWeightDiff, hasCbmDiff } }
 
 
 /* =========================================================================
@@ -1975,26 +1992,18 @@ function updateDashboard() {
     if (valBni) valBni.textContent = bniCount;
     if (valUnknownTransporter) valUnknownTransporter.textContent = unknownCount;
 
-    // 제품정보 업데이트 필요 카드 클릭 이벤트 (드래그/복사 가능한 팝업)
+    // 제품정보 업데이트 필요 카드 클릭 이벤트 (대화형 팝업 연동)
     const updateCard = document.querySelector('.summary-card.update-needed');
     if (updateCard && !updateCard._hasClickHandler) {
         updateCard.style.cursor = 'pointer';
         updateCard.addEventListener('click', () => {
-            const items = [];
-            if (missingProductsSet && missingProductsSet.size > 0) {
-                items.push('=== 마스터에 없는 제품 (' + missingProductsSet.size + '건) ===');
-                missingProductsSet.forEach(name => items.push(name));
-            }
-            if (weightMismatchSet && weightMismatchSet.size > 0) {
-                items.push('');
-                items.push('=== 중량/크기 불일치 제품 (' + weightMismatchSet.size + '건) ===');
-                weightMismatchSet.forEach(name => items.push(name));
-            }
-            if (items.length === 0) {
+            const hasMissing = missingProductsSet && missingProductsSet.size > 0;
+            const hasMismatch = weightMismatchSet && weightMismatchSet.size > 0;
+            if (!hasMissing && !hasMismatch) {
                 alert('업데이트가 필요한 제품이 없습니다.');
                 return;
             }
-            showCopyablePopup('제품정보 업데이트 필요 목록', items.join('\n'));
+            showInteractiveUpdateNeededPopup(missingProductsSet, weightMismatchSet);
         });
         updateCard._hasClickHandler = true;
     }
@@ -2714,14 +2723,30 @@ function displayResults(results, isDbMode = false) {
             r.origBadgeClass = r.badgeClass; // 수동 승인 전 원본 배지 정보 보관 (탭 분류용)
 
             if (manualApprovedItems.has(approvalKey)) {
-                r.type = '승인(정상)';
-                r.badgeClass = 'success';
+                let calculatedType = '대기';
+                if (r.qtyInfo) {
+                    const load = r.qtyInfo.load || 0;
+                    const plan = r.qtyInfo.plan || 0;
+                    if (load === 0) {
+                        if (r.prodName === 'NONASSET.ITEM') {
+                            calculatedType = '완료';
+                        } else {
+                            calculatedType = '대기';
+                        }
+                    } else if (load >= plan) {
+                        calculatedType = '완료';
+                    } else {
+                        calculatedType = '작업중';
+                    }
+                }
+                r.type = `승인(${calculatedType})`;
+                r.badgeClass = 'approved';
                 r.cssClass = 'row-success-manual';
                 r.isErrorRow = false;
                 r.isApproved = true;
                 // 기존 상세 정보 보관 (필요 시)
                 const originalDetail = r.detail || "";
-                r.detail = `<span style="color: #059669; font-weight: bold;">[사용자 수동 정상전환]</span> ${originalDetail ? `(${originalDetail})` : ''}`;
+                r.detail = `<span style="color: #7c3aed; font-weight: bold;">[사용자 수동 정상전환]</span> ${originalDetail ? `(${originalDetail})` : ''}`;
             } else {
                 r.isApproved = false;
             }
@@ -2792,7 +2817,7 @@ function displayResults(results, isDbMode = false) {
             } else if (currentFilter === 'success') {
                 displayData = results.filter(r => getContainerStatus(fullResultsForStatus, r.cntrNo) === 'success');
                 if (chkFullyCompletedOnly && chkFullyCompletedOnly.checked) {
-                    const incompleteCntrs = new Set(displayData.filter(r => r.type === '대기' || r.type === '작업중').map(r => r.cntrNo));
+                    const incompleteCntrs = new Set(displayData.filter(r => r.type.includes('대기') || r.type.includes('작업중')).map(r => r.cntrNo));
                     displayData = displayData.filter(r => !incompleteCntrs.has(r.cntrNo));
 
                     // 완료된 컨테이너 수 표시
@@ -2846,13 +2871,21 @@ function displayResults(results, isDbMode = false) {
                             missingInOrig: [], // 전산(D)에만 있고 원본(O)엔 없는 모델
                             qtyDiffs: [],      // 수량 다른 모델
                             weightDiffs: [],   // 개별중량 기준 다른 모델
+                            cbmDiffs: [],      // 개별 CBM 기준 다른 모델
                             noWeightInfo: []   // DB 중량 정보 없는 모델
                         };
 
                         if (item.badgeClass === 'missing') newItem.mismatchDetails.missingInDown.push({ name: item.prodName, qty: (item.qtyInfo ? item.qtyInfo.origPlan : '-') });
                         else if (item.badgeClass === 'extra') newItem.mismatchDetails.missingInOrig.push({ name: item.prodName, qty: (item.qtyInfo ? item.qtyInfo.plan : '-') });
                         else if (item.badgeClass === 'noproduct') newItem.mismatchDetails.noWeightInfo.push({ name: item.prodName });
-                        else if (item.badgeClass === 'update') newItem.mismatchDetails.weightDiffs.push({ name: item.prodName, db: item.unitWeight, current: item.currentUnitWeight });
+                        else if (item.badgeClass === 'update') {
+                            if (item.currentUnitWeight !== undefined) {
+                                newItem.mismatchDetails.weightDiffs.push({ name: item.prodName, db: item.unitWeight, current: item.currentUnitWeight });
+                            }
+                            if (item.isCbmMismatch) {
+                                newItem.mismatchDetails.cbmDiffs.push({ name: item.prodName, db: item.unitCBM, current: item.currentUnitCBM });
+                            }
+                        }
 
                         if (item.qtyInfo && item.qtyInfo.origPlan !== null && item.qtyInfo.plan !== null && item.qtyInfo.origPlan !== item.qtyInfo.plan) {
                             newItem.mismatchDetails.qtyDiffs.push({ name: item.prodName, orig: item.qtyInfo.origPlan, down: item.qtyInfo.plan });
@@ -2870,7 +2903,14 @@ function displayResults(results, isDbMode = false) {
                         if (item.badgeClass === 'missing') existing.mismatchDetails.missingInDown.push({ name: item.prodName, qty: (item.qtyInfo ? item.qtyInfo.origPlan : '-') });
                         else if (item.badgeClass === 'extra') existing.mismatchDetails.missingInOrig.push({ name: item.prodName, qty: (item.qtyInfo ? item.qtyInfo.plan : '-') });
                         else if (item.badgeClass === 'noproduct') existing.mismatchDetails.noWeightInfo.push({ name: item.prodName });
-                        else if (item.badgeClass === 'update') existing.mismatchDetails.weightDiffs.push({ name: item.prodName, db: item.unitWeight, current: item.currentUnitWeight });
+                        else if (item.badgeClass === 'update') {
+                            if (item.currentUnitWeight !== undefined) {
+                                existing.mismatchDetails.weightDiffs.push({ name: item.prodName, db: item.unitWeight, current: item.currentUnitWeight });
+                            }
+                            if (item.isCbmMismatch) {
+                                existing.mismatchDetails.cbmDiffs.push({ name: item.prodName, db: item.unitCBM, current: item.currentUnitCBM });
+                            }
+                        }
 
                         if (item.qtyInfo && item.qtyInfo.origPlan !== null && item.qtyInfo.plan !== null && item.qtyInfo.origPlan !== item.qtyInfo.plan) {
                             existing.mismatchDetails.qtyDiffs.push({ name: item.prodName, orig: item.qtyInfo.origPlan, down: item.qtyInfo.plan });
@@ -3836,7 +3876,7 @@ btnDownloadResult.addEventListener('click', async () => {
         // 추가 필터: '모든 모델 작업완료 컨테이너만' 체크 시 (UI와 동일하게 적용)
         if (chkFullyCompletedOnly && chkFullyCompletedOnly.checked && (currentFilter === 'success' || currentFilter === 'all')) {
             const incompleteCntrs = new Set(filtered.filter(r => {
-                return r.type === '대기' || r.type === '작업중';
+                return r.type.includes('대기') || r.type.includes('작업중');
             }).map(r => r.cntrNo));
 
             filtered = filtered.filter(r => !incompleteCntrs.has(r.cntrNo));
@@ -4246,7 +4286,7 @@ async function generateComparisonWorkbook() {
 
         if (chkFullyCompletedOnly && chkFullyCompletedOnly.checked && (currentFilter === 'success' || currentFilter === 'all')) {
             const incompleteCntrs = new Set(filtered.filter(r => {
-                return r.type === '대기' || r.type === '작업중';
+                return r.type.includes('대기') || r.type.includes('작업중');
             }).map(r => r.cntrNo));
             filtered = filtered.filter(r => !incompleteCntrs.has(r.cntrNo));
         }
@@ -5740,6 +5780,283 @@ if (btnRefreshCloudStats) {
 // 외부 모듈에서 호출할 수 있도록 전역 공개
 window.updateDbGlobalStats = updateDbGlobalStats;
 
+// --- 대화형 업데이트 필요 목록 팝업 (제품 클릭 시 수정창 연동) ---
+function showInteractiveUpdateNeededPopup(missingSet, mismatchSet) {
+    const existing = document.getElementById('interactiveUpdateNeededPopup');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-ov';
+    overlay.id = 'interactiveUpdateNeededPopup';
+    Object.assign(overlay.style, {
+        position: 'fixed', top: '0', left: '0', width: '100vw', height: '100vh',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', justifyContent: 'center',
+        alignItems: 'center', zIndex: '9999', backdropFilter: 'blur(3px)'
+    });
+
+    const modal = document.createElement('div');
+    Object.assign(modal.style, {
+        backgroundColor: 'white', padding: '24px', borderRadius: '16px',
+        width: '520px', maxWidth: '90vw', maxHeight: '85vh', display: 'flex',
+        flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
+    });
+
+    let bodyHtml = "";
+
+    if (missingSet && missingSet.size > 0) {
+        bodyHtml += `
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin: 0 0 8px 0; color: #ef4444; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-plus-circle"></i> 마스터에 없는 제품 (${missingSet.size}건)
+                </h4>
+                <div style="font-size:0.8rem; color:#94a3b8; margin-bottom:8px;">* 제품명을 클릭하면 즉시 신규 제품 추가 창이 열립니다.</div>
+                <div style="max-height: 180px; overflow-y: auto; border: 1px solid #fee2e2; background: #fff5f5; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 2px;">
+                    ${Array.from(missingSet).map(name => `
+                        <div class="interactive-prod-item" 
+                             style="padding: 8px 12px; font-weight: 600; color: #b91c1c; cursor: pointer; border-radius: 6px; font-size: 0.88rem; transition: background 0.2s;"
+                             onmouseover="this.style.backgroundColor='#fee2e2';"
+                             onmouseout="this.style.backgroundColor='transparent';"
+                             onclick="window.handleInteractiveProdClick('${name.replace(/'/g, "\\'")}', true)"
+                             title="신규 제품으로 등록">
+                             ${name}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+    }
+
+    if (mismatchSet && mismatchSet.size > 0) {
+        bodyHtml += `
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin: 0 0 8px 0; color: #7c3aed; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-exclamation-triangle"></i> 중량/CBM/크기 불일치 제품 (${mismatchSet.size}건)
+                </h4>
+                <div style="font-size:0.8rem; color:#94a3b8; margin-bottom:8px;">* 제품명을 클릭하면 즉시 해당 제품의 수정 창이 열립니다.</div>
+                <div style="max-height: 220px; overflow-y: auto; border: 1px solid #f3e8ff; background: #faf5ff; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 6px;">
+                    ${Array.from(mismatchSet).map(name => {
+                        const trimmedName = name.trim();
+                        const details = weightMismatchDetails[trimmedName] || {};
+                        let diffHtml = '';
+                        if (details.hasWeightDiff) {
+                            diffHtml += `
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px; font-size: 0.78rem; color: #4b5563; font-weight: 400;">
+                                    <span>⚖️ 중량: DB <strong>${details.dbWeight}</strong>kg ↔ 전산 <strong>${details.downWeight.toFixed(2)}</strong>kg</span>
+                                    <button onclick="event.stopPropagation(); window.applyDownWeightToMaster('${name.replace(/'/g, "\\'")}', ${details.downWeight})"
+                                            class="btn"
+                                            style="padding: 2px 8px; font-size: 0.72rem; background: #7c3aed; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; line-height: 1.2;">
+                                        중량 반영
+                                    </button>
+                                </div>`;
+                        }
+                        if (details.hasCbmDiff) {
+                            diffHtml += `
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px; font-size: 0.78rem; color: #4b5563; font-weight: 400;">
+                                    <span>📦 CBM: DB <strong>${details.dbCbm.toFixed(3)}</strong> ↔ 전산 <strong>${details.downCbm.toFixed(3)}</strong></span>
+                                    <button onclick="event.stopPropagation(); window.applyDownCbmToMaster('${name.replace(/'/g, "\\'")}', ${details.downCbm})"
+                                            class="btn"
+                                            style="padding: 2px 8px; font-size: 0.72rem; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; line-height: 1.2;">
+                                        CBM 반영
+                                    </button>
+                                </div>`;
+                        }
+                        return `
+                            <div class="interactive-prod-item" 
+                                 style="padding: 8px 12px; border-radius: 6px; border-bottom: 1px solid #e9d5ff; transition: background 0.2s; display: flex; flex-direction: column;"
+                                 onmouseover="this.style.backgroundColor='#f3e8ff';"
+                                 onmouseout="this.style.backgroundColor='transparent';">
+                                 <div style="font-weight: 700; color: #6d28d9; cursor: pointer; font-size: 0.88rem; display: inline-block; align-self: flex-start;"
+                                      onclick="window.handleInteractiveProdClick('${name.replace(/'/g, "\\'")}', false)"
+                                      title="제품 마스터 정보 수정">
+                                     ${name}
+                                 </div>
+                                 ${diffHtml}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>`;
+    }
+
+    modal.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+            <h3 style="margin: 0; font-size: 1.15rem; color: #1e293b; font-weight: 800;">제품정보 업데이트 필요 목록</h3>
+            <button onclick="this.closest('.modal-ov').remove();" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:1.3rem;"><i class="fas fa-times"></i></button>
+        </div>
+        <div style="flex: 1; overflow-y: auto; margin-bottom: 20px;">
+            ${bodyHtml}
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <button id="btnCopyListAsText" class="btn" style="padding: 0.5rem 1rem; font-size: 0.88rem; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 8px; display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-copy"></i> 전체 텍스트로 복사
+            </button>
+            <button id="btnCloseInteractivePopup" class="btn primary" style="padding: 0.5rem 1.25rem; font-size: 0.88rem; border-radius: 8px;">닫기</button>
+        </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Click handler for product items
+    window.handleInteractiveProdClick = (prodName, isNew) => {
+        overlay.remove();
+        window.openPmEditModal(prodName);
+    };
+
+    window.applyDownWeightToMaster = async (prodName, newWeight) => {
+        const product = productMaster.find(p => p.name === prodName);
+        if (!product) {
+            alert('제품 마스터에서 해당 제품을 찾을 수 없습니다.');
+            return;
+        }
+
+        const payload = {
+            prodName: prodName,
+            prodType: product.prodType || product.type || '',
+            weight: parseFloat(newWeight) || 0,
+            width: parseFloat(product.width) || 0,
+            depth: parseFloat(product.depth) || 0,
+            height: parseFloat(product.height) || 0,
+            cbm: parseFloat(product.cbm) || 0
+        };
+
+        try {
+            const response = await fetch(`${API_BASE}/api/master-data/save`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.success) {
+                if (typeof showToast === 'function') {
+                    showToast(`⚖️ ${prodName}의 중량이 ${newWeight.toFixed(2)}kg으로 업데이트되었습니다.`);
+                } else {
+                    alert(`${prodName}의 중량이 ${newWeight.toFixed(2)}kg으로 업데이트되었습니다.`);
+                }
+
+                if (typeof loadProductMaster === 'function') {
+                    await loadProductMaster();
+                }
+                if (typeof reCompareFilteredData === 'function') {
+                    reCompareFilteredData();
+                }
+
+                overlay.remove();
+                setTimeout(() => {
+                    const hasMissing = missingProductsSet && missingProductsSet.size > 0;
+                    const hasMismatch = weightMismatchSet && weightMismatchSet.size > 0;
+                    if (hasMissing || hasMismatch) {
+                        showInteractiveUpdateNeededPopup(missingProductsSet, weightMismatchSet);
+                    }
+                }, 100);
+            } else {
+                alert('저장 실패: ' + result.message);
+            }
+        } catch (err) {
+            alert('통신 오류: ' + err.message);
+        }
+    };
+
+    window.applyDownCbmToMaster = async (prodName, newCbm) => {
+        const product = productMaster.find(p => p.name === prodName);
+        if (!product) {
+            alert('제품 마스터에서 해당 제품을 찾을 수 없습니다.');
+            return;
+        }
+
+        const payload = {
+            prodName: prodName,
+            prodType: product.prodType || product.type || '',
+            weight: parseFloat(product.weight) || 0,
+            width: parseFloat(product.width) || 0,
+            depth: parseFloat(product.depth) || 0,
+            height: parseFloat(product.height) || 0,
+            cbm: parseFloat(newCbm) || 0
+        };
+
+        try {
+            const response = await fetch(`${API_BASE}/api/master-data/save`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.success) {
+                if (typeof showToast === 'function') {
+                    showToast(`📦 ${prodName}의 CBM이 ${newCbm.toFixed(3)}으로 업데이트되었습니다.`);
+                } else {
+                    alert(`${prodName}의 CBM이 ${newCbm.toFixed(3)}으로 업데이트되었습니다.`);
+                }
+
+                if (typeof loadProductMaster === 'function') {
+                    await loadProductMaster();
+                }
+                if (typeof reCompareFilteredData === 'function') {
+                    reCompareFilteredData();
+                }
+
+                overlay.remove();
+                setTimeout(() => {
+                    const hasMissing = missingProductsSet && missingProductsSet.size > 0;
+                    const hasMismatch = weightMismatchSet && weightMismatchSet.size > 0;
+                    if (hasMissing || hasMismatch) {
+                        showInteractiveUpdateNeededPopup(missingProductsSet, weightMismatchSet);
+                    }
+                }, 100);
+            } else {
+                alert('저장 실패: ' + result.message);
+            }
+        } catch (err) {
+            alert('통신 오류: ' + err.message);
+        }
+    };
+
+    // Close button
+    document.getElementById('btnCloseInteractivePopup').onclick = () => {
+        overlay.remove();
+    };
+
+    // Outer click close
+    overlay.onclick = (e) => {
+        if (e.target === overlay) overlay.remove();
+    };
+
+    // Copy to clipboard
+    document.getElementById('btnCopyListAsText').onclick = () => {
+        const textParts = [];
+        if (missingSet && missingSet.size > 0) {
+            textParts.push(`=== 마스터에 없는 제품 (${missingSet.size}건) ===`);
+            missingSet.forEach(n => textParts.push(n));
+        }
+        if (mismatchSet && mismatchSet.size > 0) {
+            if (textParts.length > 0) textParts.push('');
+            textParts.push(`=== 중량/크기 불일치 제품 (${mismatchSet.size}건) ===`);
+            mismatchSet.forEach(n => {
+                const trimmed = n.trim();
+                const details = weightMismatchDetails[trimmed];
+                if (details) {
+                    let detailStr = trimmed;
+                    if (details.hasWeightDiff) {
+                        detailStr += ` (중량 DB:${details.dbWeight}kg ↔ 전산:${details.downWeight.toFixed(2)}kg)`;
+                    }
+                    if (details.hasCbmDiff) {
+                        detailStr += ` (CBM DB:${details.dbCbm.toFixed(3)} ↔ 전산:${details.downCbm.toFixed(3)})`;
+                    }
+                    textParts.push(detailStr);
+                } else {
+                    textParts.push(n);
+                }
+            });
+        }
+        navigator.clipboard.writeText(textParts.join('\n')).then(() => {
+            if (typeof showToast === 'function') {
+                showToast('📋 목록이 클립보드에 복사되었습니다.');
+            } else {
+                alert('목록이 복사되었습니다.');
+            }
+        });
+    };
+}
+
 // --- 드래그/복사 가능한 팝업창 (텍스트 에리어 기반) ---
 function showCopyablePopup(title, content) {
     const overlay = document.createElement('div');
@@ -6011,9 +6328,9 @@ window.openPmEditModal = (productName = null) => {
     inputName.style.backgroundColor = '#fff';
 
     if (productName) {
-        title.innerHTML = '<i class="fas fa-edit" style="margin-right: 8px;"></i> 제품 마스터 수정';
         const product = productMaster.find(p => p.name === productName);
         if (product) {
+            title.innerHTML = '<i class="fas fa-edit" style="margin-right: 8px;"></i> 제품 마스터 수정';
             inputName.value = product.name;
             inputName.readOnly = true;
             inputName.style.backgroundColor = '#f1f5f9';
@@ -6023,6 +6340,12 @@ window.openPmEditModal = (productName = null) => {
             inputDepth.value = product.depth || '';
             inputHeight.value = product.height || '';
             inputCbm.value = product.cbm || '';
+        } else {
+            // DB에 없는 제품명(신규 제품)일 경우 제품명을 선입력하고 등록 모드로 전환
+            title.innerHTML = '<i class="fas fa-plus" style="margin-right: 8px;"></i> 신규 제품 추가';
+            inputName.value = productName;
+            inputName.readOnly = false;
+            inputName.style.backgroundColor = '#fff';
         }
     } else {
         title.innerHTML = '<i class="fas fa-plus" style="margin-right: 8px;"></i> 신규 제품 추가';
@@ -6103,6 +6426,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 cbm: payload.cbm
                             };
                             renderProductSearchHistory();
+                        }
+
+                        // 변경 사항이 비교 결과 및 대시보드에 즉시 적용되도록 대조 작업 재실행
+                        if (typeof reCompareFilteredData === 'function') {
+                            reCompareFilteredData();
                         }
                     }
                 } else {

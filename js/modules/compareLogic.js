@@ -47,6 +47,11 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
 
     if (typeof missingProductsSet !== 'undefined') missingProductsSet.clear();
     if (typeof weightMismatchSet !== 'undefined') weightMismatchSet.clear();
+    if (typeof weightMismatchDetails !== 'undefined') {
+        for (const key in weightMismatchDetails) {
+            delete weightMismatchDetails[key];
+        }
+    }
 
     const productMap = new Map();
     if (Array.isArray(productMaster)) {
@@ -235,7 +240,7 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                     const keyword = (cond.value || "").toUpperCase();
                     const rawValue = cond.value || "";
 
-                    if (cond.operator === 'ratioMismatch') {
+                    if (cond.operator === 'ratioMismatch' || (!cond.operator && cond.value && cond.value.includes(':') && (cond.value.startsWith('downPackingQty:') || cond.value.startsWith('downPlanQty:') || cond.value.startsWith('downLoadQty:')))) {
                         const parts = cond.value.split(':');
                         if (parts.length === 2) {
                             const otherField = parts[0];
@@ -251,6 +256,8 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                         }
                         return false;
                     }
+                    if (cond.operator === 'isEmpty') return !targetText || targetText.trim() === '';
+                    if (cond.operator === 'isNotEmpty') return targetText && targetText.trim() !== '';
                     if (cond.operator === 'exact') return targetText === keyword;
                     if (cond.operator === 'notIncludes') return !targetText.includes(keyword);
                     if (cond.operator === 'startsWith') return targetText.startsWith(keyword);
@@ -634,6 +641,9 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
             // 전산에서 계산한 개별 중량 (M/K)
             const downUnitWeight = loadQty > 0 ? (loadWeight / loadQty) : dbWeight;
 
+            let hasWeightDiff = false;
+            let hasCbmDiff = false;
+
             if (loadQty > 0 && Math.abs(downUnitWeight - dbWeight) > 0.05) {
                 if (typeof weightMismatchSet !== 'undefined') weightMismatchSet.add((down.prodName || "").trim());
                 resultObj.unitWeight = dbWeight;
@@ -642,6 +652,55 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                 resultObj.cssClass = (resultObj.cssClass || "") + " row-update";
                 resultObj.badgeClass = "update";
                 resultObj.type = "제품정보 업데이트";
+                hasWeightDiff = true;
+            }
+
+            // [CBM 검증 로직 추가]
+            const dbCBM = parseFloat(prod.cbm) || 0;
+            const downUnitCBM = loadQty > 0 ? (down.volumeSum / loadQty) : dbCBM;
+
+            if (loadQty > 0 && Math.abs(downUnitCBM - dbCBM) > 0.001) {
+                if (typeof weightMismatchSet !== 'undefined') weightMismatchSet.add((down.prodName || "").trim());
+                resultObj.unitCBM = dbCBM;
+                resultObj.currentUnitCBM = downUnitCBM;
+                resultObj.isCbmMismatch = true;
+                const cbmWarning = `DB CBM:${dbCBM.toFixed(3)} ↔ 현재:${downUnitCBM.toFixed(3)}`;
+                if (resultObj.prodName.includes('⚠️DB:')) {
+                    resultObj.prodName = resultObj.prodName.replace(')', ` | ${cbmWarning})`);
+                } else {
+                    resultObj.prodName += ` (⚠️${cbmWarning})`;
+                }
+                resultObj.cssClass = (resultObj.cssClass || "") + " row-update";
+                resultObj.badgeClass = "update";
+                resultObj.type = "제품정보 업데이트";
+                hasCbmDiff = true;
+            }
+
+            if (hasWeightDiff || hasCbmDiff) {
+                const prodNameTrimmed = (down.prodName || "").trim();
+                if (typeof weightMismatchDetails !== 'undefined') {
+                    if (!weightMismatchDetails[prodNameTrimmed]) {
+                        weightMismatchDetails[prodNameTrimmed] = {
+                            dbWeight: dbWeight,
+                            downWeight: downUnitWeight,
+                            dbCbm: dbCBM,
+                            downCbm: downUnitCBM,
+                            hasWeightDiff: hasWeightDiff,
+                            hasCbmDiff: hasCbmDiff
+                        };
+                    } else {
+                        if (hasWeightDiff) {
+                            weightMismatchDetails[prodNameTrimmed].hasWeightDiff = true;
+                            weightMismatchDetails[prodNameTrimmed].dbWeight = dbWeight;
+                            weightMismatchDetails[prodNameTrimmed].downWeight = downUnitWeight;
+                        }
+                        if (hasCbmDiff) {
+                            weightMismatchDetails[prodNameTrimmed].hasCbmDiff = true;
+                            weightMismatchDetails[prodNameTrimmed].dbCbm = dbCBM;
+                            weightMismatchDetails[prodNameTrimmed].downCbm = downUnitCBM;
+                        }
+                    }
+                }
             }
 
             resultObj.weights = {
