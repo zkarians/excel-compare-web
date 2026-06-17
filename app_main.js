@@ -3406,7 +3406,8 @@ function displayResults(results, isDbMode = false) {
                         trError.style.display = 'none';
                         tr.style.cursor = 'pointer';
                         tr.title = '클릭하면 상세 오류 내용을 확인할 수 있습니다';
-                        tr.addEventListener('click', () => {
+                        tr.addEventListener('click', (e) => {
+                            if (e.target.closest('.col-select') || e.target.closest('.col-manage')) return;
                             const isExpanded = trError.style.display !== 'none';
                             trError.style.display = isExpanded ? 'none' : 'table-row';
                             tr.style.backgroundColor = isExpanded ? '' : '#fef2f2';
@@ -3425,6 +3426,7 @@ function displayResults(results, isDbMode = false) {
                 // DB 검색 모드: 관리 버튼 (삭제) 추가
                 if (isDbMode) {
                     const tdManage = document.createElement('td');
+                    tdManage.className = 'col-manage';
                     tdManage.style.textAlign = 'center';
 
                     // 개별 선택 체크박스
@@ -3517,7 +3519,8 @@ function displayResults(results, isDbMode = false) {
                 `;
                     tr._detailTr = detailTr; // 참조 저장
 
-                    tr.addEventListener('click', () => {
+                    tr.addEventListener('click', (e) => {
+                        if (e.target.closest('.col-select') || e.target.closest('.col-manage')) return;
                         const isExpanded = detailTr.style.display !== 'none';
                         detailTr.style.display = isExpanded ? 'none' : 'table-row';
                         tr.style.backgroundColor = isExpanded ? '' : '#f0f9ff';

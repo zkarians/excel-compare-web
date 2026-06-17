@@ -204,6 +204,17 @@ async function parseOriginalExcel(fileInput, mapping = {}, targetSheets = ["직�
                     let cellProd = safeGetText(COL.PROD_NAME);
                     let cellDest = safeGetText(COL.DEST);
                     let cellCntrNo = safeGetText(COL.CNTR_NO);
+                    let cellR = safeGetText(COL.REMARK);
+
+                    if (cellR) {
+                        if (lastValidR) {
+                            if (!lastValidR.includes(cellR)) {
+                                lastValidR = lastValidR + " | " + cellR;
+                            }
+                        } else {
+                            lastValidR = cellR;
+                        }
+                    }
 
                     if (i === 1 && (cellProd === '품목명' || cellProd === '품명' || cellProd.toLowerCase().includes('product'))) {
                         continue;
@@ -228,17 +239,12 @@ async function parseOriginalExcel(fileInput, mapping = {}, targetSheets = ["직�
                             }
                         } else {
                             if (!stopOnEmptyRow && emptyRowCount > 0) {
-                                lastValidCntrNo = "";
-                                lastValidDest = ""; lastValidE = ""; lastValidN = ""; lastValidO = "";
-                                lastValidP = ""; lastValidQ = ""; lastValidR = "";
-                                lastFontColor = null;
                                 emptyRowCount = 0;
                             }
                         }
                     }
 
                     let cellQ = safeGetText(COL.ETD);
-                    let cellR = safeGetText(COL.REMARK);
                     let cellWorkDate = safeGetText(COL.WORK_DATE);
 
                     let currentFontColor = null;
@@ -276,7 +282,6 @@ async function parseOriginalExcel(fileInput, mapping = {}, targetSheets = ["직�
                     // Reset 이후에 최종적으로 값을 업데이트해야 함 (기존 로직 순서 맞춤)
                     if (cellP) lastValidP = cellP;
                     if (cellQ) lastValidQ = cellQ;
-                    if (cellR) lastValidR = cellR;
                     if (cellWorkDate) lastValidWorkDate = cellWorkDate;
 
                     let cntrNo;
