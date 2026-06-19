@@ -730,9 +730,11 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                 down: actualDownWeight,
                 mixed: actualDownWeight
             };
-            resultObj.type = "원본누락";
-            resultObj.cssClass = "row-extra";
-            resultObj.badgeClass = "extra";
+            if (!matchedOrig) {
+                resultObj.type = "원본누락";
+                resultObj.cssClass = "row-extra";
+                resultObj.badgeClass = "extra";
+            }
             resultObj.qtyInfo = { plan: down.planQtySum, load: down.loadQtySum, pending: down.pendingQtySum, remain: down.remainQtySum, packing: down.packingQtySum || 0, origPlan: 0 };
         } else {
             resultObj.type = "정상(부)";

@@ -29,6 +29,20 @@ async function loadCustomFields() {
 
         // DB가 비어있는 경우 로컬 설정을 DB로 업로드해둠
         saveCustomFields();
+    } else {
+        // 로컬 스토리지도 비어있는 경우 기본값 설정
+        customFields = [
+            { "id": "f_1779877227459", "source": "down", "colIdx": 22, "colLetter": "W", "name": "Carrier" },
+            { "id": "f_1779877296443", "source": "down", "colIdx": 27, "colLetter": "AB", "name": "F. Dest" },
+            { "id": "f_1779878453380", "source": "down", "colIdx": 19, "colLetter": "T", "name": "선사" },
+            { "id": "f_1779878491732", "source": "down", "colIdx": 20, "colLetter": "U", "name": "포워더" },
+            { "id": "f_1779878581620", "source": "down", "colIdx": 24, "colLetter": "Y", "name": "적재지" },
+            { "id": "f_1781688933849", "source": "orig", "colIdx": 20, "colLetter": "U", "name": "추가정보1" },
+            { "id": "f_1781688945336", "source": "orig", "colIdx": 21, "colLetter": "V", "name": "추가정보2" }
+        ];
+        window.customFields = customFields;
+        renderCustomFieldsUI();
+        saveCustomFields();
     }
 }
 

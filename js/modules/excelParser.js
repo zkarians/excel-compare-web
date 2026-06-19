@@ -206,16 +206,6 @@ async function parseOriginalExcel(fileInput, mapping = {}, targetSheets = ["직�
                     let cellCntrNo = safeGetText(COL.CNTR_NO);
                     let cellR = safeGetText(COL.REMARK);
 
-                    if (cellR) {
-                        if (lastValidR) {
-                            if (!lastValidR.includes(cellR)) {
-                                lastValidR = lastValidR + " | " + cellR;
-                            }
-                        } else {
-                            lastValidR = cellR;
-                        }
-                    }
-
                     if (i === 1 && (cellProd === '품목명' || cellProd === '품명' || cellProd.toLowerCase().includes('product'))) {
                         continue;
                     }
@@ -269,6 +259,16 @@ async function parseOriginalExcel(fileInput, mapping = {}, targetSheets = ["직�
                         }
                         lastValidCntrNo = cellCntrNo;
                         lastFontColor = currentFontColor;
+                    }
+
+                    if (cellR) {
+                        if (lastValidR) {
+                            if (!lastValidR.includes(cellR)) {
+                                lastValidR = lastValidR + " | " + cellR;
+                            }
+                        } else {
+                            lastValidR = cellR;
+                        }
                     }
 
                     const extractedDest = extractDestination(cellDest);
