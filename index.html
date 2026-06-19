@@ -828,6 +828,15 @@
                         <div id="customFieldsList" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px;">
                             <!-- 등록된 커스텀 필드가 여기에 표시됩니다 -->
                         </div>
+                        <div style="margin-top: 12px; display: flex; gap: 6px; flex-shrink: 0;">
+                            <button id="btnExportSettings" class="btn btn-secondary-outline" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; flex: 1; border-radius: 6px;">
+                                <i class="fas fa-file-export"></i> 설정 내보내기 (.json)
+                            </button>
+                            <button id="btnImportSettings" class="btn btn-primary-soft" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; flex: 1; border-radius: 6px;">
+                                <i class="fas fa-file-import"></i> 설정 가져오기 (.json)
+                            </button>
+                            <input type="file" id="inputImportSettings" accept=".json" style="display: none;">
+                        </div>
                         </div>
 
                     <div class="rule-form-card" style="padding: 0.8rem; flex-shrink: 0; margin-bottom: 10px;">

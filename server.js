@@ -2083,6 +2083,35 @@ app.post('/api/sync/email-config', async (req, res) => {
     }
 });
 
+// --- 커스텀 필드 클라우드 동기화 API ---
+app.get('/api/sync/custom-fields', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const result = await pool.query("SELECT value FROM app_configs WHERE key = 'custom_fields'");
+        if (result.rows.length === 0) {
+            return res.json({ success: true, customFields: [] });
+        }
+        res.json({ success: true, customFields: result.rows[0].value });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post('/api/sync/custom-fields', async (req, res) => {
+    const { customFields } = req.body;
+    try {
+        const pool = await getPool();
+        await pool.query(`
+            INSERT INTO app_configs (key, value, updated_at)
+            VALUES ('custom_fields', $1, NOW())
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+        `, [JSON.stringify(customFields)]);
+        res.json({ success: true, message: "매핑 설정(커스텀 필드)이 클라우드에 업로드되었습니다." });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 app.post('/api/send-email', async (req, res) => {
     const { to, subject, html } = req.body;
 

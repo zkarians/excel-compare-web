@@ -3,16 +3,46 @@
 // --------------------------------------------------
 let customFields = [];
 // --- Custom Field System ---
-function loadCustomFields() {
+async function loadCustomFields() {
+    // 1순위: DB에서 조회
+    try {
+        const response = await fetch(`${API_BASE}/api/sync/custom-fields`);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.customFields && Array.isArray(data.customFields) && data.customFields.length > 0) {
+                customFields = data.customFields;
+                window.customFields = customFields;
+                renderCustomFieldsUI();
+                return;
+            }
+        }
+    } catch (err) {
+        console.error("DB 커스텀필드 로딩 실패:", err);
+    }
+
+    // 2순위: 로컬 스토리지
     const saved = localStorage.getItem('customFields');
     if (saved) {
         customFields = JSON.parse(saved);
+        window.customFields = customFields;
         renderCustomFieldsUI();
+
+        // DB가 비어있는 경우 로컬 설정을 DB로 업로드해둠
+        saveCustomFields();
     }
 }
 
-function saveCustomFields() {
+async function saveCustomFields() {
     localStorage.setItem('customFields', JSON.stringify(customFields));
+    try {
+        await fetch(`${API_BASE}/api/sync/custom-fields`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ customFields })
+        });
+    } catch (err) {
+        console.error("DB 커스텀필드 저장 실패:", err);
+    }
 }
 
 function excelColToIdx(colStr) {
@@ -101,3 +131,78 @@ window.saveCustomFields = saveCustomFields;
 window.excelColToIdx = excelColToIdx;
 window.renderCustomFieldsUI = renderCustomFieldsUI;
 window.updateAllConditionDropdowns = updateAllConditionDropdowns;
+
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', () => {
+        const btnExport = document.getElementById('btnExportSettings');
+        const btnImport = document.getElementById('btnImportSettings');
+        const inputImport = document.getElementById('inputImportSettings');
+
+        if (btnExport) {
+            btnExport.addEventListener('click', () => {
+                const settings = {
+                    customFields: customFields,
+                    carrierMapPrefs: JSON.parse(localStorage.getItem('carrierMapPrefs') || '{}')
+                };
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(settings, null, 4));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", "excel_compare_settings.json");
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+            });
+        }
+
+        if (btnImport) {
+            btnImport.addEventListener('click', () => {
+                btnImport.blur();
+                inputImport.click();
+            });
+        }
+
+        if (inputImport) {
+            inputImport.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (evt) => {
+                    try {
+                        const settings = JSON.parse(evt.target.result);
+                        if (!settings.customFields && !settings.carrierMapPrefs) {
+                            throw new Error("유효한 설정 파일 형식이 아닙니다.");
+                        }
+
+                        if (settings.customFields) {
+                            customFields = settings.customFields;
+                            window.customFields = customFields;
+                            localStorage.setItem('customFields', JSON.stringify(customFields));
+                            await saveCustomFields(); // DB에도 전송
+                        }
+
+                        if (settings.carrierMapPrefs) {
+                            localStorage.setItem('carrierMapPrefs', JSON.stringify(settings.carrierMapPrefs));
+                            if (typeof window.saveCarrierMap === 'function') {
+                                window.carrierMap = settings.carrierMapPrefs;
+                                await window.saveCarrierMap();
+                            }
+                        }
+
+                        renderCustomFieldsUI();
+                        if (typeof window.renderCarrierSettings === 'function') {
+                            window.renderCarrierSettings();
+                        }
+
+                        alert("✅ 설정 파일(.json)을 성공적으로 불러왔습니다. 화면을 새로고침합니다.");
+                        location.reload();
+                    } catch (err) {
+                        alert("❌ 설정을 불러오는 중 오류가 발생했습니다: " + err.message);
+                    }
+                };
+                reader.readAsText(file);
+                inputImport.value = '';
+            });
+        }
+    });
+}
