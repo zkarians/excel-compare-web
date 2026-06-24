@@ -108,6 +108,11 @@ function createWindow() {
     });
 
     mainWindow.loadFile(path.join(__dirname, 'index.html'));
+    mainWindow.on('focus', () => {
+        if (mainWindow && mainWindow.webContents) {
+            mainWindow.webContents.focus();
+        }
+    });
     mainWindow.on('closed', () => { mainWindow = null; });
 }
 
