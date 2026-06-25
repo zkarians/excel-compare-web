@@ -34,7 +34,7 @@ const REMOTE_DB_CONFIG = {
     host: 'ungdong.iptime.org',
     database: 'excel',
     password: 'z456qwe12!@',
-    port: 5433,
+    port: 5432,
     ssl: false,
     connectionTimeoutMillis: 5000,
 };
