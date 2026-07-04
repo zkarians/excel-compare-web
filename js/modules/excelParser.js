@@ -299,6 +299,15 @@ async function parseOriginalExcel(fileInput, mapping = {}, targetSheets = ["직�
 
                     if (!cntrNo || cntrNo.toUpperCase().includes("WAIT")) continue;
 
+                    // 수량 체크(qty <= 0) 이전에 컨테이너 규격(Type)과 선사(Carrier)를 추출하여 state를 갱신해야 합니다.
+                    // 그래야 첫 번째 상품 행의 수량이 0(쇼티지 등)이라도 뒤따르는 상품 행이 컨테이너 정보를 정상적으로 상속받을 수 있습니다.
+                    let rawCntrType = safeGetText(COL.CNTR_TYPE) || lastValidN || safeGetText(COL.CNTR_TYPE_FALLBACK) || "-";
+                    let rawCarrier = safeGetText(COL.CARRIER) || lastValidO || safeGetText(COL.CARRIER_FALLBACK) || "-";
+                    if (rawCarrier && !isNaN(Number(rawCarrier.replace(/,/g, '')))) rawCarrier = "-";
+
+                    if (rawCntrType !== "-") lastValidN = rawCntrType;
+                    if (rawCarrier !== "-") lastValidO = rawCarrier;
+
                     let qty = 0;
                     try {
                         const cellQty = row.getCell(COL.QTY);
@@ -332,12 +341,6 @@ async function parseOriginalExcel(fileInput, mapping = {}, targetSheets = ["직�
                         transporter = getTransporterFromColor(fontColor);
                     }
 
-                    let rawCntrType = safeGetText(COL.CNTR_TYPE) || lastValidN || safeGetText(COL.CNTR_TYPE_FALLBACK) || "-";
-                    let rawCarrier = safeGetText(COL.CARRIER) || lastValidO || safeGetText(COL.CARRIER_FALLBACK) || "-";
-                    if (rawCarrier && !isNaN(Number(rawCarrier.replace(/,/g, '')))) rawCarrier = "-";
-
-                    if (rawCntrType !== "-") lastValidN = rawCntrType;
-                    if (rawCarrier !== "-") lastValidO = rawCarrier;
 
                     let adj1Color = null;
                     try { adj1Color = row.getCell(COL.ADJ1).font?.color?.argb || null; } catch (e) { }

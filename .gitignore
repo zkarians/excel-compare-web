@@ -2,6 +2,8 @@ node_modules/
 dist/
 data/
 uploads/
+backup/
+scratch/
 masterrule/runtime_debug.log
 masterrule/startup_error.log
 *.xlsx

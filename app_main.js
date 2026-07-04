@@ -1251,6 +1251,8 @@ document.getElementById('btnUploadMaster').addEventListener('click', async () =>
 // 경로 입력 시 자동 저장 및 체크
 pathOriginal.addEventListener('input', () => {
     const val = pathOriginal.value.trim();
+    originalData = [];  // 캐시 초기화
+    originalFile = null; // 파일 객체 초기화
     if (val) {
         localStorage.setItem('pathOrig', val);
         if (window.electronAPI) {
@@ -1269,6 +1271,8 @@ pathOriginal.addEventListener('input', () => {
 
 pathRework.addEventListener('input', () => {
     const val = pathRework.value.trim();
+    reworkData = []; // 캐시 초기화
+    reworkFile = null; // 파일 객체 초기화
     if (val) {
         localStorage.setItem('pathRework', val);
         if (window.electronAPI) {
@@ -1289,6 +1293,8 @@ pathRework.addEventListener('input', () => {
 
 pathDownload.addEventListener('input', () => {
     const val = pathDownload.value.trim();
+    downloadData = []; // 캐시 초기화
+    downloadFile = null; // 파일 객체 초기화
     if (val) {
         localStorage.setItem('pathDown', val);
         if (window.electronAPI) {
@@ -1301,25 +1307,6 @@ pathDownload.addEventListener('input', () => {
         if (window.electronAPI) window.electronAPI.saveFilePath('download', null);
         statusDownload.textContent = "상태: 대기 중";
         statusDownload.style.color = '#64748b';
-    }
-    checkReadyStatus();
-});
-
-pathRework.addEventListener('input', () => {
-    const val = pathRework.value.trim();
-    if (val) {
-        localStorage.setItem('pathRework', val);
-        if (window.electronAPI) {
-            window.electronAPI.saveFilePath('rework', val);
-        }
-        statusRework.textContent = "상태: 재작업 경로 입력됨";
-        statusRework.style.color = '#059669';
-        if (btnClearRework) btnClearRework.style.display = 'inline-block';
-    } else {
-        localStorage.removeItem('pathRework');
-        if (!reworkFile && btnClearRework) btnClearRework.style.display = 'none';
-        statusRework.textContent = "상태: 대기 중";
-        statusRework.style.color = '#64748b';
     }
     checkReadyStatus();
 });
@@ -1477,6 +1464,8 @@ if (btnClearDown) {
     if (pathWarehouse) {
         pathWarehouse.addEventListener('input', () => {
             const val = pathWarehouse.value.trim();
+            warehouseData = []; // 캐시 초기화
+            warehouseFile = null; // 파일 객체 초기화
             if (val) {
                 localStorage.setItem('pathWarehouse', val);
                 if (window.electronAPI) window.electronAPI.saveFilePath('warehouse', val);
@@ -2254,8 +2243,11 @@ btnCompare.addEventListener('click', async () => {
         let finalDownList = [];
         let finalReworkList = [];
 
-        // 1. 원본 데이터 로드 (항상 새로 파싱 - 캐시 미사용)
-        if (originalFile && originalFile.path) {
+        // 1. 원본 데이터 로드 (캐시 우선 사용, 비어있을 때만 새로 파싱)
+        if (originalData && originalData.length > 0) {
+            finalOrigList = [...originalData];
+            console.log(`⚡ [Cache] 원본 데이터 캐시 사용 (${finalOrigList.length}건)`);
+        } else if (originalFile && originalFile.path) {
             const filePath = originalFile.path;
             const resp = await fetch(`${API_BASE}/api/load-file-raw?path=${encodeURIComponent(filePath)}&t=${Date.now()}`);
             if (!resp.ok) throw new Error("서버 경로(원본)를 찾을 수 없습니다.");
@@ -2302,8 +2294,11 @@ btnCompare.addEventListener('click', async () => {
 
         setProcessStatus("원본 데이터 분석 완료. 전산 데이터 로드 중...", 40);
 
-        // 2. 전산 데이터 로드 (항상 새로 파싱 - 캐시 미사용)
-        if (downloadFile && downloadFile.path) {
+        // 2. 전산 데이터 로드 (캐시 우선 사용, 비어있을 때만 새로 파싱)
+        if (downloadData && downloadData.length > 0) {
+            finalDownList = [...downloadData];
+            console.log(`⚡ [Cache] 전산 데이터 캐시 사용 (${finalDownList.length}건)`);
+        } else if (downloadFile && downloadFile.path) {
             const filePath = downloadFile.path;
             const isDir = !filePath.match(/\.(xlsx|xls|xlsm)$/i);
             if (isDir) {
@@ -2384,8 +2379,11 @@ btnCompare.addEventListener('click', async () => {
 
         setProcessStatus("전산 데이터 분석 완료. 재작업 데이터 확인 중...", 60);
 
-        // 3. 재작업 데이터 로드
-        if (reworkFile && (reworkFile.isReloaded || reworkFile.isAutoLoaded)) {
+        // 3. 재작업 데이터 로드 (캐시 우선 사용, 비어있을 때만 새로 파싱)
+        if (reworkData && reworkData.length > 0) {
+            finalReworkList = [...reworkData];
+            console.log(`⚡ [Cache] 재작업 데이터 캐시 사용 (${finalReworkList.length}건)`);
+        } else if (reworkFile && (reworkFile.isReloaded || reworkFile.isAutoLoaded)) {
             finalReworkList = reworkData;
         } else if (reworkFile) {
             finalReworkList = await readExcelFile(reworkFile, 'rework'); // 재작업 파일은 '재작업당일' 시트를 읽어야 함
