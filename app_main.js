@@ -563,9 +563,9 @@ async function initializeApp() {
             console.warn('DB Not Available:', data.message);
             updateDbConfigUI(false, data.message);
 
-            // 폰 DB가 먹통일 때 사용자에게 즉시 알려주고 클라우드 전환 제안
+            // 원격 PC DB가 먹통일 때 사용자에게 즉시 알려주고 클라우드 전환 제안
             if (data.message.includes('timeout') || data.message.includes('ECONNREFUSED')) {
-                const useCloud = confirm("현재 폰 DB(Phone)에 접속할 수 없습니다.\n[안전망] Cloudtype DB로 즉시 전환하여 작업을 계속하시겠습니까?");
+                const useCloud = confirm("현재 원격 PC DB(Remote)에 접속할 수 없습니다.\n[안전망] Cloudtype DB로 즉시 전환하여 작업을 계속하시겠습니까?");
                 if (useCloud) {
                     document.getElementById('switchToCloud').click();
                 }
@@ -785,7 +785,7 @@ btnSavePhoneDb.addEventListener('click', () => {
     localStorage.setItem('phoneDbUser', user);
     localStorage.setItem('phoneDbName', db);
     localStorage.setItem('phoneDbPassword', pass);
-    alert("폰 접속 정보가 저장되었습니다.");
+    alert("원격 PC 접속 정보가 저장되었습니다.");
 });
 
 
@@ -809,8 +809,8 @@ switchToPhone.addEventListener('click', async () => {
     const db = phoneDbName.value.trim();
     const pass = phoneDbPassword ? phoneDbPassword.value.trim() : '';
 
-    if (!ip || !user || !db) return alert("폰 설정을 먼저 완료하고 저장해주세요.");
-    if (!confirm(`폰 DB(${ip}:${port})로 전환하시겠습니까?`)) return;
+    if (!ip || !user || !db) return alert("원격 PC 설정을 먼저 완료하고 저장해주세요.");
+    if (!confirm(`원격 PC DB(${ip}:${port})로 전환하시겠습니까?`)) return;
 
     const resp = await fetch(`${API_BASE}/api/db/config`, {
         method: 'POST',
@@ -844,7 +844,7 @@ async function startSync(srcType, dstType) {
     const LOCAL_PC_CONFIG = { host: 'localhost', user: 'postgres', port: 5432, database: 'excel', password: 'z456qwe12!@', ssl: false };
     const CLOUD_CFG = null; // 서버측 CLOUD_CONFIG 사용 (null = 서버 기본값)
 
-    // 폰 설정 읽기
+    // 원격 PC 설정 읽기
     const ip = document.getElementById('phoneDbIp')?.value.trim();
     const port = document.getElementById('phoneDbPort')?.value.trim() || '5432';
     const user = document.getElementById('phoneDbUser')?.value.trim();
@@ -857,13 +857,13 @@ async function startSync(srcType, dstType) {
     const selectedTables = Array.from(document.querySelectorAll('.sync-table-chk:checked')).map(el => el.value);
     if (selectedTables.length === 0) return alert("동기화할 테이블을 최소 하나 이상 선택해주세요.");
 
-    // 폰이 포함된 경우 IP 유효성 체크
+    // 원격 PC가 포함된 경우 IP 유효성 체크
     if ((srcType === 'phone' || dstType === 'phone') && !ip) {
-        return alert('폰 DB 주소를 먼저 입력해 주세요. (폰 DB 연결 설정 패널 참고)');
+        return alert('원격 PC DB 주소를 먼저 입력해 주세요. (원격 PC 연결 설정 패널 참고)');
     }
     if (srcType === dstType) return alert('출발지와 목적지가 같습니다. 다른 대상을 선택해 주세요.');
 
-    const nameMap = { pc: '로컬 PC', cloud: '클라우드', phone: '폰' };
+    const nameMap = { pc: '로컬 PC', cloud: '클라우드', phone: '원격 PC' };
     if (!confirm(`${nameMap[srcType]} ➜ ${nameMap[dstType]} 데이터 전송을 시작하시겠습니까?`)) return;
 
     const syncProgress = document.getElementById('syncProgress');
@@ -978,7 +978,7 @@ document.querySelectorAll('.sync-node-btn').forEach(btn => {
             });
         }
 
-        const nameMap = { pc: '로컬 PC', cloud: '클라우드', phone: '폰' };
+        const nameMap = { pc: '로컬 PC', cloud: '클라우드', phone: '원격 PC' };
         const label = document.getElementById('syncDirectionLabel');
         if (label && syncSrc && syncDst) {
             label.textContent = `${nameMap[syncSrc]} ➜ ${nameMap[syncDst]}`;
