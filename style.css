@@ -1641,10 +1641,16 @@ tr.border-group td {
 }
 
 /* Hold Styles */
+.tab-hold-only {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #475569;
+}
+
 .tab-hold-only.active {
-    background: #e2e8f0 !important;
-    border-color: #94a3b8 !important;
-    color: #1e293b !important;
+    background: #cbd5e1 !important;
+    border-color: #64748b !important;
+    color: #0f172a !important;
 }
 
 .row-held td {
