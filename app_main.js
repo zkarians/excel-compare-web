@@ -3452,6 +3452,7 @@ function displayResults(results, isDbMode = false) {
                                     style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
                                     class="copyable-item"
                                     title="클릭하여 컨테이너 복사">${res.cntrNo}</strong>
+                            ${isCaution ? `<span title="주의 비고: ${matchedCaution.remark || '사유 없음'}" style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#ef4444; color:#fff; border-radius:4px; padding:0px 4px; line-height:1.2; cursor:help; white-space:nowrap;">주의</span>` : ''}
                             ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; margin-left:4px; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
                         </div>
                         ${tagsHtml ? `<div style="display: flex; flex-direction: column; gap: 2px; justify-content: center; line-height: 1;">${tagsHtml}</div>` : ''}
@@ -3463,8 +3464,13 @@ function displayResults(results, isDbMode = false) {
                         style="cursor: pointer; ${isCaution ? 'color: #dc2626; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'H' ? 'color: #7c3aed; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'Q' ? 'color: #0d9488; font-weight: 700;' : ''}"
                         title="클릭하여 제품명 복사"
                         class="copyable-item">
-                        ${res.prodName}${isCaution ? `<span title="주의 비고: ${matchedCaution.remark || '사유 없음'}" style="display:inline-block; cursor:help; margin-left:4px; font-size:0.72rem; color:#fff; background:#ef4444; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4;">주의</span>` : ''}${getDongTag(res.prodName, res.prodType)}${getBlockHoldTag(res.prodName)}
-                        ${getStockShortageBadge(res.prodName, res.qtyInfo.remain)}
+                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                            <span>${res.prodName}</span>
+                            ${isCaution ? `<span title="주의 비고: ${matchedCaution.remark || '사유 없음'}" style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#ef4444; color:#fff; border-radius:4px; padding:0px 4px; line-height:1.2; cursor:help; white-space:nowrap;">주의</span>` : ''}
+                            ${getDongTag(res.prodName, res.prodType)}
+                            ${getBlockHoldTag(res.prodName)}
+                            ${getStockShortageBadge(res.prodName, res.qtyInfo.remain)}
+                        </div>
                     </td>
                     <td class="col-qty" style="font-size: 0.9em;">${renderQtyMismatch(res.qtyInfo)}</td>
                     <td class="col-spec">${renderMismatch(res.cntrType.orig, res.cntrType.val, res.cntrType.isMismatch)}</td>
