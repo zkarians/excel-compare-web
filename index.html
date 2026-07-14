@@ -54,6 +54,10 @@
                     style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600;">📋
                     자동분류</button>
                 <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
+                <button id="btnOpenCautionModels" class="btn"
+                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2;">⚠️
+                    주의모델</button>
+                <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
                 <button id="btnOpenProductMaster" class="btn"
                     style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">
                     <i class="fas fa-box-open" style="margin-right: 4px;"></i> 제품 정보 검색
@@ -403,6 +407,62 @@
             </div>
             <div class="modal-footer" style="text-align:right; padding-top:1rem; border-top:1px solid #eee;">
                 <button class="btn btn-secondary" id="closePopWeightBottomBtn">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Caution Models Modal -->
+    <div id="cautionModelsModal" class="modal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div class="modal-header">
+                <h2 style="margin: 0; color: #dc2626; font-size: 1rem;">
+                    <i class="fas fa-exclamation-triangle"></i> 주의 모델 리스트 관리
+                </h2>
+                <span class="close-btn" id="closeCautionModelsBtn">&times;</span>
+            </div>
+            <div class="modal-body" style="padding: 1rem;">
+                <p style="color: #64748b; font-size: 0.8rem; margin-bottom: 12px;">
+                    이 리스트에 등록된 모델명(또는 키워드)이 포함된 제품은 상세 결과 테이블에서 제품명이 붉은색으로 표기되고 옆에 '주의' 태그가 노출됩니다.
+                </p>
+
+                <!-- 추가 폼 -->
+                <div style="background: #fff5f5; padding: 12px; border-radius: 8px; border: 1px solid #fee2e2; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 2;">
+                            <label style="display: block; font-size: 0.72rem; color: #7f1d1d; margin-bottom: 4px; font-weight: 600;">주의 대상 모델명 (키워드)</label>
+                            <input type="text" id="inputCautionModelName" placeholder="예: CA-12 또는 CA-12.01"
+                                style="width: 100%; padding: 6px 8px; border: 1px solid #fca5a5; border-radius: 5px; font-size: 0.82rem;">
+                        </div>
+                        <div style="flex: 3;">
+                            <label style="display: block; font-size: 0.72rem; color: #7f1d1d; margin-bottom: 4px; font-weight: 600;">주의 사유 / 비고 (선택)</label>
+                            <input type="text" id="inputCautionModelRemark" placeholder="예: 자재 수급 불안정"
+                                style="width: 100%; padding: 6px 8px; border: 1px solid #fca5a5; border-radius: 5px; font-size: 0.82rem;">
+                        </div>
+                    </div>
+                    <button id="btnAddCautionModel" class="btn" style="background: #dc2626; color: white; border: none; padding: 6px 12px; font-size: 0.8rem; font-weight: bold; border-radius: 5px; align-self: flex-end; cursor: pointer;">
+                        추가
+                    </button>
+                </div>
+
+                <!-- 등록된 목록 테이블 -->
+                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem; text-align: left;">
+                        <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 1;">
+                            <tr>
+                                <th style="padding: 8px 12px; font-weight: 600; color: #475569;">제품 모델명</th>
+                                <th style="padding: 8px 12px; font-weight: 600; color: #475569;">비고 (주의 사유)</th>
+                                <th style="padding: 8px 12px; font-weight: 600; color: #475569; text-align: center; width: 60px;">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cautionModelsTableBody">
+                            <!-- JS로 동적 추가됨 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer" style="text-align: right; padding-top: 1rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 8px;">
+                <button class="btn btn-secondary" id="closeCautionModelsBottomBtn">닫기</button>
+                <button class="btn" id="btnSaveCautionModels" style="background: #ef4444; color: white; border: none; border-radius: 6px; padding: 6px 16px; font-weight: bold; font-size: 0.82rem; cursor: pointer;">설정 저장</button>
             </div>
         </div>
     </div>

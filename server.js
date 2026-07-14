@@ -360,6 +360,7 @@ const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const RULES_FILE = path.join(DATA_DIR, 'rules.json');
 const MAPPINGS_FILE = path.join(DATA_DIR, 'mapping_profiles.json');
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
+const CAUTION_MODELS_FILE = path.join(DATA_DIR, 'caution_models.json');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
@@ -1172,6 +1173,36 @@ app.post('/api/rules', (req, res) => {
         res.json({ success: true, message: "규칙이 성공적으로 저장되었습니다." });
     } catch (err) {
         res.status(500).json({ success: false, message: "규칙 저장에 실패했습니다." });
+    }
+});
+
+// 주의 모델 로드 API
+app.get('/api/caution-models', (req, res) => {
+    try {
+        if (!fs.existsSync(CAUTION_MODELS_FILE)) {
+            return res.json({ success: true, models: [] });
+        }
+        const data = fs.readFileSync(CAUTION_MODELS_FILE, 'utf8');
+        try {
+            const parsed = JSON.parse(data);
+            const models = Array.isArray(parsed) ? parsed : (parsed.models || []);
+            res.json({ success: true, models });
+        } catch (e) {
+            res.json({ success: true, models: [] });
+        }
+    } catch (err) {
+        res.status(500).json({ success: false, message: "주의 모델 목록을 불러올 수 없습니다." });
+    }
+});
+
+// 주의 모델 저장 API
+app.post('/api/caution-models', (req, res) => {
+    try {
+        const models = req.body.models || req.body;
+        fs.writeFileSync(CAUTION_MODELS_FILE, JSON.stringify(models, null, 2), 'utf8');
+        res.json({ success: true, message: "주의 모델 목록이 성공적으로 저장되었습니다." });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "주의 모델 목록 저장에 실패했습니다." });
     }
 });
 

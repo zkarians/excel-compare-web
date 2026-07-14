@@ -32,6 +32,7 @@ let excludedList = []; // 제외된 컨테이너 목록 (작업일 없음)
 let lastDbSearchResults = []; // 마지막 DB 검색 결과 (탭 전환 시 유지용)
 let currentFilter = 'success';
 let selectedItems = new Set(); // DB 저장을 위해 선택된 항목
+let cautionModels = []; // 주의 모델 목록 [{ modelName, remark }]
 
 window.toggleSelectItem = (itemKey, event) => {
     if (event.target.checked) {
@@ -152,6 +153,146 @@ window.toggleContainerHold = async (cntrNo, event) => {
         alert("보류 처리에 실패했습니다.");
     }
 };
+
+/* =========================================================================
+ *  CAUTION MODELS LOGIC
+ * ========================================================================= */
+async function loadCautionModels() {
+    try {
+        const resp = await fetch(`${API_BASE}/api/caution-models`);
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.success && Array.isArray(data.models)) {
+                cautionModels = data.models;
+                console.log(`✅ [Local] 주의 모델 목록 ${cautionModels.length}건 로드 완료`);
+            }
+        }
+    } catch (err) {
+        console.error("주의 모델 목록 로드 실패:", err);
+    }
+}
+
+// 주의 모델 모달 UI 관리 및 렌더링
+function renderCautionModelsTable() {
+    const tbody = document.getElementById('cautionModelsTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (cautionModels.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 12px;">등록된 주의 모델이 없습니다.</td></tr>`;
+        return;
+    }
+
+    cautionModels.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #f1f5f9';
+        
+        tr.innerHTML = `
+            <td style="padding: 8px 12px; font-weight: 600; color: #1e293b;">${item.modelName}</td>
+            <td style="padding: 8px 12px; color: #475569;">${item.remark || '-'}</td>
+            <td style="padding: 8px 12px; text-align: center;">
+                <button class="btn btn-danger-soft" style="padding: 2px 6px; font-size: 0.75rem; color: #ef4444; border: 1px solid #fee2e2; background: #fff5f5; border-radius: 4px; cursor: pointer;" onclick="window.removeCautionModel(${index})">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+window.removeCautionModel = (index) => {
+    cautionModels.splice(index, 1);
+    renderCautionModelsTable();
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btnOpenCaution = document.getElementById('btnOpenCautionModels');
+    const modalCaution = document.getElementById('cautionModelsModal');
+    const btnCloseCaution = document.getElementById('closeCautionModelsBtn');
+    const btnCloseCautionBottom = document.getElementById('closeCautionModelsBottomBtn');
+    const btnAddCaution = document.getElementById('btnAddCautionModel');
+    const btnSaveCaution = document.getElementById('btnSaveCautionModels');
+
+    if (btnOpenCaution && modalCaution) {
+        btnOpenCaution.onclick = () => {
+            renderCautionModelsTable();
+            modalCaution.style.display = 'block';
+        };
+    }
+
+    const closeFn = () => {
+        if (modalCaution) modalCaution.style.display = 'none';
+    };
+
+    if (btnCloseCaution) btnCloseCaution.onclick = closeFn;
+    if (btnCloseCautionBottom) btnCloseCautionBottom.onclick = closeFn;
+
+    if (btnAddCaution) {
+        btnAddCaution.onclick = () => {
+            const nameInput = document.getElementById('inputCautionModelName');
+            const remarkInput = document.getElementById('inputCautionModelRemark');
+            if (!nameInput) return;
+
+            const name = nameInput.value.trim();
+            const remark = remarkInput ? remarkInput.value.trim() : '';
+
+            if (!name) {
+                alert('주의 대상 모델명을 입력해 주세요.');
+                return;
+            }
+
+            // 중복 체크
+            const isDuplicate = cautionModels.some(item => item.modelName.toUpperCase() === name.toUpperCase());
+            if (isDuplicate) {
+                alert('이미 등록된 모델명입니다.');
+                return;
+            }
+
+            cautionModels.push({ modelName: name, remark: remark });
+            nameInput.value = '';
+            if (remarkInput) remarkInput.value = '';
+
+            renderCautionModelsTable();
+        };
+    }
+
+    if (btnSaveCaution) {
+        btnSaveCaution.onclick = async () => {
+            try {
+                const resp = await fetch(`${API_BASE}/api/caution-models`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ models: cautionModels })
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.success) {
+                        alert('주의 모델 설정이 성공적으로 저장되었습니다.');
+                        if (modalCaution) modalCaution.style.display = 'none';
+                        // 현재 로드된 비교 데이터 화면 갱신
+                        if (typeof comparisonResult !== 'undefined' && Array.isArray(comparisonResult) && comparisonResult.length > 0) {
+                            displayResults(comparisonResult, false);
+                        }
+                    } else {
+                        alert('설정 저장 중 오류가 발생했습니다: ' + data.message);
+                    }
+                } else {
+                    alert('서버 응답 오류로 저장에 실패했습니다.');
+                }
+            } catch (err) {
+                console.error('주의 모델 저장 오류:', err);
+                alert('서버 연결 실패로 저장에 실패했습니다.');
+            }
+        };
+    }
+
+    // 모달 외곽 클릭 시 닫기
+    window.addEventListener('click', (event) => {
+        if (event.target === modalCaution) {
+            modalCaution.style.display = 'none';
+        }
+    });
+});
 
 /**
  * 클립보드 복사 및 토스트 알림
@@ -543,7 +684,8 @@ async function initializeApp() {
         loadDynamicRules(),
         loadProductMaster(),
         loadCustomFields(),
-        loadHoldContainers()
+        loadHoldContainers(),
+        loadCautionModels()
     ]);
 
     // Check Server & DB Status
@@ -3091,6 +3233,10 @@ function displayResults(results, isDbMode = false) {
             const tr = document.createElement('tr');
             const itemKey = `${res.cntrNo}_${res.prodName}_${i}`;
 
+            const nameUpperForCaution = (res.prodName || '').toUpperCase().trim();
+            const matchedCaution = cautionModels.find(item => nameUpperForCaution.includes((item.modelName || '').toUpperCase().trim()));
+            const isCaution = !!matchedCaution;
+
             let rowClasses = [];
             if (res.cssClass) rowClasses.push(res.cssClass);
             if (prevCntr !== null && prevCntr !== res.cntrNo) rowClasses.push('border-group');
@@ -3314,10 +3460,10 @@ function displayResults(results, isDbMode = false) {
                     <td class="col-div">${res.division || '-'}</td>
                     <td class="col-model" 
                         onclick="window.copyToClipboard('${res.prodName.replace(/'/g, "\\'")}', '제품명')"
-                        style="cursor: pointer; ${(res.prodType || '').toUpperCase() === 'H' ? 'color: #7c3aed; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'Q' ? 'color: #0d9488; font-weight: 700;' : ''}"
+                        style="cursor: pointer; ${isCaution ? 'color: #dc2626; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'H' ? 'color: #7c3aed; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'Q' ? 'color: #0d9488; font-weight: 700;' : ''}"
                         title="클릭하여 제품명 복사"
                         class="copyable-item">
-                        ${res.prodName}${getDongTag(res.prodName, res.prodType)}${getBlockHoldTag(res.prodName)}
+                        ${res.prodName}${isCaution ? `<span title="주의 비고: ${matchedCaution.remark || '사유 없음'}" style="display:inline-block; cursor:help; margin-left:4px; font-size:0.72rem; color:#fff; background:#ef4444; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4;">주의</span>` : ''}${getDongTag(res.prodName, res.prodType)}${getBlockHoldTag(res.prodName)}
                         ${getStockShortageBadge(res.prodName, res.qtyInfo.remain)}
                     </td>
                     <td class="col-qty" style="font-size: 0.9em;">${renderQtyMismatch(res.qtyInfo)}</td>
