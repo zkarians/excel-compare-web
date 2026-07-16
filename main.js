@@ -37,7 +37,7 @@ try {
     }
 }
 
-const { app, BrowserWindow, dialog, ipcMain } = (typeof electron === 'object' && electron !== null) ? electron : {};
+const { app, BrowserWindow, dialog, ipcMain, clipboard, nativeImage } = (typeof electron === 'object' && electron !== null) ? electron : {};
 
 // 백그라운드 실행 제한 해제를 위한 엔진 스위치 추가
 if (app) {
@@ -293,6 +293,17 @@ app.on('ready', () => {
             return fs.existsSync(targetPath);
         } catch (e) {
             return false;
+        }
+    });
+
+    ipcMain.handle('write-image-to-clipboard', async (event, base64Data) => {
+        try {
+            const img = nativeImage.createFromDataURL(base64Data);
+            clipboard.writeImage(img);
+            return { success: true };
+        } catch (err) {
+            console.error('❌ [IPC] 클립보드 이미지 쓰기 실패:', err);
+            return { success: false, error: err.message };
         }
     });
 

@@ -1765,30 +1765,26 @@ if (btnClearDown) {
                     // 헤더 비활성화 복원
                     if (captureHeader) captureHeader.style.display = 'none';
 
-                    canvas.toBlob(blob => {
-                        if (!blob) {
-                            alert("이미지 생성에 실패했습니다.");
-                            btnCopyHoldStockImage.disabled = false;
-                            btnCopyHoldStockImage.innerHTML = '<i class="far fa-copy"></i> 이미지 복사 (카톡 공지용)';
-                            return;
-                        }
-
-                        try {
-                            const item = new ClipboardItem({ "image/png": blob });
-                            navigator.clipboard.write([item]).then(() => {
+                    try {
+                        const dataUrl = canvas.toDataURL('image/png');
+                        window.electronAPI.writeImageToClipboard(dataUrl).then(res => {
+                            if (res && res.success) {
                                 alert("📋 H재고 현황 이미지가 클립보드에 성공적으로 복사되었습니다!\n카카오톡 채팅방(Ctrl+V)에 바로 붙여넣어 공지할 수 있습니다.");
-                            }).catch(err => {
-                                console.error("클립보드 API 오류:", err);
-                                alert("클립보드 이미지 쓰기에 실패했습니다. 브라우저 권한을 확인해 주세요.");
-                            });
-                        } catch (err) {
-                            console.error("클립보드 복사 에러:", err);
-                            alert("현재 환경에서 클립보드 이미지 쓰기 API를 지원하지 않습니다.");
-                        }
+                            } else {
+                                const errMsg = res ? res.error : '알 수 없는 오류';
+                                alert("클립보드 이미지 복사에 실패했습니다: " + errMsg);
+                            }
+                        }).catch(err => {
+                            console.error("클립보드 복사 API 호출 실패:", err);
+                            alert("클립보드 복사 중 네이티브 오류가 발생했습니다: " + err.message);
+                        });
+                    } catch (err) {
+                        console.error("데이터 변환 실패:", err);
+                        alert("이미지 데이터 변환 중 오류가 발생했습니다: " + err.message);
+                    }
 
-                        btnCopyHoldStockImage.disabled = false;
-                        btnCopyHoldStockImage.innerHTML = '<i class="far fa-copy"></i> 이미지 복사 (카톡 공지용)';
-                    }, 'image/png');
+                    btnCopyHoldStockImage.disabled = false;
+                    btnCopyHoldStockImage.innerHTML = '<i class="far fa-copy"></i> 이미지 복사 (카톡 공지용)';
                 }).catch(err => {
                     if (captureHeader) captureHeader.style.display = 'none';
                     btnCopyHoldStockImage.disabled = false;

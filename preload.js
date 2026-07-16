@@ -22,5 +22,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // 네이티브 파일 선택 다이얼로그 (폴더 기억 가능)
     selectFile: (type, defaultPath) => ipcRenderer.invoke('select-file', { type, defaultPath }),
     // 프론트엔드 에러 백엔드 로그로 전송
-    logFrontendError: (errorMsg) => ipcRenderer.send('log-frontend-error', errorMsg)
+    logFrontendError: (errorMsg) => ipcRenderer.send('log-frontend-error', errorMsg),
+    // 클립보드에 이미지 복사 (네이티브)
+    writeImageToClipboard: (base64Data) => ipcRenderer.invoke('write-image-to-clipboard', base64Data)
 });
