@@ -1917,6 +1917,33 @@ app.post('/api/update', async (req, res) => {
     }
 });
 
+// 17-01 ~ 17-03 로케이션 식별 헬퍼 함수
+function checkIs17Loc(locationVal) {
+    if (!locationVal) return false;
+    const loc = String(locationVal).trim().toUpperCase();
+    
+    // 1. 단순 시작 패턴 (예: "17-01", "17-02-A" 등)
+    if (loc.startsWith('17-01') || loc.startsWith('17-02') || loc.startsWith('17-03')) {
+        return true;
+    }
+    
+    // 2. 구분자 분할 패턴 (예: "24-1-17-02-0" -> parts[2]="17", parts[3]="02")
+    const parts = loc.split('-');
+    if (parts.length >= 4) {
+        const rowCol = parts[2] + '-' + parts[3];
+        if (rowCol === '17-01' || rowCol === '17-02' || rowCol === '17-03') {
+            return true;
+        }
+    }
+    
+    // 3. 포함 패턴 (예: "-17-01-", "-17-02-", "-17-03-")
+    if (loc.includes('-17-01-') || loc.includes('-17-02-') || loc.includes('-17-03-')) {
+        return true;
+    }
+    
+    return false;
+}
+
 // --- 창고재고 파일 파싱 API ---
 // 창고재고 파일(ungproduct.xlsx 등)을 업로드하면 H열(인덱스 7)의 제품명을 읽어
 // "접두어.접미어" 형식에서 동일 접두어에 다른 접미어가 존재하는 제품들의 집합을 반환
@@ -1963,10 +1990,7 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
 
             // B열: 로케이션명
             const locationVal = String(row.getCell(2).value || '').trim();
-            const locationValUpper = locationVal.toUpperCase();
-            const is17Loc = locationValUpper.startsWith('17-01') || 
-                            locationValUpper.startsWith('17-02') || 
-                            locationValUpper.startsWith('17-03');
+            const is17Loc = checkIs17Loc(locationVal);
 
             // H열: Physical Qty (전체수량)
             const cellH = row.getCell(8);
