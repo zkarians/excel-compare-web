@@ -1881,31 +1881,32 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
             return res.status(400).json({ success: false, message: '파일에 시트가 없습니다.' });
         }
 
-        // H열(8번째 열) 제품명 + I열(9번째 열) Physical Qty + O열(15번째 열) OQC BLOCK + P열(16번째 열) Long Term + Q열(17번째 열) Bin 수집 및 합산
+        // G열(7번째 열) 제품명 + H열(8번째 열) Physical Qty + I열(9번째 열) Available Qty + O열(15번째 열) OQC BLOCK + P열(16번째 열) Long Term + Q열(17번째 열) Bin 수집 및 합산
         const productNamesInWarehouse = new Set();
         const blockProductNames = new Set(); // Block Qty > 0 인 제품명 세트
         const stockMap = {}; // 제품명별 재고 합산 맵 { name: { physical: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0 } }
+        const holdStockList = []; // 블록 수량이 존재하는 로케이션별 상세 리스트
 
         worksheet.eachRow((row, rowNumber) => {
             if (rowNumber <= 1) return; // 헤더 스킵
 
-            // H열: 제품명
-            const cellH = row.getCell(8);
-            const val = cellH.text || String(cellH.value || '');
+            // G열: 모델명 (제품명)
+            const cellG = row.getCell(7);
+            const val = cellG.text || String(cellG.value || '');
             const name = val.trim().toUpperCase();
 
             if (!name || !name.includes('.')) return;
 
             productNamesInWarehouse.add(name);
 
-            // I열: Physical Qty
-            const cellI = row.getCell(9);
-            const rawI = cellI.value;
+            // H열: Physical Qty (전체수량)
+            const cellH = row.getCell(8);
+            const rawH = cellH.value;
             let physicalQty = 0;
-            if (typeof rawI === 'number') {
-                physicalQty = rawI;
-            } else if (rawI !== null && rawI !== undefined) {
-                physicalQty = parseFloat(String(rawI).replace(/,/g, '')) || 0;
+            if (typeof rawH === 'number') {
+                physicalQty = rawH;
+            } else if (rawH !== null && rawH !== undefined) {
+                physicalQty = parseFloat(String(rawH).replace(/,/g, '')) || 0;
             }
 
             // O열: OQC BLOCK
@@ -1944,6 +1945,52 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
                 blockProductNames.add(name);
             }
 
+            // I열: Available Qty (사용가능수량)
+            const cellI = row.getCell(9);
+            const rawI = cellI.value;
+            let availableQty = 0;
+            if (typeof rawI === 'number') {
+                availableQty = rawI;
+            } else if (rawI !== null && rawI !== undefined) {
+                availableQty = parseFloat(String(rawI).replace(/,/g, '')) || 0;
+            }
+
+            // J열: Good Qty (양품수량)
+            const cellJ = row.getCell(10);
+            const rawJ = cellJ.value;
+            let goodQty = 0;
+            if (typeof rawJ === 'number') {
+                goodQty = rawJ;
+            } else if (rawJ !== null && rawJ !== undefined) {
+                goodQty = parseFloat(String(rawJ).replace(/,/g, '')) || 0;
+            }
+
+            // K열: Pending Qty (팬딩수량)
+            const cellK = row.getCell(11);
+            const rawK = cellK.value;
+            let pendingQty = 0;
+            if (typeof rawK === 'number') {
+                pendingQty = rawK;
+            } else if (rawK !== null && rawK !== undefined) {
+                pendingQty = parseFloat(String(rawK).replace(/,/g, '')) || 0;
+            }
+
+            // 블록 수량이 하나라도 존재하는 행인 경우 H재고리스트로 수집
+            if (oqcQty > 0 || longTermQty > 0 || binQty > 0) {
+                holdStockList.push({
+                    division: String(row.getCell(1).value || '').trim(), // A열 사업부
+                    location: String(row.getCell(2).value || '').trim(), // B열 로케이션
+                    modelName: name, // G열 모델명
+                    totalQty: physicalQty, // H열 전체수량
+                    availableQty: availableQty, // I열 사용가능수량
+                    goodQty: goodQty, // J열 양품수량
+                    pendingQty: pendingQty, // K열 팬딩수량
+                    oqcHold: oqcQty, // O열 OQC Hold
+                    longTermHold: longTermQty, // P열 Long term hold
+                    binBlock: binQty // Q열 Bin block
+                });
+            }
+
             // 재고 데이터 합산
             if (!stockMap[name]) {
                 stockMap[name] = { physical: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0 };
@@ -1958,6 +2005,7 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
 
         console.log(`📦 [API] 창고재고: 총 ${productNamesInWarehouse.size}개 고유 제품명 수집`);
         console.log(`📦 [API] Block Qty > 0 대상 제품: ${blockProductNames.size}개`);
+        console.log(`📦 [API] H재고리스트 추출 대상: ${holdStockList.length}건`);
 
         // 접두어별로 그룹화 (마지막 '.' 기준)
         const prefixMap = {};
@@ -1985,12 +2033,114 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
             dongPrefixes: Array.from(dongPrefixSet), // 프론트에서 Set으로 변환하여 사용
             blockProductNames: Array.from(blockProductNames), // Block Qty > 0 제품명 목록
             stockMap: stockMap, // 제품명별 실물재고, 사용불가재고, 사용가능재고 맵
+            holdStockList: holdStockList, // [추가] oqc, longterm, bin 중 하나라도 0 이상인 행 목록
             totalProducts: productNamesInWarehouse.size,
             fileName: req.file.originalname
         });
     } catch (err) {
         console.error('❌ [API] 창고재고 파싱 오류:', err);
         res.status(500).json({ success: false, message: `파일 파싱 오류: ${err.message}` });
+    }
+});
+
+// --- H재고 리스트 엑셀 내보내기 API ---
+app.post('/api/export-hold-stock', async (req, res) => {
+    try {
+        const { list } = req.body;
+        if (!list || !Array.isArray(list)) {
+            return res.status(400).send('데이터가 유효하지 않습니다.');
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('H재고리스트');
+
+        // 컬럼 정의
+        worksheet.columns = [
+            { header: '사업부', key: 'division', width: 12 },
+            { header: '로케이션', key: 'location', width: 15 },
+            { header: '모델명', key: 'modelName', width: 28 },
+            { header: '전체수량', key: 'totalQty', width: 12 },
+            { header: '사용가능수량', key: 'availableQty', width: 15 },
+            { header: '양품수량', key: 'goodQty', width: 12 },
+            { header: '팬딩수량', key: 'pendingQty', width: 12 },
+            { header: 'OQC Hold', key: 'oqcHold', width: 12 },
+            { header: 'Long Term Hold', key: 'longTermHold', width: 16 },
+            { header: 'Bin Block', key: 'binBlock', width: 12 }
+        ];
+
+        // 헤더 디자인 서식 지정
+        worksheet.getRow(1).eachCell((cell, colNumber) => {
+            cell.font = { bold: true, color: { argb: 'FFFFFF' }, size: 10 };
+            
+            // OQC, Long Term, Bin 컬럼 헤더는 식별 가능한 색상 적용
+            if (colNumber === 8) {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'EF4444' } }; // Red
+            } else if (colNumber === 9) {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'C2410C' } }; // Dark Orange
+            } else if (colNumber === 10) {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '3B82F6' } }; // Blue
+            } else {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '475569' } }; // Slate Gray
+            }
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'E2E8F0' } },
+                bottom: { style: 'medium', color: { argb: 'CBD5E1' } }
+            };
+        });
+        worksheet.getRow(1).height = 26;
+
+        // 데이터 행 추가
+        list.forEach((item, index) => {
+            const row = worksheet.addRow({
+                division: item.division || '',
+                location: item.location || '',
+                modelName: item.modelName || '',
+                totalQty: Number(item.totalQty) || 0,
+                availableQty: Number(item.availableQty) || 0,
+                goodQty: Number(item.goodQty) || 0,
+                pendingQty: Number(item.pendingQty) || 0,
+                oqcHold: Number(item.oqcHold) || 0,
+                longTermHold: Number(item.longTermHold) || 0,
+                binBlock: Number(item.binBlock) || 0
+            });
+
+            // 셀 스타일 지정
+            row.eachCell((cell, colNumber) => {
+                cell.font = { size: 9 };
+                cell.border = {
+                    bottom: { style: 'thin', color: { argb: 'E2E8F0' } },
+                    right: { style: 'thin', color: { argb: 'E2E8F0' } }
+                };
+                if (colNumber === 3) {
+                    cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                } else {
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                }
+
+                // 블록 수량이 0보다 큰 셀 배경색 및 두꺼운 폰트 강조
+                if (colNumber === 8 && Number(cell.value) > 0) {
+                    cell.font = { bold: true, color: { argb: 'B91C1C' } };
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FEF2F2' } };
+                } else if (colNumber === 9 && Number(cell.value) > 0) {
+                    cell.font = { bold: true, color: { argb: 'C2410C' } };
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF7ED' } };
+                } else if (colNumber === 10 && Number(cell.value) > 0) {
+                    cell.font = { bold: true, color: { argb: '1D4ED8' } };
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'EFF6FF' } };
+                }
+            });
+            row.height = 20;
+        });
+
+        // 엑셀 전송 설정
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=HoldStockList.xlsx');
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (err) {
+        console.error('❌ H재고 리스트 엑셀 내보내기 오류:', err);
+        res.status(500).send(err.message);
     }
 });
 
