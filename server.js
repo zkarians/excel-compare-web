@@ -513,7 +513,8 @@ async function syncData(sourceConfig, targetConfig, tables, options = {}) {
                             ? `WHERE (${distinctCheckCols}) IS DISTINCT FROM (${excludedCheckCols})`
                             : '';
 
-                        if (conflictWhere && tsCol) {
+                        // 증분 동기화(incrementalOnly)가 활성화된 경우에만 타임스탬프 기반 덮어쓰기 방지 작동
+                        if (conflictWhere && tsCol && options && options.incrementalOnly) {
                             conflictWhere += ` AND (EXCLUDED.${tsCol} > ${tableName}.${tsCol} OR ${tableName}.${tsCol} IS NULL)`;
                         }
 
