@@ -482,7 +482,10 @@ async function syncData(sourceConfig, targetConfig, tables, options = {}) {
                         const resMax = await targetPool.query(`SELECT MAX(${tsCol}) as last_sync FROM ${tableName}`);
                         const lastSync = resMax.rows[0].last_sync;
                         if (lastSync) {
-                            sourceWhere = `WHERE ${tsCol} > '${lastSync.toISOString()}'`;
+                            const dateObj = new Date(lastSync);
+                            if (!isNaN(dateObj.getTime())) {
+                                sourceWhere = `WHERE ${tsCol} > '${dateObj.toISOString()}'`;
+                            }
                         }
                     } catch (e) { }
                 }
