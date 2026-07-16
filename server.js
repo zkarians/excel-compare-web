@@ -1938,9 +1938,16 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
 
         // G열(7번째 열) 제품명 + H열(8번째 열) Physical Qty + I열(9번째 열) Available Qty + O열(15번째 열) OQC BLOCK + P열(16번째 열) Long Term + Q열(17번째 열) Bin 수집 및 합산
         const productNamesInWarehouse = new Set();
-        const blockProductNames = new Set(); // Block Qty > 0 인 제품명 세트
-        const stockMap = {}; // 제품명별 재고 합산 맵 { name: { physical: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0 } }
-        const holdStockList = []; // 블록 수량이 존재하는 로케이션별 상세 리스트
+        
+        // 17 제외 데이터 (기본)
+        const blockProductNames = new Set(); // 17 제외 Block Qty > 0 인 제품명 세트
+        const stockMap = {}; // 17 제외 제품명별 재고 합산 맵 { name: { physical, block, oqc, longTerm, bin, available } }
+        const holdStockList = []; // 17 제외 블록 수량이 존재하는 로케이션별 상세 리스트
+
+        // 17 포함 데이터 (전체)
+        const blockProductNamesWith17 = new Set(); // 전체 Block Qty > 0 인 제품명 세트
+        const stockMapWith17 = {}; // 전체 제품명별 재고 합산 맵
+        const holdStockListWith17 = []; // 전체 블록 수량이 존재하는 로케이션별 상세 리스트
 
         worksheet.eachRow((row, rowNumber) => {
             if (rowNumber <= 1) return; // 헤더 스킵
@@ -1953,6 +1960,13 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
             if (!name || !name.includes('.')) return;
 
             productNamesInWarehouse.add(name);
+
+            // B열: 로케이션명
+            const locationVal = String(row.getCell(2).value || '').trim();
+            const locationValUpper = locationVal.toUpperCase();
+            const is17Loc = locationValUpper.startsWith('17-01') || 
+                            locationValUpper.startsWith('17-02') || 
+                            locationValUpper.startsWith('17-03');
 
             // H열: Physical Qty (전체수량)
             const cellH = row.getCell(8);
@@ -1996,8 +2010,12 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
 
             const blockQty = oqcQty + longTermQty + binQty;
 
+            // Block 제품 목록 업데이트
             if (blockQty > 0) {
-                blockProductNames.add(name);
+                blockProductNamesWith17.add(name);
+                if (!is17Loc) {
+                    blockProductNames.add(name);
+                }
             }
 
             // I열: Available Qty (사용가능수량)
@@ -2030,11 +2048,11 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
                 pendingQty = parseFloat(String(rawK).replace(/,/g, '')) || 0;
             }
 
-            // 블록 수량이 하나라도 존재하는 행인 경우 H재고리스트로 수집
+            // 블록 수량이 존재하는 로케이션별 리스트 수집
             if (oqcQty > 0 || longTermQty > 0 || binQty > 0) {
-                holdStockList.push({
+                const holdItem = {
                     division: String(row.getCell(1).value || '').trim(), // A열 사업부
-                    location: String(row.getCell(2).value || '').trim(), // B열 로케이션
+                    location: locationVal, // B열 로케이션
                     modelName: name, // G열 모델명
                     totalQty: physicalQty, // H열 전체수량
                     availableQty: availableQty, // I열 사용가능수량
@@ -2043,24 +2061,42 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
                     oqcHold: oqcQty, // O열 OQC Hold
                     longTermHold: longTermQty, // P열 Long term hold
                     binBlock: binQty // Q열 Bin block
-                });
+                };
+
+                holdStockListWith17.push(holdItem);
+                if (!is17Loc) {
+                    holdStockList.push(holdItem);
+                }
             }
 
-            // 재고 데이터 합산
-            if (!stockMap[name]) {
-                stockMap[name] = { physical: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0 };
+            // 전체 재고 데이터 합산 (17 포함)
+            if (!stockMapWith17[name]) {
+                stockMapWith17[name] = { physical: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0 };
             }
-            stockMap[name].physical += physicalQty;
-            stockMap[name].block += blockQty;
-            stockMap[name].oqc += oqcQty;
-            stockMap[name].longTerm += longTermQty;
-            stockMap[name].bin += binQty;
-            stockMap[name].available = stockMap[name].physical - stockMap[name].block;
+            stockMapWith17[name].physical += physicalQty;
+            stockMapWith17[name].block += blockQty;
+            stockMapWith17[name].oqc += oqcQty;
+            stockMapWith17[name].longTerm += longTermQty;
+            stockMapWith17[name].bin += binQty;
+            stockMapWith17[name].available = stockMapWith17[name].physical - stockMapWith17[name].block;
+
+            // 기본 재고 데이터 합산 (17 제외)
+            if (!is17Loc) {
+                if (!stockMap[name]) {
+                    stockMap[name] = { physical: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0 };
+                }
+                stockMap[name].physical += physicalQty;
+                stockMap[name].block += blockQty;
+                stockMap[name].oqc += oqcQty;
+                stockMap[name].longTerm += longTermQty;
+                stockMap[name].bin += binQty;
+                stockMap[name].available = stockMap[name].physical - stockMap[name].block;
+            }
         });
 
         console.log(`📦 [API] 창고재고: 총 ${productNamesInWarehouse.size}개 고유 제품명 수집`);
-        console.log(`📦 [API] Block Qty > 0 대상 제품: ${blockProductNames.size}개`);
-        console.log(`📦 [API] H재고리스트 추출 대상: ${holdStockList.length}건`);
+        console.log(`📦 [API] Block Qty > 0 대상 제품 (17 제외): ${blockProductNames.size}개 / (17 포함): ${blockProductNamesWith17.size}개`);
+        console.log(`📦 [API] H재고리스트 추출 대상 (17 제외): ${holdStockList.length}건 / (17 포함): ${holdStockListWith17.length}건`);
 
         // 접두어별로 그룹화 (마지막 '.' 기준)
         const prefixMap = {};
@@ -2086,9 +2122,12 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
         res.json({
             success: true,
             dongPrefixes: Array.from(dongPrefixSet), // 프론트에서 Set으로 변환하여 사용
-            blockProductNames: Array.from(blockProductNames), // Block Qty > 0 제품명 목록
-            stockMap: stockMap, // 제품명별 실물재고, 사용불가재고, 사용가능재고 맵
-            holdStockList: holdStockList, // [추가] oqc, longterm, bin 중 하나라도 0 이상인 행 목록
+            blockProductNames: Array.from(blockProductNames), // 17 제외 Block Qty > 0 제품명 목록
+            blockProductNamesWith17: Array.from(blockProductNamesWith17), // 17 포함 Block Qty > 0 제품명 목록
+            stockMap: stockMap, // 17 제외 제품명별 실물재고, 사용불가재고, 사용가능재고 맵
+            stockMapWith17: stockMapWith17, // 17 포함 제품명별 실물재고, 사용불가재고, 사용가능재고 맵
+            holdStockList: holdStockList, // 17 제외 oqc, longterm, bin 중 하나라도 0 이상인 행 목록
+            holdStockListWith17: holdStockListWith17, // 17 포함 oqc, longterm, bin 중 하나라도 0 이상인 행 목록
             totalProducts: productNamesInWarehouse.size,
             fileName: req.file.originalname
         });

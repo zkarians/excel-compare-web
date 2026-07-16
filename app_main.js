@@ -15,10 +15,38 @@ let masterFileBuffer = null; // 마스터 파일 버퍼
 // 창고재고 관련 전역 상태
 let warehouseData = []; // 창고재고 데이터 (파싱됨)
 let warehouseStockDongPrefixes = new Set(); // 창고재고 파일에서 파싱한 (동) 태그 접두어 집합
-let warehouseStockBlockProducts = new Set(); // Block Qty > 0 인 제품명 집합 (H 배지 표시용)
-let warehouseStockQtyMap = {}; // 제품명별 실물재고, 사용불가재고, 사용가능재고 맵 { "PROD": { physical, block, available } }
+
+// 활성 데이터 (현재 필터 및 체크박스 적용 상태)
+let warehouseStockBlockProducts = new Set(); // 현재 활성 Block Qty > 0 인 제품명 집합
+let warehouseStockQtyMap = {}; // 현재 활성 제품명별 실물재고, 사용불가재고, 사용가능재고 맵 { "PROD": { physical, block, available } }
+let warehouseHoldStockList = []; // 현재 활성 블록 재고 목록 (H, L, B 수량 존재 건)
+
+// 백업 데이터 (17구역 포함/제외 데이터 분리 저장)
+let warehouseStockBlockProductsAll = new Set();
+let warehouseStockBlockProductsNo17 = new Set();
+let warehouseStockQtyMapAll = {};
+let warehouseStockQtyMapNo17 = {};
+let warehouseHoldStockListAll = [];
+let warehouseHoldStockListNo17 = [];
+
 let warehouseStockLoaded = false; // 창고재고 파일 업로드 여부
-let warehouseHoldStockList = []; // [추가] 블록 재고 목록 (H, L, B 수량 존재 건)
+
+// 17구역 포함 여부 변경에 따른 활성 데이터 업데이트 및 UI 동적 리렌더링
+function updateActiveWarehouseStock() {
+    const chkInclude17 = document.getElementById('chkInclude17');
+    const include17 = chkInclude17 ? chkInclude17.checked : false;
+
+    warehouseStockBlockProducts = include17 ? warehouseStockBlockProductsAll : warehouseStockBlockProductsNo17;
+    warehouseStockQtyMap = include17 ? warehouseStockQtyMapAll : warehouseStockQtyMapNo17;
+    warehouseHoldStockList = include17 ? warehouseHoldStockListAll : warehouseHoldStockListNo17;
+
+    console.log(`🔄 [재고 필터 변경] 17구역 포함: ${include17} (활성 제품 수: ${Object.keys(warehouseStockQtyMap).length}개, 홀드 리스트: ${warehouseHoldStockList.length}건)`);
+
+    // UI 즉시 재렌더링
+    if (comparisonResult && comparisonResult.length > 0) {
+        displayResults(comparisonResult, false);
+    }
+}
 
 // POP 샘플 무게 전역 상태 { "CNTR_NO": { weight: 150.5, memo: "샘플" } }
 let popWeightMap = {};
@@ -884,6 +912,16 @@ async function initializeApp() {
     if (phoneDbName) phoneDbName.value = savedPhoneName;
     if (phoneDbPassword) phoneDbPassword.value = savedPhonePassword;
 
+    // 17 로케이션 포함 체크박스 이벤트 초기화
+    const chkInclude17 = document.getElementById('chkInclude17');
+    if (chkInclude17) {
+        chkInclude17.checked = localStorage.getItem('include17Locations') === 'true';
+        chkInclude17.addEventListener('change', () => {
+            localStorage.setItem('include17Locations', chkInclude17.checked);
+            updateActiveWarehouseStock();
+        });
+    }
+
     checkReadyStatus();
 }
 
@@ -1547,14 +1585,25 @@ if (btnClearDown) {
 
             if (result.success) {
                 warehouseStockDongPrefixes = new Set(result.dongPrefixes.map(p => p.toUpperCase()));
-                // Block Qty > 0 제품명 세트 업데이트
-                warehouseStockBlockProducts = new Set(
+                
+                // 두 버전의 데이터 백업 변수에 저장 (수동 업로드 경로)
+                warehouseStockBlockProductsAll = new Set(
+                    (result.blockProductNamesWith17 || []).map(p => p.toUpperCase())
+                );
+                warehouseStockBlockProductsNo17 = new Set(
                     (result.blockProductNames || []).map(p => p.toUpperCase())
                 );
-                // 실물재고, 사용불가재고, 사용가능재고 데이터 업데이트
-                warehouseStockQtyMap = result.stockMap || {};
-                warehouseHoldStockList = result.holdStockList || [];
+                
+                warehouseStockQtyMapAll = result.stockMapWith17 || {};
+                warehouseStockQtyMapNo17 = result.stockMap || {};
+                
+                warehouseHoldStockListAll = result.holdStockListWith17 || [];
+                warehouseHoldStockListNo17 = result.holdStockList || [];
+                
                 warehouseStockLoaded = true;
+
+                // 체크박스 상태에 맞춰 active 변수 업데이트 및 UI 재렌더링
+                updateActiveWarehouseStock();
 
                 statusWarehouseStock.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a; margin-right:4px;"></i>상태: 업로드 완료 (${result.fileName})`;
                 statusWarehouseStock.style.color = '#16a34a';
@@ -1570,11 +1619,6 @@ if (btnClearDown) {
                 }
 
                 console.log(`✅ 창고재고 파싱 완료: (동) 접두어 ${result.dongPrefixes.length}개 / Block Qty 대상 ${warehouseStockBlockProducts.size}개`);
-
-                // 이미 비교 결과가 있으면 (동) 태그 즉시 재적용
-                if (comparisonResult && comparisonResult.length > 0) {
-                    displayResults(comparisonResult, false);
-                }
             } else {
                 throw new Error(result.message);
             }
@@ -1585,7 +1629,14 @@ if (btnClearDown) {
             warehouseStockLoaded = false;
             warehouseStockDongPrefixes = new Set();
             warehouseStockBlockProducts = new Set();
+            warehouseStockBlockProductsAll = new Set();
+            warehouseStockBlockProductsNo17 = new Set();
             warehouseStockQtyMap = {};
+            warehouseStockQtyMapAll = {};
+            warehouseStockQtyMapNo17 = {};
+            warehouseHoldStockList = [];
+            warehouseHoldStockListAll = [];
+            warehouseHoldStockListNo17 = [];
             alert(`창고재고 파일 파싱 실패: ${err.message}`);
         }
     });
@@ -1594,7 +1645,14 @@ if (btnClearDown) {
         btnClearWarehouseStock.addEventListener('click', () => {
             warehouseStockDongPrefixes = new Set();
             warehouseStockBlockProducts = new Set();
+            warehouseStockBlockProductsAll = new Set();
+            warehouseStockBlockProductsNo17 = new Set();
             warehouseStockQtyMap = {};
+            warehouseStockQtyMapAll = {};
+            warehouseStockQtyMapNo17 = {};
+            warehouseHoldStockList = [];
+            warehouseHoldStockListAll = [];
+            warehouseHoldStockListNo17 = [];
             warehouseStockLoaded = false;
             fileWarehouseStock.value = '';
             pathWarehouse.value = '';
@@ -2524,13 +2582,26 @@ async function loadNativeWarehouseFile(filePath) {
 
             if (result.success) {
                 warehouseStockDongPrefixes = new Set(result.dongPrefixes.map(p => p.toUpperCase()));
-                // Block Qty > 0 제품명 세트 업데이트 (자동 로드 경로)
-                warehouseStockBlockProducts = new Set(
+                
+                // 두 버전의 데이터 백업 변수에 저장 (자동 로드 경로)
+                warehouseStockBlockProductsAll = new Set(
+                    (result.blockProductNamesWith17 || []).map(p => p.toUpperCase())
+                );
+                warehouseStockBlockProductsNo17 = new Set(
                     (result.blockProductNames || []).map(p => p.toUpperCase())
                 );
-                warehouseStockQtyMap = result.stockMap || {};
-                warehouseHoldStockList = result.holdStockList || [];
+                
+                warehouseStockQtyMapAll = result.stockMapWith17 || {};
+                warehouseStockQtyMapNo17 = result.stockMap || {};
+                
+                warehouseHoldStockListAll = result.holdStockListWith17 || [];
+                warehouseHoldStockListNo17 = result.holdStockList || [];
+                
                 warehouseStockLoaded = true;
+
+                // 체크박스 상태에 맞춰 active 변수 업데이트 및 UI 재렌더링
+                updateActiveWarehouseStock();
+
                 if (pathWarehouse) pathWarehouse.value = filePath;
                 statusEl.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a; margin-right:4px;"></i>상태: 분석 완료 (${result.fileName})`;
                 document.getElementById('lastWarehouseStock').textContent = `고유제품 ${result.totalProducts}개 분석 완료`;
@@ -2541,7 +2612,6 @@ async function loadNativeWarehouseFile(filePath) {
                     document.getElementById('dongTagBadge').style.display = 'inline-flex';
                 }
                 console.log(`✅ [자동로드] 창고재고 완료: Block Qty 대상 ${warehouseStockBlockProducts.size}개`);
-                if (comparisonResult && comparisonResult.length > 0) displayResults(comparisonResult, false);
             }
         }
     } catch (err) {
