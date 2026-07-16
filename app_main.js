@@ -1825,6 +1825,17 @@ if (btnClearDown) {
                 captureTime.textContent = `기준일시: ${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
             }
 
+            // 캡처 전 스크롤 영역 일시적 확장
+            const scrollWrapper = document.getElementById('holdStockScrollWrapper');
+            let originalMaxHeight = '';
+            let originalOverflowY = '';
+            if (scrollWrapper) {
+                originalMaxHeight = scrollWrapper.style.maxHeight;
+                originalOverflowY = scrollWrapper.style.overflowY;
+                scrollWrapper.style.maxHeight = 'none';
+                scrollWrapper.style.overflowY = 'visible';
+            }
+
             btnCopyHoldStockImage.disabled = true;
             btnCopyHoldStockImage.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 복사 중...';
 
@@ -1836,6 +1847,12 @@ if (btnClearDown) {
                 }).then(canvas => {
                     // 헤더 비활성화 복원
                     if (captureHeader) captureHeader.style.display = 'none';
+
+                    // 스크롤 영역 원복
+                    if (scrollWrapper) {
+                        scrollWrapper.style.maxHeight = originalMaxHeight;
+                        scrollWrapper.style.overflowY = originalOverflowY;
+                    }
 
                     try {
                         const dataUrl = canvas.toDataURL('image/png');
@@ -1859,6 +1876,13 @@ if (btnClearDown) {
                     btnCopyHoldStockImage.innerHTML = '<i class="far fa-copy"></i> 이미지 복사 (카톡 공지용)';
                 }).catch(err => {
                     if (captureHeader) captureHeader.style.display = 'none';
+
+                    // 스크롤 영역 원복
+                    if (scrollWrapper) {
+                        scrollWrapper.style.maxHeight = originalMaxHeight;
+                        scrollWrapper.style.overflowY = originalOverflowY;
+                    }
+
                     btnCopyHoldStockImage.disabled = false;
                     btnCopyHoldStockImage.innerHTML = '<i class="far fa-copy"></i> 이미지 복사 (카톡 공지용)';
                     console.error("html2canvas 오류:", err);
