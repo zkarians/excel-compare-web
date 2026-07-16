@@ -513,6 +513,7 @@ async function syncData(sourceConfig, targetConfig, tables, options = {}) {
                         conflictWhere += ` AND (EXCLUDED.${tsCol} > ${tableName}.${tsCol} OR ${tableName}.${tsCol} IS NULL)`;
                     }
 
+                    let affectedCount = 0;
                     for (let i = 0; i < rows.length; i += 200) {
                         const batch = rows.slice(i, i + 200);
                         const values = [];
@@ -534,10 +535,10 @@ async function syncData(sourceConfig, targetConfig, tables, options = {}) {
                             DO UPDATE SET ${updateClause || `${pkCols[0]} = EXCLUDED.${pkCols[0]}`}
                             ${conflictWhere}
                         `;
-                        await targetPool.query(query, values);
+                        const dbRes = await targetPool.query(query, values);
+                        affectedCount += (dbRes.rowCount || 0);
                     }
-                }
-                results.push({ table: tableName, count: rows.length, success: true });
+                    results.push({ table: tableName, count: affectedCount, queriedCount: rows.length, success: true });
 
                 // [추가] container_results 동기화 후 job_id 물리적 관계 복구
                 if (tableName === 'container_results' && rows.length > 0) {

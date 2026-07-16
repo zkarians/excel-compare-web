@@ -1046,7 +1046,13 @@ async function startSync(srcType, dstType) {
             syncStatusText.textContent = '동기화 완료!';
             let resultMsg = '✅ 동기화 결과:\n';
             data.results.forEach(r => {
-                resultMsg += `- ${r.table}: ${r.success ? `${r.count}건 완료` : `실패(${r.error})`}\n`;
+                if (r.success) {
+                    const written = r.count !== undefined ? r.count.toLocaleString() : '0';
+                    const total = r.queriedCount !== undefined ? r.queriedCount.toLocaleString() : '0';
+                    resultMsg += `- ${r.table}: ${written}건 반영 (총 ${total}건 검사 완료)\n`;
+                } else {
+                    resultMsg += `- ${r.table}: 실패(${r.error})\n`;
+                }
             });
             alert(resultMsg);
         } else {
