@@ -1766,7 +1766,7 @@ if (btnClearDown) {
 
             tr.innerHTML = `
                 <td style="padding: 10px 8px; color: #475569;">${row.division || '-'}</td>
-                <td style="padding: 10px 8px; color: #334155; font-weight: 600;">${row.location || '-'}</td>
+                <td style="padding: 10px 8px; color: #334155; font-weight: 600; white-space: nowrap;">${row.location || '-'}</td>
                 <td style="padding: 10px 8px; text-align: left; color: #0f172a; font-weight: 600;">${row.modelName || '-'}</td>
                 <td style="padding: 10px 8px; color: #475569; font-weight: 500;">${row.totalQty.toLocaleString()} EA</td>
                 <td style="padding: 10px 8px; color: #1e293b; font-weight: 700;">${row.availableQty.toLocaleString()} EA</td>
@@ -1825,7 +1825,7 @@ if (btnClearDown) {
                 captureTime.textContent = `기준일시: ${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
             }
 
-            // 캡처 전 스크롤 영역 일시적 확장
+            // 캡처 전 스크롤 영역 일시적 확장 및 가로 폭 강제 지정 (가로 잘림 방지)
             const scrollWrapper = document.getElementById('holdStockScrollWrapper');
             let originalMaxHeight = '';
             let originalOverflowY = '';
@@ -1835,6 +1835,9 @@ if (btnClearDown) {
                 scrollWrapper.style.maxHeight = 'none';
                 scrollWrapper.style.overflowY = 'visible';
             }
+
+            const originalWidth = captureContainer.style.width;
+            captureContainer.style.width = '920px'; // 패딩 포함 테이블 최소 가로폭(850px + 여유분)을 수용하기 위해 임시 고정
 
             btnCopyHoldStockImage.disabled = true;
             btnCopyHoldStockImage.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 복사 중...';
@@ -1848,11 +1851,12 @@ if (btnClearDown) {
                     // 헤더 비활성화 복원
                     if (captureHeader) captureHeader.style.display = 'none';
 
-                    // 스크롤 영역 원복
+                    // 스크롤 영역 및 가로폭 원복
                     if (scrollWrapper) {
                         scrollWrapper.style.maxHeight = originalMaxHeight;
                         scrollWrapper.style.overflowY = originalOverflowY;
                     }
+                    captureContainer.style.width = originalWidth;
 
                     try {
                         const dataUrl = canvas.toDataURL('image/png');
@@ -1877,11 +1881,12 @@ if (btnClearDown) {
                 }).catch(err => {
                     if (captureHeader) captureHeader.style.display = 'none';
 
-                    // 스크롤 영역 원복
+                    // 스크롤 영역 및 가로폭 원복
                     if (scrollWrapper) {
                         scrollWrapper.style.maxHeight = originalMaxHeight;
                         scrollWrapper.style.overflowY = originalOverflowY;
                     }
+                    captureContainer.style.width = originalWidth;
 
                     btnCopyHoldStockImage.disabled = false;
                     btnCopyHoldStockImage.innerHTML = '<i class="far fa-copy"></i> 이미지 복사 (카톡 공지용)';
