@@ -2769,14 +2769,24 @@ function displayResults(results, isDbMode = false) {
         return '';
     };
 
-    // [H] 배지 헬퍼: 창고재고 P열 Block Qty > 0 인 제품에 붉은색 H 로고 표시
+    // [H/L/B] 배지 헬퍼: 창고재고 블록 타입에 따른 H(OQC), L(Long term), B(Bin) 태그 표시
     const getBlockHoldTag = (prodName) => {
-        if (!warehouseStockLoaded || warehouseStockBlockProducts.size === 0) return '';
+        if (!warehouseStockLoaded || !warehouseStockQtyMap) return '';
         const nameUpper = (prodName || '').toUpperCase().trim();
-        if (warehouseStockBlockProducts.has(nameUpper)) {
-            return `<span title="Block Qty 존재 (창고재고 P열 > 0)" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#ef4444; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em;">H</span>`;
+        const stockInfo = warehouseStockQtyMap[nameUpper];
+        if (!stockInfo) return '';
+
+        let tags = [];
+        if (stockInfo.oqc > 0) {
+            tags.push(`<span title="OQC BLOCK 존재 (창고재고 O열 > 0)" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#ef4444; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em;">H</span>`);
         }
-        return '';
+        if (stockInfo.longTerm > 0) {
+            tags.push(`<span title="Long Term Block 존재 (창고재고 P열 > 0)" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#eab308; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em;">L</span>`);
+        }
+        if (stockInfo.bin > 0) {
+            tags.push(`<span title="Bin Block 존재 (창고재고 Q열 > 0)" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#3b82f6; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em;">B</span>`);
+        }
+        return tags.join('');
     };
 
     // 재고부족 배지 헬퍼: 전체 합산 필요 수량과 사용 가능 재고를 대조하여 부족분을 표시 (해당 행의 필요 수량이 0인 완료 건은 미노출)

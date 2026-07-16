@@ -1881,10 +1881,10 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
             return res.status(400).json({ success: false, message: '파일에 시트가 없습니다.' });
         }
 
-        // H열(8번째 열) 제품명 + I열(9번째 열) Physical Qty + P열(16번째 열) Block Qty 수집 및 합산
+        // H열(8번째 열) 제품명 + I열(9번째 열) Physical Qty + O열(15번째 열) OQC BLOCK + P열(16번째 열) Long Term + Q열(17번째 열) Bin 수집 및 합산
         const productNamesInWarehouse = new Set();
         const blockProductNames = new Set(); // Block Qty > 0 인 제품명 세트
-        const stockMap = {}; // 제품명별 재고 합산 맵 { name: { physical: 0, block: 0, available: 0 } }
+        const stockMap = {}; // 제품명별 재고 합산 맵 { name: { physical: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0 } }
 
         worksheet.eachRow((row, rowNumber) => {
             if (rowNumber <= 1) return; // 헤더 스킵
@@ -1908,15 +1908,37 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
                 physicalQty = parseFloat(String(rawI).replace(/,/g, '')) || 0;
             }
 
-            // P열: Block Qty
+            // O열: OQC BLOCK
+            const cellO = row.getCell(15);
+            const rawO = cellO.value;
+            let oqcQty = 0;
+            if (typeof rawO === 'number') {
+                oqcQty = rawO;
+            } else if (rawO !== null && rawO !== undefined) {
+                oqcQty = parseFloat(String(rawO).replace(/,/g, '')) || 0;
+            }
+
+            // P열: long term block
             const cellP = row.getCell(16);
             const rawP = cellP.value;
-            let blockQty = 0;
+            let longTermQty = 0;
             if (typeof rawP === 'number') {
-                blockQty = rawP;
+                longTermQty = rawP;
             } else if (rawP !== null && rawP !== undefined) {
-                blockQty = parseFloat(String(rawP).replace(/,/g, '')) || 0;
+                longTermQty = parseFloat(String(rawP).replace(/,/g, '')) || 0;
             }
+
+            // Q열: Bin block
+            const cellQ = row.getCell(17);
+            const rawQ = cellQ.value;
+            let binQty = 0;
+            if (typeof rawQ === 'number') {
+                binQty = rawQ;
+            } else if (rawQ !== null && rawQ !== undefined) {
+                binQty = parseFloat(String(rawQ).replace(/,/g, '')) || 0;
+            }
+
+            const blockQty = oqcQty + longTermQty + binQty;
 
             if (blockQty > 0) {
                 blockProductNames.add(name);
@@ -1924,10 +1946,13 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
 
             // 재고 데이터 합산
             if (!stockMap[name]) {
-                stockMap[name] = { physical: 0, block: 0, available: 0 };
+                stockMap[name] = { physical: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0 };
             }
             stockMap[name].physical += physicalQty;
             stockMap[name].block += blockQty;
+            stockMap[name].oqc += oqcQty;
+            stockMap[name].longTerm += longTermQty;
+            stockMap[name].bin += binQty;
             stockMap[name].available = stockMap[name].physical - stockMap[name].block;
         });
 
