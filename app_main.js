@@ -2807,7 +2807,7 @@ function displayResults(results, isDbMode = false) {
         if (totalNeeded > available) {
             const shortage = totalNeeded - available;
             return `
-                <div class="stock-shortage-badge" title="실물재고: ${stockInfo.physical} EA / 사용불가: ${stockInfo.block} EA / 사용가능: ${available} EA / 합산잔여필요수량: ${totalNeeded} EA">
+                <div class="stock-shortage-badge" title="[재고 분석 상세]\n• 전체 실물재고: ${stockInfo.physical} EA\n• OQC Hold: ${stockInfo.oqc || 0} EA\n• Long Term Hold: ${stockInfo.longTerm || 0} EA\n• Bin Block: ${stockInfo.bin || 0} EA\n• 작업가능 재고: ${available} EA\n• 합산 필요 수량: ${totalNeeded} EA">
                     <i class="fas fa-exclamation-triangle"></i> 재고부족 (-${shortage} EA)
                 </div>
             `;
