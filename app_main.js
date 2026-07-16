@@ -2653,12 +2653,12 @@ btnCompare.addEventListener('click', async () => {
         if (searchInput) searchInput.value = "";
         if (prodSearchInput) prodSearchInput.value = "";
         if (prodTypeSelect) prodTypeSelect.value = "";
-        if (chkFilterCompleted) chkFilterCompleted.checked = true;
-        if (chkFilterProgress) chkFilterProgress.checked = true;
-        if (chkFilterPending) chkFilterPending.checked = true;
-        if (chkFilterChunma) chkFilterChunma.checked = true;
-        if (chkFilterBni) chkFilterBni.checked = true;
-        if (chkFilterOtherTrans) chkFilterOtherTrans.checked = true;
+        if (chkFilterCompleted) chkFilterCompleted.checked = false;
+        if (chkFilterProgress) chkFilterProgress.checked = false;
+        if (chkFilterPending) chkFilterPending.checked = false;
+        if (chkFilterChunma) chkFilterChunma.checked = false;
+        if (chkFilterBni) chkFilterBni.checked = false;
+        if (chkFilterOtherTrans) chkFilterOtherTrans.checked = false;
 
         // 2. 체크박스 선택 항목 초기화 (승인 건과 보류 건은 예외로 유지)
         const keepKeys = [];
@@ -3399,29 +3399,37 @@ function displayResults(results, isDbMode = false) {
                 const chkFilterBni = document.getElementById('chkFilterBni');
                 const chkFilterOtherTrans = document.getElementById('chkFilterOtherTrans');
 
-                const showCompleted = chkFilterCompleted ? chkFilterCompleted.checked : true;
-                const showProgress = chkFilterProgress ? chkFilterProgress.checked : true;
-                const showPending = chkFilterPending ? chkFilterPending.checked : true;
-                const showChunma = chkFilterChunma ? chkFilterChunma.checked : true;
-                const showBni = chkFilterBni ? chkFilterBni.checked : true;
-                const showOther = chkFilterOtherTrans ? chkFilterOtherTrans.checked : true;
+                const showCompleted = chkFilterCompleted ? chkFilterCompleted.checked : false;
+                const showProgress = chkFilterProgress ? chkFilterProgress.checked : false;
+                const showPending = chkFilterPending ? chkFilterPending.checked : false;
+                const showChunma = chkFilterChunma ? chkFilterChunma.checked : false;
+                const showBni = chkFilterBni ? chkFilterBni.checked : false;
+                const showOther = chkFilterOtherTrans ? chkFilterOtherTrans.checked : false;
+
+                const anyStatusChecked = showCompleted || showProgress || showPending;
+                const anyTransChecked = showChunma || showBni || showOther;
 
                 displayData = successRows.filter(r => {
                     // 상태 필터 체크
-                    const status = containerStatusMap[r.cntrNo];
                     let passStatus = true;
-                    if (status === 'completed') passStatus = showCompleted;
-                    else if (status === 'progress') passStatus = showProgress;
-                    else if (status === 'pending') passStatus = showPending;
+                    if (anyStatusChecked) {
+                        const status = containerStatusMap[r.cntrNo];
+                        if (status === 'completed') passStatus = showCompleted;
+                        else if (status === 'progress') passStatus = showProgress;
+                        else if (status === 'pending') passStatus = showPending;
+                    }
 
                     if (!passStatus) return false;
 
                     // 운송사 필터 체크
-                    const trans = containerTransMap[r.cntrNo];
-                    if (trans === 'chunma') return showChunma;
-                    if (trans === 'bni') return showBni;
-                    if (trans === 'other') return showOther;
-                    return true;
+                    let passTrans = true;
+                    if (anyTransChecked) {
+                        const trans = containerTransMap[r.cntrNo];
+                        if (trans === 'chunma') passTrans = showChunma;
+                        else if (trans === 'bni') passTrans = showBni;
+                        else if (trans === 'other') passTrans = showOther;
+                    }
+                    return passTrans;
                 });
             } else if (currentFilter === 'missing') {
                 displayData = results.filter(r => {
@@ -4321,6 +4329,17 @@ if (tabDbSearchObj) {
     }
 });
 
+const btnResetSuccessFilters = document.getElementById('btnResetSuccessFilters');
+if (btnResetSuccessFilters) {
+    btnResetSuccessFilters.addEventListener('click', () => {
+        ['chkFilterCompleted', 'chkFilterProgress', 'chkFilterPending', 'chkFilterChunma', 'chkFilterBni', 'chkFilterOtherTrans'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.checked = false;
+        });
+        if (comparisonResult.length > 0) displayResults(comparisonResult);
+    });
+}
+
 // 결과 엑셀 다운로드 버튼 리스너 (displayResults 밖으로 이동)
 btnDownloadResult.addEventListener('click', async () => {
     if (!comparisonResult || comparisonResult.length === 0) {
@@ -4489,12 +4508,15 @@ btnDownloadResult.addEventListener('click', async () => {
         const chkFilterBni = document.getElementById('chkFilterBni');
         const chkFilterOtherTrans = document.getElementById('chkFilterOtherTrans');
 
-        const showCompleted = chkFilterCompleted ? chkFilterCompleted.checked : true;
-        const showProgress = chkFilterProgress ? chkFilterProgress.checked : true;
-        const showPending = chkFilterPending ? chkFilterPending.checked : true;
-        const showChunma = chkFilterChunma ? chkFilterChunma.checked : true;
-        const showBni = chkFilterBni ? chkFilterBni.checked : true;
-        const showOther = chkFilterOtherTrans ? chkFilterOtherTrans.checked : true;
+        const showCompleted = chkFilterCompleted ? chkFilterCompleted.checked : false;
+        const showProgress = chkFilterProgress ? chkFilterProgress.checked : false;
+        const showPending = chkFilterPending ? chkFilterPending.checked : false;
+        const showChunma = chkFilterChunma ? chkFilterChunma.checked : false;
+        const showBni = chkFilterBni ? chkFilterBni.checked : false;
+        const showOther = chkFilterOtherTrans ? chkFilterOtherTrans.checked : false;
+
+        const anyStatusChecked = showCompleted || showProgress || showPending;
+        const anyTransChecked = showChunma || showBni || showOther;
 
         if (currentFilter === 'success' || currentFilter === 'all') {
             const cntrGroup = {};
@@ -4534,20 +4556,25 @@ btnDownloadResult.addEventListener('click', async () => {
 
             filtered = filtered.filter(r => {
                 // 상태 필터 체크
-                const status = cntrStatus[r.cntrNo];
                 let passStatus = true;
-                if (status === 'completed') passStatus = showCompleted;
-                else if (status === 'progress') passStatus = showProgress;
-                else if (status === 'pending') passStatus = showPending;
+                if (anyStatusChecked) {
+                    const status = cntrStatus[r.cntrNo];
+                    if (status === 'completed') passStatus = showCompleted;
+                    else if (status === 'progress') passStatus = showProgress;
+                    else if (status === 'pending') passStatus = showPending;
+                }
 
                 if (!passStatus) return false;
 
                 // 운송사 필터 체크
-                const trans = cntrTrans[r.cntrNo];
-                if (trans === 'chunma') return showChunma;
-                if (trans === 'bni') return showBni;
-                if (trans === 'other') return showOther;
-                return true;
+                let passTrans = true;
+                if (anyTransChecked) {
+                    const trans = cntrTrans[r.cntrNo];
+                    if (trans === 'chunma') passTrans = showChunma;
+                    else if (trans === 'bni') passTrans = showBni;
+                    else if (trans === 'other') passTrans = showOther;
+                }
+                return passTrans;
             });
         }
         exportData = filtered.map(r => ({
@@ -4961,12 +4988,15 @@ async function generateComparisonWorkbook() {
         const chkFilterBni = document.getElementById('chkFilterBni');
         const chkFilterOtherTrans = document.getElementById('chkFilterOtherTrans');
 
-        const showCompleted = chkFilterCompleted ? chkFilterCompleted.checked : true;
-        const showProgress = chkFilterProgress ? chkFilterProgress.checked : true;
-        const showPending = chkFilterPending ? chkFilterPending.checked : true;
-        const showChunma = chkFilterChunma ? chkFilterChunma.checked : true;
-        const showBni = chkFilterBni ? chkFilterBni.checked : true;
-        const showOther = chkFilterOtherTrans ? chkFilterOtherTrans.checked : true;
+        const showCompleted = chkFilterCompleted ? chkFilterCompleted.checked : false;
+        const showProgress = chkFilterProgress ? chkFilterProgress.checked : false;
+        const showPending = chkFilterPending ? chkFilterPending.checked : false;
+        const showChunma = chkFilterChunma ? chkFilterChunma.checked : false;
+        const showBni = chkFilterBni ? chkFilterBni.checked : false;
+        const showOther = chkFilterOtherTrans ? chkFilterOtherTrans.checked : false;
+
+        const anyStatusChecked = showCompleted || showProgress || showPending;
+        const anyTransChecked = showChunma || showBni || showOther;
 
         if (currentFilter === 'success' || currentFilter === 'all') {
             const cntrGroup = {};
@@ -5006,20 +5036,25 @@ async function generateComparisonWorkbook() {
 
             filtered = filtered.filter(r => {
                 // 상태 필터 체크
-                const status = cntrStatus[r.cntrNo];
                 let passStatus = true;
-                if (status === 'completed') passStatus = showCompleted;
-                else if (status === 'progress') passStatus = showProgress;
-                else if (status === 'pending') passStatus = showPending;
+                if (anyStatusChecked) {
+                    const status = cntrStatus[r.cntrNo];
+                    if (status === 'completed') passStatus = showCompleted;
+                    else if (status === 'progress') passStatus = showProgress;
+                    else if (status === 'pending') passStatus = showPending;
+                }
 
                 if (!passStatus) return false;
 
                 // 운송사 필터 체크
-                const trans = cntrTrans[r.cntrNo];
-                if (trans === 'chunma') return showChunma;
-                if (trans === 'bni') return showBni;
-                if (trans === 'other') return showOther;
-                return true;
+                let passTrans = true;
+                if (anyTransChecked) {
+                    const trans = cntrTrans[r.cntrNo];
+                    if (trans === 'chunma') passTrans = showChunma;
+                    else if (trans === 'bni') passTrans = showBni;
+                    else if (trans === 'other') passTrans = showOther;
+                }
+                return passTrans;
             });
         }
         exportData = filtered.map(r => ({

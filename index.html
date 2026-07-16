@@ -1499,30 +1499,33 @@
                         <i class="fas fa-filter"></i> 컨테이너 필터:
                     </span>
                     <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
-                        <input type="checkbox" id="chkFilterCompleted" checked style="width: 16px; height: 16px; cursor: pointer;">
+                        <input type="checkbox" id="chkFilterCompleted" style="width: 16px; height: 16px; cursor: pointer;">
                         완료: <span id="cntCompleted" style="color: #16a34a; font-weight: bold;">0</span>대
                     </label>
                     <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
-                        <input type="checkbox" id="chkFilterProgress" checked style="width: 16px; height: 16px; cursor: pointer;">
+                        <input type="checkbox" id="chkFilterProgress" style="width: 16px; height: 16px; cursor: pointer;">
                         작업중: <span id="cntProgress" style="color: #eab308; font-weight: bold;">0</span>대
                     </label>
                     <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
-                        <input type="checkbox" id="chkFilterPending" checked style="width: 16px; height: 16px; cursor: pointer;">
+                        <input type="checkbox" id="chkFilterPending" style="width: 16px; height: 16px; cursor: pointer;">
                         대기: <span id="cntPending" style="color: #2563eb; font-weight: bold;">0</span>대
                     </label>
                     <span style="color: #cbd5e1; margin: 0 4px;">|</span>
                     <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
-                        <input type="checkbox" id="chkFilterChunma" checked style="width: 16px; height: 16px; cursor: pointer;">
+                        <input type="checkbox" id="chkFilterChunma" style="width: 16px; height: 16px; cursor: pointer;">
                         천마: <span id="cntChunma" style="color: #ef4444; font-weight: bold;">0</span>대
                     </label>
                     <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
-                        <input type="checkbox" id="chkFilterBni" checked style="width: 16px; height: 16px; cursor: pointer;">
+                        <input type="checkbox" id="chkFilterBni" style="width: 16px; height: 16px; cursor: pointer;">
                         BNI: <span id="cntBni" style="color: #2563eb; font-weight: bold;">0</span>대
                     </label>
                     <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
-                        <input type="checkbox" id="chkFilterOtherTrans" checked style="width: 16px; height: 16px; cursor: pointer;">
+                        <input type="checkbox" id="chkFilterOtherTrans" style="width: 16px; height: 16px; cursor: pointer;">
                         기타: <span id="cntOtherTrans" style="color: #64748b; font-weight: bold;">0</span>대
                     </label>
+                    <button id="btnResetSuccessFilters" style="margin-left: auto; background-color: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 12px; color: #475569; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                        <i class="fas fa-undo"></i> 필터 초기화
+                    </button>
                 </div>
             </div>
 
