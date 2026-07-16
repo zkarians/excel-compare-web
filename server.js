@@ -495,48 +495,49 @@ async function syncData(sourceConfig, targetConfig, tables, options = {}) {
                     rows = rows.filter(r => r.key !== 'mail_config');
                 }
 
-                if (rows.length > 0) {
-                    const columns = Object.keys(rows[0]); // commonCols와 같음
-                    const colNames = columns.join(', ');
-                    const nonPkColumns = columns.filter(c => !pkCols.includes(c.trim()));
-
-                    const updateClause = nonPkColumns.map(c => `${c} = EXCLUDED.${c}`).join(', ');
-                    const distinctCheckCols = nonPkColumns.map(c => `${tableName}.${c}`).join(', ');
-                    const excludedCheckCols = nonPkColumns.map(c => `EXCLUDED.${c}`).join(', ');
-
-                    // [개선] 데이터가 실제로 다르고 && 서브 데이터(EXCLUDED)의 타임스탬프가 현재 더 최신이거나 현재 값이 NULL인 경우에만 업데이트
-                    let conflictWhere = nonPkColumns.length > 0
-                        ? `WHERE (${distinctCheckCols}) IS DISTINCT FROM (${excludedCheckCols})`
-                        : '';
-
-                    if (conflictWhere && tsCol) {
-                        conflictWhere += ` AND (EXCLUDED.${tsCol} > ${tableName}.${tsCol} OR ${tableName}.${tsCol} IS NULL)`;
-                    }
-
                     let affectedCount = 0;
-                    for (let i = 0; i < rows.length; i += 200) {
-                        const batch = rows.slice(i, i + 200);
-                        const values = [];
-                        const placeholdersRows = [];
-                        batch.forEach((row, rowIndex) => {
-                            const offset = rowIndex * columns.length;
-                            const placeholders = columns.map((_, colIndex) => `$${offset + colIndex + 1}`).join(', ');
-                            placeholdersRows.push(`(${placeholders})`);
-                            values.push(...columns.map(c => {
-                                const val = row[c];
-                                return (typeof val === 'object' && val !== null && !(val instanceof Date)) ? JSON.stringify(val) : val;
-                            }));
-                        });
+                    if (rows.length > 0) {
+                        const columns = Object.keys(rows[0]); // commonCols와 같음
+                        const colNames = columns.join(', ');
+                        const nonPkColumns = columns.filter(c => !pkCols.includes(c.trim()));
 
-                        const query = `
-                            INSERT INTO ${tableName} (${colNames}) 
-                            VALUES ${placeholdersRows.join(', ')} 
-                            ON CONFLICT (${pk}) 
-                            DO UPDATE SET ${updateClause || `${pkCols[0]} = EXCLUDED.${pkCols[0]}`}
-                            ${conflictWhere}
-                        `;
-                        const dbRes = await targetPool.query(query, values);
-                        affectedCount += (dbRes.rowCount || 0);
+                        const updateClause = nonPkColumns.map(c => `${c} = EXCLUDED.${c}`).join(', ');
+                        const distinctCheckCols = nonPkColumns.map(c => `${tableName}.${c}`).join(', ');
+                        const excludedCheckCols = nonPkColumns.map(c => `EXCLUDED.${c}`).join(', ');
+
+                        // [개선] 데이터가 실제로 다르고 && 서브 데이터(EXCLUDED)의 타임스탬프가 현재 더 최신이거나 현재 값이 NULL인 경우에만 업데이트
+                        let conflictWhere = nonPkColumns.length > 0
+                            ? `WHERE (${distinctCheckCols}) IS DISTINCT FROM (${excludedCheckCols})`
+                            : '';
+
+                        if (conflictWhere && tsCol) {
+                            conflictWhere += ` AND (EXCLUDED.${tsCol} > ${tableName}.${tsCol} OR ${tableName}.${tsCol} IS NULL)`;
+                        }
+
+                        for (let i = 0; i < rows.length; i += 200) {
+                            const batch = rows.slice(i, i + 200);
+                            const values = [];
+                            const placeholdersRows = [];
+                            batch.forEach((row, rowIndex) => {
+                                const offset = rowIndex * columns.length;
+                                const placeholders = columns.map((_, colIndex) => `$${offset + colIndex + 1}`).join(', ');
+                                placeholdersRows.push(`(${placeholders})`);
+                                values.push(...columns.map(c => {
+                                    const val = row[c];
+                                    return (typeof val === 'object' && val !== null && !(val instanceof Date)) ? JSON.stringify(val) : val;
+                                }));
+                            });
+
+                            const query = `
+                                INSERT INTO ${tableName} (${colNames}) 
+                                VALUES ${placeholdersRows.join(', ')} 
+                                ON CONFLICT (${pk}) 
+                                DO UPDATE SET ${updateClause || `${pkCols[0]} = EXCLUDED.${pkCols[0]}`}
+                                ${conflictWhere}
+                            `;
+                            const dbRes = await targetPool.query(query, values);
+                            affectedCount += (dbRes.rowCount || 0);
+                        }
                     }
                     results.push({ table: tableName, count: affectedCount, queriedCount: rows.length, success: true });
 
