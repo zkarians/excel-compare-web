@@ -1,6 +1,6 @@
 [
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "HMMU4136401",
     "division": "CVZ",
     "prodType": "-",
@@ -15,55 +15,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "현대상선(주)",
-      "orig": "HMM",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USSOJ",
-      "orig": "USSOJ",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/03077011/0717CLS/0724ETD/BK:SELM54032500/HYUNDAI SATURN/0053E/USSOJ/110028870/Y2025",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/03077011/0717CLS/0724ETD/BK:SELM54032500/HYUNDAI SATURN/0053E/USSOJ/110028870/Y2025",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "26H1526921",
-    "eta": "07월 17일",
-    "etd": "07월 24일",
-    "jobName": "INST24260716395",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260716395",
-    "tags": [
-      {
-        "text": "양품사용 주의",
-        "type": "success"
-      },
-      {
-        "text": "SK양품사용 주의",
-        "type": "success"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -74,7 +50,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "HMMU4136401",
     "division": "CVZ",
     "prodType": "-",
@@ -89,55 +65,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "현대상선(주)",
-      "orig": "HMM",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USSOJ",
-      "orig": "USSOJ",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/03077011/0717CLS/0724ETD/BK:SELM54032500/HYUNDAI SATURN/0053E/USSOJ/110028870/Y2025",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/03077011/0717CLS/0724ETD/BK:SELM54032500/HYUNDAI SATURN/0053E/USSOJ/110028870/Y2025",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "26H1526921",
-    "eta": "07월 17일",
-    "etd": "07월 24일",
-    "jobName": "INST24260716395",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260716395",
-    "tags": [
-      {
-        "text": "양품사용 주의",
-        "type": "success"
-      },
-      {
-        "text": "SK양품사용 주의",
-        "type": "success"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -148,7 +100,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "HMMU4136401",
     "division": "CVZ",
     "prodType": "-",
@@ -163,55 +115,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "현대상선(주)",
-      "orig": "HMM",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USSOJ",
-      "orig": "USSOJ",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/03077011/0717CLS/0724ETD/BK:SELM54032500/HYUNDAI SATURN/0053E/USSOJ/110028870/Y2025",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/03077011/0717CLS/0724ETD/BK:SELM54032500/HYUNDAI SATURN/0053E/USSOJ/110028870/Y2025",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "26H1526921",
-    "eta": "07월 17일",
-    "etd": "07월 24일",
-    "jobName": "INST24260716395",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260716395",
-    "tags": [
-      {
-        "text": "양품사용 주의",
-        "type": "success"
-      },
-      {
-        "text": "SK양품사용 주의",
-        "type": "success"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -222,7 +150,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "HMMU4136401",
     "division": "CVZ",
     "prodType": "-",
@@ -237,55 +165,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "현대상선(주)",
-      "orig": "HMM",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USSOJ",
-      "orig": "USSOJ",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/03077011/0717CLS/0724ETD/BK:SELM54032500/HYUNDAI SATURN/0053E/USSOJ/110028870/Y2025",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/03077011/0717CLS/0724ETD/BK:SELM54032500/HYUNDAI SATURN/0053E/USSOJ/110028870/Y2025",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "26H1526921",
-    "eta": "07월 17일",
-    "etd": "07월 24일",
-    "jobName": "INST24260716395",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260716395",
-    "tags": [
-      {
-        "text": "양품사용 주의",
-        "type": "success"
-      },
-      {
-        "text": "SK양품사용 주의",
-        "type": "success"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -296,7 +200,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "HMMU4136401",
     "division": "CVZ",
     "prodType": "-",
@@ -311,55 +215,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "현대상선(주)",
-      "orig": "HMM",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USSOJ",
-      "orig": "USSOJ",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/03077011/0717CLS/0724ETD/BK:SELM54032500/HYUNDAI SATURN/0053E/USSOJ/110028870/Y2025",
-    "adj1": "태웅 / SKS양품만",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/03077011/0717CLS/0724ETD/BK:SELM54032500/HYUNDAI SATURN/0053E/USSOJ/110028870/Y2025",
+    "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "26H1526921",
-    "eta": "07월 17일",
-    "etd": "07월 24일",
-    "jobName": "INST24260716395",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260716395",
-    "tags": [
-      {
-        "text": "양품사용 주의",
-        "type": "success"
-      },
-      {
-        "text": "SK양품사용 주의",
-        "type": "success"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -370,7 +250,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "HMMU4136401",
     "division": "CVZ",
     "prodType": "-",
@@ -385,55 +265,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "현대상선(주)",
-      "orig": "HMM",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USSOJ",
-      "orig": "USSOJ",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/03077011/0717CLS/0724ETD/BK:SELM54032500/HYUNDAI SATURN/0053E/USSOJ/110028870/Y2025",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/03077011/0717CLS/0724ETD/BK:SELM54032500/HYUNDAI SATURN/0053E/USSOJ/110028870/Y2025",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "26H1526921",
-    "eta": "07월 17일",
-    "etd": "07월 24일",
-    "jobName": "INST24260716395",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260716395",
-    "tags": [
-      {
-        "text": "양품사용 주의",
-        "type": "success"
-      },
-      {
-        "text": "SK양품사용 주의",
-        "type": "success"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -444,7 +300,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "HMMU4136401",
     "division": "CVZ",
     "prodType": "-",
@@ -459,55 +315,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "현대상선(주)",
-      "orig": "HMM",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USSOJ",
-      "orig": "USSOJ",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:HMM ↔ 전산:현대상선(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/03077011/0717CLS/0724ETD/BK:SELM54032500/HYUNDAI SATURN/0053E/USSOJ/110028870/Y2025",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 법인/★SKS양품장입필요!!★//W24/태웅/HMM/03077011/0717CLS/0724ETD/BK:SELM54032500/HYUNDAI SATURN/0053E/USSOJ/110028870/Y2025",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "26H1526921",
-    "eta": "07월 17일",
-    "etd": "07월 24일",
-    "jobName": "INST24260716395",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260716395",
-    "tags": [
-      {
-        "text": "양품사용 주의",
-        "type": "success"
-      },
-      {
-        "text": "SK양품사용 주의",
-        "type": "success"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -518,271 +350,207 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "CAIU9504956",
     "division": "CVZ",
     "prodType": "-",
     "prodName": "CBEW3013BE.BBKLLGA",
     "qtyInfo": {
       "plan": 51,
-      "load": 51,
+      "load": 0,
       "pending": 0,
-      "remain": 0,
+      "remain": 51,
       "packing": 51,
       "origPlan": 0
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "오션네트워크익스프레스코리아 주식회사",
-      "orig": "ONE",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USFON",
-      "orig": "USFON",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 법인///W28//ONE/HPNT/0729CLS/0803ETD/BK:SELGD2795900/HMM RUBY/014E/USFON/110033422/7/16 웅동/ Y2014",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 법인///W28//ONE/HPNT/0729CLS/0803ETD/BK:SELGD2795900/HMM RUBY/014E/USFON/110033422/7/16 웅동/Y2014",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "KRAZ41959",
-    "eta": "07월 29일",
-    "etd": "08월 03일",
-    "jobName": "INST24260716393",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260716393",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
       "orig": 0,
-      "down": 953.19,
-      "mixed": 953.19
+      "down": 0,
+      "mixed": 0
     },
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "CAIU9504956",
     "division": "CVZ",
     "prodType": "-",
     "prodName": "LTGL6937F.BR1ELGA",
     "qtyInfo": {
       "plan": 8,
-      "load": 8,
+      "load": 0,
       "pending": 0,
-      "remain": 0,
+      "remain": 8,
       "packing": 8,
       "origPlan": 0
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "오션네트워크익스프레스코리아 주식회사",
-      "orig": "ONE",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USFON",
-      "orig": "USFON",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 법인///W28//ONE/HPNT/0729CLS/0803ETD/BK:SELGD2795900/HMM RUBY/014E/USFON/110033422/7/16 웅동/ Y2014",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 법인///W28//ONE/HPNT/0729CLS/0803ETD/BK:SELGD2795900/HMM RUBY/014E/USFON/110033422/7/16 웅동/Y2014",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "KRAZ41959",
-    "eta": "07월 29일",
-    "etd": "08월 03일",
-    "jobName": "INST24260716393",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260716393",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
       "orig": 0,
-      "down": 880,
-      "mixed": 880
+      "down": 0,
+      "mixed": 0
     },
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "CAIU9504956",
     "division": "CVZ",
     "prodType": "-",
     "prodName": "WDEP9423F.BRSLLGA",
     "qtyInfo": {
       "plan": 18,
-      "load": 18,
-      "pending": 18,
-      "remain": 0,
+      "load": 0,
+      "pending": 0,
+      "remain": 18,
       "packing": 18,
       "origPlan": 0
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "오션네트워크익스프레스코리아 주식회사",
-      "orig": "ONE",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USFON",
-      "orig": "USFON",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 법인///W28//ONE/HPNT/0729CLS/0803ETD/BK:SELGD2795900/HMM RUBY/014E/USFON/110033422/7/16 웅동/ Y2014",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 법인///W28//ONE/HPNT/0729CLS/0803ETD/BK:SELGD2795900/HMM RUBY/014E/USFON/110033422/7/16 웅동/Y2014",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "KRAZ41959",
-    "eta": "07월 29일",
-    "etd": "08월 03일",
-    "jobName": "INST24260716393",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260716393",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
       "orig": 0,
-      "down": 2430,
-      "mixed": 2430
+      "down": 0,
+      "mixed": 0
     },
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "CAIU9504956",
     "division": "CVZ",
     "prodType": "-",
     "prodName": "WSEP4723F.BRSLLGA",
     "qtyInfo": {
       "plan": 59,
-      "load": 59,
+      "load": 0,
       "pending": 0,
-      "remain": 0,
+      "remain": 59,
       "packing": 59,
       "origPlan": 0
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "오션네트워크익스프레스코리아 주식회사",
-      "orig": "ONE",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USFON",
-      "orig": "USFON",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 법인///W28//ONE/HPNT/0729CLS/0803ETD/BK:SELGD2795900/HMM RUBY/014E/USFON/110033422/7/16 웅동/ Y2014",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 법인///W28//ONE/HPNT/0729CLS/0803ETD/BK:SELGD2795900/HMM RUBY/014E/USFON/110033422/7/16 웅동/Y2014",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "KRAZ41959",
-    "eta": "07월 29일",
-    "etd": "08월 03일",
-    "jobName": "INST24260716393",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260716393",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
       "orig": 0,
-      "down": 4838,
-      "mixed": 4838
+      "down": 0,
+      "mixed": 0
     },
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "MSMU6626282",
     "division": "CNZ",
     "prodType": "-",
@@ -797,94 +565,28 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "엠에스씨코리아(주)",
-      "orig": "MSC",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "HNART",
-      "orig": "HNART",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "중남미///W31/MSC/PNC/0728CLS/0803ETD/BK:096KR1038553/MSC AAYA/UX630A/HNART/110043406/7/16 웅동/7/16 웅동 / Y2021",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 중남미///W31/MSC/PNC/0728CLS/0803ETD/BK:096KR1038553/MSC AAYA/UX630A/HNART/110043406/7/16 웅동/7/16 웅동/Y2021",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "FJ27329006",
-    "eta": "07월 28일",
-    "etd": "08월 03일",
-    "jobName": "INST24260716020",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260716020",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
-    "isErrorRow": true,
-    "dims": "0x0x0",
-    "weights": {
-      "orig": 0,
-      "down": 0,
-      "mixed": 0
-    },
-    "totalCBM": 0
-  },
-  {
-    "type": "원본누락",
-    "cntrNo": "TIIU7388253",
-    "division": "CVZ",
-    "prodType": "-",
-    "prodName": "LRIN6323YE.BSTLLGA",
-    "qtyInfo": {
-      "plan": 36,
-      "load": 0,
-      "pending": 0,
-      "remain": 36,
-      "packing": 36,
-      "origPlan": 0
-    },
-    "cntrType": {
-      "val": "40HC",
-      "orig": null
-    },
-    "carrierName": {
-      "val": "CMA - CGM",
-      "orig": null
-    },
-    "destination": {
-      "val": "USLOT",
-      "orig": null
-    },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 북미 법인/★SKS양품장입필요!!★//W20//CMA/BNCT/0728CLS/0801ETD/BK:CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/USLOT/110024999/7/15 웅동/Y2025",
-    "adj1": "",
-    "adj1Color": null,
-    "adj2": "",
-    "transporter": "미분류",
-    "sealNo": "M6456309",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
-    "workDate": "7월 17일",
-    "loadPlanNo": "INST24260715297",
     "tags": [],
     "cssClass": "row-extra",
     "badgeClass": "extra",
@@ -899,296 +601,106 @@
   },
   {
     "type": "원본누락",
-    "cntrNo": "TIIU7388253",
-    "division": "CVZ",
-    "prodType": "-",
-    "prodName": "SKSDR360GS.BSTLSGN",
-    "qtyInfo": {
-      "plan": 10,
-      "load": 0,
-      "pending": 0,
-      "remain": 10,
-      "packing": 10,
-      "origPlan": 0
-    },
-    "cntrType": {
-      "val": "40HC",
-      "orig": null
-    },
-    "carrierName": {
-      "val": "CMA - CGM",
-      "orig": null
-    },
-    "destination": {
-      "val": "USLOT",
-      "orig": null
-    },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 북미 법인/★SKS양품장입필요!!★//W20//CMA/BNCT/0728CLS/0801ETD/BK:CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/USLOT/110024999/7/15 웅동/Y2025",
-    "adj1": "",
-    "adj1Color": null,
-    "adj2": "",
-    "transporter": "미분류",
-    "sealNo": "M6456309",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
-    "workDate": "7월 17일",
-    "loadPlanNo": "INST24260715297",
-    "tags": [],
-    "cssClass": "row-extra",
-    "badgeClass": "extra",
-    "isErrorRow": true,
-    "dims": "0x0x0",
-    "weights": {
-      "orig": 0,
-      "down": 0,
-      "mixed": 0
-    },
-    "totalCBM": 0
-  },
-  {
-    "type": "원본누락",
-    "cntrNo": "TIIU7388253",
-    "division": "CVZ",
-    "prodType": "-",
-    "prodName": "SKSDR360S.BSTLSNA",
-    "qtyInfo": {
-      "plan": 8,
-      "load": 0,
-      "pending": 0,
-      "remain": 8,
-      "packing": 8,
-      "origPlan": 0
-    },
-    "cntrType": {
-      "val": "40HC",
-      "orig": null
-    },
-    "carrierName": {
-      "val": "CMA - CGM",
-      "orig": null
-    },
-    "destination": {
-      "val": "USLOT",
-      "orig": null
-    },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 북미 법인/★SKS양품장입필요!!★//W20//CMA/BNCT/0728CLS/0801ETD/BK:CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/USLOT/110024999/7/15 웅동/Y2025",
-    "adj1": "",
-    "adj1Color": null,
-    "adj2": "",
-    "transporter": "미분류",
-    "sealNo": "M6456309",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
-    "workDate": "7월 17일",
-    "loadPlanNo": "INST24260715297",
-    "tags": [],
-    "cssClass": "row-extra",
-    "badgeClass": "extra",
-    "isErrorRow": true,
-    "dims": "0x0x0",
-    "weights": {
-      "orig": 0,
-      "down": 0,
-      "mixed": 0
-    },
-    "totalCBM": 0
-  },
-  {
-    "type": "원본누락",
-    "cntrNo": "TIIU7388253",
-    "division": "CVZ",
-    "prodType": "-",
-    "prodName": "WDEP9427F.BRSLLGA",
-    "qtyInfo": {
-      "plan": 2,
-      "load": 0,
-      "pending": 0,
-      "remain": 2,
-      "packing": 2,
-      "origPlan": 0
-    },
-    "cntrType": {
-      "val": "40HC",
-      "orig": null
-    },
-    "carrierName": {
-      "val": "CMA - CGM",
-      "orig": null
-    },
-    "destination": {
-      "val": "USLOT",
-      "orig": null
-    },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 북미 법인/★SKS양품장입필요!!★//W20//CMA/BNCT/0728CLS/0801ETD/BK:CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/USLOT/110024999/7/15 웅동/Y2025",
-    "adj1": "",
-    "adj1Color": null,
-    "adj2": "",
-    "transporter": "미분류",
-    "sealNo": "M6456309",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
-    "workDate": "7월 17일",
-    "loadPlanNo": "INST24260715297",
-    "tags": [],
-    "cssClass": "row-extra",
-    "badgeClass": "extra",
-    "isErrorRow": true,
-    "dims": "0x0x0",
-    "weights": {
-      "orig": 0,
-      "down": 0,
-      "mixed": 0
-    },
-    "totalCBM": 0
-  },
-  {
-    "type": "제품정보 없음",
     "cntrNo": "PIDU4244121",
     "division": "CNZ",
     "prodType": "-",
     "prodName": "LT23CBBSIV.APYGNGH",
     "qtyInfo": {
       "plan": 51,
-      "load": 51,
+      "load": 0,
       "pending": 0,
-      "remain": 0,
+      "remain": 51,
       "packing": 51,
       "origPlan": 0
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "피아이엘 코리아(주)",
-      "orig": "PIL",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "SAJED",
-      "orig": "SAJED",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:PIL ↔ 전산:피아이엘 코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "중아/★수작업 시리얼 관리 필요//W30/PIL/BPT/0719CLS/0725ETD/BK:SEL600386600/KOTA GAYA/0431S/SAJED/110042675/7/15 웅동/7/15 웅동 / Y2024",
-    "adj1": "신북",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 중아/★수작업 시리얼 관리 필요//W30/PIL/BPT/0719CLS/0725ETD/BK:SEL600386600/KOTA GAYA/0431S/SAJED/110042675/7/15 웅동/7/15 웅동/Y2024",
+    "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "SF1561963",
-    "eta": "07월 19일",
-    "etd": "07월 25일",
-    "jobName": "INST24260715135",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260715135",
-    "tags": [
-      {
-        "text": "수작업스캔작업",
-        "type": "primary"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
       "orig": 0,
-      "down": 4794,
-      "mixed": 4794
+      "down": 0,
+      "mixed": 0
     },
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "PIDU4317594",
     "division": "CNZ",
     "prodType": "-",
     "prodName": "LT23HBHSIV.APYGNGH",
     "qtyInfo": {
       "plan": 51,
-      "load": 51,
+      "load": 0,
       "pending": 0,
-      "remain": 0,
+      "remain": 51,
       "packing": 51,
       "origPlan": 0
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "피아이엘 코리아(주)",
-      "orig": "PIL",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "SAJED",
-      "orig": "SAJED",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:PIL ↔ 전산:피아이엘 코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "중아/★수작업 시리얼 관리 필요//W30/PIL/BPT/0719CLS/0725ETD/BK:SEL600386600/KOTA GAYA/0431S/SAJED/110036306/7/15 웅동/7/15 웅동 / Y2024",
-    "adj1": "신북",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 중아/★수작업 시리얼 관리 필요//W30/PIL/BPT/0719CLS/0725ETD/BK:SEL600386600/KOTA GAYA/0431S/SAJED/110036306/7/15 웅동/7/15 웅동/Y2024",
+    "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "SF1561837",
-    "eta": "07월 19일",
-    "etd": "07월 25일",
-    "jobName": "INST24260715134",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260715134",
-    "tags": [
-      {
-        "text": "수작업스캔작업",
-        "type": "primary"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
       "orig": 0,
-      "down": 4794,
-      "mixed": 4794
+      "down": 0,
+      "mixed": 0
     },
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "BSIU8125059",
     "division": "CNZ",
     "prodType": "-",
@@ -1203,51 +715,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "피아이엘 코리아(주)",
-      "orig": "PIL",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "SAJED",
-      "orig": "SAJED",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:PIL ↔ 전산:피아이엘 코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "중아/★수작업 시리얼 관리 필요//W30/PIL/BPT/0719CLS/0725ETD/BK:SEL600386600/KOTA GAYA/0431S/SAJED/110036306/7/15 웅동/7/15 웅동",
-    "adj1": "신북",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 중아/★수작업 시리얼 관리 필요//W30/PIL/BPT/0719CLS/0725ETD/BK:SEL600386600/KOTA GAYA/0431S/SAJED/110036306/7/15 웅동/7/15 웅동/Y2021",
+    "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "SF1561852",
-    "eta": "07월 19일",
-    "etd": "07월 25일",
-    "jobName": "INST24260715133",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260715133",
-    "tags": [
-      {
-        "text": "수작업스캔작업",
-        "type": "primary"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -1258,7 +750,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "PCIU9340505",
     "division": "CNZ",
     "prodType": "-",
@@ -1273,51 +765,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "피아이엘 코리아(주)",
-      "orig": "PIL",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "SAJED",
-      "orig": "SAJED",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:PIL ↔ 전산:피아이엘 코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "중아/★수작업 시리얼 관리 필요//W29/PIL/BPT/0719CLS/0725ETD/BK:SEL600368300/KOTA GAYA/0431S/SAJED/110034481/7/15 웅동/7/15 웅동",
-    "adj1": "신북",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 중아/★수작업 시리얼 관리 필요//W29/PIL/BPT/0719CLS/0725ETD/BK:SEL600368300/KOTA GAYA/0431S/SAJED/110034481/7/15 웅동/7/15 웅동/Y2018",
+    "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "SF1561808",
-    "eta": "07월 19일",
-    "etd": "07월 25일",
-    "jobName": "INST24260715132",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260715132",
-    "tags": [
-      {
-        "text": "수작업스캔작업",
-        "type": "primary"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -1328,77 +800,57 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "MAGU5694510",
     "division": "CVZ",
     "prodType": "-",
     "prodName": "LRIN6323YE.BSTLLCA",
     "qtyInfo": {
       "plan": 84,
-      "load": 84,
+      "load": 0,
       "pending": 0,
-      "remain": 0,
+      "remain": 84,
       "packing": 84,
       "origPlan": 0
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "협운 인터내셔날 (주)",
-      "orig": "WSL",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "CANY2",
-      "orig": "CANY2",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:WSL ↔ 전산:협운 인터내셔날 (주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "캐나다/[끝단 비닐막 처리]//W30//WESTWOOD/KBCT/0717CLS/0725ETD/BK:K26PAR03203/WESTWOOD VICTORIA/149E/CANY2/110035923/7/14 웅동 / Y2014",
-    "adj1": "북북 / 비닐막",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 캐나다/[끝단 비닐막 처리]//W30//WESTWOOD/KBCT/0717CLS/0725ETD/BK:K26PAR03203/WESTWOOD VICTORIA/149E/CANY2/110035923/7/14 웅동/Y2014",
+    "adj1": "",
     "adj1Color": null,
-    "adj2": "17일주간까지",
-    "transporter": "천마(빨강)",
+    "adj2": "",
+    "transporter": "미분류",
     "sealNo": "BS26339147",
-    "eta": "07월 17일",
-    "etd": "07월 25일",
-    "jobName": "INST24260714213",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260714213",
-    "tags": [
-      {
-        "text": "비닐막",
-        "type": "success"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
       "orig": 0,
-      "down": 8064,
-      "mixed": 8064
+      "down": 0,
+      "mixed": 0
     },
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "BMOU6044224",
     "division": "CVZ",
     "prodType": "-",
@@ -1413,51 +865,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "협운 인터내셔날 (주)",
-      "orig": "WSL",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "CANY2",
-      "orig": "CANY2",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:WSL ↔ 전산:협운 인터내셔날 (주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "캐나다/[끝단 비닐막 처리]//W29//WESTWOOD/KBCT/0717CLS/0725ETD/BK:K26PAR03203/WESTWOOD VICTORIA/149E/CANY2/110035919/7/14 웅동",
-    "adj1": "북북 / 비닐막",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 캐나다/[끝단 비닐막 처리]//W29//WESTWOOD/KBCT/0717CLS/0725ETD/BK:K26PAR03203/WESTWOOD VICTORIA/149E/CANY2/110035919/7/14 웅동/Y2015",
+    "adj1": "",
     "adj1Color": null,
-    "adj2": "17일주간까지",
-    "transporter": "천마(빨강)",
+    "adj2": "",
+    "transporter": "미분류",
     "sealNo": "BS26332310",
-    "eta": "07월 17일",
-    "etd": "07월 25일",
-    "jobName": "INST24260714212",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260714212",
-    "tags": [
-      {
-        "text": "비닐막",
-        "type": "success"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -1468,7 +900,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "BMOU6044224",
     "division": "CVZ",
     "prodType": "-",
@@ -1483,51 +915,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "협운 인터내셔날 (주)",
-      "orig": "WSL",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "CANY2",
-      "orig": "CANY2",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:WSL ↔ 전산:협운 인터내셔날 (주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "캐나다/[끝단 비닐막 처리]//W29//WESTWOOD/KBCT/0717CLS/0725ETD/BK:K26PAR03203/WESTWOOD VICTORIA/149E/CANY2/110035919/7/14 웅동",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 캐나다/[끝단 비닐막 처리]//W29//WESTWOOD/KBCT/0717CLS/0725ETD/BK:K26PAR03203/WESTWOOD VICTORIA/149E/CANY2/110035919/7/14 웅동/Y2015",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "BS26332310",
-    "eta": "07월 17일",
-    "etd": "07월 25일",
-    "jobName": "INST24260714212",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260714212",
-    "tags": [
-      {
-        "text": "비닐막",
-        "type": "success"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -1538,7 +950,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEGU5433830",
     "division": "CDZ",
     "prodType": "-",
@@ -1553,47 +965,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USLTX",
-      "orig": "USLTX",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032891/7/13 웅동 / Y2015",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032891/7/13 웅동/Y2015",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "M6455963",
-    "eta": "07월 21일",
-    "etd": "07월 25일",
-    "jobName": "INST24260713190",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260713190",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -1604,7 +1000,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEGU5433830",
     "division": "CDZ",
     "prodType": "-",
@@ -1619,47 +1015,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USLTX",
-      "orig": "USLTX",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032891/7/13 웅동 / Y2015",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032891/7/13 웅동/Y2015",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "M6455963",
-    "eta": "07월 21일",
-    "etd": "07월 25일",
-    "jobName": "INST24260713190",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260713190",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -1670,7 +1050,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEGU5433830",
     "division": "CVZ",
     "prodType": "-",
@@ -1685,47 +1065,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USLTX",
-      "orig": "USLTX",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032891/7/13 웅동 / Y2015",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032891/7/13 웅동/Y2015",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "M6455963",
-    "eta": "07월 21일",
-    "etd": "07월 25일",
-    "jobName": "INST24260713190",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260713190",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -1736,7 +1100,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEGU5433830",
     "division": "CVZ",
     "prodType": "-",
@@ -1751,47 +1115,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USLTX",
-      "orig": "USLTX",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032891/7/13 웅동 / Y2015",
-    "adj1": "실카X",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032891/7/13 웅동/Y2015",
+    "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "M6455963",
-    "eta": "07월 21일",
-    "etd": "07월 25일",
-    "jobName": "INST24260713190",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260713190",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -1802,7 +1150,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEGU5433830",
     "division": "CVZ",
     "prodType": "-",
@@ -1817,47 +1165,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USLTX",
-      "orig": "USLTX",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032891/7/13 웅동 / Y2015",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032891/7/13 웅동/Y2015",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "M6455963",
-    "eta": "07월 21일",
-    "etd": "07월 25일",
-    "jobName": "INST24260713190",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260713190",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -1868,7 +1200,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEGU5433830",
     "division": "CVZ",
     "prodType": "-",
@@ -1883,47 +1215,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USLTX",
-      "orig": "USLTX",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032891/7/13 웅동 / Y2015",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032891/7/13 웅동/Y2015",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "M6455963",
-    "eta": "07월 21일",
-    "etd": "07월 25일",
-    "jobName": "INST24260713190",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260713190",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -1934,7 +1250,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "CMAU6589588",
     "division": "DFZ",
     "prodType": "-",
@@ -1949,47 +1265,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USLTX",
-      "orig": "USLTX",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032878/ Y2021",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032878/Y2021",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "M6462225",
-    "eta": "07월 21일",
-    "etd": "07월 25일",
-    "jobName": "INST24260708233",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260708233",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -2000,7 +1300,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "CMAU6589588",
     "division": "DFZ",
     "prodType": "-",
@@ -2015,47 +1315,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USLTX",
-      "orig": "USLTX",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032878/ Y2021",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032878/Y2021",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "M6462225",
-    "eta": "07월 21일",
-    "etd": "07월 25일",
-    "jobName": "INST24260708233",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260708233",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -2066,7 +1350,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "CMAU6589588",
     "division": "DFZ",
     "prodType": "-",
@@ -2081,47 +1365,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USLTX",
-      "orig": "USLTX",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032878/ Y2021",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032878/Y2021",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "M6462225",
-    "eta": "07월 21일",
-    "etd": "07월 25일",
-    "jobName": "INST24260708233",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260708233",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -2132,7 +1400,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "CMAU6589588",
     "division": "CVZ",
     "prodType": "-",
@@ -2147,47 +1415,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USLTX",
-      "orig": "USLTX",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032878/ Y2021",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032878/Y2021",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "M6462225",
-    "eta": "07월 21일",
-    "etd": "07월 25일",
-    "jobName": "INST24260708233",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260708233",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -2198,7 +1450,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "CMAU6589588",
     "division": "CVZ",
     "prodType": "-",
@@ -2213,47 +1465,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USLTX",
-      "orig": "USLTX",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032878/ Y2021",
-    "adj1": "실카X",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032878/Y2021",
+    "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "M6462225",
-    "eta": "07월 21일",
-    "etd": "07월 25일",
-    "jobName": "INST24260708233",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260708233",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -2264,7 +1500,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "CMAU6589588",
     "division": "DFZ",
     "prodType": "-",
@@ -2279,47 +1515,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USLTX",
-      "orig": "USLTX",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032878/ Y2021",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032878/Y2021",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "M6462225",
-    "eta": "07월 21일",
-    "etd": "07월 25일",
-    "jobName": "INST24260708233",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260708233",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -2330,7 +1550,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "CMAU6589588",
     "division": "DFZ",
     "prodType": "-",
@@ -2345,94 +1565,28 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USLTX",
-      "orig": "USLTX",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032878/ Y2021",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 북미 직거래선///W30//CMA/BNCT/0721CLS/0725ETD/BK:CMA2606240028/PRESIDENT MONROE/0DBOXE1MA/USLTX/110032878/Y2021",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "M6462225",
-    "eta": "07월 21일",
-    "etd": "07월 25일",
-    "jobName": "INST24260708233",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST24260708233",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
-    "isErrorRow": true,
-    "dims": "0x0x0",
-    "weights": {
-      "orig": 0,
-      "down": 0,
-      "mixed": 0
-    },
-    "totalCBM": 0
-  },
-  {
-    "type": "원본누락",
-    "cntrNo": "TGBU6741599",
-    "division": "CVZ",
-    "prodType": "-",
-    "prodName": "CBGJ3623S.BSTELNA",
-    "qtyInfo": {
-      "plan": 45,
-      "load": 0,
-      "pending": 0,
-      "remain": 45,
-      "packing": 45,
-      "origPlan": 0
-    },
-    "cntrType": {
-      "val": "40HC",
-      "orig": null
-    },
-    "carrierName": {
-      "val": "CMA - CGM",
-      "orig": null
-    },
-    "destination": {
-      "val": "USLOT",
-      "orig": null
-    },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 북미 법인///W28//CMA/BNCT/0714CLS/0718ETD/BK:CMA2606170077/PRESIDENT GRANT/0DBOVE1MA/USLOT/110033442/7/6 웅동/Y2018",
-    "adj1": "",
-    "adj1Color": null,
-    "adj2": "",
-    "transporter": "미분류",
-    "sealNo": "M6466040",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
-    "workDate": "7월 17일",
-    "loadPlanNo": "INST24260706277",
     "tags": [],
     "cssClass": "row-extra",
     "badgeClass": "extra",
@@ -2447,206 +1601,6 @@
   },
   {
     "type": "원본누락",
-    "cntrNo": "TGBU6741599",
-    "division": "CVZ",
-    "prodType": "-",
-    "prodName": "LDEL7324YE.BSTLLGA",
-    "qtyInfo": {
-      "plan": 5,
-      "load": 0,
-      "pending": 0,
-      "remain": 5,
-      "packing": 5,
-      "origPlan": 0
-    },
-    "cntrType": {
-      "val": "40HC",
-      "orig": null
-    },
-    "carrierName": {
-      "val": "CMA - CGM",
-      "orig": null
-    },
-    "destination": {
-      "val": "USLOT",
-      "orig": null
-    },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 북미 법인///W28//CMA/BNCT/0714CLS/0718ETD/BK:CMA2606170077/PRESIDENT GRANT/0DBOVE1MA/USLOT/110033442/7/6 웅동/Y2018",
-    "adj1": "",
-    "adj1Color": null,
-    "adj2": "",
-    "transporter": "미분류",
-    "sealNo": "M6466040",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
-    "workDate": "7월 17일",
-    "loadPlanNo": "INST24260706277",
-    "tags": [],
-    "cssClass": "row-extra",
-    "badgeClass": "extra",
-    "isErrorRow": true,
-    "dims": "0x0x0",
-    "weights": {
-      "orig": 0,
-      "down": 0,
-      "mixed": 0
-    },
-    "totalCBM": 0
-  },
-  {
-    "type": "원본누락",
-    "cntrNo": "TGBU6741599",
-    "division": "CVZ",
-    "prodType": "-",
-    "prodName": "LSIL6332FE.BRSLLGA",
-    "qtyInfo": {
-      "plan": 11,
-      "load": 0,
-      "pending": 0,
-      "remain": 11,
-      "packing": 11,
-      "origPlan": 0
-    },
-    "cntrType": {
-      "val": "40HC",
-      "orig": null
-    },
-    "carrierName": {
-      "val": "CMA - CGM",
-      "orig": null
-    },
-    "destination": {
-      "val": "USLOT",
-      "orig": null
-    },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 북미 법인///W28//CMA/BNCT/0714CLS/0718ETD/BK:CMA2606170077/PRESIDENT GRANT/0DBOVE1MA/USLOT/110033442/7/6 웅동/Y2018",
-    "adj1": "",
-    "adj1Color": null,
-    "adj2": "",
-    "transporter": "미분류",
-    "sealNo": "M6466040",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
-    "workDate": "7월 17일",
-    "loadPlanNo": "INST24260706277",
-    "tags": [],
-    "cssClass": "row-extra",
-    "badgeClass": "extra",
-    "isErrorRow": true,
-    "dims": "0x0x0",
-    "weights": {
-      "orig": 0,
-      "down": 0,
-      "mixed": 0
-    },
-    "totalCBM": 0
-  },
-  {
-    "type": "원본누락",
-    "cntrNo": "TGBU6741599",
-    "division": "CVZ",
-    "prodType": "-",
-    "prodName": "WCEP6423F.BRSLLGA",
-    "qtyInfo": {
-      "plan": 42,
-      "load": 0,
-      "pending": 0,
-      "remain": 42,
-      "packing": 42,
-      "origPlan": 0
-    },
-    "cntrType": {
-      "val": "40HC",
-      "orig": null
-    },
-    "carrierName": {
-      "val": "CMA - CGM",
-      "orig": null
-    },
-    "destination": {
-      "val": "USLOT",
-      "orig": null
-    },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 북미 법인///W28//CMA/BNCT/0714CLS/0718ETD/BK:CMA2606170077/PRESIDENT GRANT/0DBOVE1MA/USLOT/110033442/7/6 웅동/Y2018",
-    "adj1": "",
-    "adj1Color": null,
-    "adj2": "",
-    "transporter": "미분류",
-    "sealNo": "M6466040",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
-    "workDate": "7월 17일",
-    "loadPlanNo": "INST24260706277",
-    "tags": [],
-    "cssClass": "row-extra",
-    "badgeClass": "extra",
-    "isErrorRow": true,
-    "dims": "0x0x0",
-    "weights": {
-      "orig": 0,
-      "down": 0,
-      "mixed": 0
-    },
-    "totalCBM": 0
-  },
-  {
-    "type": "원본누락",
-    "cntrNo": "SMCU1104649",
-    "division": "DFZ",
-    "prodType": "-",
-    "prodName": "S3WFBN.BLWEEUS",
-    "qtyInfo": {
-      "plan": 72,
-      "load": 0,
-      "pending": 0,
-      "remain": 72,
-      "packing": 72,
-      "origPlan": 0
-    },
-    "cntrType": {
-      "val": "40HC",
-      "orig": null
-    },
-    "carrierName": {
-      "val": "에스엠상선(주)한국지점",
-      "orig": null
-    },
-    "destination": {
-      "val": "USLOT",
-      "orig": null
-    },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 6H1S00M9/0//SM/06CLS/08ETD/SEL6D6883100/HJNC/SM NINGBO/2606E//USLOT/Y2017",
-    "adj1": "",
-    "adj1Color": null,
-    "adj2": "",
-    "transporter": "미분류",
-    "sealNo": "SM937566",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
-    "workDate": "7월 17일",
-    "loadPlanNo": "INST00260716308",
-    "tags": [],
-    "cssClass": "row-extra",
-    "badgeClass": "extra",
-    "isErrorRow": true,
-    "dims": "0x0x0",
-    "weights": {
-      "orig": 0,
-      "down": 0,
-      "mixed": 0
-    },
-    "totalCBM": 0
-  },
-  {
-    "type": "제품정보 없음",
     "cntrNo": "FDCU0605178",
     "division": "CDZ",
     "prodType": "-",
@@ -2661,47 +1615,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "오션네트워크익스프레스코리아 주식회사",
-      "orig": "ONE",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "TRMER",
-      "orig": "TRMER",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:ONE ↔ 전산:오션네트워크익스프레스코리아 주식회사) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "중아///W30/ONE/PNC (PUSAN NEWPORT COMPANY)/0720CLS/0728ETD/BK:SELGE1268400/MSC ANNA/GT629W/TRMER/110036089 / Y2018",
-    "adj1": "16일 생산",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 중아///W30/ONE/PNC (PUSAN NEWPORT COMPANY)/0720CLS/0728ETD/BK:SELGE1268400/MSC ANNA/GT629W/TRMER/110036089/Y2018",
+    "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "KRAY01575",
-    "eta": "07월 20일",
-    "etd": "07월 28일",
-    "jobName": "INST00260716150 -02",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST00260716150",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -2712,7 +1650,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "MSNU8776270",
     "division": "CDZ",
     "prodType": "-",
@@ -2727,47 +1665,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "엠에스씨코리아(주)",
-      "orig": "MSC",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "GEPTI",
-      "orig": "GEPTI",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "중아///W30/MSC/PUSAN NEWPORT COMPANY LIMITED/0720CLS/0728ETD/BK:096KR1038192/MSC ANNA/GT629W/GEPTI/110043376 / Y2025",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 중아///W30/MSC/PUSAN NEWPORT COMPANY LIMITED/0720CLS/0728ETD/BK:096KR1038192/MSC ANNA /GT629W>MSC REEFGJ629W/GEPTI/110043376/DFC435FP.APZPMER\t재고부족쇼티지 2대 38(40)/Y2025",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "FJ27296983",
-    "eta": "07월 20일",
-    "etd": "07월 28일",
-    "jobName": "INST00260713006",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST00260713006",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -2778,7 +1700,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "MSNU8776270",
     "division": "CDZ",
     "prodType": "-",
@@ -2793,47 +1715,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "엠에스씨코리아(주)",
-      "orig": "MSC",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "GEPTI",
-      "orig": "GEPTI",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "중아///W30/MSC/PUSAN NEWPORT COMPANY LIMITED/0720CLS/0728ETD/BK:096KR1038192/MSC ANNA/GT629W/GEPTI/110043376 / Y2025",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 중아///W30/MSC/PUSAN NEWPORT COMPANY LIMITED/0720CLS/0728ETD/BK:096KR1038192/MSC ANNA /GT629W>MSC REEFGJ629W/GEPTI/110043376/DFC435FP.APZPMER\t재고부족쇼티지 2대 38(40)/Y2025",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "FJ27296983",
-    "eta": "07월 20일",
-    "etd": "07월 28일",
-    "jobName": "INST00260713006",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST00260713006",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -2844,7 +1750,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "MSNU8776270",
     "division": "CDZ",
     "prodType": "-",
@@ -2859,47 +1765,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "엠에스씨코리아(주)",
-      "orig": "MSC",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "GEPTI",
-      "orig": "GEPTI",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "중아///W30/MSC/PUSAN NEWPORT COMPANY LIMITED/0720CLS/0728ETD/BK:096KR1038192/MSC ANNA/GT629W/GEPTI/110043376 / Y2025",
-    "adj1": "재고부족쇼티지 2대 38(40)",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 중아///W30/MSC/PUSAN NEWPORT COMPANY LIMITED/0720CLS/0728ETD/BK:096KR1038192/MSC ANNA /GT629W>MSC REEFGJ629W/GEPTI/110043376/DFC435FP.APZPMER\t재고부족쇼티지 2대 38(40)/Y2025",
+    "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
+    "transporter": "미분류",
     "sealNo": "FJ27296983",
-    "eta": "07월 20일",
-    "etd": "07월 28일",
-    "jobName": "INST00260713006",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
     "loadPlanNo": "INST00260713006",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -2910,7 +1800,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "MSNU8776270",
     "division": "CDZ",
     "prodType": "-",
@@ -2925,94 +1815,28 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "엠에스씨코리아(주)",
-      "orig": "MSC",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "GEPTI",
-      "orig": "GEPTI",
-      "isMismatch": false
-    },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:MSC ↔ 전산:엠에스씨코리아(주)) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "중아///W30/MSC/PUSAN NEWPORT COMPANY LIMITED/0720CLS/0728ETD/BK:096KR1038192/MSC ANNA/GT629W/GEPTI/110043376 / Y2025",
-    "adj1": "",
-    "adj1Color": null,
-    "adj2": "",
-    "transporter": "천마(빨강)",
-    "sealNo": "FJ27296983",
-    "eta": "07월 20일",
-    "etd": "07월 28일",
-    "jobName": "INST00260713006",
-    "workDate": "7월 17일",
-    "loadPlanNo": "INST00260713006",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
-    "isErrorRow": true,
-    "dims": "0x0x0",
-    "weights": {
-      "orig": 0,
-      "down": 0,
-      "mixed": 0
-    },
-    "totalCBM": 0
-  },
-  {
-    "type": "원본누락",
-    "cntrNo": "CMAU4973275",
-    "division": "DFZ",
-    "prodType": "-",
-    "prodName": "WT2116SHEG.ABGPETH",
-    "qtyInfo": {
-      "plan": 44,
-      "load": 0,
-      "pending": 0,
-      "remain": 44,
-      "packing": 44,
-      "origPlan": 0
-    },
-    "cntrType": {
-      "val": "40HC",
-      "orig": null
-    },
-    "carrierName": {
-      "val": "CMA - CGM",
-      "orig": null
-    },
-    "destination": {
-      "val": "THCHB",
       "orig": null
     },
     "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 6H1W00WZ/지정/단일 44,,,W31,Asia,THCHB,A9H/CMA/29CLS/02ETD/CNC2607060004/GCTOC/STARSHIP AQUILA/0SKCBS1NC/THCHB/Y2015",
+    "origRemark": "(전산) 중아///W30/MSC/PUSAN NEWPORT COMPANY LIMITED/0720CLS/0728ETD/BK:096KR1038192/MSC ANNA /GT629W>MSC REEFGJ629W/GEPTI/110043376/DFC435FP.APZPMER\t재고부족쇼티지 2대 38(40)/Y2025",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
     "transporter": "미분류",
-    "sealNo": "M6466521",
+    "sealNo": "FJ27296983",
     "eta": "",
     "etd": "",
     "jobName": "",
     "workDate": "7월 17일",
-    "loadPlanNo": "INST00260709155",
+    "loadPlanNo": "INST00260713006",
     "tags": [],
     "cssClass": "row-extra",
     "badgeClass": "extra",
@@ -3026,7 +1850,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "CMAU4271155",
     "division": "DFZ",
     "prodType": "-",
@@ -3041,6 +1865,56 @@
     },
     "cntrType": {
       "val": "40HC",
+      "orig": null
+    },
+    "carrierName": {
+      "val": "CMA - CGM",
+      "orig": null
+    },
+    "destination": {
+      "val": "THCHB",
+      "orig": null
+    },
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 6H1R02RA/지정/단일 ,,,W31,Asia,THCHB,A9H/CMA/29CLS/02ETD/CNC2607060004/GCTOC/STARSHIP AQUILA/0SKCBS1NC/THCHB/Y2013",
+    "adj1": "",
+    "adj1Color": null,
+    "adj2": "",
+    "transporter": "미분류",
+    "sealNo": "M6471261",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
+    "workDate": "7월 17일",
+    "loadPlanNo": "INST00260709154",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
+    "isErrorRow": true,
+    "dims": "0x0x0",
+    "weights": {
+      "orig": 0,
+      "down": 0,
+      "mixed": 0
+    },
+    "totalCBM": 0
+  },
+  {
+    "type": "제품정보 없음",
+    "cntrNo": "CMAU8559366",
+    "division": "CDZ",
+    "prodType": "-",
+    "prodName": "XD3A25MB.ABMREAP",
+    "qtyInfo": {
+      "plan": 30,
+      "load": 0,
+      "pending": 0,
+      "remain": 30,
+      "packing": 30,
+      "origPlan": 0
+    },
+    "cntrType": {
+      "val": "40HC",
       "orig": "HC",
       "isMismatch": false
     },
@@ -3050,23 +1924,27 @@
       "isMismatch": true
     },
     "destination": {
-      "val": "THCHB",
-      "orig": "THCHB",
+      "val": "AUFRE",
+      "orig": "AUFRE",
       "isMismatch": false
     },
     "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "6H1R02RA/지정/단일 ,,,W31,Asia,THCHB,A9H/CMA/29CLS/02ETD/CNC2607060004/GCTOC/STARSHIP AQUILA/0SKCBS1NC/THCHB / Y2013",
-    "adj1": "신북",
+    "origRemark": "아주/1줄마다 사진//W30/CMA/BNCTC/0722CLS/0723ETD/BK:ANL2606260007/CMA CGM ARGON/0BEOBW1NL/AUFRE/110036257",
+    "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "천마(빨강)",
-    "sealNo": "M6471261",
-    "eta": "07월 29일",
-    "etd": "08월 02일",
-    "jobName": "INST00260709154",
+    "transporter": "BNI(파랑)",
+    "sealNo": "M6462425",
+    "eta": "07월 22일",
+    "etd": "07월 23일",
+    "jobName": "INST00260709027 -02",
     "workDate": "7월 17일",
-    "loadPlanNo": "INST00260709154",
+    "loadPlanNo": "INST00260709027",
     "tags": [
+      {
+        "text": "한줄식기사진",
+        "type": "warning"
+      },
       {
         "text": "Carrier 오류",
         "type": "danger"
@@ -3092,57 +1970,7 @@
     "totalCBM": 0
   },
   {
-    "type": "원본누락",
-    "cntrNo": "CMAU8559366",
-    "division": "CDZ",
-    "prodType": "-",
-    "prodName": "XD3A25MB.ABMREAP",
-    "qtyInfo": {
-      "plan": 30,
-      "load": 0,
-      "pending": 0,
-      "remain": 30,
-      "packing": 30,
-      "origPlan": 0
-    },
-    "cntrType": {
-      "val": "40HC",
-      "orig": null
-    },
-    "carrierName": {
-      "val": "CMA - CGM",
-      "orig": null
-    },
-    "destination": {
-      "val": "AUFRE",
-      "orig": null
-    },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 아주/1줄마다 사진//W30/CMA/BNCTC/0722CLS/0723ETD/BK:ANL2606260007/CMA CGM ARGON/0BEOBW1NL/AUFRE/110036257/Y2021",
-    "adj1": "",
-    "adj1Color": null,
-    "adj2": "",
-    "transporter": "미분류",
-    "sealNo": "M6462425",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
-    "workDate": "7월 17일",
-    "loadPlanNo": "INST00260709027",
-    "tags": [],
-    "cssClass": "row-extra",
-    "badgeClass": "extra",
-    "isErrorRow": true,
-    "dims": "0x0x0",
-    "weights": {
-      "orig": 0,
-      "down": 0,
-      "mixed": 0
-    },
-    "totalCBM": 0
-  },
-  {
-    "type": "원본누락",
+    "type": "제품정보 없음",
     "cntrNo": "CMAU8559366",
     "division": "CDZ",
     "prodType": "-",
@@ -3157,31 +1985,51 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": null
+      "orig": "HC",
+      "isMismatch": false
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": null
+      "orig": "CMA",
+      "isMismatch": true
     },
     "destination": {
       "val": "AUFRE",
-      "orig": null
+      "orig": "AUFRE",
+      "isMismatch": false
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 아주/1줄마다 사진//W30/CMA/BNCTC/0722CLS/0723ETD/BK:ANL2606260007/CMA CGM ARGON/0BEOBW1NL/AUFRE/110036257/Y2021",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "아주/1줄마다 사진//W30/CMA/BNCTC/0722CLS/0723ETD/BK:ANL2606260007/CMA CGM ARGON/0BEOBW1NL/AUFRE/110036257",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "미분류",
+    "transporter": "BNI(파랑)",
     "sealNo": "M6462425",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
+    "eta": "07월 22일",
+    "etd": "07월 23일",
+    "jobName": "INST00260709027 -02",
     "workDate": "7월 17일",
     "loadPlanNo": "INST00260709027",
-    "tags": [],
-    "cssClass": "row-extra",
-    "badgeClass": "extra",
+    "tags": [
+      {
+        "text": "한줄식기사진",
+        "type": "warning"
+      },
+      {
+        "text": "Carrier 오류",
+        "type": "danger"
+      },
+      {
+        "text": "전산 선사 누락",
+        "type": "danger"
+      },
+      {
+        "text": "주의 목적지누락",
+        "type": "danger"
+      }
+    ],
+    "cssClass": "row-diff row-noproduct",
+    "badgeClass": "noproduct",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -3192,7 +2040,7 @@
     "totalCBM": 0
   },
   {
-    "type": "원본누락",
+    "type": "제품정보 없음",
     "cntrNo": "CMAU8559366",
     "division": "CDZ",
     "prodType": "-",
@@ -3207,31 +2055,51 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": null
+      "orig": "HC",
+      "isMismatch": false
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": null
+      "orig": "CMA",
+      "isMismatch": true
     },
     "destination": {
       "val": "AUFRE",
-      "orig": null
+      "orig": "AUFRE",
+      "isMismatch": false
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 아주/1줄마다 사진//W30/CMA/BNCTC/0722CLS/0723ETD/BK:ANL2606260007/CMA CGM ARGON/0BEOBW1NL/AUFRE/110036257/Y2021",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "아주/1줄마다 사진//W30/CMA/BNCTC/0722CLS/0723ETD/BK:ANL2606260007/CMA CGM ARGON/0BEOBW1NL/AUFRE/110036257",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "미분류",
+    "transporter": "BNI(파랑)",
     "sealNo": "M6462425",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
+    "eta": "07월 22일",
+    "etd": "07월 23일",
+    "jobName": "INST00260709027 -02",
     "workDate": "7월 17일",
     "loadPlanNo": "INST00260709027",
-    "tags": [],
-    "cssClass": "row-extra",
-    "badgeClass": "extra",
+    "tags": [
+      {
+        "text": "한줄식기사진",
+        "type": "warning"
+      },
+      {
+        "text": "Carrier 오류",
+        "type": "danger"
+      },
+      {
+        "text": "전산 선사 누락",
+        "type": "danger"
+      },
+      {
+        "text": "주의 목적지누락",
+        "type": "danger"
+      }
+    ],
+    "cssClass": "row-diff row-noproduct",
+    "badgeClass": "noproduct",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -3242,7 +2110,7 @@
     "totalCBM": 0
   },
   {
-    "type": "원본누락",
+    "type": "제품정보 없음",
     "cntrNo": "CMAU8559366",
     "division": "CDZ",
     "prodType": "-",
@@ -3257,31 +2125,51 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": null
+      "orig": "HC",
+      "isMismatch": false
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": null
+      "orig": "CMA",
+      "isMismatch": true
     },
     "destination": {
       "val": "AUFRE",
-      "orig": null
+      "orig": "AUFRE",
+      "isMismatch": false
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 아주/1줄마다 사진//W30/CMA/BNCTC/0722CLS/0723ETD/BK:ANL2606260007/CMA CGM ARGON/0BEOBW1NL/AUFRE/110036257/Y2021",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "아주/1줄마다 사진//W30/CMA/BNCTC/0722CLS/0723ETD/BK:ANL2606260007/CMA CGM ARGON/0BEOBW1NL/AUFRE/110036257",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "미분류",
+    "transporter": "BNI(파랑)",
     "sealNo": "M6462425",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
+    "eta": "07월 22일",
+    "etd": "07월 23일",
+    "jobName": "INST00260709027 -02",
     "workDate": "7월 17일",
     "loadPlanNo": "INST00260709027",
-    "tags": [],
-    "cssClass": "row-extra",
-    "badgeClass": "extra",
+    "tags": [
+      {
+        "text": "한줄식기사진",
+        "type": "warning"
+      },
+      {
+        "text": "Carrier 오류",
+        "type": "danger"
+      },
+      {
+        "text": "전산 선사 누락",
+        "type": "danger"
+      },
+      {
+        "text": "주의 목적지누락",
+        "type": "danger"
+      }
+    ],
+    "cssClass": "row-diff row-noproduct",
+    "badgeClass": "noproduct",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -3292,7 +2180,7 @@
     "totalCBM": 0
   },
   {
-    "type": "원본누락",
+    "type": "제품정보 없음",
     "cntrNo": "CMAU8559366",
     "division": "CDZ",
     "prodType": "-",
@@ -3307,31 +2195,51 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": null
+      "orig": "HC",
+      "isMismatch": false
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": null
+      "orig": "CMA",
+      "isMismatch": true
     },
     "destination": {
       "val": "AUFRE",
-      "orig": null
+      "orig": "AUFRE",
+      "isMismatch": false
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 아주/1줄마다 사진//W30/CMA/BNCTC/0722CLS/0723ETD/BK:ANL2606260007/CMA CGM ARGON/0BEOBW1NL/AUFRE/110036257/Y2021",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "아주/1줄마다 사진//W30/CMA/BNCTC/0722CLS/0723ETD/BK:ANL2606260007/CMA CGM ARGON/0BEOBW1NL/AUFRE/110036257",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "미분류",
+    "transporter": "BNI(파랑)",
     "sealNo": "M6462425",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
+    "eta": "07월 22일",
+    "etd": "07월 23일",
+    "jobName": "INST00260709027 -02",
     "workDate": "7월 17일",
     "loadPlanNo": "INST00260709027",
-    "tags": [],
-    "cssClass": "row-extra",
-    "badgeClass": "extra",
+    "tags": [
+      {
+        "text": "한줄식기사진",
+        "type": "warning"
+      },
+      {
+        "text": "Carrier 오류",
+        "type": "danger"
+      },
+      {
+        "text": "전산 선사 누락",
+        "type": "danger"
+      },
+      {
+        "text": "주의 목적지누락",
+        "type": "danger"
+      }
+    ],
+    "cssClass": "row-diff row-noproduct",
+    "badgeClass": "noproduct",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -3342,7 +2250,7 @@
     "totalCBM": 0
   },
   {
-    "type": "원본누락",
+    "type": "제품정보 없음",
     "cntrNo": "CMAU8559366",
     "division": "CDZ",
     "prodType": "-",
@@ -3357,31 +2265,51 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": null
+      "orig": "HC",
+      "isMismatch": false
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": null
+      "orig": "CMA",
+      "isMismatch": true
     },
     "destination": {
       "val": "AUFRE",
-      "orig": null
+      "orig": "AUFRE",
+      "isMismatch": false
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 아주/1줄마다 사진//W30/CMA/BNCTC/0722CLS/0723ETD/BK:ANL2606260007/CMA CGM ARGON/0BEOBW1NL/AUFRE/110036257/Y2021",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "아주/1줄마다 사진//W30/CMA/BNCTC/0722CLS/0723ETD/BK:ANL2606260007/CMA CGM ARGON/0BEOBW1NL/AUFRE/110036257",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "미분류",
+    "transporter": "BNI(파랑)",
     "sealNo": "M6462425",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
+    "eta": "07월 22일",
+    "etd": "07월 23일",
+    "jobName": "INST00260709027 -02",
     "workDate": "7월 17일",
     "loadPlanNo": "INST00260709027",
-    "tags": [],
-    "cssClass": "row-extra",
-    "badgeClass": "extra",
+    "tags": [
+      {
+        "text": "한줄식기사진",
+        "type": "warning"
+      },
+      {
+        "text": "Carrier 오류",
+        "type": "danger"
+      },
+      {
+        "text": "전산 선사 누락",
+        "type": "danger"
+      },
+      {
+        "text": "주의 목적지누락",
+        "type": "danger"
+      }
+    ],
+    "cssClass": "row-diff row-noproduct",
+    "badgeClass": "noproduct",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -3392,7 +2320,7 @@
     "totalCBM": 0
   },
   {
-    "type": "원본누락",
+    "type": "제품정보 없음",
     "cntrNo": "CMAU8559366",
     "division": "CDZ",
     "prodType": "-",
@@ -3407,31 +2335,51 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": null
+      "orig": "HC",
+      "isMismatch": false
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": null
+      "orig": "CMA",
+      "isMismatch": true
     },
     "destination": {
       "val": "AUFRE",
-      "orig": null
+      "orig": "AUFRE",
+      "isMismatch": false
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "(전산) 아주/1줄마다 사진//W30/CMA/BNCTC/0722CLS/0723ETD/BK:ANL2606260007/CMA CGM ARGON/0BEOBW1NL/AUFRE/110036257/Y2021",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "아주/1줄마다 사진//W30/CMA/BNCTC/0722CLS/0723ETD/BK:ANL2606260007/CMA CGM ARGON/0BEOBW1NL/AUFRE/110036257",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "미분류",
+    "transporter": "BNI(파랑)",
     "sealNo": "M6462425",
-    "eta": "",
-    "etd": "",
-    "jobName": "",
+    "eta": "07월 22일",
+    "etd": "07월 23일",
+    "jobName": "INST00260709027 -02",
     "workDate": "7월 17일",
     "loadPlanNo": "INST00260709027",
-    "tags": [],
-    "cssClass": "row-extra",
-    "badgeClass": "extra",
+    "tags": [
+      {
+        "text": "한줄식기사진",
+        "type": "warning"
+      },
+      {
+        "text": "Carrier 오류",
+        "type": "danger"
+      },
+      {
+        "text": "전산 선사 누락",
+        "type": "danger"
+      },
+      {
+        "text": "주의 목적지누락",
+        "type": "danger"
+      }
+    ],
+    "cssClass": "row-diff row-noproduct",
+    "badgeClass": "noproduct",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -3764,7 +2712,623 @@
     "jobName": "W29법인콤프005"
   },
   {
-    "type": "제품정보 없음",
+    "type": "누락 (전산 파일)",
+    "cntrNo": "BEAU6321582",
+    "division": "DFZ",
+    "prodType": "DFZ",
+    "prodName": "WD200CB.BBLEEUS",
+    "qtyInfo": {
+      "plan": 41,
+      "load": 0,
+      "pending": 0,
+      "remain": 41,
+      "packing": 0,
+      "origPlan": 41,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USLOT",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "6G1M004Q/0//SM/06CLS/08ETD/SEL6D6883100/HJNC/SM NINGBO/2606E//USLOT / Y2021",
+    "adj1": "",
+    "adj2": "",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "08월 06일",
+    "etd": "08월 08일",
+    "jobName": "INST00260715131"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "BEAU6321582",
+    "division": "DFZ",
+    "prodType": "DFZ",
+    "prodName": "WDP6A.AGWEEUS",
+    "qtyInfo": {
+      "plan": 139,
+      "load": 0,
+      "pending": 0,
+      "remain": 139,
+      "packing": 0,
+      "origPlan": 139,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USLOT",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "6G1M004Q/0//SM/06CLS/08ETD/SEL6D6883100/HJNC/SM NINGBO/2606E//USLOT / Y2021",
+    "adj1": "",
+    "adj2": "",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "08월 06일",
+    "etd": "08월 08일",
+    "jobName": "INST00260715131"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "BEAU6321582",
+    "division": "DFZ",
+    "prodType": "DFZ",
+    "prodName": "WDP8S.ANDEEUS",
+    "qtyInfo": {
+      "plan": 30,
+      "load": 0,
+      "pending": 0,
+      "remain": 30,
+      "packing": 0,
+      "origPlan": 30,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "SML",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USLOT",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "6G1M004Q/0//SM/06CLS/08ETD/SEL6D6883100/HJNC/SM NINGBO/2606E//USLOT / Y2021",
+    "adj1": "",
+    "adj2": "",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "08월 06일",
+    "etd": "08월 08일",
+    "jobName": "INST00260715131"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "CAAU9809593",
+    "division": "DFZ",
+    "prodType": "DFZ",
+    "prodName": "DLEX8600BE.AEBEEUS",
+    "qtyInfo": {
+      "plan": 9,
+      "load": 0,
+      "pending": 0,
+      "remain": 9,
+      "packing": 0,
+      "origPlan": 9,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "MSK",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USOCF",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "USOCF/40/MSK/PNC/46211/46216/2629TP1201/GRETE MAERSK/627E/동방작업 (6모델)★혼CO843(7+9+81(WDP6B)+66(WDP5V)+13(WD300CB)+7(WD300CW)),,,W29,NA,USOCF,NXD",
+    "adj1": "",
+    "adj2": "6H1R023F",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "7월 8일",
+    "etd": "7월 13일",
+    "jobName": "박진수-W29-260701-17"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "CAAU9809593",
+    "division": "DFZ",
+    "prodType": "DFZ",
+    "prodName": "DLEX8600WE.AEWEEUS",
+    "qtyInfo": {
+      "plan": 7,
+      "load": 0,
+      "pending": 0,
+      "remain": 7,
+      "packing": 0,
+      "origPlan": 7,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "MSK",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USOCF",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "USOCF/40/MSK/PNC/46211/46216/2629TP1201/GRETE MAERSK/627E/동방작업 (6모델)★혼CO843(7+9+81(WDP6B)+66(WDP5V)+13(WD300CB)+7(WD300CW)),,,W29,NA,USOCF,NXD",
+    "adj1": "",
+    "adj2": "6H1R0233",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "7월 8일",
+    "etd": "7월 13일",
+    "jobName": "박진수-W29-260701-17"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "CAAU9809593",
+    "division": "DFZ",
+    "prodType": "DFZ",
+    "prodName": "WD300CB.BBLEEUS",
+    "qtyInfo": {
+      "plan": 13,
+      "load": 0,
+      "pending": 0,
+      "remain": 13,
+      "packing": 0,
+      "origPlan": 13,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "MSK",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USOCF",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "USOCF/40/MSK/PNC/46211/46216/2629TP1201/GRETE MAERSK/627E/동방작업 (6모델)★혼CO843(7+9+81(WDP6B)+66(WDP5V)+13(WD300CB)+7(WD300CW)),,,W29,NA,USOCF,NXD",
+    "adj1": "실카X",
+    "adj2": "6H1M004E",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "7월 8일",
+    "etd": "7월 13일",
+    "jobName": "박진수-W29-260701-17"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "CAAU9809593",
+    "division": "DFZ",
+    "prodType": "DFZ",
+    "prodName": "WD300CW.BBWEEUS",
+    "qtyInfo": {
+      "plan": 7,
+      "load": 0,
+      "pending": 0,
+      "remain": 7,
+      "packing": 0,
+      "origPlan": 7,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "MSK",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USOCF",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "USOCF/40/MSK/PNC/46211/46216/2629TP1201/GRETE MAERSK/627E/동방작업 (6모델)★혼CO843(7+9+81(WDP6B)+66(WDP5V)+13(WD300CB)+7(WD300CW)),,,W29,NA,USOCF,NXD",
+    "adj1": "",
+    "adj2": "6H1M004D",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "7월 8일",
+    "etd": "7월 13일",
+    "jobName": "박진수-W29-260701-17"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "CAAU9809593",
+    "division": "DFZ",
+    "prodType": "DFZ",
+    "prodName": "WDP5V.ASSEEUS",
+    "qtyInfo": {
+      "plan": 66,
+      "load": 0,
+      "pending": 0,
+      "remain": 66,
+      "packing": 0,
+      "origPlan": 66,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "MSK",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USOCF",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "USOCF/40/MSK/PNC/46211/46216/2629TP1201/GRETE MAERSK/627E/동방작업 (6모델)★혼CO843(7+9+81(WDP6B)+66(WDP5V)+13(WD300CB)+7(WD300CW)),,,W29,NA,USOCF,NXD",
+    "adj1": "",
+    "adj2": "6H1P005T",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "7월 8일",
+    "etd": "7월 13일",
+    "jobName": "박진수-W29-260701-17"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "CAAU9809593",
+    "division": "DFZ",
+    "prodType": "DFZ",
+    "prodName": "WDP6B.ABLEEUS",
+    "qtyInfo": {
+      "plan": 81,
+      "load": 0,
+      "pending": 0,
+      "remain": 81,
+      "packing": 0,
+      "origPlan": 81,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "MSK",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USOCF",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "USOCF/40/MSK/PNC/46211/46216/2629TP1201/GRETE MAERSK/627E/동방작업 (6모델)★혼CO843(7+9+81(WDP6B)+66(WDP5V)+13(WD300CB)+7(WD300CW)),,,W29,NA,USOCF,NXD",
+    "adj1": "",
+    "adj2": "6H1P006U",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "7월 8일",
+    "etd": "7월 13일",
+    "jobName": "박진수-W29-260701-17"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "ECMU5550291",
+    "division": "DFZ",
+    "prodType": "DFZ",
+    "prodName": "CWG27MDQRS.ASSPETH",
+    "qtyInfo": {
+      "plan": 90,
+      "load": 0,
+      "pending": 0,
+      "remain": 90,
+      "packing": 0,
+      "origPlan": 90,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "CMA",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "THCHB",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "STARSHIP AQUILA/0SKCBS1NC/GCTOC/CNC2607060004 / Y2025",
+    "adj1": "신북",
+    "adj2": "",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "07월 29일",
+    "etd": "08월 02일",
+    "jobName": "박진수-260716-1439-01"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "HPCU5091122",
+    "division": "CNZ",
+    "prodType": "CNZ",
+    "prodName": "LT23CBBSIV.APYGNGH",
+    "qtyInfo": {
+      "plan": 51,
+      "load": 0,
+      "pending": 0,
+      "remain": 51,
+      "packing": 0,
+      "origPlan": 51,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "PIL",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "SAJED",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "중아/★수작업 시리얼 관리 필요//W30/PIL/BPT/0719CLS/0725ETD/BK:SEL600386600/KOTA GAYA/0431S/SAJED/110042675/7/15 웅동/7/15 웅동 / Y2025",
+    "adj1": "신북",
+    "adj2": "",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "07월 19일",
+    "etd": "07월 25일",
+    "jobName": "INST24260715136"
+  },
+  {
+    "type": "원본누락",
     "cntrNo": "SEGU5175633",
     "division": "DFZ",
     "prodType": "-",
@@ -3779,46 +3343,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USDOT",
-      "orig": "USDOT",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "CMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 110037539 / CMA\t2026-07-28\t2026-08-01\tCMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/Y2014",
     "adj1": "",
     "adj1Color": null,
-    "adj2": "6H1R02WB",
-    "transporter": "천마(빨강)",
+    "adj2": "",
+    "transporter": "미분류",
     "sealNo": "M6453549",
-    "eta": "7월 28일",
-    "etd": "8월 1일",
-    "jobName": "박진수-W31-260715-19",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -3829,7 +3378,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEGU5175633",
     "division": "DFZ",
     "prodType": "-",
@@ -3844,46 +3393,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USDOT",
-      "orig": "USDOT",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "CMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 110037539 / CMA\t2026-07-28\t2026-08-01\tCMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/Y2014",
     "adj1": "",
     "adj1Color": null,
-    "adj2": "6H1R02X5",
-    "transporter": "천마(빨강)",
+    "adj2": "",
+    "transporter": "미분류",
     "sealNo": "M6453549",
-    "eta": "7월 28일",
-    "etd": "8월 1일",
-    "jobName": "박진수-W31-260715-19",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -3894,7 +3428,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEGU5175633",
     "division": "DFZ",
     "prodType": "-",
@@ -3909,46 +3443,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USDOT",
-      "orig": "USDOT",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "CMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 110037539 / CMA\t2026-07-28\t2026-08-01\tCMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/Y2014",
     "adj1": "",
     "adj1Color": null,
-    "adj2": "6H1R02X8",
-    "transporter": "천마(빨강)",
+    "adj2": "",
+    "transporter": "미분류",
     "sealNo": "M6453549",
-    "eta": "7월 28일",
-    "etd": "8월 1일",
-    "jobName": "박진수-W31-260715-19",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -3959,7 +3478,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEGU5175633",
     "division": "DFZ",
     "prodType": "-",
@@ -3974,46 +3493,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USDOT",
-      "orig": "USDOT",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "CMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA",
-    "adj1": "실카X",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 110037539 / CMA\t2026-07-28\t2026-08-01\tCMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/Y2014",
+    "adj1": "",
     "adj1Color": null,
-    "adj2": "6H1P00D4",
-    "transporter": "천마(빨강)",
+    "adj2": "",
+    "transporter": "미분류",
     "sealNo": "M6453549",
-    "eta": "7월 28일",
-    "etd": "8월 1일",
-    "jobName": "박진수-W31-260715-19",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -4024,7 +3528,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEGU5175633",
     "division": "DFZ",
     "prodType": "-",
@@ -4039,46 +3543,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USDOT",
-      "orig": "USDOT",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "CMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 110037539 / CMA\t2026-07-28\t2026-08-01\tCMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/Y2014",
     "adj1": "",
     "adj1Color": null,
-    "adj2": "6H1P00DP",
-    "transporter": "천마(빨강)",
+    "adj2": "",
+    "transporter": "미분류",
     "sealNo": "M6453549",
-    "eta": "7월 28일",
-    "etd": "8월 1일",
-    "jobName": "박진수-W31-260715-19",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -4089,7 +3578,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEGU5175633",
     "division": "DFZ",
     "prodType": "-",
@@ -4104,46 +3593,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USDOT",
-      "orig": "USDOT",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "CMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 110037539 / CMA\t2026-07-28\t2026-08-01\tCMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/Y2014",
     "adj1": "",
     "adj1Color": null,
-    "adj2": "6H1P00CR",
-    "transporter": "천마(빨강)",
+    "adj2": "",
+    "transporter": "미분류",
     "sealNo": "M6453549",
-    "eta": "7월 28일",
-    "etd": "8월 1일",
-    "jobName": "박진수-W31-260715-19",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -4154,7 +3628,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEGU5175633",
     "division": "DFZ",
     "prodType": "-",
@@ -4169,46 +3643,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USDOT",
-      "orig": "USDOT",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "CMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 110037539 / CMA\t2026-07-28\t2026-08-01\tCMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/Y2014",
     "adj1": "",
     "adj1Color": null,
-    "adj2": "6H1W00YD",
-    "transporter": "천마(빨강)",
+    "adj2": "",
+    "transporter": "미분류",
     "sealNo": "M6453549",
-    "eta": "7월 28일",
-    "etd": "8월 1일",
-    "jobName": "박진수-W31-260715-19",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -4219,7 +3678,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEGU5175633",
     "division": "DFZ",
     "prodType": "-",
@@ -4234,46 +3693,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "USDOT",
-      "orig": "USDOT",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "CMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 110037539 / CMA\t2026-07-28\t2026-08-01\tCMA/BNCT/2026-07-28/2026-08-01/CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/Y2014",
     "adj1": "",
     "adj1Color": null,
-    "adj2": "6H1F00NA",
-    "transporter": "천마(빨강)",
+    "adj2": "",
+    "transporter": "미분류",
     "sealNo": "M6453549",
-    "eta": "7월 28일",
-    "etd": "8월 1일",
-    "jobName": "박진수-W31-260715-19",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -4284,7 +3728,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEKU4341035",
     "division": "CDZ",
     "prodType": "-",
@@ -4299,50 +3743,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "AUMEL",
-      "orig": "AUMEL",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALS LUNA/0AKN7S1NL/AUMEL/110036174",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 안현태0715-02 -01 / CMA\t07월 21일\t07월 23일\t아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALSLUNA/0AKN7S1NL/AUMEL/110036174/Y2020",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "M6456186",
-    "eta": "07월 21일",
-    "etd": "07월 23일",
-    "jobName": "안현태0715-02 -01",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "한줄식기사진",
-        "type": "warning"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -4353,7 +3778,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEKU4341035",
     "division": "CDZ",
     "prodType": "-",
@@ -4368,50 +3793,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "AUMEL",
-      "orig": "AUMEL",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALS LUNA/0AKN7S1NL/AUMEL/110036174",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 안현태0715-02 -01 / CMA\t07월 21일\t07월 23일\t아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALSLUNA/0AKN7S1NL/AUMEL/110036174/Y2020",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "M6456186",
-    "eta": "07월 21일",
-    "etd": "07월 23일",
-    "jobName": "안현태0715-02 -01",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "한줄식기사진",
-        "type": "warning"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -4422,7 +3828,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEKU4341035",
     "division": "CDZ",
     "prodType": "-",
@@ -4437,50 +3843,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "AUMEL",
-      "orig": "AUMEL",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALS LUNA/0AKN7S1NL/AUMEL/110036174",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 안현태0715-02 -01 / CMA\t07월 21일\t07월 23일\t아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALSLUNA/0AKN7S1NL/AUMEL/110036174/Y2020",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "M6456186",
-    "eta": "07월 21일",
-    "etd": "07월 23일",
-    "jobName": "안현태0715-02 -01",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "한줄식기사진",
-        "type": "warning"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -4491,7 +3878,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEKU4341035",
     "division": "CDZ",
     "prodType": "-",
@@ -4506,50 +3893,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "AUMEL",
-      "orig": "AUMEL",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALS LUNA/0AKN7S1NL/AUMEL/110036174",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 안현태0715-02 -01 / CMA\t07월 21일\t07월 23일\t아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALSLUNA/0AKN7S1NL/AUMEL/110036174/Y2020",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "M6456186",
-    "eta": "07월 21일",
-    "etd": "07월 23일",
-    "jobName": "안현태0715-02 -01",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "한줄식기사진",
-        "type": "warning"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -4560,7 +3928,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEKU4341035",
     "division": "CDZ",
     "prodType": "-",
@@ -4575,50 +3943,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "AUMEL",
-      "orig": "AUMEL",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALS LUNA/0AKN7S1NL/AUMEL/110036174",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 안현태0715-02 -01 / CMA\t07월 21일\t07월 23일\t아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALSLUNA/0AKN7S1NL/AUMEL/110036174/Y2020",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "M6456186",
-    "eta": "07월 21일",
-    "etd": "07월 23일",
-    "jobName": "안현태0715-02 -01",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "한줄식기사진",
-        "type": "warning"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -4629,7 +3978,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEKU4341035",
     "division": "CDZ",
     "prodType": "-",
@@ -4644,50 +3993,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "AUMEL",
-      "orig": "AUMEL",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALS LUNA/0AKN7S1NL/AUMEL/110036174",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 안현태0715-02 -01 / CMA\t07월 21일\t07월 23일\t아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALSLUNA/0AKN7S1NL/AUMEL/110036174/Y2020",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "M6456186",
-    "eta": "07월 21일",
-    "etd": "07월 23일",
-    "jobName": "안현태0715-02 -01",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "한줄식기사진",
-        "type": "warning"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -4698,7 +4028,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEKU4341035",
     "division": "CDZ",
     "prodType": "-",
@@ -4713,50 +4043,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "AUMEL",
-      "orig": "AUMEL",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALS LUNA/0AKN7S1NL/AUMEL/110036174",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 안현태0715-02 -01 / CMA\t07월 21일\t07월 23일\t아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALSLUNA/0AKN7S1NL/AUMEL/110036174/Y2020",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "M6456186",
-    "eta": "07월 21일",
-    "etd": "07월 23일",
-    "jobName": "안현태0715-02 -01",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "한줄식기사진",
-        "type": "warning"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -4767,7 +4078,7 @@
     "totalCBM": 0
   },
   {
-    "type": "제품정보 없음",
+    "type": "원본누락",
     "cntrNo": "SEKU4341035",
     "division": "CDZ",
     "prodType": "-",
@@ -4782,50 +4093,31 @@
     },
     "cntrType": {
       "val": "40HC",
-      "orig": "HC",
-      "isMismatch": false
+      "orig": null
     },
     "carrierName": {
       "val": "CMA - CGM",
-      "orig": "CMA",
-      "isMismatch": true
+      "orig": null
     },
     "destination": {
       "val": "AUMEL",
-      "orig": "AUMEL",
-      "isMismatch": false
+      "orig": null
     },
-    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | Carrier 오류 | 전산 선사 누락 | 주의 목적지누락 | 선사 불일치(원본:CMA ↔ 전산:CMA - CGM) | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
-    "origRemark": "아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALS LUNA/0AKN7S1NL/AUMEL/110036174",
+    "detail": "전산 포워더 누락 | 전산 Carrier 누락 | 전산 적재지 누락 | 원본 파일에 컨테이너 정보 없음 | <span style=\"color: #ef4444; font-weight: bold;\">DB에 제품 정보 없음</span>",
+    "origRemark": "(전산) 안현태0715-02 -01 / CMA\t07월 21일\t07월 23일\t아주/CMA 1대,현대 1대 / 1줄마다 사진//W30/CMA/BCTHD/0721CLS/0723ETD/BK:ANL2606290002/ALSLUNA/0AKN7S1NL/AUMEL/110036174/Y2020",
     "adj1": "",
     "adj1Color": null,
     "adj2": "",
-    "transporter": "BNI(파랑)",
+    "transporter": "미분류",
     "sealNo": "M6456186",
-    "eta": "07월 21일",
-    "etd": "07월 23일",
-    "jobName": "안현태0715-02 -01",
+    "eta": "",
+    "etd": "",
+    "jobName": "",
     "workDate": "7월 17일",
-    "tags": [
-      {
-        "text": "한줄식기사진",
-        "type": "warning"
-      },
-      {
-        "text": "Carrier 오류",
-        "type": "danger"
-      },
-      {
-        "text": "전산 선사 누락",
-        "type": "danger"
-      },
-      {
-        "text": "주의 목적지누락",
-        "type": "danger"
-      }
-    ],
-    "cssClass": "row-diff row-noproduct",
-    "badgeClass": "noproduct",
+    "loadPlanNo": "",
+    "tags": [],
+    "cssClass": "row-extra",
+    "badgeClass": "extra",
     "isErrorRow": true,
     "dims": "0x0x0",
     "weights": {
@@ -4834,5 +4126,453 @@
       "mixed": 204
     },
     "totalCBM": 0
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "TGBU6741599",
+    "division": "CVZ",
+    "prodType": "CVZ",
+    "prodName": "CBGJ3623S.BSTELNA",
+    "qtyInfo": {
+      "plan": 45,
+      "load": 0,
+      "pending": 0,
+      "remain": 45,
+      "packing": 0,
+      "origPlan": 45,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "CMA",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USLOT",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "북미 법인///W28//CMA/BNCT/0714CLS/0718ETD/BK:CMA2606170077/PRESIDENT GRANT/0DBOVE1MA/USLOT/110033442/7/6 웅동 / Y2018",
+    "adj1": "",
+    "adj2": "",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "07월 14일",
+    "etd": "07월 18일",
+    "jobName": "INST24260706277"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "TGBU6741599",
+    "division": "CVZ",
+    "prodType": "CVZ",
+    "prodName": "LDEL7324YE.BSTLLGA",
+    "qtyInfo": {
+      "plan": 5,
+      "load": 0,
+      "pending": 0,
+      "remain": 5,
+      "packing": 0,
+      "origPlan": 5,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "CMA",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USLOT",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "북미 법인///W28//CMA/BNCT/0714CLS/0718ETD/BK:CMA2606170077/PRESIDENT GRANT/0DBOVE1MA/USLOT/110033442/7/6 웅동 / Y2018",
+    "adj1": "",
+    "adj2": "",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "07월 14일",
+    "etd": "07월 18일",
+    "jobName": "INST24260706277"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "TGBU6741599",
+    "division": "CVZ",
+    "prodType": "CVZ",
+    "prodName": "LSIL6332FE.BRSLLGA",
+    "qtyInfo": {
+      "plan": 11,
+      "load": 0,
+      "pending": 0,
+      "remain": 11,
+      "packing": 0,
+      "origPlan": 11,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "CMA",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USLOT",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "북미 법인///W28//CMA/BNCT/0714CLS/0718ETD/BK:CMA2606170077/PRESIDENT GRANT/0DBOVE1MA/USLOT/110033442/7/6 웅동 / Y2018",
+    "adj1": "",
+    "adj2": "",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "07월 14일",
+    "etd": "07월 18일",
+    "jobName": "INST24260706277"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "TGBU6741599",
+    "division": "CVZ",
+    "prodType": "CVZ",
+    "prodName": "WCEP6423F.BRSLLGA",
+    "qtyInfo": {
+      "plan": 42,
+      "load": 0,
+      "pending": 0,
+      "remain": 42,
+      "packing": 0,
+      "origPlan": 42,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "CMA",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USLOT",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "북미 법인///W28//CMA/BNCT/0714CLS/0718ETD/BK:CMA2606170077/PRESIDENT GRANT/0DBOVE1MA/USLOT/110033442/7/6 웅동 / Y2018",
+    "adj1": "",
+    "adj2": "",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "07월 14일",
+    "etd": "07월 18일",
+    "jobName": "INST24260706277"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "TIIU7388253",
+    "division": "CVZ",
+    "prodType": "CVZ",
+    "prodName": "LRIN6323YE.BSTLLGA",
+    "qtyInfo": {
+      "plan": 36,
+      "load": 0,
+      "pending": 0,
+      "remain": 36,
+      "packing": 0,
+      "origPlan": 36,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "CMA",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USLOT",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W20//CMA/BNCT/0728CLS/0801ETD/BK:CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/USLOT/110024999/7/15 웅동 / Y2025",
+    "adj1": "",
+    "adj2": "",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "07월 28일",
+    "etd": "08월 01일",
+    "jobName": "INST24260715297"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "TIIU7388253",
+    "division": "CVZ",
+    "prodType": "CVZ",
+    "prodName": "SKSDR360GS.BSTLSGN",
+    "qtyInfo": {
+      "plan": 10,
+      "load": 0,
+      "pending": 0,
+      "remain": 10,
+      "packing": 0,
+      "origPlan": 10,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "CMA",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USLOT",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W20//CMA/BNCT/0728CLS/0801ETD/BK:CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/USLOT/110024999/7/15 웅동 / Y2025",
+    "adj1": "SKS양품만",
+    "adj2": "",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "07월 28일",
+    "etd": "08월 01일",
+    "jobName": "INST24260715297"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "TIIU7388253",
+    "division": "CVZ",
+    "prodType": "CVZ",
+    "prodName": "SKSDR360S.BSTLSNA",
+    "qtyInfo": {
+      "plan": 8,
+      "load": 0,
+      "pending": 0,
+      "remain": 8,
+      "packing": 0,
+      "origPlan": 8,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "CMA",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USLOT",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W20//CMA/BNCT/0728CLS/0801ETD/BK:CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/USLOT/110024999/7/15 웅동 / Y2025",
+    "adj1": "",
+    "adj2": "",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "07월 28일",
+    "etd": "08월 01일",
+    "jobName": "INST24260715297"
+  },
+  {
+    "type": "누락 (전산 파일)",
+    "cntrNo": "TIIU7388253",
+    "division": "CVZ",
+    "prodType": "CVZ",
+    "prodName": "WDEP9427F.BRSLLGA",
+    "qtyInfo": {
+      "plan": 2,
+      "load": 0,
+      "pending": 0,
+      "remain": 2,
+      "packing": 0,
+      "origPlan": 2,
+      "isMismatch": false
+    },
+    "cntrType": {
+      "val": "-",
+      "orig": "HC",
+      "isMismatch": true
+    },
+    "carrierName": {
+      "val": "-",
+      "orig": "CMA",
+      "isMismatch": true
+    },
+    "destination": {
+      "val": "-",
+      "orig": "USLOT",
+      "isMismatch": true
+    },
+    "detail": "전산 파일에 해당 컨테이너/모델 정보 없음",
+    "origRemark": "북미 법인/★SKS양품장입필요!!★//W20//CMA/BNCT/0728CLS/0801ETD/BK:CMA2607080016/PRESIDENT CARTER/0DBOZE1MA/USLOT/110024999/7/15 웅동 / Y2025",
+    "adj1": "",
+    "adj2": "",
+    "workDate": "7월 17일",
+    "transporter": "미분류",
+    "tags": [],
+    "source": "original",
+    "loadPlanNo": "",
+    "cssClass": "row-missing",
+    "badgeClass": "missing",
+    "isErrorRow": true,
+    "unitWeight": 0,
+    "unitCBM": 0,
+    "weights": {
+      "down": "0.00",
+      "orig": "0.00",
+      "mixed": "0.00"
+    },
+    "height": 0,
+    "totalCBM": "0.00",
+    "dims": "0x0x0",
+    "eta": "07월 28일",
+    "etd": "08월 01일",
+    "jobName": "INST24260715297"
   }
 ]

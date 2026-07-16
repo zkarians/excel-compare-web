@@ -1492,14 +1492,24 @@
 
             <!-- 정상 컨테이너 서브 필터 -->
             <div id="successFilterContainer"
-                style="display: none; margin-top: 10px; margin-bottom: 10px; padding: 10px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                style="display: none; margin-top: 10px; margin-bottom: 10px; padding: 10px 14px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
                 <div
-                    style="display: flex; align-items: center; gap: 8px; color: #334155; font-size: 0.9rem; font-weight: 500;">
-                    <input type="checkbox" id="chkFullyCompletedOnly"
-                        style="width: 16px; height: 16px; cursor: pointer;">
-                    <span>☑️ 모든 모델 완료 컨테이너만 (작업중/대기 제외)</span>
-                    <span id="fullyCompletedCount"
-                        style="margin-left: auto; color: #4361ee; font-weight: bold; display: none;">(0건)</span>
+                    style="display: flex; align-items: center; gap: 16px; color: #334155; font-size: 0.9rem; font-weight: 500; flex-wrap: wrap;">
+                    <span style="color: #64748b; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-filter"></i> 컨테이너 필터:
+                    </span>
+                    <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="chkFilterCompleted" checked style="width: 16px; height: 16px; cursor: pointer;">
+                        완료: <span id="cntCompleted" style="color: #16a34a; font-weight: bold;">0</span>대
+                    </label>
+                    <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="chkFilterProgress" checked style="width: 16px; height: 16px; cursor: pointer;">
+                        작업중: <span id="cntProgress" style="color: #eab308; font-weight: bold;">0</span>대
+                    </label>
+                    <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="chkFilterPending" checked style="width: 16px; height: 16px; cursor: pointer;">
+                        대기: <span id="cntPending" style="color: #2563eb; font-weight: bold;">0</span>대
+                    </label>
                 </div>
             </div>
 

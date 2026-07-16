@@ -644,7 +644,9 @@ const tabEntryInfo = document.getElementById('tabEntryInfo');
 const tabUnclassifiedEntry = document.getElementById('tabUnclassifiedEntry');
 const tabHold = document.getElementById('tabHold'); // Added for hold tab
 const successFilterContainer = document.getElementById('successFilterContainer');
-const chkFullyCompletedOnly = document.getElementById('chkFullyCompletedOnly');
+const chkFilterCompleted = document.getElementById('chkFilterCompleted');
+const chkFilterProgress = document.getElementById('chkFilterProgress');
+const chkFilterPending = document.getElementById('chkFilterPending');
 const btnCopyChunma = document.getElementById('btnCopyChunma');
 const btnCopyBni = document.getElementById('btnCopyBni');
 const btnSendChunma = document.getElementById('btnSendChunma');
@@ -2638,12 +2640,16 @@ btnCompare.addEventListener('click', async () => {
         const searchInput = document.getElementById('inputSearch');
         const prodSearchInput = document.getElementById('inputProdSearch');
         const prodTypeSelect = document.getElementById('selectProdType');
-        const chkFullyCompletedOnly = document.getElementById('chkFullyCompletedOnly');
+        const chkFilterCompleted = document.getElementById('chkFilterCompleted');
+        const chkFilterProgress = document.getElementById('chkFilterProgress');
+        const chkFilterPending = document.getElementById('chkFilterPending');
         
         if (searchInput) searchInput.value = "";
         if (prodSearchInput) prodSearchInput.value = "";
         if (prodTypeSelect) prodTypeSelect.value = "";
-        if (chkFullyCompletedOnly) chkFullyCompletedOnly.checked = false;
+        if (chkFilterCompleted) chkFilterCompleted.checked = true;
+        if (chkFilterProgress) chkFilterProgress.checked = true;
+        if (chkFilterPending) chkFilterPending.checked = true;
 
         // 2. 체크박스 선택 항목 초기화 (승인 건과 보류 건은 예외로 유지)
         const keepKeys = [];
@@ -3303,22 +3309,66 @@ function displayResults(results, isDbMode = false) {
             } else if (currentFilter === 'error') {
                 displayData = results.filter(r => getContainerStatus(fullResultsForStatus, r.cntrNo) === 'error');
             } else if (currentFilter === 'success') {
-                displayData = results.filter(r => getContainerStatus(fullResultsForStatus, r.cntrNo) === 'success');
-                if (chkFullyCompletedOnly && chkFullyCompletedOnly.checked) {
-                    const incompleteCntrs = new Set(displayData.filter(r => r.type.includes('대기') || r.type.includes('작업중')).map(r => r.cntrNo));
-                    displayData = displayData.filter(r => !incompleteCntrs.has(r.cntrNo));
+                const successRows = results.filter(r => getContainerStatus(fullResultsForStatus, r.cntrNo) === 'success');
 
-                    // 완료된 컨테이너 수 표시
-                    const uniqueCntrs = new Set(displayData.map(r => r.cntrNo));
-                    const countSpan = document.getElementById('fullyCompletedCount');
-                    if (countSpan) {
-                        countSpan.textContent = `(${uniqueCntrs.size}건)`;
-                        countSpan.style.display = 'inline';
+                // 1. 컨테이너 번호별 분류 및 카운트
+                const successContainers = {};
+                successRows.forEach(r => {
+                    if (!successContainers[r.cntrNo]) {
+                        successContainers[r.cntrNo] = [];
                     }
-                } else {
-                    const countSpan = document.getElementById('fullyCompletedCount');
-                    if (countSpan) countSpan.style.display = 'none';
+                    successContainers[r.cntrNo].push(r);
+                });
+
+                let completedCount = 0;
+                let progressCount = 0;
+                let pendingCount = 0;
+
+                const containerStatusMap = {};
+
+                for (const cntrNo in successContainers) {
+                    const rows = successContainers[cntrNo];
+                    const allCompleted = rows.every(r => (r.type || '').includes('완료'));
+                    const allPending = rows.every(r => (r.type || '').includes('대기'));
+
+                    let status = 'progress';
+                    if (allCompleted) {
+                        status = 'completed';
+                        completedCount++;
+                    } else if (allPending) {
+                        status = 'pending';
+                        pendingCount++;
+                    } else {
+                        status = 'progress';
+                        progressCount++;
+                    }
+                    containerStatusMap[cntrNo] = status;
                 }
+
+                // UI 카운터 업데이트
+                const elCompleted = document.getElementById('cntCompleted');
+                const elProgress = document.getElementById('cntProgress');
+                const elPending = document.getElementById('cntPending');
+                if (elCompleted) elCompleted.textContent = completedCount;
+                if (elProgress) elProgress.textContent = progressCount;
+                if (elPending) elPending.textContent = pendingCount;
+
+                // 2. 체크박스 필터링 적용
+                const chkFilterCompleted = document.getElementById('chkFilterCompleted');
+                const chkFilterProgress = document.getElementById('chkFilterProgress');
+                const chkFilterPending = document.getElementById('chkFilterPending');
+
+                const showCompleted = chkFilterCompleted ? chkFilterCompleted.checked : true;
+                const showProgress = chkFilterProgress ? chkFilterProgress.checked : true;
+                const showPending = chkFilterPending ? chkFilterPending.checked : true;
+
+                displayData = successRows.filter(r => {
+                    const status = containerStatusMap[r.cntrNo];
+                    if (status === 'completed') return showCompleted;
+                    if (status === 'progress') return showProgress;
+                    if (status === 'pending') return showPending;
+                    return true;
+                });
             } else if (currentFilter === 'missing') {
                 displayData = results.filter(r => {
                     const status = getContainerStatus(fullResultsForStatus, r.cntrNo);
@@ -4208,11 +4258,14 @@ if (tabDbSearchObj) {
     tabDbSearchObj.addEventListener('click', () => setActiveTab('dbSearch'));
 }
 
-if (chkFullyCompletedOnly) {
-    chkFullyCompletedOnly.addEventListener('change', () => {
-        if (comparisonResult.length > 0) displayResults(comparisonResult);
-    });
-}
+['chkFilterCompleted', 'chkFilterProgress', 'chkFilterPending'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+        el.addEventListener('change', () => {
+            if (comparisonResult.length > 0) displayResults(comparisonResult);
+        });
+    }
+});
 
 // 결과 엑셀 다운로드 버튼 리스너 (displayResults 밖으로 이동)
 btnDownloadResult.addEventListener('click', async () => {
@@ -4374,13 +4427,43 @@ btnDownloadResult.addEventListener('click', async () => {
             // 'all', 'dbSearch' 등인 경우 추가 필터 없이 검색어 필터만 유지 (또는 탭 기본 필터)
         }
 
-        // 추가 필터: '모든 모델 작업완료 컨테이너만' 체크 시 (UI와 동일하게 적용)
-        if (chkFullyCompletedOnly && chkFullyCompletedOnly.checked && (currentFilter === 'success' || currentFilter === 'all')) {
-            const incompleteCntrs = new Set(filtered.filter(r => {
-                return r.type.includes('대기') || r.type.includes('작업중');
-            }).map(r => r.cntrNo));
+        // 추가 필터: 화면의 완료/작업중/대기 세부 체크박스 상태를 반영하여 필터링
+        const chkFilterCompleted = document.getElementById('chkFilterCompleted');
+        const chkFilterProgress = document.getElementById('chkFilterProgress');
+        const chkFilterPending = document.getElementById('chkFilterPending');
 
-            filtered = filtered.filter(r => !incompleteCntrs.has(r.cntrNo));
+        const showCompleted = chkFilterCompleted ? chkFilterCompleted.checked : true;
+        const showProgress = chkFilterProgress ? chkFilterProgress.checked : true;
+        const showPending = chkFilterPending ? chkFilterPending.checked : true;
+
+        if (currentFilter === 'success' || currentFilter === 'all') {
+            const cntrGroup = {};
+            filtered.forEach(r => {
+                if (!cntrGroup[r.cntrNo]) cntrGroup[r.cntrNo] = [];
+                cntrGroup[r.cntrNo].push(r);
+            });
+
+            const cntrStatus = {};
+            for (const cntrNo in cntrGroup) {
+                const rows = cntrGroup[cntrNo];
+                const allCompleted = rows.every(r => (r.type || '').includes('완료'));
+                const allPending = rows.every(r => (r.type || '').includes('대기'));
+                if (allCompleted) {
+                    cntrStatus[cntrNo] = 'completed';
+                } else if (allPending) {
+                    cntrStatus[cntrNo] = 'pending';
+                } else {
+                    cntrStatus[cntrNo] = 'progress';
+                }
+            }
+
+            filtered = filtered.filter(r => {
+                const status = cntrStatus[r.cntrNo];
+                if (status === 'completed') return showCompleted;
+                if (status === 'progress') return showProgress;
+                if (status === 'pending') return showPending;
+                return true;
+            });
         }
         exportData = filtered.map(r => ({
             type: r.type,
@@ -4785,11 +4868,43 @@ async function generateComparisonWorkbook() {
             }
         }
 
-        if (chkFullyCompletedOnly && chkFullyCompletedOnly.checked && (currentFilter === 'success' || currentFilter === 'all')) {
-            const incompleteCntrs = new Set(filtered.filter(r => {
-                return r.type.includes('대기') || r.type.includes('작업중');
-            }).map(r => r.cntrNo));
-            filtered = filtered.filter(r => !incompleteCntrs.has(r.cntrNo));
+        // 추가 필터: 화면의 완료/작업중/대기 세부 체크박스 상태를 반영하여 필터링
+        const chkFilterCompleted = document.getElementById('chkFilterCompleted');
+        const chkFilterProgress = document.getElementById('chkFilterProgress');
+        const chkFilterPending = document.getElementById('chkFilterPending');
+
+        const showCompleted = chkFilterCompleted ? chkFilterCompleted.checked : true;
+        const showProgress = chkFilterProgress ? chkFilterProgress.checked : true;
+        const showPending = chkFilterPending ? chkFilterPending.checked : true;
+
+        if (currentFilter === 'success' || currentFilter === 'all') {
+            const cntrGroup = {};
+            filtered.forEach(r => {
+                if (!cntrGroup[r.cntrNo]) cntrGroup[r.cntrNo] = [];
+                cntrGroup[r.cntrNo].push(r);
+            });
+
+            const cntrStatus = {};
+            for (const cntrNo in cntrGroup) {
+                const rows = cntrGroup[cntrNo];
+                const allCompleted = rows.every(r => (r.type || '').includes('완료'));
+                const allPending = rows.every(r => (r.type || '').includes('대기'));
+                if (allCompleted) {
+                    cntrStatus[cntrNo] = 'completed';
+                } else if (allPending) {
+                    cntrStatus[cntrNo] = 'pending';
+                } else {
+                    cntrStatus[cntrNo] = 'progress';
+                }
+            }
+
+            filtered = filtered.filter(r => {
+                const status = cntrStatus[r.cntrNo];
+                if (status === 'completed') return showCompleted;
+                if (status === 'progress') return showProgress;
+                if (status === 'pending') return showPending;
+                return true;
+            });
         }
         exportData = filtered.map(r => ({
             type: r.type,
