@@ -3002,15 +3002,57 @@ function displayResults(results, isDbMode = false) {
         const stockInfo = warehouseStockQtyMap[nameUpper];
         if (!stockInfo) return '';
 
+        const available = stockInfo.available || 0;
+        const totalNeeded = window.totalProductRemainMap ? (window.totalProductRemainMap[nameUpper] || 0) : 0;
+        const physical = stockInfo.physical || 0;
+
+        let statusText = '';
+        if (totalNeeded > available) {
+            statusText = `재고부족 (-${totalNeeded - available} EA)`;
+        } else {
+            statusText = `작업가능 (여유: ${available - totalNeeded} EA)`;
+        }
+
+        // 로케이션별 홀드/롱텀/Bin 블럭 수량 상세 구성
+        const locDetails = [];
+        if (Array.isArray(warehouseHoldStockList) && warehouseHoldStockList.length > 0) {
+            const matches = warehouseHoldStockList.filter(item => item.modelName === nameUpper);
+            matches.forEach(item => {
+                const parts = [];
+                if (item.oqcHold > 0) parts.push(`홀드: ${item.oqcHold} EA`);
+                if (item.longTermHold > 0) parts.push(`롱텀: ${item.longTermHold} EA`);
+                if (item.binBlock > 0) parts.push(`bin블럭: ${item.binBlock} EA`);
+                if (parts.length > 0) {
+                    locDetails.push(`  - [${item.location || '로케이션 없음'}] ${parts.join(', ')}`);
+                }
+            });
+        }
+
+        const tooltipLines = [
+            `[재고 분석 상세]`,
+            `• 전체재고수량: ${physical} EA`,
+            `• 작업가능 수량: ${available} EA`,
+            `• 합산 필요 수량: ${totalNeeded} EA`,
+            `• 상태: ${statusText}`
+        ];
+
+        if (locDetails.length > 0) {
+            tooltipLines.push(``);
+            tooltipLines.push(`• 로케이션별 블록 상세:`);
+            tooltipLines.push(...locDetails);
+        }
+
+        const tooltipText = tooltipLines.join('\n').replace(/"/g, '&quot;');
+
         let tags = [];
         if (stockInfo.oqc > 0) {
-            tags.push(`<span title="OQC BLOCK 존재 (창고재고 O열 > 0)" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#ef4444; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em;">H</span>`);
+            tags.push(`<span title="${tooltipText}" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#ef4444; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em; cursor:help;">H</span>`);
         }
         if (stockInfo.longTerm > 0) {
-            tags.push(`<span title="Long Term Block 존재 (창고재고 P열 > 0)" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#eab308; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em;">L</span>`);
+            tags.push(`<span title="${tooltipText}" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#eab308; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em; cursor:help;">L</span>`);
         }
         if (stockInfo.bin > 0) {
-            tags.push(`<span title="Bin Block 존재 (창고재고 Q열 > 0)" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#3b82f6; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em;">B</span>`);
+            tags.push(`<span title="${tooltipText}" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#3b82f6; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em; cursor:help;">B</span>`);
         }
         return tags.join('');
     };
