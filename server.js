@@ -493,10 +493,6 @@ async function syncData(sourceConfig, targetConfig, tables, options = {}) {
                 let resSource = await sourcePool.query(`SELECT ${selectCols} FROM ${tableName} ${sourceWhere}`);
                 let rows = resSource.rows;
 
-                // [추가] app_configs 동기화 시 로컬 전용 설정(mail_config) 제외
-                if (tableName === 'app_configs') {
-                    rows = rows.filter(r => r.key !== 'mail_config');
-                }
 
                     let affectedCount = 0;
                     if (rows.length > 0) {
@@ -1152,30 +1148,56 @@ app.post('/api/upload-master', upload.single('masterFile'), async (req, res) => 
 });
 
 // 규칙 로드 API
-app.get('/api/rules', (req, res) => {
+app.get('/api/rules', async (req, res) => {
     try {
-        if (!fs.existsSync(RULES_FILE)) {
-            return res.json({ success: true, rules: [] });
-        }
-        const data = fs.readFileSync(RULES_FILE, 'utf8');
+        let rules = [];
+        let fetchedFromDb = false;
+
         try {
-            const parsed = JSON.parse(data);
-            // If the saved data is { rules: [...] }, return the array
-            const rules = Array.isArray(parsed) ? parsed : (parsed.rules || []);
-            res.json({ success: true, rules });
-        } catch (e) {
-            res.json({ success: true, rules: [] });
+            const pool = await getPool();
+            const dbRes = await pool.query("SELECT value FROM app_configs WHERE key = 'rules'");
+            if (dbRes.rows[0] && dbRes.rows[0].value) {
+                rules = JSON.parse(dbRes.rows[0].value);
+                fetchedFromDb = true;
+                fs.writeFileSync(RULES_FILE, JSON.stringify(rules, null, 2), 'utf8');
+            }
+        } catch (dbErr) {
+            console.warn("⚠️ [DB] 규칙 DB 조회 실패 (파일 폴백):", dbErr.message);
         }
+
+        if (!fetchedFromDb) {
+            if (fs.existsSync(RULES_FILE)) {
+                const data = fs.readFileSync(RULES_FILE, 'utf8');
+                try {
+                    const parsed = JSON.parse(data);
+                    rules = Array.isArray(parsed) ? parsed : (parsed.rules || []);
+                } catch (e) { }
+            }
+        }
+
+        res.json({ success: true, rules });
     } catch (err) {
         res.status(500).json({ success: false, message: "규칙을 불러올 수 없습니다." });
     }
 });
 
 // 규칙 저장 API
-app.post('/api/rules', (req, res) => {
+app.post('/api/rules', async (req, res) => {
     try {
         const rules = req.body.rules || req.body;
         fs.writeFileSync(RULES_FILE, JSON.stringify(rules, null, 2), 'utf8');
+
+        try {
+            const pool = await getPool();
+            await pool.query(`
+                INSERT INTO app_configs (key, value, updated_at)
+                VALUES ('rules', $1, NOW())
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+            `, [JSON.stringify(rules)]);
+        } catch (dbErr) {
+            console.warn("⚠️ [DB] 규칙 DB 저장 실패 (로컬 파일만 저장됨):", dbErr.message);
+        }
+
         res.json({ success: true, message: "규칙이 성공적으로 저장되었습니다." });
     } catch (err) {
         res.status(500).json({ success: false, message: "규칙 저장에 실패했습니다." });
@@ -1183,29 +1205,56 @@ app.post('/api/rules', (req, res) => {
 });
 
 // 주의 모델 로드 API
-app.get('/api/caution-models', (req, res) => {
+app.get('/api/caution-models', async (req, res) => {
     try {
-        if (!fs.existsSync(CAUTION_MODELS_FILE)) {
-            return res.json({ success: true, models: [] });
-        }
-        const data = fs.readFileSync(CAUTION_MODELS_FILE, 'utf8');
+        let models = [];
+        let fetchedFromDb = false;
+
         try {
-            const parsed = JSON.parse(data);
-            const models = Array.isArray(parsed) ? parsed : (parsed.models || []);
-            res.json({ success: true, models });
-        } catch (e) {
-            res.json({ success: true, models: [] });
+            const pool = await getPool();
+            const dbRes = await pool.query("SELECT value FROM app_configs WHERE key = 'caution_models'");
+            if (dbRes.rows[0] && dbRes.rows[0].value) {
+                models = JSON.parse(dbRes.rows[0].value);
+                fetchedFromDb = true;
+                fs.writeFileSync(CAUTION_MODELS_FILE, JSON.stringify(models, null, 2), 'utf8');
+            }
+        } catch (dbErr) {
+            console.warn("⚠️ [DB] 주의 모델 DB 조회 실패 (파일 폴백):", dbErr.message);
         }
+
+        if (!fetchedFromDb) {
+            if (fs.existsSync(CAUTION_MODELS_FILE)) {
+                const data = fs.readFileSync(CAUTION_MODELS_FILE, 'utf8');
+                try {
+                    const parsed = JSON.parse(data);
+                    models = Array.isArray(parsed) ? parsed : (parsed.models || []);
+                } catch (e) { }
+            }
+        }
+
+        res.json({ success: true, models });
     } catch (err) {
         res.status(500).json({ success: false, message: "주의 모델 목록을 불러올 수 없습니다." });
     }
 });
 
 // 주의 모델 저장 API
-app.post('/api/caution-models', (req, res) => {
+app.post('/api/caution-models', async (req, res) => {
     try {
         const models = req.body.models || req.body;
         fs.writeFileSync(CAUTION_MODELS_FILE, JSON.stringify(models, null, 2), 'utf8');
+
+        try {
+            const pool = await getPool();
+            await pool.query(`
+                INSERT INTO app_configs (key, value, updated_at)
+                VALUES ('caution_models', $1, NOW())
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+            `, [JSON.stringify(models)]);
+        } catch (dbErr) {
+            console.warn("⚠️ [DB] 주의 모델 DB 저장 실패 (로컬 파일만 저장됨):", dbErr.message);
+        }
+
         res.json({ success: true, message: "주의 모델 목록이 성공적으로 저장되었습니다." });
     } catch (err) {
         res.status(500).json({ success: false, message: "주의 모델 목록 저장에 실패했습니다." });
