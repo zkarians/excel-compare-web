@@ -1055,6 +1055,9 @@ async function startSync(srcType, dstType) {
                 }
             });
             alert(resultMsg);
+            if (typeof loadProductMaster === 'function') {
+                loadProductMaster();
+            }
         } else {
             throw new Error(data.message);
         }
