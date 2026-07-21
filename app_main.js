@@ -3950,11 +3950,12 @@ function displayResults(results, isDbMode = false) {
                     <td class="col-div">${res.division || '-'}</td>
                     <td class="col-model" 
                         onclick="window.copyToClipboard('${res.prodName.replace(/'/g, "\\'")}', '제품명')"
-                        style="cursor: pointer; ${isCaution ? 'color: #dc2626; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'H' ? 'color: #7c3aed; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'Q' ? 'color: #0d9488; font-weight: 700;' : ''}"
+                        style="cursor: pointer; ${isCaution ? 'color: #dc2626; font-weight: 700;' : (res.prodName || '').trim().toUpperCase() !== 'NONASSET.ITEM' && (res.dims || '').trim().toLowerCase() === '0x0x0' ? 'color: #ef4444; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'H' ? 'color: #7c3aed; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'Q' ? 'color: #0d9488; font-weight: 700;' : ''}"
                         title="클릭하여 제품명 복사"
-                        class="copyable-item">
+                        class="copyable-item ${(res.prodName || '').trim().toUpperCase() !== 'NONASSET.ITEM' && (res.dims || '').trim().toLowerCase() === '0x0x0' ? 'no-size-model-text' : ''}">
                         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                             <span>${res.prodName}</span>
+                            ${(res.prodName || '').trim().toUpperCase() !== 'NONASSET.ITEM' && (res.dims || '').trim().toLowerCase() === '0x0x0' ? '<span class="tag-no-size">사이즈없음</span>' : ''}
                             ${isCaution ? `<span title="주의 비고: ${matchedCaution.remark || '사유 없음'}" style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#ef4444; color:#fff; border-radius:4px; padding:0px 4px; line-height:1.2; cursor:help; white-space:nowrap;">주의</span>` : ''}
                             ${getDongTag(res.prodName, res.prodType)}
                             ${getBlockHoldTag(res.prodName)}
