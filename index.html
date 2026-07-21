@@ -21,9 +21,19 @@
 <body>
     <div class="container">
         <header
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.6rem;">
-            <div style="flex: 1; text-align: left;">
-                <h1 style="margin: 0; font-size: 1.3rem; color: #1e293b; letter-spacing: -0.5px;">📊 엑셀 데이터 비교 프로그램</h1>
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                <img src="build/icon.png" alt="logo" style="width: 32px; height: 32px; border-radius: 7px; object-fit: cover; box-shadow: 0 2px 8px rgba(6,182,212,0.25);">
+                <div style="display: flex; gap: 3px; background: #f1f5f9; padding: 3px; border-radius: 8px;">
+                    <button id="mainTabBtnSelection" class="header-tab-btn header-tab-active"
+                        style="padding: 0.28rem 0.85rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; border: none; cursor: pointer; background: #fff; color: #0ea5e9; box-shadow: 0 1px 4px rgba(0,0,0,0.10); transition: all 0.18s;">
+                        <i class="fas fa-file-upload" style="margin-right:4px;"></i>데이터 선택
+                    </button>
+                    <button id="mainTabBtnResults" class="header-tab-btn"
+                        style="padding: 0.28rem 0.85rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; border: none; cursor: pointer; background: transparent; color: #64748b; transition: all 0.18s;">
+                        <i class="fas fa-chart-bar" style="margin-right:4px;"></i>비교 결과
+                    </button>
+                </div>
             </div>
             <div id="cloudStatsBadge" class="header-actions"
                 style="display: flex; gap: 12px; align-items: center; background: #f0fdf4; padding: 6px 12px; border-radius: 10px; border: 1px solid #bbf7d0; margin-left: auto; font-size: 0.8rem; color: #166534;">
@@ -40,62 +50,48 @@
             </div>
 
             <div class="header-actions"
-                style="display: flex; gap: 8px; align-items: center; background: #f8fafc; padding: 4px; border-radius: 10px; border: 1px solid #e2e8f0; margin-left: 16px;">
+                style="display: flex; gap: 4px; align-items: center; background: #f8fafc; padding: 3px; border-radius: 10px; border: 1px solid #e2e8f0; flex-wrap: nowrap; flex-shrink: 1; overflow: hidden;">
                 <button id="btnOpenMappingSettings" class="btn btn-warning-soft"
-                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #fef9c3; color: #854d0e; border: 1px solid #fef08a;">
-                    <i class="fas fa-sitemap"></i> 매핑 설정
+                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; white-space: nowrap;">
+                    <i class="fas fa-sitemap"></i> 매핑
                 </button>
-                <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
                 <button id="btnOpenSettings" class="btn btn-secondary-outline"
-                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 500;">⚙️
-                    선사</button>
-                <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
+                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 500; white-space: nowrap;">⚙️ 선사</button>
                 <button id="btnOpenRules" class="btn btn-primary-soft"
-                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600;">📋
-                    자동분류</button>
-                <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
+                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; white-space: nowrap;">📋 자동분류</button>
                 <button id="btnOpenCautionModels" class="btn"
-                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2;">⚠️
-                    주의모델</button>
-                <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
+                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; white-space: nowrap;">⚠️ 주의모델</button>
                 <button id="btnOpenProductMaster" class="btn"
-                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">
-                    <i class="fas fa-box-open" style="margin-right: 4px;"></i> 제품 정보 검색
+                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; white-space: nowrap;">
+                    <i class="fas fa-box-open"></i> 제품검색
                 </button>
-                <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
                 <button id="btnOpenHoldStock" class="btn"
-                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #fff5f5; color: #c53030; border: 1px solid #feb2b2;">
-                    <i class="fas fa-exclamation-circle" style="margin-right: 4px;"></i> H재고리스트
+                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; white-space: nowrap;">
+                    <i class="fas fa-exclamation-circle"></i> H재고
                 </button>
-                <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
                 <button id="btnOpenPopWeight" class="btn"
-                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa;">
+                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; white-space: nowrap;">
                     <i class="fas fa-weight-hanging"></i> POP
                     <span id="popWeightBadge"
-                        style="display:none; background:#ea580c; color:white; font-size:0.7rem; padding:1px 5px; border-radius:8px; margin-left:3px; font-weight:700;">0</span>
+                        style="display:none; background:#ea580c; color:white; font-size:0.65rem; padding:1px 4px; border-radius:8px; margin-left:2px; font-weight:700;">0</span>
                 </button>
-                <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
                 <button id="btnOpenDbSettings" class="btn"
-                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd;">
+                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; white-space: nowrap;">
                     <i class="fas fa-mobile-alt"></i> DB설정
                 </button>
-                <div style="width: 1px; height: 16px; background: #e2e8f0;"></div>
+                <button id="btnOpenDbSearchModal" class="btn"
+                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #fdf4ff; color: #86198f; border: 1px solid #f5d0fe; white-space: nowrap;">
+                    <i class="fas fa-database"></i> DB조회
+                </button>
                 <button id="btnOpenEmailSettings" class="btn"
-                    style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 7px; font-weight: 600; background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe;">
+                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; white-space: nowrap;">
                     <i class="fas fa-envelope"></i> 메일
                 </button>
             </div>
+
         </header>
 
-        <!-- Main Navigation Tabs -->
-        <nav class="main-tabs">
-            <button class="main-tab-btn active" id="mainTabBtnSelection">
-                <i class="fas fa-file-upload"></i> 1. 데이터 선택
-            </button>
-            <button class="main-tab-btn" id="mainTabBtnResults">
-                <i class="fas fa-chart-bar"></i> 2. 비교 결과
-            </button>
-        </nav>
+        <!-- Main Navigation Tabs: 헤더 내 인라인 탭으로 이동됨 -->
 
         <!-- 제품 정보 검색 Modal -->
         <div id="productSearchModal" class="modal">
@@ -329,6 +325,103 @@
                 <div class="modal-footer"
                     style="text-align: right; margin-top: 1rem; border-top: 1px solid #eee; padding-top: 1rem;">
                     <button class="btn btn-secondary close-btn-bottom">닫기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DB 데이터 조회 Modal -->
+        <div id="dbSearchModal" class="modal">
+            <div class="modal-content" style="max-width: 1200px; width: 95%; height: auto; max-height: 90vh; display: flex; flex-direction: column;">
+                <div class="modal-header" style="background: #fdf4ff; border-bottom: 2px solid #f5d0fe; padding: 1.2rem 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h2 style="margin: 0; color: #86198f; font-size: 1.25rem;">
+                            <i class="fas fa-database" style="margin-right: 8px;"></i> 기존 DB 데이터 조회
+                        </h2>
+                    </div>
+                    <span class="close-btn" id="closeDbSearchModalBtn" style="color: #86198f;">&times;</span>
+                </div>
+                <div class="modal-body" style="padding: 1.2rem 1.5rem; display: flex; flex-direction: column; gap: 15px; overflow-y: auto;">
+                    <!-- DB 조회 필터 바 -->
+                    <div id="modalDbSearchFilterBar" class="db-filter-bar" style="display: flex; flex-wrap: wrap; gap: 12px; background: #faf5ff; padding: 15px; border-radius: 12px; border: 1px solid #f3e8ff;">
+                        <div class="db-filter-item" style="flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 0.78rem; font-weight: 600; color: #6b21a8;">컨테이너 번호</label>
+                            <input type="text" id="modalDbFilterCntr" placeholder="컨테이너 번호 입력" style="padding: 0.5rem; border: 1px solid #d8b4fe; border-radius: 6px; font-size: 0.88rem;">
+                        </div>
+                        <div class="db-filter-item" style="flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 0.78rem; font-weight: 600; color: #6b21a8;">도착지</label>
+                            <input type="text" id="modalDbFilterDest" placeholder="예: METGD" style="padding: 0.5rem; border: 1px solid #d8b4fe; border-radius: 6px; font-size: 0.88rem;">
+                        </div>
+                        <div class="db-filter-item" style="flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 0.78rem; font-weight: 600; color: #6b21a8;">선사</label>
+                            <input type="text" id="modalDbFilterCarrier" placeholder="예: MSC" style="padding: 0.5rem; border: 1px solid #d8b4fe; border-radius: 6px; font-size: 0.88rem;">
+                        </div>
+                        <div class="db-filter-item" style="flex: 1.2; min-width: 150px; display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 0.78rem; font-weight: 600; color: #6b21a8;">조회 시작일</label>
+                            <input type="date" id="modalDbFilterStartDate" style="padding: 0.5rem; border: 1px solid #d8b4fe; border-radius: 6px; font-size: 0.88rem;">
+                        </div>
+                        <div class="db-filter-item" style="flex: 1.2; min-width: 150px; display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 0.78rem; font-weight: 600; color: #6b21a8;">조회 종료일</label>
+                            <input type="date" id="modalDbFilterEndDate" style="padding: 0.5rem; border: 1px solid #d8b4fe; border-radius: 6px; font-size: 0.88rem;">
+                        </div>
+                        <button id="modalBtnDbSearchExec" class="btn" style="padding: 0.5rem 1.5rem; background: #86198f; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; align-self: flex-end; display: flex; align-items: center; gap: 6px; height: 38px;">
+                            <i class="fas fa-search"></i> 검색
+                        </button>
+                    </div>
+
+                    <!-- DB 조회 결과 요약 -->
+                    <div id="modalDbSearchResultSummary" class="db-summary-bar" style="display: none; align-items: center; justify-content: space-between; background: #fdf4ff; padding: 10px 15px; border-radius: 8px; border: 1px solid #f5d0fe; font-size: 0.9rem;">
+                        <div style="display: flex; align-items: center; gap: 1.5rem;">
+                            <div>
+                                조회 결과: <strong id="modalDbTotalItems" style="color: #86198f; font-weight: 800;">0</strong>개 항목
+                                (컨테이너 <strong id="modalDbTotalCntrs" style="color: #86198f; font-weight: 800;">0</strong>대)
+                            </div>
+                            <button id="modalBtnDbDownloadExcel" class="btn" style="padding: 0.4rem 1rem; font-size: 0.82rem; border-radius: 6px; font-weight: 600; background: linear-gradient(135deg, #a21caf 0%, #86198f 100%); border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 6px -1px rgba(162, 28, 175, 0.2);">
+                                <i class="fas fa-file-excel"></i> 엑셀 다운로드
+                            </button>
+                            <button id="modalBtnDbViewExcel" class="btn" style="padding: 0.4rem 1rem; font-size: 0.82rem; border-radius: 6px; font-weight: 600; background: white; border: 1px solid #86198f; color: #86198f; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-search"></i> 조회결과 바로보기
+                            </button>
+                        </div>
+                        <div id="modalDbBulkActions" style="display: none; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="modalChkDbAll" style="cursor: pointer;">
+                            <label for="modalChkDbAll" style="font-weight: 600; font-size: 0.85rem; color: #86198f;">전체선택 (<span id="modalDbSelectedCount">0</span>개)</label>
+                            <button id="modalBtnDbBulkDelete" class="btn btn-danger-soft" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; font-weight: bold; background: #fef2f2; color: #ef4444; border: 1px solid #fee2e2;">
+                                <i class="fas fa-trash-alt"></i> 선택 삭제
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- DB 조회 테이블 결과 목록 -->
+                    <div style="flex: 1; overflow-y: auto; border: 1px solid #f3e8ff; border-radius: 10px; background: white; min-height: 250px;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;" id="modalDbSearchResultTable">
+                            <thead style="position: sticky; top: 0; background: #faf5ff; z-index: 10; border-bottom: 2px solid #e9d5ff;">
+                                <tr>
+                                    <th style="width: 40px; padding: 10px; text-align: center;">선택</th>
+                                    <th style="padding: 10px; text-align: center;">작업구분</th>
+                                    <th style="padding: 10px; text-align: center;">컨테이너번호</th>
+                                    <th style="padding: 10px; text-align: center;">제품구분</th>
+                                    <th style="padding: 10px; text-align: center;">사업부</th>
+                                    <th style="padding: 10px; text-align: left;">제품모델명</th>
+                                    <th style="padding: 10px; text-align: center;">수량 (계획/적재/잔여)</th>
+                                    <th style="padding: 10px; text-align: center;">제품크기</th>
+                                    <th style="padding: 10px; text-align: center;">선사 / 도착지</th>
+                                    <th style="padding: 10px; text-align: right;">무게(kg)</th>
+                                    <th style="padding: 10px; text-align: center;">운송사</th>
+                                    <th style="padding: 10px; text-align: center; width: 60px;">관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modalDbSearchResultTableBody">
+                                <tr>
+                                    <td colspan="12" style="padding: 3rem; text-align: center; color: #94a3b8; font-style: italic;">
+                                        검색 필터를 채운 후 [검색] 버튼을 클릭해 주세요.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer" style="text-align: right; border-top: 1px solid #e9d5ff; padding: 1rem 1.5rem; background: #faf5ff;">
+                    <button class="btn btn-secondary" id="closeDbSearchModalBottomBtn">닫기</button>
                 </div>
             </div>
         </div>
