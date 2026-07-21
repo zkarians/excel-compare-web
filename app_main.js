@@ -981,21 +981,26 @@ btnOpenDbSettings.addEventListener('click', () => {
 // DB 데이터 조회 모달 제어
 if (btnOpenDbSearchModal) {
     btnOpenDbSearchModal.addEventListener('click', () => {
-        dbSearchModal.style.display = 'block';
-        
-        // 날짜 초기화 (최근 1개월)
-        const today = new Date();
-        const start = new Date();
-        start.setMonth(start.getMonth() - 1);
-        
-        const pad = (n) => String(n).padStart(2, '0');
-        const endStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
-        const startStr = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`;
-        
-        const elStart = document.getElementById('modalDbFilterStartDate');
-        const elEnd = document.getElementById('modalDbFilterEndDate');
-        if (elStart) elStart.value = startStr;
-        if (elEnd) elEnd.value = endStr;
+        // 1. 비교결과 메인 탭으로 전환
+        switchMainTab('results');
+
+        // 2. resultsContainer 강제 표시 (비교 전이어도 DB 조회 탭 접근 가능하도록)
+        const resultsContainer = document.getElementById('resultsContainer');
+        if (resultsContainer) resultsContainer.style.display = 'block';
+
+        // 3. DB 조회 탭 활성화
+        if (typeof setActiveTab === 'function') {
+            setActiveTab('dbSearch');
+        } else {
+            const tabDbSearchEl = document.getElementById('tabDbSearch');
+            if (tabDbSearchEl) tabDbSearchEl.click();
+        }
+
+        // 4. DB 조회 탭으로 스크롤
+        setTimeout(() => {
+            const el = document.getElementById('dbSearchFilterBar');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
     });
 }
 
