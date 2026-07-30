@@ -1970,11 +1970,13 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
         const blockProductNames = new Set(); // 17 제외 Block Qty > 0 인 제품명 세트
         const stockMap = {}; // 17 제외 제품명별 재고 합산 맵 { name: { physical, block, oqc, longTerm, bin, available } }
         const holdStockList = []; // 17 제외 블록 수량이 존재하는 로케이션별 상세 리스트
+        const allStockList = []; // 17 제외 모든 제품의 로케이션별 상세 리스트 (새로 추가)
 
         // 17 포함 데이터 (전체)
         const blockProductNamesWith17 = new Set(); // 전체 Block Qty > 0 인 제품명 세트
         const stockMapWith17 = {}; // 전체 제품명별 재고 합산 맵
         const holdStockListWith17 = []; // 전체 블록 수량이 존재하는 로케이션별 상세 리스트
+        const allStockListWith17 = []; // 전체 모든 제품의 로케이션별 상세 리스트 (새로 추가)
 
         worksheet.eachRow((row, rowNumber) => {
             if (rowNumber <= 1) return; // 헤더 스킵
@@ -2093,6 +2095,19 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
                 }
             }
 
+            // 전체 재고 데이터 로케이션별 수집 (새로 추가)
+            if (physicalQty > 0) {
+                const stockItem = {
+                    location: locationVal,
+                    modelName: name,
+                    physicalQty: physicalQty
+                };
+                allStockListWith17.push(stockItem);
+                if (!is17Loc) {
+                    allStockList.push(stockItem);
+                }
+            }
+
             // 전체 재고 데이터 합산 (17 포함)
             if (!stockMapWith17[name]) {
                 stockMapWith17[name] = { physical: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0 };
@@ -2152,6 +2167,8 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
             stockMapWith17: stockMapWith17, // 17 포함 제품명별 실물재고, 사용불가재고, 사용가능재고 맵
             holdStockList: holdStockList, // 17 제외 oqc, longterm, bin 중 하나라도 0 이상인 행 목록
             holdStockListWith17: holdStockListWith17, // 17 포함 oqc, longterm, bin 중 하나라도 0 이상인 행 목록
+            allStockList: allStockList, // 17 제외 전체 로케이션 상세
+            allStockListWith17: allStockListWith17, // 17 포함 전체 로케이션 상세
             totalProducts: productNamesInWarehouse.size,
             fileName: req.file.originalname
         });

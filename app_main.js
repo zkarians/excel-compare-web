@@ -28,6 +28,9 @@ let warehouseStockQtyMapAll = {};
 let warehouseStockQtyMapNo17 = {};
 let warehouseHoldStockListAll = [];
 let warehouseHoldStockListNo17 = [];
+let warehouseAllStockList = [];
+let warehouseAllStockListAll = [];
+let warehouseAllStockListNo17 = [];
 
 let warehouseStockLoaded = false; // 창고재고 파일 업로드 여부
 
@@ -39,6 +42,7 @@ function updateActiveWarehouseStock() {
     warehouseStockBlockProducts = include17 ? warehouseStockBlockProductsAll : warehouseStockBlockProductsNo17;
     warehouseStockQtyMap = include17 ? warehouseStockQtyMapAll : warehouseStockQtyMapNo17;
     warehouseHoldStockList = include17 ? warehouseHoldStockListAll : warehouseHoldStockListNo17;
+    warehouseAllStockList = include17 ? warehouseAllStockListAll : warehouseAllStockListNo17;
 
     console.log(`🔄 [재고 필터 변경] 17구역 포함: ${include17} (활성 제품 수: ${Object.keys(warehouseStockQtyMap).length}개, 홀드 리스트: ${warehouseHoldStockList.length}건)`);
 
@@ -1660,6 +1664,9 @@ if (btnClearDown) {
                 warehouseHoldStockListAll = result.holdStockListWith17 || [];
                 warehouseHoldStockListNo17 = result.holdStockList || [];
                 
+                warehouseAllStockListAll = result.allStockListWith17 || [];
+                warehouseAllStockListNo17 = result.allStockList || [];
+                
                 warehouseStockLoaded = true;
 
                 // 체크박스 상태에 맞춰 active 변수 업데이트 및 UI 재렌더링
@@ -1697,6 +1704,9 @@ if (btnClearDown) {
             warehouseHoldStockList = [];
             warehouseHoldStockListAll = [];
             warehouseHoldStockListNo17 = [];
+            warehouseAllStockList = [];
+            warehouseAllStockListAll = [];
+            warehouseAllStockListNo17 = [];
             alert(`창고재고 파일 파싱 실패: ${err.message}`);
         }
     });
@@ -1713,6 +1723,9 @@ if (btnClearDown) {
             warehouseHoldStockList = [];
             warehouseHoldStockListAll = [];
             warehouseHoldStockListNo17 = [];
+            warehouseAllStockList = [];
+            warehouseAllStockListAll = [];
+            warehouseAllStockListNo17 = [];
             warehouseStockLoaded = false;
             fileWarehouseStock.value = '';
             pathWarehouse.value = '';
@@ -2686,6 +2699,9 @@ async function loadNativeWarehouseFile(filePath) {
                 warehouseHoldStockListAll = result.holdStockListWith17 || [];
                 warehouseHoldStockListNo17 = result.holdStockList || [];
                 
+                warehouseAllStockListAll = result.allStockListWith17 || [];
+                warehouseAllStockListNo17 = result.allStockList || [];
+                
                 warehouseStockLoaded = true;
 
                 // 체크박스 상태에 맞춰 active 변수 업데이트 및 UI 재렌더링
@@ -3159,7 +3175,29 @@ function displayResults(results, isDbMode = false) {
         if (dotIdx === -1) return '';
         const prefix = nameUpper.substring(0, dotIdx);
         if (warehouseStockDongPrefixes.has(prefix)) {
-            return `<span style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#7c3aed; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4;">동</span>`;
+            let tooltipContent = '';
+            if (warehouseAllStockList && warehouseAllStockList.length > 0) {
+                const relatedItems = warehouseAllStockList.filter(item => 
+                    item.modelName !== nameUpper && item.modelName.startsWith(prefix + '.')
+                );
+                
+                const grouped = {};
+                relatedItems.forEach(item => {
+                    if (!grouped[item.modelName]) grouped[item.modelName] = [];
+                    grouped[item.modelName].push(`[${item.location || '로케이션 없음'}] ${item.physicalQty} EA`);
+                });
+                
+                const tooltipLines = [];
+                for (const [mName, locs] of Object.entries(grouped)) {
+                    tooltipLines.push(`[${mName}]`);
+                    locs.forEach(loc => tooltipLines.push(`  - ${loc}`));
+                }
+                
+                if (tooltipLines.length > 0) {
+                    tooltipContent = ` title="${tooltipLines.join('&#10;')}"`;
+                }
+            }
+            return `<span${tooltipContent} style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#7c3aed; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; cursor:help;">동</span>`;
         }
         return '';
     };
