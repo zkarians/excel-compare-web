@@ -1457,50 +1457,57 @@
     <div id="tabContentResults" class="tab-content">
         <!-- 요약 대시보드 (Summary) -->
         <div class="dashboard-container" id="dashboardContainer" style="display: none;">
-            <div class="summary-card total" id="cardTotal">
+            <div class="summary-card total" id="cardTotal"
+                style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #0ea5e9; cursor: pointer;">
                 <h4>총 컨테이너 대수</h4>
-                <div class="value" id="valTotalCntr">0</div>
+                <div class="value" id="valTotalCntr" style="color: #0369a1;">0</div>
             </div>
-            <div class="summary-card success" id="cardSuccess">
+            <div class="summary-card success" id="cardSuccess" style="cursor: pointer;">
                 <h4>정상 컨테이너</h4>
                 <div class="value" id="valSuccessCntr">0</div>
             </div>
-            <div class="summary-card danger" id="cardError">
+            <div class="summary-card danger" id="cardError" style="cursor: pointer;">
                 <h4 title="양쪽 파일에 모두 관련 정보가 있으나 상호 불일치(수량, 목적지 등)하는 경우">오류 및 불일치</h4>
                 <div class="value" id="valErrorCntr">0</div>
             </div>
 
-            <div class="summary-card warning" id="cardMissingMerged">
-                <h4 title="추가(원본에 없음) 및 누락(전산에 없음)">추가 및 누락</h4>
-                <div class="missing-values">
-                    원본없음: <span id="valDownExtraCntr" class="val-extra">0</span>
-                    <span class="divider">|</span>
-                    전산없음: <span id="valOrigExtraCntr" class="val-missing">0</span>
+            <div class="summary-card" id="cardMissingMerged"
+                style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-left: 4px solid #f59e0b; cursor: pointer;">
+                <h4 style="color: #b45309;" title="추가(원본에 없음) 및 누락(전산에 없음)">추가 및 누락</h4>
+                <div style="font-size: 0.75rem; margin-top: 4px; color: #92400e; font-weight: 500; white-space: nowrap; line-height: 1.2;">
+                    원본없음: <span id="valDownExtraCntr" style="font-size: 0.9rem; font-weight: 700; color: #d97706;">0</span>
+                    <span style="margin: 0 2px; color: #fcd34d;">|</span>
+                    전산없음: <span id="valOrigExtraCntr" style="font-size: 0.9rem; font-weight: 700; color: #e11d48;">0</span>
                 </div>
             </div>
 
-            <div class="summary-card hold" id="cardHold">
-                <h4 title="사용자가 보류 처리한 컨테이너">보류건</h4>
-                <div class="value" id="valHoldCntr">0</div>
+            <div class="summary-card" id="cardHold"
+                style="background: #f3f4f6; border-left: 4px solid #6b7280; cursor: pointer;">
+                <h4 style="color: #4b5563;" title="사용자가 보류 처리한 컨테이너">보류건</h4>
+                <div class="value" id="valHoldCntr" style="color: #374151;">0</div>
             </div>
 
-            <div class="summary-card excluded" id="cardExcluded">
-                <h4 title="작업일(S열)이 없어 대상에서 제외된 컨테이너">제외(작업일 없음)</h4>
-                <div class="value" id="valExcludedCntr">0</div>
+            <div class="summary-card" id="cardExcluded"
+                style="background: #f1f5f9; border-color: #cbd5e1; cursor: pointer;">
+                <h4 style="color: #475569;" title="작업일(S열)이 없어 대상에서 제외된 컨테이너">제외(작업일 없음)</h4>
+                <div class="value" id="valExcludedCntr" style="color: #475569;">0</div>
             </div>
             <div class="summary-card update-needed">
                 <h4>제품정보 업데이트 필요</h4>
-                <div class="value" id="valUpdate">0</div>
+                <div class="value" id="valUpdate" style="color: #6366f1;">0</div>
             </div>
-            <div class="summary-card info" id="cardTransporter">
+            <div class="summary-card info" id="cardTransporter" style="cursor: pointer;">
                 <h4>운송사 배정 현황</h4>
-                <div class="transporter-values">
-                    <div class="trans-top">
-                        <span class="trans-chunma">천마: <strong id="valChunma">0</strong></span>
-                        <span class="divider">|</span>
-                        <span class="trans-bni">BNI: <strong id="valBni">0</strong></span>
+                <div class="value" style="font-size: 0.85rem; margin-top: 3px; line-height: 1.2;">
+                    <div style="margin-bottom: 2px;">
+                        <span style="color: #e74c3c;">천마: <strong id="valChunma"
+                                style="font-size: 0.95rem;">0</strong></span>
+                        <span style="margin: 0 5px; color: #cbd5e1;">|</span>
+                        <span style="color: #3498db;">BNI: <strong id="valBni"
+                                style="font-size: 0.95rem;">0</strong></span>
                     </div>
-                    <div class="trans-bottom">정보없음: <strong id="valUnknownTransporter">0</strong>대</div>
+                    <div style="color: #64748b; font-size: 0.75rem;">정보없음: <strong
+                            id="valUnknownTransporter">0</strong>대</div>
                 </div>
             </div>
         </div>
@@ -1599,7 +1606,7 @@
 
             <!-- 정상 컨테이너 서브 필터 -->
             <div id="successFilterContainer"
-                style="display: none; margin-top: 6px; margin-bottom: 6px; padding: 6px 12px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                style="display: none; margin-top: 10px; margin-bottom: 10px; padding: 10px 14px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
                 <div
                     style="display: flex; align-items: center; gap: 16px; color: #334155; font-size: 0.9rem; font-weight: 500; flex-wrap: wrap;">
                     <span style="color: #64748b; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
@@ -1638,7 +1645,7 @@
 
             <!-- 추가 및 누락 서브 필터 -->
             <div id="missingFilterContainer"
-                style="display: none; margin-top: 6px; margin-bottom: 6px; padding: 6px 12px; background-color: #fffbeb; border-radius: 8px; border: 1px solid #fde68a;">
+                style="display: none; margin-top: 10px; margin-bottom: 10px; padding: 10px 14px; background-color: #fffbeb; border-radius: 8px; border: 1px solid #fde68a;">
                 <div style="display: flex; align-items: center; gap: 16px; color: #92400e; font-size: 0.9rem; font-weight: 500; flex-wrap: wrap;">
                     <span style="color: #b45309; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
                         <i class="fas fa-filter"></i> 필터:
@@ -1657,7 +1664,7 @@
 
             <!-- 선택 항목 관리 바 (DB 저장 등) -->
             <div id="selectionBar"
-                style="display: none; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 6px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                style="display: none; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding: 12px 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 500;">
                         <input type="checkbox" id="selectAll" style="width: 16px; height: 16px; cursor: pointer;">
@@ -1672,19 +1679,19 @@
                             <i class="fas fa-search"
                                 style="position: absolute; left: 10px; top: 9px; color: #94a3b8; font-size: 0.8rem;"></i>
                             <input type="text" id="inputSearch" placeholder="컨테이너 번호"
-                                style="width: 100%; padding: 4px 10px 4px 30px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem; outline: none; transition: border-color 0.2s;">
+                                style="width: 100%; padding: 6px 10px 6px 30px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; outline: none; transition: border-color 0.2s;">
                         </div>
                         <input type="text" id="inputProdSearch" placeholder="제품명 검색"
-                            style="flex: 1; max-width: 200px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem; outline: none;">
+                            style="flex: 1; max-width: 200px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; outline: none;">
                         <select id="selectProdType"
-                            style="padding: 3px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem; background: white; outline: none; cursor: pointer; color: #475569;">
+                            style="padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; background: white; outline: none; cursor: pointer; color: #475569;">
                             <option value="">제품구분(전체)</option>
                             <option value="F">F</option>
                             <option value="H">H</option>
                             <option value="Q">Q</option>
                         </select>
                         <button id="btnResetSearch" title="검색 필터 초기화"
-                            style="padding: 3px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem; background: white; outline: none; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                            style="padding: 5px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; background: white; outline: none; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
                             <i class="fas fa-undo" style="font-size: 0.8rem;"></i> 초기화
                         </button>
                         <span id="searchResultCount"
@@ -1693,19 +1700,19 @@
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn btn-excel-download" id="btnDownloadResult"
-                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; color: white; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
-                        <i class="fas fa-file-excel" style="margin-right: 4px;"></i> 결과 엑셀 다운로드
+                        style="padding: 0.5rem 1.2rem; font-size: 0.85rem; border-radius: 6px; font-weight: 600; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; color: white; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
+                        <i class="fas fa-file-excel" style="margin-right: 6px;"></i> 결과 엑셀 다운로드
                     </button>
                     <button class="btn" id="btnViewResult"
-                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; background: white; border: 1px solid #6366f1; color: #4f46e5; cursor: pointer;">
-                        <i class="fas fa-search" style="margin-right: 4px;"></i> 결과 바로보기
+                        style="padding: 0.5rem 1.2rem; font-size: 0.85rem; border-radius: 6px; font-weight: 600; background: white; border: 1px solid #6366f1; color: #4f46e5; cursor: pointer;">
+                        <i class="fas fa-search" style="margin-right: 6px;"></i> 결과 바로보기
                     </button>
                     <button id="btnBulkHold" class="btn"
-                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; background-color: #f8fafc; border: 1px solid #cbd5e1; color: #475569;">
+                        style="padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 6px; font-weight: 600; background-color: #f8fafc; border: 1px solid #cbd5e1; color: #475569;">
                         <i class="fas fa-pause-circle" style="margin-right: 4px;"></i> 선택항목 보류등록
                     </button>
                     <button id="btnSaveToDB" class="btn success"
-                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600;">
+                        style="padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 6px; font-weight: 600;">
                         <i class="fas fa-save" style="margin-right: 4px;"></i> 선택항목 DB 저장
                     </button>
                 </div>
@@ -1750,18 +1757,17 @@
                 <table id="resultTable">
                     <thead>
                         <tr>
-                            <th class="col-work">작업구분</th>
-                            <th class="col-special">특이사항</th>
-                            <th class="col-cntr">컨테이너번호</th>
-                            <th class="col-type">제품구분</th>
-                            <th class="col-div">사업부</th>
-                            <th class="col-model">제품모델명</th>
-                            <th class="col-qty">수량 (계획/적재/팬딩/잔여/단위)</th>
-                            <th class="col-spec">컨테이너규격</th>
-                            <th class="col-dims">제품크기</th>
-                            <th class="col-carrier">선사</th>
-                            <th class="col-dest">도착지</th>
-                            <th class="col-gw" style="text-align: right;">GW</th>
+                            <th>작업구분</th>
+                            <th>컨테이너번호</th>
+                            <th>제품구분</th>
+                            <th>사업부</th>
+                            <th>제품모델명</th>
+                            <th>수량 (계획/적재/팬딩적재/잔여/단위)</th>
+                            <th>컨테이너규격</th>
+                            <th>제품크기</th>
+                            <th>선사</th>
+                            <th>도착지</th>
+                            <th style="text-align: right;">GW</th>
                             <th style="text-align: center;">추가정보</th>
                         </tr>
                     </thead>

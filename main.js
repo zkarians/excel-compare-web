@@ -37,7 +37,7 @@ try {
     }
 }
 
-const { app, BrowserWindow, dialog, ipcMain, clipboard, nativeImage } = (typeof electron === 'object' && electron !== null) ? electron : {};
+const { app, BrowserWindow, dialog, ipcMain, clipboard, nativeImage, shell } = (typeof electron === 'object' && electron !== null) ? electron : {};
 
 // 백그라운드 실행 제한 해제를 위한 엔진 스위치 추가
 if (app) {
@@ -266,6 +266,20 @@ app.on('ready', () => {
             return { success: true, filePath };
         }
         return { success: false };
+    });
+
+    ipcMain.handle('open-temp-excel', async (event, { buffer, fileName }) => {
+        try {
+            const tempDir = app.getPath('temp');
+            const tempFilePath = path.join(tempDir, fileName);
+            fs.writeFileSync(tempFilePath, Buffer.from(buffer));
+            console.log(`[IPC] 임시 엑셀 파일 저장 및 즉시 열기: ${tempFilePath}`);
+            await shell.openPath(tempFilePath);
+            return { success: true };
+        } catch (error) {
+            console.error('임시 엑셀 열기 중 오류:', error);
+            return { success: false, error: error.message };
+        }
     });
 
     ipcMain.handle('select-file', async (event, { type, defaultPath }) => {

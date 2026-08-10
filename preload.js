@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getFilePath: (type) => ipcRenderer.invoke('get-file-path', type),
     // 엑셀 파일 저장 (네이티브 다이얼로그)
     saveExcel: (buffer, defaultName) => ipcRenderer.invoke('save-excel', { buffer, defaultName }),
+    // 엑셀 임시 저장 및 바로 열기
+    openTempExcel: (buffer, fileName) => ipcRenderer.invoke('open-temp-excel', { buffer, fileName }),
     // 파일 존재 여부 확인
     checkFileExists: (filePath) => ipcRenderer.invoke('check-file-exists', filePath),
     // 네이티브 파일 선택 다이얼로그 (폴더 기억 가능)

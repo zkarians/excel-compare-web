@@ -3882,12 +3882,17 @@ function displayResults(results, isDbMode = false) {
 
             let tagsHtml = '';
             if (res.tags && res.tags.length > 0) {
-                tagsHtml = res.tags.map(tag => {
-                    const fullText = typeof tag === 'object' ? tag.text : tag;
-                    const displayChars = (fullText || "").substring(0, 3);
-                    const type = typeof tag === 'object' ? (tag.type || '') : '';
-                    return `<span class="tag-badge ${type}" title="${fullText}">${displayChars}</span>`;
-                }).join('');
+                const tagRows = [];
+                for (let j = 0; j < res.tags.length; j += 4) {
+                    const chunk = res.tags.slice(j, j + 4).map(tag => {
+                        const fullText = typeof tag === 'object' ? tag.text : tag;
+                        const displayChars = (fullText || "").substring(0, 2);
+                        const type = typeof tag === 'object' ? (tag.type || '') : '';
+                        return `<span class="tag-badge ${type}" title="${fullText}">${displayChars}</span>`;
+                    }).join('');
+                    tagRows.push(`<div style="display: flex; gap: 2px; justify-content: center;">${chunk}</div>`);
+                }
+                tagsHtml = tagRows.join('');
             }
 
             if (currentFilter === 'entry' || currentFilter === 'entry_unclassified') {
@@ -3961,9 +3966,9 @@ function displayResults(results, isDbMode = false) {
                             return `
                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
                                     <span class="badge tag-danger weight-mismatch-badge" 
-                                          style="cursor: pointer; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 800; line-height: 1.2; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);"
+                                          style="cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 800; line-height: 1.2; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);"
                                           onclick="window.openWeightMismatchPopup('${res.cntrNo}')">
-                                        <i class="fas fa-exclamation-triangle" style="margin-right: 4px;"></i>중량 상이
+                                        <i class="fas fa-exclamation-triangle" style="margin-right: 4px;"></i>중량<br>상이
                                     </span>
                                     ${hasPop ? `<div style="font-size:0.65rem;color:#ea580c;font-weight:700;margin-top:2px;">+POP ${popWeight.toFixed(2)}kg</div>` : ''}
                                 </div>
@@ -4030,11 +4035,8 @@ function displayResults(results, isDbMode = false) {
                         </td>
                     ` : ''}
                     <td class="col-work"><span class="badge ${res.badgeClass}">${res.type}</span></td>
-                    <td class="col-special">
-                        ${tagsHtml ? `<div style="display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; line-height: 1; width: 100%; margin: 0 auto; padding: 2px 0;">${tagsHtml}</div>` : '-'}
-                    </td>
                     <td class="col-cntr" style="padding-top: 4px; padding-bottom: 4px;">
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 6px; color: ${cntrColor}; line-height: 1;">
+                        <div style="display: flex; align-items: center; gap: 6px; color: ${cntrColor}; border-bottom: ${tagsHtml ? '1px dashed #cbd5e1' : 'none'}; padding-bottom: ${tagsHtml ? '3px' : '0'}; margin-bottom: ${tagsHtml ? '4px' : '0'}; line-height: 1;">
                             ${currentFilter === 'hold' ? `
                                 <button class="btn-hold-toggle held" 
                                         onclick="window.toggleContainerHold('${res.cntrNo}', event)" 
@@ -4049,6 +4051,7 @@ function displayResults(results, isDbMode = false) {
                             ${isCaution ? `<span title="주의 비고: ${matchedCaution.remark || '사유 없음'}" style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#ef4444; color:#fff; border-radius:4px; padding:0px 4px; line-height:1.2; cursor:help; white-space:nowrap;">주의</span>` : ''}
                             ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; margin-left:4px; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
                         </div>
+                        ${tagsHtml ? `<div style="display: flex; flex-direction: column; gap: 2px; justify-content: center; line-height: 1;">${tagsHtml}</div>` : ''}
                     </td>
                     <td class="col-type" style="${(res.prodType || '').toUpperCase() === 'H' ? 'color: #7c3aed; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'Q' ? 'color: #0d9488; font-weight: 700;' : ''}">${res.prodType || '-'}</td>
                     <td class="col-div">${res.division || '-'}</td>
@@ -4327,7 +4330,6 @@ function updateTableHeaders(filterName) {
                 ${isSelectableTab ? '<th class="col-select">선택</th>' : ''}
                 ${(isDbSearchTab || isErrorTab || filterName === 'success' || filterName === 'all') ? '<th class="col-manage">관리</th>' : ''}
                 <th class="col-work">작업구분</th>
-                <th class="col-special">특이사항</th>
                 <th class="col-cntr">컨테이너번호</th>
                 <th class="col-type">제품구분</th>
                 <th class="col-div">사업부</th>

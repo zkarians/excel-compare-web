@@ -1,0 +1,848 @@
+// --------------------------------------------------
+// dynamicRules.js - 사용자 정의 동적 규칙 로직
+// --------------------------------------------------
+let dynamicRules = [];
+const rulesModal = document.getElementById('rulesModal');
+
+// 매핑 매니저로부터 필드의 열 문자를 동적으로 가져오는 헬퍼 함수
+function getMappedColLetter(field) {
+    if (!window.mappingManager) return '';
+    const mapping = window.mappingManager.getActiveMapping();
+    if (!mapping) return '';
+    
+    // 규칙용 고유 필드명과 매핑 매니저의 필드명 매칭 딕셔너리
+    const fieldToMapKey = {
+        'origRemark': 'remark',
+        'downRemark': 'remark',
+        'downLoadType': 'dl_loadType',
+        'downPlanQty': 'dl_planQty',
+        'downPendingQty': 'dl_pendingQty',
+        'downPackingQty': 'dl_packingQty',
+        'downSealNo': 'dl_sealNo',
+        'downCarrier': 'dl_carrierName',
+        'downPort': 'dl_port',
+    };
+
+    const mapKey = fieldToMapKey[field] || field;
+    if (mapping[mapKey]) {
+        return mapping[mapKey];
+    }
+    return '';
+}
+
+async function loadDynamicRules() {
+    try {
+        // 1순위: DB에서 규칙 로딩 시도
+        const response = await fetch(`${API_BASE}/api/sync/rules`);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && Array.isArray(data.rules) && data.rules.length > 0) {
+                dynamicRules = data.rules;
+                renderRulesTable();
+                return;
+            }
+        }
+
+        // 2순위: DB가 비어있거나 실패하면 기존 로컬(rules.json) 로딩
+        const localResp = await fetch(`${API_BASE}/api/rules`);
+        const localData = await localResp.json();
+        if (localData.success) {
+            dynamicRules = (Array.isArray(localData.rules) && localData.rules.length > 0) ? localData.rules : [
+                {
+                    "id": "dvq3f7e",
+                    "isActive": true,
+                    "conditionOperator": "AND",
+                    "conditions": [
+                        { "field": "prodName", "operator": "includes", "value": "LT1000P.AETC1" },
+                        { "field": "downPlanQty", "operator": "ratioMismatch", "value": "downPackingQty:36" }
+                    ],
+                    "targetField": "errorDetail",
+                    "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 1:36 오입력 확인 요망</span>",
+                    "tagColor": "danger"
+                },
+                {
+                    "id": "b8x9p2m",
+                    "isActive": true,
+                    "conditionOperator": "AND",
+                    "conditions": [
+                        { "field": "prodName", "operator": "includes", "value": "FSS-002.AETC" },
+                        { "field": "downPlanQty", "operator": "ratioMismatch", "value": "downPackingQty:36" }
+                    ],
+                    "targetField": "errorDetail",
+                    "targetValue": "<span style='color: #ef4444; font-weight: bold;'>(현재)계획:{{downPlanQty}} / 단위:{{downPackingQty}} -> 단위수량(Pack Qty) 1:36 오입력 확인 요망</span>",
+                    "tagColor": "danger"
+                },
+                {
+                    "id": "rule_down_remark_empty",
+                    "isActive": true,
+                    "groupName": "기본 정보 체크",
+                    "conditionOperator": "AND",
+                    "conditions": [
+                        { "field": "downRemark", "operator": "regexMatch", "value": "^$" }
+                    ],
+                    "targetField": "errorDetail",
+                    "targetValue": "전산 리마크 누락",
+                    "tagColor": "danger"
+                }
+
+            ];
+            renderRulesTable();
+
+            // 로컬에서 불러온 데이터가 있다면 DB로 백그라운드 동기화
+            if (dynamicRules.length > 0) {
+                saveDynamicRules().catch(err => console.error("초기 DB 규칙 백업 실패:", err));
+            }
+        }
+    } catch (err) {
+        console.error("규칙 로딩 실패:", err);
+    }
+}
+
+async function saveDynamicRules() {
+    try {
+        await fetch(`${API_BASE}/api/sync/rules`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rules: dynamicRules })
+        });
+
+        // 로컬 백업용으로도 저장
+        await fetch(`${API_BASE}/api/rules`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rules: dynamicRules })
+        }).catch(e => console.warn("로컬 백업 저장 실패", e));
+
+        if (window.updateDbGlobalStats) window.updateDbGlobalStats();
+    } catch (err) {
+        console.error("규칙 저장 실패:", err);
+        alert("규칙을 서버 DB에 저장하는데 실패했습니다.");
+    }
+}
+
+function createConditionRow() {
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.flexDirection = 'column';
+    row.style.gap = '4px';
+    row.className = 'condition-row';
+
+    // 1. 기본 제공되는 레거시 및 특수 조건들
+    const specialOptions = [
+        { value: 'remark', label: '비고/리마크(전체)' },
+        { value: 'origRemark', label: '[원본] 리마크' },
+        { value: 'downRemark', label: '[전산] 리마크' },
+        { value: 'downLoadType', label: '[전산] Load Type' },
+        { value: 'downPlanQty', label: '[전산] Load Plan Qty' },
+        { value: 'downPendingQty', label: '[전산] Pending Qty' },
+        { value: 'downPackingQty', label: '[전산] Packing Qty' },
+        { value: 'downSealNo', label: '[전산] Seal No' },
+        { value: 'downForwarder', label: '[전산] 포워더' },
+        { value: 'downCarrier', label: '[전산] Carrier' },
+        { value: 'downPort', label: '[전산] L.Port' }
+    ];
+
+    // 중복 방지를 위한 매핑 ID 셋
+    const addedIds = new Set(specialOptions.map(o => {
+        const fieldToMapKey = {
+            'origRemark': 'remark',
+            'downRemark': 'remark',
+            'downLoadType': 'dl_loadType',
+            'downPlanQty': 'dl_planQty',
+            'downPendingQty': 'dl_pendingQty',
+            'downPackingQty': 'dl_packingQty',
+            'downSealNo': 'dl_sealNo',
+            'downCarrier': 'dl_carrierName',
+            'downPort': 'dl_port'
+        };
+        return fieldToMapKey[o.value] || o.value;
+    }));
+
+    // 2. mappingManager의 모든 필드를 추가 옵션으로 구성
+    const standardOptions = [];
+    if (window.mappingManager && window.mappingManager.standardFields) {
+        window.mappingManager.standardFields.forEach(f => {
+            if (!addedIds.has(f.id)) {
+                standardOptions.push({
+                    value: f.id,
+                    label: f.name
+                });
+            }
+        });
+    }
+
+    // 최종 옵션 합치기
+    const allOptions = [...specialOptions, ...standardOptions];
+
+    // 분류별 옵션 분리
+    const mixedGroup = [];
+    const origGroup = [];
+    const downGroup = [];
+    const customGroup = [];
+
+    allOptions.forEach(opt => {
+        const colLetter = getMappedColLetter(opt.value);
+        const colText = colLetter ? ` (${colLetter})` : '';
+        let label = opt.label;
+        
+        // 이름 정제
+        if (!label.startsWith('[') && !label.includes('비고/리마크')) {
+            if (label.toLowerCase().includes('original') || label.includes('원본')) {
+                label = `[원본] ${label.replace(/\[원본\]\s*/g, '')}`;
+            } else {
+                label = `[전산] ${label.replace(/\[전산\]\s*/g, '')}`;
+            }
+        }
+        
+        const optionHtml = `<option value="${opt.value}">${label}${colText}</option>`;
+        
+        if (opt.value === 'remark') {
+            mixedGroup.push(optionHtml);
+        } else if (opt.value.startsWith('orig') || label.includes('[원본]')) {
+            origGroup.push(optionHtml);
+        } else {
+            downGroup.push(optionHtml);
+        }
+    });
+
+    customFields.forEach(cf => {
+        const optionHtml = `<option value="${cf.id}">${cf.source === 'down' ? '[전산]' : '[원본]'} ${cf.name} (${cf.colLetter})</option>`;
+        customGroup.push(optionHtml);
+    });
+
+    // <optgroup>으로 감싸서 동적 빌드
+    let optionsHtml = '';
+    if (mixedGroup.length > 0) {
+        optionsHtml += `<optgroup label="공통 필드">${mixedGroup.join('')}</optgroup>`;
+    }
+    if (origGroup.length > 0) {
+        optionsHtml += `<optgroup label="원본 파일 필드 (엑셀)">${origGroup.join('')}</optgroup>`;
+    }
+    if (downGroup.length > 0) {
+        optionsHtml += `<optgroup label="전산 파일 필드 (다운로드)">${downGroup.join('')}</optgroup>`;
+    }
+    if (customGroup.length > 0) {
+        optionsHtml += `<optgroup label="사용자 정의 필드 (커스텀)">${customGroup.join('')}</optgroup>`;
+    }
+
+    row.innerHTML = `
+        <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
+            <select class="cond-field" style="flex: 1; min-width: 0; padding: 0.25rem 0.4rem; font-size: 0.78rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+                ${optionsHtml}
+            </select>
+            <span style="font-size: 0.72rem; color: #94a3b8; white-space: nowrap;">의 값이</span>
+        </div>
+        <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
+            <select class="cond-operator" style="flex: 0 0 auto; padding: 0.25rem 0.3rem; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+                <option value="includes">포함</option>
+                <option value="notIncludes">미포함</option>
+                <option value="startsWith">시작함</option>
+                <option value="exact">정확히 일치</option>
+                <option value="isEmpty">비어 있음</option>
+                <option value="isNotEmpty">비어 있지 않음</option>
+                <option value="gte">이상 (>=)</option>
+                <option value="gt">초과 (>)</option>
+                <option value="lte">이하 (<=)</option>
+                <option value="lt">미만 (<)</option>
+                <option value="numEq">수치 동일 (=)</option>
+                <option value="ratioMismatch">비율 불일치</option>
+                <option value="regexMatch">Regex 일치</option>
+                <option value="regexNotMatch">Regex 미일치</option>
+            </select>
+            <div class="cond-val-wrapper" style="flex: 1; min-width: 0; display: flex; align-items: center;">
+                <input type="text" class="cond-value" placeholder="예: 쇼링, 서부물류" style="width: 100%; padding: 0.25rem 0.4rem; font-size: 0.78rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+                <!-- 비율 비교 전용 UI (기본 숨김) -->
+                <div class="ratio-inputs" style="display: none; align-items: center; gap: 4px; width: 100%;">
+                    <select class="ratio-field" style="padding: 0.25rem 0.3rem; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 4px; flex: 1; min-width: 0;">
+                        <option value="downPackingQty">[전산] 단위수량</option>
+                        <option value="downPlanQty">[전산] 계획수량</option>
+                        <option value="downLoadQty">[전산] 적재수량</option>
+                    </select>
+                    <span style="font-size: 0.72rem; color: #64748b;">의</span>
+                    <input type="number" class="ratio-mult" placeholder="배수(예: 25)" style="width: 75px; padding: 0.25rem 0.4rem; font-size: 0.78rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+                    <span style="font-size: 0.72rem; color: #64748b; white-space: nowrap;">배가 아님</span>
+                </div>
+            </div>
+            <button type="button" class="btn btn-danger btn-remove-cond" style="flex-shrink: 0; padding: 0.2rem 0.5rem; font-size: 0.72rem; border-radius: 4px;"><i class="fas fa-times"></i></button>
+        </div>
+    `;
+
+    const operatorSelect = row.querySelector('.cond-operator');
+    const valueInput = row.querySelector('.cond-value');
+    const ratioInputs = row.querySelector('.ratio-inputs');
+
+    const updateValueUI = () => {
+        const op = operatorSelect.value;
+        if (op === 'isEmpty' || op === 'isNotEmpty') {
+            valueInput.style.display = 'none';
+            ratioInputs.style.display = 'none';
+        } else if (op === 'ratioMismatch') {
+            valueInput.style.display = 'none';
+            ratioInputs.style.display = 'flex';
+        } else {
+            valueInput.style.display = 'block';
+            ratioInputs.style.display = 'none';
+        }
+    };
+    operatorSelect.addEventListener('change', updateValueUI);
+    updateValueUI();
+
+    row.querySelector('.btn-remove-cond').addEventListener('click', () => {
+        row.remove();
+        updateConditionSeparators();
+    });
+
+    return row;
+}
+
+function updateConditionSeparators() {
+    const container = document.getElementById('conditionRowsContainer');
+    // Remove all existing separators
+    container.querySelectorAll('.cond-separator').forEach(s => s.remove());
+    const rows = container.querySelectorAll('.condition-row');
+    if (rows.length <= 1) return;
+    const op = document.getElementById('ruleConditionOperator').value;
+    const isOr = op === 'OR';
+    const color = isOr ? '#f59e0b' : '#3b82f6';
+    const bgColor = isOr ? '#fffbeb' : '#eff6ff';
+    const label = isOr ? 'OR' : 'AND';
+    for (let i = 1; i < rows.length; i++) {
+        const sep = document.createElement('div');
+        sep.className = 'cond-separator';
+        sep.style.cssText = `display:flex; align-items:center; gap:8px; margin: 2px 0; padding: 0 10px;`;
+        sep.innerHTML = `<div style="flex:1; height:1px; background:${color};"></div><span style="font-size:0.8rem; font-weight:800; color:${color}; background:${bgColor}; padding:1px 10px; border-radius:10px; border:1.5px solid ${color};">${label}</span><div style="flex:1; height:1px; background:${color};"></div>`;
+        container.insertBefore(sep, rows[i]);
+    }
+}
+
+document.getElementById('ruleConditionOperator').addEventListener('change', () => {
+    updateConditionSeparators();
+});
+
+document.getElementById('btnAddConditionRow').addEventListener('click', () => {
+    document.getElementById('conditionRowsContainer').appendChild(createConditionRow());
+    updateConditionSeparators();
+});
+
+function renderRulesTable() {
+    const tbody = document.getElementById('rulesTableBody');
+    const ruleCountEl = document.getElementById('ruleCount');
+    tbody.innerHTML = '';
+
+    if (ruleCountEl) ruleCountEl.textContent = dynamicRules.length;
+
+    dynamicRules.forEach((rule, index) => {
+        const tr = document.createElement('tr');
+
+        // 1. 조건 렌더링 (배지 형태)
+        let conditionsHtml = '<div style="display: flex; flex-wrap: wrap; gap: 6px;">';
+        if (rule.conditions && rule.conditions.length > 0) {
+            rule.conditions.forEach(cond => {
+                let iconClass = 'fa-tag';
+                let fText = cond.field;
+                const colLetter = getMappedColLetter(cond.field);
+                const colSuffix = colLetter ? `(${colLetter})` : '';
+
+                if (cond.field === 'remark') { fText = `비고(전체)${colSuffix}`; iconClass = 'fa-sticky-note'; }
+                else if (cond.field === 'origRemark') { fText = `원본비고${colSuffix}`; iconClass = 'fa-comment-alt'; }
+                else if (cond.field === 'downRemark') { fText = `전산비고${colSuffix}`; iconClass = 'fa-comment'; }
+                else if (cond.field === 'downLoadType') { fText = `LoadType${colSuffix}`; iconClass = 'fa-truck-loading'; }
+                else if (cond.field === 'downPlanQty') { fText = `계획수량${colSuffix}`; iconClass = 'fa-calculator'; }
+                else if (cond.field === 'downPendingQty') { fText = `팬딩수량${colSuffix}`; iconClass = 'fa-clock'; }
+                else if (cond.field === 'downPackingQty') { fText = `단위수량${colSuffix}`; iconClass = 'fa-boxes'; }
+                else if (cond.field === 'downSealNo') { fText = `Seal${colSuffix}`; iconClass = 'fa-lock'; }
+                else if (cond.field === 'downForwarder') { fText = '포워더'; iconClass = 'fa-shipping-fast'; }
+                else if (cond.field === 'downCarrier') { fText = `Carrier${colSuffix}`; iconClass = 'fa-ship'; }
+                else if (cond.field === 'downPort') { fText = `L.Port${colSuffix}`; iconClass = 'fa-anchor'; }
+                else if (cond.field === 'dest') { fText = `목적지${colSuffix}`; iconClass = 'fa-map-marker-alt'; }
+                else if (cond.field === 'prodName') { fText = `제품명${colSuffix}`; iconClass = 'fa-box'; }
+                else if (cond.field === 'prodType') { fText = `품목${colSuffix}`; iconClass = 'fa-cube'; }
+                else if (cond.field.startsWith('f_')) {
+                    const cf = customFields.find(f => f.id === cond.field);
+                    fText = cf ? `${cf.name}(${cf.colLetter})` : '알수없는필드';
+                    iconClass = 'fa-plus-circle';
+                }
+                else {
+                    if (window.mappingManager && window.mappingManager.standardFields) {
+                        const matchedField = window.mappingManager.standardFields.find(f => f.id === cond.field);
+                        if (matchedField) {
+                            fText = `${matchedField.name}${colSuffix}`;
+                            const nm = matchedField.name;
+                            if (nm.includes('수량') || nm.includes('Qty')) iconClass = 'fa-calculator';
+                            else if (nm.includes('비고') || nm.includes('Remark')) iconClass = 'fa-comment';
+                            else if (nm.includes('번호') || nm.includes('No')) iconClass = 'fa-hashtag';
+                            else if (nm.includes('코드') || nm.includes('Code')) iconClass = 'fa-barcode';
+                            else if (nm.includes('날짜') || nm.includes('Date') || nm.includes('ETA') || nm.includes('ETD')) iconClass = 'fa-calendar';
+                            else if (nm.includes('선사') || nm.includes('트럭') || nm.includes('Carrier')) iconClass = 'fa-ship';
+                            else iconClass = 'fa-database';
+                        }
+                    }
+                }
+
+                let actualOp = cond.operator;
+                if (!actualOp && cond.value && cond.value.includes(':') && (cond.value.startsWith('downPackingQty:') || cond.value.startsWith('downPlanQty:') || cond.value.startsWith('downLoadQty:'))) {
+                    actualOp = 'ratioMismatch';
+                }
+
+                let opText = '';
+                if (actualOp === 'includes') opText = '포함';
+                else if (actualOp === 'notIncludes') opText = '미포함';
+                else if (actualOp === 'startsWith') opText = '시작';
+                else if (actualOp === 'exact') opText = '일치';
+                else if (actualOp === 'isEmpty') opText = '비어 있음';
+                else if (actualOp === 'isNotEmpty') opText = '비어 있지 않음';
+                else if (actualOp === 'gte') opText = '>=';
+                else if (actualOp === 'gt') opText = '>';
+                else if (actualOp === 'lte') opText = '<=';
+                else if (actualOp === 'lt') opText = '<';
+                else if (actualOp === 'numEq') opText = '=';
+                else if (actualOp === 'ratioMismatch') opText = '비율 불일치';
+                else if (actualOp === 'regexMatch') opText = 'Regex일치';
+                else if (actualOp === 'regexNotMatch') opText = 'Regex미일치';
+
+                let badgeBody = '';
+                if (actualOp === 'ratioMismatch') {
+                    const parts = cond.value.split(':');
+                    if (parts.length === 2) {
+                        const otherField = parts[0];
+                        const ratio = parts[1];
+                        let otherFieldName = otherField;
+                        if (otherField === 'downPackingQty') otherFieldName = '단위수량';
+                        else if (otherField === 'downPlanQty') otherFieldName = '계획수량';
+                        else if (otherField === 'downLoadQty') otherFieldName = '적재수량';
+
+                        badgeBody = `<span style="color: #64748b; margin-right: 2px;">${fText}:</span> <strong>${otherFieldName}의 ${ratio}배가 아님</strong>`;
+                    } else {
+                        badgeBody = `<span style="color: #64748b; margin-right: 2px;">${fText}:</span> <strong>비율 불일치 (${cond.value})</strong>`;
+                    }
+                } else if (actualOp === 'isEmpty') {
+                    badgeBody = `<span style="color: #64748b; margin-right: 2px;">${fText}:</span> <strong>비어 있음</strong>`;
+                } else if (actualOp === 'isNotEmpty') {
+                    badgeBody = `<span style="color: #64748b; margin-right: 2px;">${fText}:</span> <strong>비어 있지 않음</strong>`;
+                } else {
+                    badgeBody = `<span style="color: #64748b; margin-right: 2px;">${fText}:</span> <strong>${cond.value}</strong> <small style="color: #94a3b8; margin-left: 2px;">(${opText})</small>`;
+                }
+
+                conditionsHtml += `
+                    <div class="rule-condition-badge" title="${fText}">
+                        <i class="fas ${iconClass}"></i>
+                        ${badgeBody}
+                    </div>`;
+            });
+        }
+        conditionsHtml += '</div>';
+
+        // 2. 타겟 텍스트 렌더링
+        let targetText = '';
+        if (rule.targetField === 'tags') {
+            targetText = `특이사항 <span class="rule-result-tag tag-${rule.tagColor || 'secondary'}"><i class="fas fa-tag" style="font-size: 0.75rem; opacity: 0.8; margin-right: 4px;"></i>${rule.targetValue}</span> 추가`;
+        }
+        else if (rule.targetField === 'carrier') targetText = `선사 <span class="rule-result-tag tag-primary"><i class="fas fa-ship"></i> ${rule.targetValue}</span> 지정`;
+        else if (rule.targetField === 'dest') targetText = `도착지 <span class="rule-result-tag tag-primary"><i class="fas fa-map-marked-alt"></i> ${rule.targetValue}</span> 변경`;
+        else if (rule.targetField === 'errorDetail') targetText = `상세사유 <span class="rule-result-tag tag-danger">${rule.targetValue}</span> 기록`;
+        else if (rule.targetField === 'planQty') targetText = `계획수량(Plan) <strong>${rule.targetValue}</strong> 적용`;
+        else if (rule.targetField === 'loadQty') targetText = `적재수량(Loading) <strong>${rule.targetValue}</strong> 적용`;
+        else if (rule.targetField === 'packingQty') targetText = `단위수량(Packing) <strong>${rule.targetValue}</strong> 적용`;
+        else if (rule.targetField === 'transporter') {
+            let color = rule.targetValue.includes('천마') ? '#ef4444' : (rule.targetValue.includes('BNI') ? '#3b82f6' : '#64748b');
+            targetText = `운송사 <span class="rule-result-tag" style="background-color: ${color}; color: white;">${rule.targetValue}</span> 지정`;
+        }
+
+        const isOr = rule.conditionOperator === 'OR';
+        const opBadgeColor = isOr ? '#f59e0b' : '#3b82f6';
+        const opTextDisplay = isOr ? '⚡ OR (하나라도 만족)' : '🔗 AND (모두 만족)';
+        const opBorderColor = isOr ? '#fbbf24' : '#60a5fa';
+
+        tr.innerHTML = `
+            <td style="text-align: center;">
+                <input type="checkbox" class="rule-active-toggle" data-index="${index}" ${rule.isActive ? 'checked' : ''}>
+            </td>
+            <td style="font-weight: 600; color: #1e293b; padding: 6px 4px;">${rule.groupName || '-'}</td>
+            <td style="padding: 6px 4px;">
+                <div style="margin-bottom: 4px; padding: 2px 6px; background: ${opBadgeColor}; color: white; border-radius: 4px; display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px;">${opTextDisplay}</div>
+                ${conditionsHtml}
+            </td>
+            <td style="padding: 6px 4px;">${targetText}</td>
+            <td style="text-align: center; white-space: nowrap; padding: 6px 4px; width: 240px;">
+                <div style="display: flex; gap: 6px; justify-content: center; align-items: center; width: 100%;">
+                    <button class="btn btn-secondary-outline btn-edit-rule" data-index="${index}"><i class="fas fa-edit"></i> 수정</button>
+                    <button class="btn btn-copy-rule" data-index="${index}" style="background-color: #e0f2fe; color: #0284c7; border: 1px solid #7dd3fc; cursor: pointer;" title="이 규칙을 복사합니다"><i class="fas fa-copy"></i> 복사</button>
+                    <button class="btn btn-danger btn-delete-rule" data-index="${index}" style="background-color: #fee2e2; color: #dc2626;"><i class="fas fa-trash-alt"></i> 삭제</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.rule-active-toggle').forEach(chk => {
+        chk.addEventListener('change', (e) => {
+            const idx = e.target.getAttribute('data-index');
+            dynamicRules[idx].isActive = e.target.checked;
+            saveDynamicRules();
+        });
+    });
+
+    document.querySelectorAll('.btn-delete-rule').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const idx = e.target.getAttribute('data-index');
+            if (confirm("이 규칙을 삭제하시겠습니까? (삭제 즉시 서버에 반영됩니다)")) {
+                dynamicRules.splice(idx, 1);
+                saveDynamicRules();
+                renderRulesTable();
+            }
+        });
+    });
+}
+
+document.getElementById('btnOpenRules').addEventListener('click', () => {
+    loadDynamicRules();
+    // 모달 열 때 기본 조건 행 1개 보장
+    const container = document.getElementById('conditionRowsContainer');
+    container.innerHTML = '';
+    container.appendChild(createConditionRow());
+    rulesModal.style.display = 'block';
+});
+
+document.querySelectorAll('#closeRulesBtn, #closeRulesBtnBottom').forEach(btn => {
+    btn.addEventListener('click', () => {
+        rulesModal.style.display = 'none';
+        // 창을 닫을 때 현재 데이터를 기준으로 다시 비교 실행 (데이터가 있을 때만)
+        if (typeof window.reCompareFilteredData === 'function') {
+            window.reCompareFilteredData();
+        } else if (originalData.length > 0 && downloadData.length > 0) {
+            comparisonResult = compareData(originalData, downloadData, productMaster, dynamicRules, customFields, carrierMap, normalizeCarrier);
+            updateDashboard();
+            displayResults(comparisonResult);
+        }
+    });
+});
+
+window.addEventListener('click', (event) => {
+    if (event.target == rulesModal) {
+        rulesModal.style.display = 'none';
+        // 창을 닫을 때 현재 데이터를 기준으로 다시 비교 실행 (데이터가 있을 때만)
+        if (typeof window.reCompareFilteredData === 'function') {
+            window.reCompareFilteredData();
+        } else if (originalData.length > 0 && downloadData.length > 0) {
+            comparisonResult = compareData(originalData, downloadData, productMaster, dynamicRules, customFields, carrierMap, normalizeCarrier);
+            updateDashboard();
+            displayResults(comparisonResult);
+        }
+    }
+});
+
+document.getElementById('ruleTargetField').addEventListener('change', (e) => {
+    const transporterSelect = document.getElementById('ruleTargetTransporter');
+    const valueInput = document.getElementById('ruleTargetValue');
+    const valLabel = document.getElementById('ruleValLabel');
+
+    if (e.target.value === 'tags') colorSelect.style.display = 'inline-block';
+    else colorSelect.style.display = 'none';
+
+    if (e.target.value === 'planQty' || e.target.value === 'loadQty') {
+        qtyHintText.style.display = 'block';
+    } else {
+        qtyHintText.style.display = 'none';
+    }
+
+    if (e.target.value === 'transporter') {
+        transporterSelect.style.display = 'inline-block';
+        valueInput.style.display = 'none';
+        valLabel.textContent = '운송사를';
+    } else {
+        transporterSelect.style.display = 'none';
+        valueInput.style.display = 'inline-block';
+        valLabel.textContent = '값을';
+    }
+});
+
+document.getElementById('btnAddRule').addEventListener('click', () => {
+    const groupName = document.getElementById('ruleGroupName').value.trim();
+    const rows = document.querySelectorAll('.condition-row');
+    const conditions = [];
+
+    rows.forEach(row => {
+        const field = row.querySelector('.cond-field').value;
+        const operator = row.querySelector('.cond-operator').value;
+        let value = "";
+
+        if (operator === 'ratioMismatch') {
+            const rField = row.querySelector('.ratio-field').value;
+            const rMult = row.querySelector('.ratio-mult').value.trim();
+            if (rMult) {
+                value = `${rField}:${rMult}`;
+            }
+        } else if (operator === 'isEmpty' || operator === 'isNotEmpty') {
+            value = "-"; // Dummy value to pass validation
+        } else {
+            value = row.querySelector('.cond-value').value.trim();
+        }
+
+        if (value) {
+            conditions.push({ field, operator, value });
+        }
+    });
+
+    if (conditions.length === 0) {
+        alert("최소 1개 이상의 조건을 입력해야 합니다.");
+        return;
+    }
+
+    const conditionOperator = document.getElementById('ruleConditionOperator').value;
+    const targetField = document.getElementById('ruleTargetField').value;
+    let targetValue = document.getElementById('ruleTargetValue').value.trim();
+    if (targetField === 'transporter') {
+        targetValue = document.getElementById('ruleTargetTransporter').value;
+    }
+    const tagColor = document.getElementById('ruleTagColor').value;
+
+    if (!targetValue && targetField !== 'planQty' && targetField !== 'loadQty') {
+        alert("원하는 변경 결과를 입력하거나 선택해주세요.");
+        return;
+    }
+
+    const editId = document.getElementById('editRuleId').value;
+    if (editId) {
+        // 수정 모드
+        const idx = dynamicRules.findIndex(r => r.id === editId);
+        if (idx !== -1) {
+            dynamicRules[idx] = {
+                ...dynamicRules[idx],
+                groupName,
+                conditionOperator,
+                conditions,
+                targetField,
+                targetValue,
+                tagColor: targetField === 'tags' ? tagColor : null
+            };
+        }
+    } else {
+        // 신규 추가
+        dynamicRules.push({
+            id: Date.now().toString(),
+            isActive: true,
+            groupName: groupName,
+            conditionOperator: conditionOperator,
+            conditions: conditions,
+            targetField,
+            targetValue,
+            tagColor: targetField === 'tags' ? tagColor : null
+        });
+    }
+
+    saveDynamicRules();
+    renderRulesTable();
+
+    // 입력폼 리셋
+    resetRuleForm();
+});
+
+function resetRuleForm() {
+    document.getElementById('editRuleId').value = '';
+    document.getElementById('ruleFormTitle').textContent = '✨ 새로운 규칙 정의';
+    document.getElementById('btnCancelRuleEdit').style.display = 'none';
+    document.getElementById('btnAddRule').textContent = '규칙 등록';
+
+    document.getElementById('ruleConditionOperator').value = 'AND';
+    document.getElementById('ruleGroupName').value = '';
+    document.getElementById('ruleTargetValue').value = '';
+    document.getElementById('ruleTargetField').value = 'tags';
+    document.getElementById('ruleTagColor').style.display = 'inline-block';
+    document.getElementById('ruleTargetTransporter').style.display = 'none';
+    document.getElementById('ruleTargetValue').style.display = 'inline-block';
+    document.getElementById('ruleValLabel').textContent = '값을';
+
+    const container = document.getElementById('conditionRowsContainer');
+    container.innerHTML = '';
+    container.appendChild(createConditionRow());
+}
+
+// 취소 버튼
+document.getElementById('btnCancelRuleEdit').addEventListener('click', resetRuleForm);
+
+// 다이나믹 필드 추가 버튼
+const btnAddCustomField = document.getElementById('btnAddCustomField');
+if (btnAddCustomField) {
+    btnAddCustomField.addEventListener('click', () => {
+        const source = document.getElementById('newFieldSource').value;
+        const colStr = document.getElementById('newFieldCol').value.trim();
+        const name = document.getElementById('newFieldName').value.trim();
+
+        if (!colStr || !name) {
+            alert("엑셀 열(예: AC)과 나타낼 이름을 모두 입력해주세요.");
+            return;
+        }
+
+        const colIdx = excelColToIdx(colStr);
+        if (colIdx < 0) {
+            alert("올바른 엑셀 열(A, B, C...)을 입력해주세요.");
+            return;
+        }
+
+        const id = "f_" + Date.now();
+        customFields.push({
+            id: id,
+            source: source,
+            colIdx: colIdx,
+            colLetter: colStr.toUpperCase(),
+            name: name
+        });
+
+        saveCustomFields();
+        renderCustomFieldsUI();
+
+        // 입력창 초기화
+        document.getElementById('newFieldCol').value = '';
+        document.getElementById('newFieldName').value = '';
+        alert(`필드 '${name}'가 추가되었습니다.`);
+    });
+}
+
+// renderRulesTable 내부에서 호출되어야 함 (이벤트 위임 방식으로 변경 제안)
+document.getElementById('rulesTableBody').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+
+    // --- 복사 버튼 ---
+    if (btn.classList.contains('btn-copy-rule')) {
+        const idx = btn.getAttribute('data-index');
+        const rule = dynamicRules[idx];
+        const copiedRule = {
+            id: Date.now().toString(),
+            isActive: rule.isActive,
+            groupName: (rule.groupName || '') + ' (복사)',
+            conditionOperator: rule.conditionOperator || 'AND',
+            conditions: rule.conditions ? rule.conditions.map(c => ({ ...c })) : [],
+            targetField: rule.targetField,
+            targetValue: rule.targetValue,
+            tagColor: rule.tagColor || null
+        };
+        dynamicRules.splice(Number(idx) + 1, 0, copiedRule);
+        saveDynamicRules();
+        renderRulesTable();
+        return;
+    }
+
+    // --- 수정 버튼 ---
+    if (btn.classList.contains('btn-edit-rule')) {
+        const idx = btn.getAttribute('data-index');
+        const rule = dynamicRules[idx];
+
+        document.getElementById('editRuleId').value = rule.id;
+        document.getElementById('ruleFormTitle').textContent = '📝 규칙 수정 중...';
+        document.getElementById('btnCancelRuleEdit').style.display = 'inline-block';
+        document.getElementById('btnAddRule').textContent = '수정 완료';
+
+        document.getElementById('ruleConditionOperator').value = rule.conditionOperator || 'AND';
+        document.getElementById('ruleGroupName').value = rule.groupName || '';
+        document.getElementById('ruleTargetField').value = rule.targetField;
+
+        if (rule.targetField === 'transporter') {
+            document.getElementById('ruleTargetTransporter').value = rule.targetValue;
+            document.getElementById('ruleTargetTransporter').style.display = 'inline-block';
+            document.getElementById('ruleTargetValue').style.display = 'none';
+            document.getElementById('ruleValLabel').textContent = '운송사를';
+        } else {
+            document.getElementById('ruleTargetValue').value = rule.targetValue || '';
+            document.getElementById('ruleTargetTransporter').style.display = 'none';
+            document.getElementById('ruleTargetValue').style.display = 'inline-block';
+            document.getElementById('ruleValLabel').textContent = '값을';
+        }
+
+        document.getElementById('ruleTagColor').value = rule.tagColor || 'success';
+        document.getElementById('ruleTagColor').style.display = rule.targetField === 'tags' ? 'inline-block' : 'none';
+
+        const container = document.getElementById('conditionRowsContainer');
+        container.innerHTML = '';
+        if (rule.conditions && rule.conditions.length > 0) {
+            rule.conditions.forEach(c => {
+                const row = createConditionRow();
+                row.querySelector('.cond-field').value = c.field;
+
+                const opSelect = row.querySelector('.cond-operator');
+                let actualOp = c.operator;
+                if (!actualOp && c.value && c.value.includes(':') && (c.value.startsWith('downPackingQty:') || c.value.startsWith('downPlanQty:') || c.value.startsWith('downLoadQty:'))) {
+                    actualOp = 'ratioMismatch';
+                }
+
+                opSelect.value = actualOp || 'includes';
+
+                if (actualOp === 'ratioMismatch') {
+                    const parts = (c.value || "").split(':');
+                    if (parts.length === 2) {
+                        row.querySelector('.ratio-field').value = parts[0];
+                        row.querySelector('.ratio-mult').value = parts[1];
+                    }
+                } else if (actualOp === 'isEmpty' || actualOp === 'isNotEmpty') {
+                    row.querySelector('.cond-value').value = '';
+                } else {
+                    row.querySelector('.cond-value').value = c.value || '';
+                }
+
+                opSelect.dispatchEvent(new Event('change'));
+                container.appendChild(row);
+            });
+        } else {
+            container.appendChild(createConditionRow());
+        }
+
+        // 스크롤 이동
+        document.querySelector('.rule-form-card').scrollIntoView({ behavior: 'smooth' });
+    }
+});
+
+// --- DB Sync Manual Buttons ---
+document.getElementById('btnDownloadRulesFromDb')?.addEventListener('click', async () => {
+    if (confirm("클라우드 DB에서 규칙을 불러오시겠습니까? 현재 로컬 데이터가 덮어씌워질 수 있습니다.")) {
+        try {
+            const response = await fetch(`${API_BASE}/api/sync/rules`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.rules) {
+                    dynamicRules = data.rules;
+                    saveDynamicRules(); // 로컬 파일 및 스테이트 업데이트
+                    renderRulesTable();
+                    alert("DB에서 규칙을 성공적으로 불러왔습니다.");
+                } else {
+                    alert("DB에 저장된 규칙이 없습니다.");
+                }
+            } else {
+                alert("DB 연동 실패");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("오류 발생: " + err.message);
+        }
+    }
+});
+
+document.getElementById('btnUploadRulesToDb')?.addEventListener('click', async () => {
+    if (confirm("현재 규칙들을 로컬 DB (excel)에 등록(백업)하시겠습니까? 기존 DB 데이터가 대체됩니다.")) {
+        try {
+            const response = await fetch(`${API_BASE}/api/sync/rules`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rules: dynamicRules })
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert("✅ 로컬 DB (excel)에 성공적으로 등록되었습니다.");
+                if (window.updateDbGlobalStats) window.updateDbGlobalStats();
+            } else {
+                alert("❌ 로컬 DB 등록 실패: " + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("오류 발생: " + err.message);
+        }
+    }
+});
+
+export {
+    dynamicRules,
+    loadDynamicRules,
+    saveDynamicRules,
+    createConditionRow,
+    renderRulesTable,
+    resetRuleForm
+};

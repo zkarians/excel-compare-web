@@ -59,10 +59,6 @@
                     style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 500; white-space: nowrap;">⚙️ 선사</button>
                 <button id="btnOpenRules" class="btn btn-primary-soft"
                     style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; white-space: nowrap;">📋 자동분류</button>
-                <button id="btnOpenPalette" class="btn"
-                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #fdf5e6; color: #b45309; border: 1px solid #fef3c7; white-space: nowrap;">
-                    📦 파레트 재고
-                </button>
                 <button id="btnOpenCautionModels" class="btn"
                     style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; white-space: nowrap;">⚠️ 주의모델</button>
                 <button id="btnOpenProductMaster" class="btn"
@@ -915,14 +911,6 @@
                 style="padding: 15px 20px; background: #f8fafc; text-align: right; gap: 10px; display: flex; justify-content: flex-end; flex-shrink: 0; border-top: 1px solid #e2e8f0;">
                 <button class="btn btn-secondary" id="closeEmailPreviewBottomBtn"
                     style="padding: 0.6rem 1.2rem;">취소</button>
-                <button class="btn btn-success" id="btnOpenEmailPreviewExcel"
-                    style="padding: 0.6rem 1.2rem; background: #10b981; border: none; font-weight: bold; color: white;">
-                    <i class="fas fa-file-excel" style="margin-right: 8px;"></i> 엑셀로 열기
-                </button>
-                <button class="btn btn-primary" id="btnDownloadEmailPreviewImage"
-                    style="padding: 0.6rem 1.2rem; background: #3b82f6; border: none; font-weight: bold;">
-                    <i class="fas fa-download" style="margin-right: 8px;"></i> 이미지 다운로드
-                </button>
                 <button class="btn btn-success" id="btnConfirmSendEmail"
                     style="padding: 0.6rem 2rem; background: #059669; font-weight: bold;">
                     <i class="fas fa-paper-plane" style="margin-right: 8px;"></i> 위 내용으로 발송하기
@@ -1457,50 +1445,52 @@
     <div id="tabContentResults" class="tab-content">
         <!-- 요약 대시보드 (Summary) -->
         <div class="dashboard-container" id="dashboardContainer" style="display: none;">
-            <div class="summary-card total" id="cardTotal">
+            <div class="summary-card total" id="cardTotal"
+                style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #0ea5e9; cursor: pointer;">
                 <h4>총 컨테이너 대수</h4>
-                <div class="value" id="valTotalCntr">0</div>
+                <div class="value" id="valTotalCntr" style="color: #0369a1;">0</div>
             </div>
-            <div class="summary-card success" id="cardSuccess">
+            <div class="summary-card success" id="cardSuccess" style="cursor: pointer;">
                 <h4>정상 컨테이너</h4>
                 <div class="value" id="valSuccessCntr">0</div>
             </div>
-            <div class="summary-card danger" id="cardError">
+            <div class="summary-card danger" id="cardError" style="cursor: pointer;">
                 <h4 title="양쪽 파일에 모두 관련 정보가 있으나 상호 불일치(수량, 목적지 등)하는 경우">오류 및 불일치</h4>
                 <div class="value" id="valErrorCntr">0</div>
             </div>
 
-            <div class="summary-card warning" id="cardMissingMerged">
-                <h4 title="추가(원본에 없음) 및 누락(전산에 없음)">추가 및 누락</h4>
-                <div class="missing-values">
-                    원본없음: <span id="valDownExtraCntr" class="val-extra">0</span>
-                    <span class="divider">|</span>
-                    전산없음: <span id="valOrigExtraCntr" class="val-missing">0</span>
-                </div>
+            <div class="summary-card warning" id="cardExtra" style="cursor: pointer;">
+                <h4>추가(원본에 없음)</h4>
+                <div class="value" id="valDownExtraCntr">0</div>
             </div>
 
-            <div class="summary-card hold" id="cardHold">
-                <h4 title="사용자가 보류 처리한 컨테이너">보류건</h4>
-                <div class="value" id="valHoldCntr">0</div>
+            <div class="summary-card" id="cardMissing"
+                style="background: #fdf2f8; border-color: #f472b6; cursor: pointer;">
+                <h4 style="color: #db2777;" title="원본(작업내역) O / 전산 파일 X">누락(전산에 없음)</h4>
+                <div class="value" id="valOrigExtraCntr" style="color: #be185d;">0</div>
             </div>
 
-            <div class="summary-card excluded" id="cardExcluded">
-                <h4 title="작업일(S열)이 없어 대상에서 제외된 컨테이너">제외(작업일 없음)</h4>
-                <div class="value" id="valExcludedCntr">0</div>
+            <div class="summary-card" id="cardExcluded"
+                style="background: #f1f5f9; border-color: #cbd5e1; cursor: pointer;">
+                <h4 style="color: #475569;" title="작업일(S열)이 없어 대상에서 제외된 컨테이너">제외(작업일 없음)</h4>
+                <div class="value" id="valExcludedCntr" style="color: #475569;">0</div>
             </div>
             <div class="summary-card update-needed">
                 <h4>제품정보 업데이트 필요</h4>
-                <div class="value" id="valUpdate">0</div>
+                <div class="value" id="valUpdate" style="color: #6366f1;">0</div>
             </div>
-            <div class="summary-card info" id="cardTransporter">
+            <div class="summary-card info" id="cardTransporter" style="cursor: pointer;">
                 <h4>운송사 배정 현황</h4>
-                <div class="transporter-values">
-                    <div class="trans-top">
-                        <span class="trans-chunma">천마: <strong id="valChunma">0</strong></span>
-                        <span class="divider">|</span>
-                        <span class="trans-bni">BNI: <strong id="valBni">0</strong></span>
+                <div class="value" style="font-size: 0.85rem; margin-top: 3px; line-height: 1.2;">
+                    <div style="margin-bottom: 2px;">
+                        <span style="color: #e74c3c;">천마: <strong id="valChunma"
+                                style="font-size: 0.95rem;">0</strong></span>
+                        <span style="margin: 0 5px; color: #cbd5e1;">|</span>
+                        <span style="color: #3498db;">BNI: <strong id="valBni"
+                                style="font-size: 0.95rem;">0</strong></span>
                     </div>
-                    <div class="trans-bottom">정보없음: <strong id="valUnknownTransporter">0</strong>대</div>
+                    <div style="color: #64748b; font-size: 0.75rem;">정보없음: <strong
+                            id="valUnknownTransporter">0</strong>대</div>
                 </div>
             </div>
         </div>
@@ -1599,7 +1589,7 @@
 
             <!-- 정상 컨테이너 서브 필터 -->
             <div id="successFilterContainer"
-                style="display: none; margin-top: 6px; margin-bottom: 6px; padding: 6px 12px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                style="display: none; margin-top: 10px; margin-bottom: 10px; padding: 10px 14px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
                 <div
                     style="display: flex; align-items: center; gap: 16px; color: #334155; font-size: 0.9rem; font-weight: 500; flex-wrap: wrap;">
                     <span style="color: #64748b; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
@@ -1636,28 +1626,9 @@
                 </div>
             </div>
 
-            <!-- 추가 및 누락 서브 필터 -->
-            <div id="missingFilterContainer"
-                style="display: none; margin-top: 6px; margin-bottom: 6px; padding: 6px 12px; background-color: #fffbeb; border-radius: 8px; border: 1px solid #fde68a;">
-                <div style="display: flex; align-items: center; gap: 16px; color: #92400e; font-size: 0.9rem; font-weight: 500; flex-wrap: wrap;">
-                    <span style="color: #b45309; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
-                        <i class="fas fa-filter"></i> 필터:
-                    </span>
-                    <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
-                        <input type="checkbox" id="chkFilterMissingExtra" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: #f59e0b;">
-                        원본에 없음: <span id="cntMissingExtra" style="color: #d97706; font-weight: bold;">0</span>대
-                    </label>
-                    <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
-                        <input type="checkbox" id="chkFilterMissingMissing" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: #db2777;">
-                        전산에 없음: <span id="cntMissingMissing" style="color: #be185d; font-weight: bold;">0</span>대
-                    </label>
-                </div>
-            </div>
-
-
             <!-- 선택 항목 관리 바 (DB 저장 등) -->
             <div id="selectionBar"
-                style="display: none; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 6px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                style="display: none; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding: 12px 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 500;">
                         <input type="checkbox" id="selectAll" style="width: 16px; height: 16px; cursor: pointer;">
@@ -1672,19 +1643,19 @@
                             <i class="fas fa-search"
                                 style="position: absolute; left: 10px; top: 9px; color: #94a3b8; font-size: 0.8rem;"></i>
                             <input type="text" id="inputSearch" placeholder="컨테이너 번호"
-                                style="width: 100%; padding: 4px 10px 4px 30px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem; outline: none; transition: border-color 0.2s;">
+                                style="width: 100%; padding: 6px 10px 6px 30px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; outline: none; transition: border-color 0.2s;">
                         </div>
                         <input type="text" id="inputProdSearch" placeholder="제품명 검색"
-                            style="flex: 1; max-width: 200px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem; outline: none;">
+                            style="flex: 1; max-width: 200px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; outline: none;">
                         <select id="selectProdType"
-                            style="padding: 3px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem; background: white; outline: none; cursor: pointer; color: #475569;">
+                            style="padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; background: white; outline: none; cursor: pointer; color: #475569;">
                             <option value="">제품구분(전체)</option>
                             <option value="F">F</option>
                             <option value="H">H</option>
                             <option value="Q">Q</option>
                         </select>
                         <button id="btnResetSearch" title="검색 필터 초기화"
-                            style="padding: 3px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem; background: white; outline: none; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                            style="padding: 5px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; background: white; outline: none; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
                             <i class="fas fa-undo" style="font-size: 0.8rem;"></i> 초기화
                         </button>
                         <span id="searchResultCount"
@@ -1693,19 +1664,19 @@
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn btn-excel-download" id="btnDownloadResult"
-                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; color: white; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
-                        <i class="fas fa-file-excel" style="margin-right: 4px;"></i> 결과 엑셀 다운로드
+                        style="padding: 0.5rem 1.2rem; font-size: 0.85rem; border-radius: 6px; font-weight: 600; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; color: white; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
+                        <i class="fas fa-file-excel" style="margin-right: 6px;"></i> 결과 엑셀 다운로드
                     </button>
                     <button class="btn" id="btnViewResult"
-                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; background: white; border: 1px solid #6366f1; color: #4f46e5; cursor: pointer;">
-                        <i class="fas fa-search" style="margin-right: 4px;"></i> 결과 바로보기
+                        style="padding: 0.5rem 1.2rem; font-size: 0.85rem; border-radius: 6px; font-weight: 600; background: white; border: 1px solid #6366f1; color: #4f46e5; cursor: pointer;">
+                        <i class="fas fa-search" style="margin-right: 6px;"></i> 결과 바로보기
                     </button>
                     <button id="btnBulkHold" class="btn"
-                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; background-color: #f8fafc; border: 1px solid #cbd5e1; color: #475569;">
+                        style="padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 6px; font-weight: 600; background-color: #f8fafc; border: 1px solid #cbd5e1; color: #475569;">
                         <i class="fas fa-pause-circle" style="margin-right: 4px;"></i> 선택항목 보류등록
                     </button>
                     <button id="btnSaveToDB" class="btn success"
-                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600;">
+                        style="padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 6px; font-weight: 600;">
                         <i class="fas fa-save" style="margin-right: 4px;"></i> 선택항목 DB 저장
                     </button>
                 </div>
@@ -1750,18 +1721,17 @@
                 <table id="resultTable">
                     <thead>
                         <tr>
-                            <th class="col-work">작업구분</th>
-                            <th class="col-special">특이사항</th>
-                            <th class="col-cntr">컨테이너번호</th>
-                            <th class="col-type">제품구분</th>
-                            <th class="col-div">사업부</th>
-                            <th class="col-model">제품모델명</th>
-                            <th class="col-qty">수량 (계획/적재/팬딩/잔여/단위)</th>
-                            <th class="col-spec">컨테이너규격</th>
-                            <th class="col-dims">제품크기</th>
-                            <th class="col-carrier">선사</th>
-                            <th class="col-dest">도착지</th>
-                            <th class="col-gw" style="text-align: right;">GW</th>
+                            <th>작업구분</th>
+                            <th>컨테이너번호</th>
+                            <th>제품구분</th>
+                            <th>사업부</th>
+                            <th>제품모델명</th>
+                            <th>수량 (계획/적재/팬딩적재/잔여/단위)</th>
+                            <th>컨테이너규격</th>
+                            <th>제품크기</th>
+                            <th>선사</th>
+                            <th>도착지</th>
+                            <th style="text-align: right;">GW</th>
                             <th style="text-align: center;">추가정보</th>
                         </tr>
                     </thead>
@@ -2031,60 +2001,6 @@
                         <i class="far fa-file-excel"></i> 엑셀 다운로드
                     </button>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 파레트 재고 관리 모달 -->
-    <div id="paletteInventoryModal" class="modal-overlay" style="display: none; z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); justify-content: center; align-items: center;">
-        <div class="modal-content" style="background: #fff; border-radius: 12px; width: 450px; max-width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden;">
-            <div class="modal-header" style="background: #f8fafc; padding: 15px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin: 0; font-size: 1.1rem; color: #1e293b;"><i class="fas fa-boxes" style="color: #d97706; margin-right: 8px;"></i> 파레트 재고 관리</h3>
-                <button class="close-btn" id="closePaletteModalBtn" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">&times;</button>
-            </div>
-            <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
-                <!-- 날짜 선택 영역 (캡처 제외) -->
-                <div style="display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; padding: 10px 15px; border-radius: 8px;">
-                    <span style="font-weight: 600; color: #475569; font-size: 0.9rem;">📅 조회 일자</span>
-                    <input type="date" id="paletteDateInput" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-size: 0.9rem; color: #1e293b; outline: none; cursor: pointer; background: #fff;">
-                </div>
-                
-                <!-- 실제 캡처 영역 -->
-                <div id="paletteCaptureArea" style="background: #fff; padding: 15px 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #e2e8f0;">
-                    <table style="width: 100%; border-collapse: separate; border-spacing: 0; text-align: center; font-family: 'Malgun Gothic', 'Dotum', sans-serif; border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1;">
-                        <thead>
-                            <tr>
-                                <th colspan="3" style="padding: 16px; font-size: 18px; font-weight: 800; background: linear-gradient(to right, #1e293b, #334155); color: #fff; letter-spacing: 1px; border-bottom: 2px solid #0f172a;">
-                                    파레트 재고 <span id="paletteCaptureDateStr" style="font-size: 14px; font-weight: 500; opacity: 0.9; margin-left: 6px;"></span>
-                                </th>
-                            </tr>
-                            <tr style="background-color: #f8fafc; font-weight: 700; color: #475569; font-size: 0.95rem;">
-                                <th style="padding: 12px 10px; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #e2e8f0; width: 40%;">구분</th>
-                                <th style="padding: 12px 10px; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #e2e8f0; width: 30%;">수량</th>
-                                <th style="padding: 12px 10px; border-bottom: 1px solid #cbd5e1; width: 30%;">차량</th>
-                            </tr>
-                        </thead>
-                        <tbody id="paletteTableBody">
-                            <!-- 로직에 의해 생성됨 -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                    <div style="display: flex; gap: 5px;">
-                        <input type="text" id="newPaletteType" placeholder="새 종류 입력" style="padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.85rem; width: 100px;">
-                        <button class="btn" id="btnAddPaletteType" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 12px; font-size: 0.85rem; cursor: pointer;">추가</button>
-                    </div>
-                    <button class="btn" id="btnEditPaletteMode" style="background: transparent; color: #64748b; border: none; cursor: pointer; text-decoration: underline; font-size: 0.8rem;">편집 모드</button>
-                </div>
-            </div>
-            <div class="modal-footer" style="padding: 15px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
-                <button class="btn" id="btnSavePaletteImage" style="background: #10b981; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                    <i class="fas fa-download"></i> 이미지 저장
-                </button>
-                <button class="btn" id="btnCopyPaletteImage" style="background: #3b82f6; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                    <i class="far fa-copy"></i> 복사
-                </button>
             </div>
         </div>
     </div>
