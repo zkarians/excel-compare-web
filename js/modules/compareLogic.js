@@ -253,9 +253,32 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                             const currentVal = parseFloat(targetText) || 0;
                             
                             if (cond.operator === 'bundleMismatch') {
-                                if (otherValue === 0) return true;
-                                const bundleCount = Math.ceil(currentVal / otherValue - 0.0001);
-                                return bundleCount !== ratio;
+                                let planQty = 0;
+                                let packQty = 0;
+                                
+                                // cond.field와 otherField를 통해 Plan Qty와 Pack Qty 구분
+                                if (cond.field === 'downPlanQty' || cond.field === 'dl_planQty') planQty = currentVal;
+                                else if (cond.field === 'downPackingQty' || cond.field === 'dl_packingQty') packQty = currentVal;
+                                
+                                if (otherField === 'downPlanQty' || otherField === 'dl_planQty') planQty = otherValue;
+                                else if (otherField === 'downPackingQty' || otherField === 'dl_packingQty') packQty = otherValue;
+                                
+                                // 명확하지 않은 경우, 더 큰 값을 planQty로 간주 (일반적으로 계획수량이 단위수량보다 큼)
+                                if (planQty === 0 && packQty === 0) {
+                                    planQty = Math.max(currentVal, otherValue);
+                                    packQty = Math.min(currentVal, otherValue);
+                                } else if (planQty === 0) {
+                                    planQty = (currentVal === packQty) ? otherValue : currentVal;
+                                } else if (packQty === 0) {
+                                    packQty = (currentVal === planQty) ? otherValue : currentVal;
+                                }
+
+                                if (packQty === 0 && planQty === 0) return false;
+                                if (packQty === 0) return true; // 에러
+
+                                // 단위수량(PackQty)이 계획수량(PlanQty)을 16팔레트로 나누었을 때의 올림값과 일치하는지 확인
+                                const expectedPackQty = Math.ceil(planQty / ratio - 0.0001);
+                                return packQty !== expectedPackQty;
                             } else {
                                 const expectedVal = otherValue * ratio;
                                 return Math.abs(currentVal - expectedVal) > 0.001;

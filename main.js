@@ -353,7 +353,58 @@ app.on('ready', () => {
     }
 
     createWindow();
+    setupAutoUpdater();
 });
+
+function setupAutoUpdater() {
+    let autoUpdater;
+    try {
+        const electronUpdater = require('electron-updater');
+        autoUpdater = electronUpdater.autoUpdater;
+    } catch (e) {
+        logToFile('⚠️ [AutoUpdater] electron-updater 모듈을 불러오지 못했습니다: ' + e.message);
+        return;
+    }
+
+    autoUpdater.logger = {
+        info: (msg) => logToFile(`[AutoUpdater] INFO: ${msg}`),
+        warn: (msg) => logToFile(`[AutoUpdater] WARN: ${msg}`),
+        error: (msg) => logToFile(`[AutoUpdater] ERROR: ${msg}`)
+    };
+
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    autoUpdater.on('update-available', (info) => {
+        logToFile(`[AutoUpdater] 업데이트 발견: v${info.version}`);
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+        logToFile(`[AutoUpdater] 다운로드 완료: v${info.version}`);
+        dialog.showMessageBox(mainWindow, {
+            type: 'info',
+            title: '업데이트 완료',
+            message: `새로운 버전(v${info.version})의 다운로드가 완료되었습니다. 지금 재시작하여 설치하시겠습니까?`,
+            buttons: ['지금 재시작', '나중에']
+        }).then((result) => {
+            if (result.response === 0) {
+                autoUpdater.quitAndInstall();
+            }
+        });
+    });
+
+    autoUpdater.on('error', (err) => {
+        logToFile(`[AutoUpdater] 오류: ${err.message}`);
+    });
+
+    // 10초 후 첫 업데이트 체크
+    setTimeout(() => {
+        logToFile('[AutoUpdater] 업데이트 체크 시작...');
+        autoUpdater.checkForUpdatesAndNotify().catch(e => {
+            logToFile(`[AutoUpdater] 업데이트 체크 실패: ${e.message}`);
+        });
+    }, 10000);
+}
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
