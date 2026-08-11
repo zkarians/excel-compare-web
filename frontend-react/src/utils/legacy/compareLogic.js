@@ -240,11 +240,11 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                             }
                         }
                     }
-                    const keyword = (cond.value || "").toUpperCase();
-                    const rawValue = cond.value || "";
+                    const keyword = String(cond.value || "").toUpperCase();
+                    const rawValue = String(cond.value || "");
 
-                    if (cond.operator === 'ratioMismatch' || (!cond.operator && cond.value && cond.value.includes(':') && (cond.value.startsWith('downPackingQty:') || cond.value.startsWith('downPlanQty:') || cond.value.startsWith('downLoadQty:')))) {
-                        const parts = cond.value.split(':');
+                    if (cond.operator === 'ratioMismatch' || cond.operator === 'bundleMismatch' || (!cond.operator && cond.value && String(cond.value).includes(':') && (String(cond.value).startsWith('downPackingQty:') || String(cond.value).startsWith('downPlanQty:') || String(cond.value).startsWith('downLoadQty:')))) {
+                        const parts = String(cond.value).split(':');
                         if (parts.length === 2) {
                             const otherField = parts[0];
                             const ratio = parseFloat(parts[1]);
@@ -254,14 +254,22 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                             else if (otherField === 'downLoadQty') otherValue = parseFloat(downLoadType) || 0;
 
                             const currentVal = parseFloat(targetText) || 0;
-                            const expectedVal = otherValue * ratio;
-                            return Math.abs(currentVal - expectedVal) > 0.001;
+                            
+                            if (cond.operator === 'bundleMismatch') {
+                                if (otherValue === 0) return true;
+                                const bundleCount = Math.ceil(currentVal / otherValue - 0.0001);
+                                return bundleCount !== ratio;
+                            } else {
+                                const expectedVal = otherValue * ratio;
+                                return Math.abs(currentVal - expectedVal) > 0.001;
+                            }
                         }
                         return false;
                     }
                     if (cond.operator === 'isEmpty') return !targetText || String(targetText).trim() === '';
                     if (cond.operator === 'isNotEmpty') return targetText && String(targetText).trim() !== '';
                     if (cond.operator === 'exact') return targetText === keyword;
+                    if (cond.operator === 'notExact') return targetText !== keyword;
                     if (cond.operator === 'notIncludes') return !targetText.includes(keyword);
                     if (cond.operator === 'startsWith') return targetText.startsWith(keyword);
                     if (cond.operator === 'includes') return targetText.includes(keyword);
@@ -288,6 +296,7 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                     if (cond.operator === 'lte') return targetNum <= keywordNum;
                     if (cond.operator === 'lt') return targetNum < keywordNum;
                     if (cond.operator === 'numEq') return Math.abs(targetNum - keywordNum) < 0.001;
+                    if (cond.operator === 'numNotEq') return Math.abs(targetNum - keywordNum) >= 0.001;
 
                     return targetText.includes(keyword); // Fallback
                 });

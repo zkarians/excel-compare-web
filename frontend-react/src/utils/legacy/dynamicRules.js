@@ -238,6 +238,7 @@ function createConditionRow() {
                 <option value="notIncludes">미포함</option>
                 <option value="startsWith">시작함</option>
                 <option value="exact">정확히 일치</option>
+                <option value="notExact">정확히 불일치</option>
                 <option value="isEmpty">비어 있음</option>
                 <option value="isNotEmpty">비어 있지 않음</option>
                 <option value="gte">이상 (>=)</option>
@@ -245,6 +246,7 @@ function createConditionRow() {
                 <option value="lte">이하 (<=)</option>
                 <option value="lt">미만 (<)</option>
                 <option value="numEq">수치 동일 (=)</option>
+                <option value="numNotEq">수치 불일치 (!=)</option>
                 <option value="ratioMismatch">비율 불일치</option>
                 <option value="regexMatch">Regex 일치</option>
                 <option value="regexNotMatch">Regex 미일치</option>
@@ -389,6 +391,7 @@ function renderRulesTable() {
                 else if (actualOp === 'notIncludes') opText = '미포함';
                 else if (actualOp === 'startsWith') opText = '시작';
                 else if (actualOp === 'exact') opText = '일치';
+                else if (actualOp === 'notExact') opText = '불일치';
                 else if (actualOp === 'isEmpty') opText = '비어 있음';
                 else if (actualOp === 'isNotEmpty') opText = '비어 있지 않음';
                 else if (actualOp === 'gte') opText = '>=';
@@ -396,6 +399,7 @@ function renderRulesTable() {
                 else if (actualOp === 'lte') opText = '<=';
                 else if (actualOp === 'lt') opText = '<';
                 else if (actualOp === 'numEq') opText = '=';
+                else if (actualOp === 'numNotEq') opText = '!=';
                 else if (actualOp === 'ratioMismatch') opText = '비율 불일치';
                 else if (actualOp === 'regexMatch') opText = 'Regex일치';
                 else if (actualOp === 'regexNotMatch') opText = 'Regex미일치';
