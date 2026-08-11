@@ -1,0 +1,12 @@
+{
+  "name": "excelcompare-update-server",
+  "version": "1.0.0",
+  "description": "Local update server for ExcelCompare",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.0"
+  }
+}
