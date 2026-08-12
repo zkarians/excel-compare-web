@@ -19,6 +19,34 @@
 </head>
 
 <body>
+    <!-- Login Overlay -->
+    <div id="loginOverlay">
+        <div class="login-card">
+            <img src="build/icon.png" alt="logo" class="login-logo">
+            <h1 class="login-title">ExcelCompare</h1>
+            <p class="login-subtitle">관리자 로그인이 필요합니다</p>
+            
+            <div class="login-input-group">
+                <i class="fas fa-user"></i>
+                <input type="text" id="loginId" class="login-input" placeholder="아이디" autocomplete="off">
+            </div>
+            
+            <div class="login-input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="loginPw" class="login-input" placeholder="비밀번호" autocomplete="off">
+            </div>
+            
+            <div class="login-options">
+                <label>
+                    <input type="checkbox" id="saveIdCheckbox"> 아이디 저장
+                </label>
+            </div>
+            
+            <button id="btnLogin" class="login-btn">로그인</button>
+            <div id="loginErrorMsg"><i class="fas fa-exclamation-circle"></i> 아이디 또는 비밀번호가 올바르지 않습니다.</div>
+        </div>
+    </div>
+
     <div class="container">
         <header
             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; gap: 8px;">

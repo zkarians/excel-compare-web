@@ -8516,3 +8516,65 @@ if (btnSavePaletteImage) {
         }
     });
 }
+
+// --- Login Screen Logic ---
+document.addEventListener('DOMContentLoaded', () => {
+    const loginOverlay = document.getElementById('loginOverlay');
+    const loginId = document.getElementById('loginId');
+    const loginPw = document.getElementById('loginPw');
+    const btnLogin = document.getElementById('btnLogin');
+    const loginErrorMsg = document.getElementById('loginErrorMsg');
+    const saveIdCheckbox = document.getElementById('saveIdCheckbox');
+    
+    // Check if there is a saved ID in localStorage
+    const savedId = localStorage.getItem('excelcompare_saved_id');
+    if (savedId) {
+        loginId.value = savedId;
+        saveIdCheckbox.checked = true;
+        // Focus on password if ID is already there
+        setTimeout(() => loginPw.focus(), 100);
+    } else {
+        setTimeout(() => loginId.focus(), 100);
+    }
+
+    function attemptLogin() {
+        const id = loginId.value.trim();
+        const pw = loginPw.value.trim();
+        
+        if (id === 'admin' && pw === 'z456qwe12!@') {
+            // Success
+            loginErrorMsg.style.display = 'none';
+            loginOverlay.style.opacity = '0';
+            
+            // Handle Save ID
+            if (saveIdCheckbox.checked) {
+                localStorage.setItem('excelcompare_saved_id', id);
+            } else {
+                localStorage.removeItem('excelcompare_saved_id');
+            }
+            
+            setTimeout(() => {
+                loginOverlay.style.display = 'none';
+            }, 400); // Wait for transition
+        } else {
+            // Fail
+            loginErrorMsg.style.display = 'block';
+            loginPw.value = ''; // clear password on fail
+            loginPw.focus();
+        }
+    }
+
+    btnLogin.addEventListener('click', attemptLogin);
+
+    // Allow Enter key to submit
+    loginId.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            if (loginPw.value) attemptLogin();
+            else loginPw.focus();
+        }
+    });
+
+    loginPw.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') attemptLogin();
+    });
+});
