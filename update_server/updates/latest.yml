@@ -1,8 +1,8 @@
-version: 1.1.6
+version: 1.1.7
 files:
-  - url: ExcelCompare Setup 1.1.6.exe
-    sha512: wUrrDiIivfAlx91oBk6k7gceQh8DjKkCPpono1b5egArGyYtdL2chaihPqrEqqjtuojoEOf2X0dZ6uNoim3Hew==
-    size: 73894618
-path: ExcelCompare Setup 1.1.6.exe
-sha512: wUrrDiIivfAlx91oBk6k7gceQh8DjKkCPpono1b5egArGyYtdL2chaihPqrEqqjtuojoEOf2X0dZ6uNoim3Hew==
-releaseDate: '2026-08-12T09:23:13.262Z'
+  - url: ExcelCompare Setup 1.1.7.exe
+    sha512: 7McJbGCxTUjRW4H0KFudQku9qlLSRxS1DiWXXYKZ9Dtzi2lKaT3G/ONgU4Dl33/BnpNcGM6nkcyAyFiFOGNFbg==
+    size: 73900545
+path: ExcelCompare Setup 1.1.7.exe
+sha512: 7McJbGCxTUjRW4H0KFudQku9qlLSRxS1DiWXXYKZ9Dtzi2lKaT3G/ONgU4Dl33/BnpNcGM6nkcyAyFiFOGNFbg==
+releaseDate: '2026-08-12T09:26:23.833Z'
