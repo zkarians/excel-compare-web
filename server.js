@@ -1430,6 +1430,37 @@ app.post('/api/sync/carriers', async (req, res) => {
     }
 });
 
+// 1-2. 목적지(도착지) 매핑 클라우드 동기화
+app.get('/api/sync/destinations', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const result = await pool.query("SELECT config_value FROM app_configs WHERE config_key = 'destination_mappings'");
+        if (result.rows.length > 0) {
+            const mapping = typeof result.rows[0].config_value === 'string' ? JSON.parse(result.rows[0].config_value) : result.rows[0].config_value;
+            return res.json({ success: true, mapping });
+        }
+        res.json({ success: true, mapping: {} });
+    } catch (err) {
+        res.json({ success: false, message: err.message, mapping: {} });
+    }
+});
+
+app.post('/api/sync/destinations', async (req, res) => {
+    const { mapping } = req.body;
+    if (!mapping) return res.status(400).json({ success: false, message: "데이터가 없습니다." });
+
+    try {
+        const pool = await getPool();
+        await pool.query(
+            "INSERT INTO app_configs (config_key, config_value, updated_at) VALUES ('destination_mappings', $1, NOW()) ON CONFLICT (config_key) DO UPDATE SET config_value = $1, updated_at = NOW()",
+            [JSON.stringify(mapping)]
+        );
+        res.json({ success: true, message: "목적지 매핑이 저장되었습니다." });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // 2. 자동분류 규칙 클라우드 동기화
 app.get('/api/sync/rules', async (req, res) => {
     try {

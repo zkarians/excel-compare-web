@@ -4460,7 +4460,9 @@ function displayResults(results, isDbMode = false) {
                 tr.innerHTML = `
                     <td style="text-align: center;">${res.carrierName.val}</td>
                     <td style="text-align: center;">${res.cntrType.val}</td>
-                    <td style="text-align: center; color: ${/^(US|CA)/i.test(res.destination.val) ? 'inherit' : '#ef4444'}; font-weight: ${/^(US|CA)/i.test(res.destination.val) ? 'normal' : 'bold'};">${res.destination.val}</td>
+                    <td style="text-align: center; color: ${/^(US|CA)/i.test(res.destination.val) ? 'inherit' : '#ef4444'}; font-weight: ${/^(US|CA)/i.test(res.destination.val) ? 'normal' : 'bold'};">
+                        ${typeof renderDestinationHtml === 'function' ? renderDestinationHtml(null, res.destination.val, false) : res.destination.val}
+                    </td>
                     <td style="color: ${effectiveCntrColor}; ${hasPop ? 'font-style:italic;' : ''}">
                         <div style="display: flex; align-items: center; gap: 4px;">
                             <strong onclick="window.copyToClipboard('${res.cntrNo.replace(/'/g, "\\'")}', '컨테이너')" 
@@ -4593,7 +4595,7 @@ function displayResults(results, isDbMode = false) {
                     <td class="col-spec">${renderMismatch(res.cntrType.orig, res.cntrType.val, res.cntrType.isMismatch)}</td>
                     <td class="col-dims">${res.dims || '-'}</td>
                     <td class="col-carrier">${renderMismatch(res.carrierName.orig, res.carrierName.val, res.carrierName.isMismatch)}</td>
-                    <td class="col-dest">${res.destination.orig === null ? `<span>${res.destination.val}</span>` : renderMismatch(res.destination.orig, res.destination.val, res.destination.isMismatch)}</td>
+                    <td class="col-dest">${typeof renderDestinationHtml === 'function' ? renderDestinationHtml(res.destination.orig, res.destination.val, res.destination.isMismatch) : (res.destination.orig === null ? `<span>${res.destination.val}</span>` : renderMismatch(res.destination.orig, res.destination.val, res.destination.isMismatch))}</td>
                     <td class="col-gw">
                         ${(() => {
                         if (res.badgeClass === 'noproduct') {
@@ -8405,7 +8407,11 @@ function renderModalDbTable(rows) {
                 <td><strong>${row.prod_name}</strong></td>
                 <td style="text-align: center;">${row.qty_plan || 0} / ${row.qty_load || 0} / ${row.qty_remain || 0}</td>
                 <td style="text-align: center;">${row.dims || '-'}</td>
-                <td style="text-align: center;">${row.carrier || '-'} / ${row.destination || '-'}</td>
+                <td style="text-align: center;">${row.carrier || '-'} / ${(() => {
+                    if (!row.destination || row.destination === '-') return '<span>-</span>';
+                    const info = typeof getDestinationInfo === 'function' ? getDestinationInfo(row.destination) : { kr: '' };
+                    return `<span title="[도착지 위치] ${info.kr || row.destination} (${info.en || ''})" style="cursor:help; text-decoration: underline dotted #94a3b8; text-underline-offset: 3px;">${row.destination}</span>`;
+                })()}</td>
                 <td style="text-align: right; font-weight: 500;">${row.weight_mixed ? parseFloat(row.weight_mixed).toLocaleString() : '0'}</td>
                 <td style="text-align: center;"><span class="badge" style="background: ${row.transporter && row.transporter.includes('천마') ? '#fee2e2; color: #b91c1c' : '#dbeafe; color: #1d4ed8'}; padding: 4px 8px; font-weight: 600;">${row.transporter || '-'}</span></td>
                 <td style="text-align: center;">

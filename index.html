@@ -85,6 +85,8 @@
                 </button>
                 <button id="btnOpenSettings" class="btn btn-secondary-outline"
                     style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 500; white-space: nowrap;">⚙️ 선사</button>
+                <button id="btnOpenDestSettings" class="btn btn-secondary-outline"
+                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 500; white-space: nowrap;">🗺️ 도착지</button>
                 <button id="btnOpenRules" class="btn btn-primary-soft"
                     style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; white-space: nowrap;">📋 자동분류</button>
                 <button id="btnOpenPalette" class="btn"
@@ -357,6 +359,82 @@
                 <div class="modal-footer"
                     style="text-align: right; margin-top: 1rem; border-top: 1px solid #eee; padding-top: 1rem;">
                     <button class="btn btn-secondary close-btn-bottom">닫기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 목적지(도착지) 매핑 설정 Modal -->
+        <div id="destinationSettingsModal" class="modal">
+            <div class="modal-content" style="max-width: 800px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+                <div class="modal-header" style="background: #f0fdf4; border-bottom: 2px solid #bbf7d0; padding: 1.2rem 1.5rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <h2 style="margin: 0; color: #166534; font-size: 1.25rem;">
+                                <i class="fas fa-map-marked-alt" style="margin-right: 8px;"></i> 🗺️ 도착지(UN/LOCODE) 한국어 사전 관리
+                            </h2>
+                            <span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;">
+                                총 <span id="destTotalCount">0</span>개 거점
+                            </span>
+                        </div>
+                        <span class="close-btn" id="closeDestModalBtn" style="color: #166534; cursor: pointer;">&times;</span>
+                    </div>
+                </div>
+                <div class="modal-body" style="padding: 1.2rem 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+                    <p style="color: #64748b; font-size: 0.85rem; margin: 0; line-height: 1.5;">
+                        5자리 목적지 코드(예: AUBNE, USOCF)에 마우스를 올렸을 때 표시될 <strong>한국어 지역명</strong>을 관리합니다.<br>
+                        💡 사전에 등록되지 않은 코드는 <strong>앞 2자리 국가코드(US, AU 등)를 자동 분석</strong>하여 국가명이 표시됩니다.
+                    </p>
+
+                    <!-- 신규/수정 입력 폼 -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; align-items: center;">
+                        <input type="hidden" id="editDestOriginalCode">
+                        <input type="text" id="inputDestCode" placeholder="코드 (예: USOCF)" maxlength="10"
+                            style="width: 140px; padding: 0.45rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 700; font-family: Consolas, monospace; text-transform: uppercase;">
+                        <input type="text" id="inputDestNameKr" placeholder="한국어 지역명 (예: 미국 플로리다 오칼라)"
+                            style="flex: 2; min-width: 180px; padding: 0.45rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+                        <input type="text" id="inputDestNameEn" placeholder="영문 명칭 (선택, 예: Ocala, FL, USA)"
+                            style="flex: 1.5; min-width: 150px; padding: 0.45rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+                        <div style="display: flex; gap: 4px;">
+                            <button id="btnAddDest" class="btn btn-success" style="padding: 0.45rem 0.9rem; font-size: 0.82rem; font-weight: 600; white-space: nowrap;">
+                                <i class="fas fa-plus"></i> 등록
+                            </button>
+                            <button id="btnUpdateDest" class="btn btn-primary" style="padding: 0.45rem 0.9rem; font-size: 0.82rem; font-weight: 600; display: none; white-space: nowrap;">
+                                <i class="fas fa-check"></i> 수정 완료
+                            </button>
+                            <button id="btnCancelDestEdit" class="btn btn-secondary" style="padding: 0.45rem 0.8rem; font-size: 0.82rem; display: none; white-space: nowrap;">
+                                취소
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 검색 필터 -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                        <div style="position: relative; flex: 1;">
+                            <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.85rem;"></i>
+                            <input type="text" id="searchDestKeyword" placeholder="목적지 코드 또는 한글/영문 지역명으로 검색..."
+                                style="width: 100%; padding: 0.45rem 0.6rem 0.45rem 2rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;">
+                        </div>
+                    </div>
+
+                    <!-- 목적지 목록 테이블 -->
+                    <div style="max-height: 420px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+                            <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 2;">
+                                <tr style="border-bottom: 2px solid #e2e8f0;">
+                                    <th style="padding: 8px 12px; text-align: left; width: 100px;">도착지 코드</th>
+                                    <th style="padding: 8px 12px; text-align: left;">한국어 지역/항구명</th>
+                                    <th style="padding: 8px 12px; text-align: left;">영문 명칭</th>
+                                    <th style="padding: 8px 12px; text-align: center; width: 110px;">관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="destinationSettingsBody">
+                                <!-- JS에서 동적으로 채워짐 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 12px 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end;">
+                    <button class="btn btn-secondary" id="closeDestModalBottomBtn">닫기</button>
                 </div>
             </div>
         </div>
@@ -2181,6 +2259,7 @@
     <script src="js/modules/customFields.js?v=202603052310"></script>
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
+    <script src="js/modules/destination.js?v=20260817"></script>
     <script src="app_main.js?v=20260528-fixed3"></script>
 </body>
 
