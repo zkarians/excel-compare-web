@@ -2393,18 +2393,24 @@ if (btnClearDown) {
             };
         }
 
-        // 팝업 위치 계산 (화면 밖으로 나가지 않도록 지능형 위치 보정)
+        // 팝업 위치 계산 (위/아래 행의 제품명 앞글자 3~4개가 가려지지 않도록 오른쪽으로 80px 오프셋)
         popover.style.display = 'block';
         const rect = targetEl.getBoundingClientRect();
         const popoverWidth = 360;
         const popoverHeight = popover.offsetHeight || 260;
 
-        let left = rect.left;
+        // 제품명 앞 3~4글자(약 80px)를 노출하여 마우스를 상하로 바로 이동할 수 있도록 위치 설정
+        const OFFSET_LEFT = 80;
+        let left = rect.left + OFFSET_LEFT;
         let top = rect.bottom + 6;
 
-        // 우측 경계 보정
+        // 우측 경계 보정 (화면 우측 밖으로 나가지 않도록)
         if (left + popoverWidth > window.innerWidth - 16) {
             left = window.innerWidth - popoverWidth - 16;
+            // 가능한 한 제품명 시작 부분(앞글자)은 가리지 않도록 유지
+            if (left < rect.left + 40) {
+                left = rect.left + 40;
+            }
         }
         if (left < 16) left = 16;
 
