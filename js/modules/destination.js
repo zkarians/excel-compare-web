@@ -560,7 +560,15 @@ function renderDestinationHtml(orig, val, isMismatch) {
 
     const makeSpan = (code, info) => {
         if (!code || code === '-') return `<span>-</span>`;
-        const tooltip = info.en ? `${info.kr} (${info.en})` : info.kr;
+        const lines = [
+            `[도착지 위치 안내]`,
+            `• 코드: ${code}`,
+            `• 지역: ${info.kr || '-'}`
+        ];
+        if (info.en) {
+            lines.push(`• 영문: ${info.en}`);
+        }
+        const tooltip = lines.join('\n').replace(/"/g, '&quot;');
         return `<span class="dest-code-item" data-code="${code}" title="${tooltip}" ondblclick="window.openDestinationQuickEdit('${code}', event)" style="cursor: help;">${code}</span>`;
     };
 
