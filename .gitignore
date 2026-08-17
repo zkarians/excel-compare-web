@@ -1,9 +1,13 @@
 node_modules/
 dist/
+release/
 data/
 uploads/
 backup/
 scratch/
+*_backup_*.js
+*_backup_*.html
+*_backup_*.css
 masterrule/runtime_debug.log
 masterrule/startup_error.log
 *.xlsx
@@ -12,6 +16,8 @@ masterrule/startup_error.log
 *.zip
 *.log
 *.tmp
+*.exe
+*.blockmap
 .env
 .DS_Store
 # package-lock.json (Keep in Git for consistent dependencies)

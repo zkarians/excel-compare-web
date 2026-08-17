@@ -26,14 +26,21 @@
     "appId": "com.excelcompare.app",
     "productName": "ExcelCompare",
     "directories": {
-      "output": "dist"
+      "output": "release"
     },
     "win": {
       "icon": "build/icon.png",
       "target": [
-        "portable",
-        "nsis"
+        "nsis",
+        "portable"
       ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ExcelCompare"
     },
     "publish": [
       {
@@ -61,7 +68,7 @@
     ]
   },
   "name": "excelcompare",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "engines": {
     "node": ">=18"
   },

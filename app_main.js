@@ -1343,7 +1343,202 @@ async function readExcelFile(file, type) {
     });
 }
 
+// 마스터 데이터 파일 업로드 로직 (동적 매핑 기능 적용)
+let currentExcelDataForUpsert = null;
+const MASTER_REQUIRED_FIELDS = [
+    { id: 'prod_name', label: '제품명(기준키)', guess: ['Model', '제품명', '품명'] },
+    { id: 'business_unit', label: '사업부', guess: ['HQ BA(G)', '사업부', '부서'] },
+    { id: 'prod_type', label: '제품구분', guess: ['BA(P)', '제품구분', '구분'] },
+    { id: 'width', label: '가로', guess: ['Gross Width', 'Net Width', '가로', 'Width'] },
+    { id: 'depth', label: '세로', guess: ['Gross Length', 'Net Length', '세로', 'Length', 'Depth'] },
+    { id: 'height', label: '높이', guess: ['Gross Height', 'Net Height', '높이', 'Height'] },
+    { id: 'weight', label: '무게', guess: ['Gross Weight', 'Net Weight', '중량', '무게', 'Weight'] },
+    { id: 'cbm', label: '부피(CBM)', guess: ['Gross Volume', 'Net Volume', '부피', 'CBM', 'Volume'] }
+];
 
+document.getElementById('btnUploadMaster').addEventListener('click', async () => {
+    const fileInput = document.getElementById('fileMasterUpload');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("업데이트할 마스터 데이터 엑셀 파일을 선택해주세요.");
+        return;
+    }
+
+    try {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const buffer = e.target.result;
+                const workbook = new ExcelJS.Workbook();
+                await workbook.xlsx.load(buffer);
+                const sheet = workbook.worksheets[0];
+                const rows = [];
+                sheet.eachRow((row) => {
+                    const rowData = [];
+                    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                        rowData[colNumber - 1] = cell.value?.result !== undefined ? cell.value.result : cell.value;
+                    });
+                    rows.push(rowData);
+                });
+                
+                if (rows.length < 2) {
+                    alert("엑셀 파일에 데이터가 충분하지 않습니다.");
+                    return;
+                }
+                const headerRow = rows[0] || [];
+                const headers = [];
+                for (let i = 0; i < headerRow.length; i++) {
+                    const h = headerRow[i];
+                    headers.push({ text: h ? String(h).trim() : `Column ${i+1}`, index: i });
+                }
+                currentExcelDataForUpsert = rows;
+
+            // 모달 UI 그리기
+            const container = document.getElementById('mappingContainer');
+            container.innerHTML = '';
+            
+            // 저장된 매핑 설정 불러오기
+            const savedMapping = JSON.parse(localStorage.getItem('masterColumnMapping') || '{}');
+
+            MASTER_REQUIRED_FIELDS.forEach(field => {
+                const rowDiv = document.createElement('div');
+                rowDiv.style.display = 'flex';
+                rowDiv.style.justifyContent = 'space-between';
+                rowDiv.style.alignItems = 'center';
+                rowDiv.style.background = '#f1f5f9';
+                rowDiv.style.padding = '10px';
+                rowDiv.style.borderRadius = '6px';
+                
+                const labelDiv = document.createElement('div');
+                labelDiv.innerHTML = `<strong>${field.label}</strong>`;
+                labelDiv.style.width = '30%';
+
+                const select = document.createElement('select');
+                select.className = 'form-select form-select-sm mapping-select';
+                select.dataset.field = field.id;
+                select.style.width = '65%';
+                
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '-1';
+                defaultOption.text = '선택 안 함 / 없음';
+                select.appendChild(defaultOption);
+
+                let bestMatch = -1;
+                headers.forEach(h => {
+                    const opt = document.createElement('option');
+                    opt.value = h.index;
+                    opt.text = `[${h.index}] ${h.text}`;
+                    select.appendChild(opt);
+
+                    // 자동 매핑 추측 로직
+                    if (bestMatch === -1) {
+                        const isMatch = field.guess.some(g => h.text.toLowerCase().includes(g.toLowerCase()));
+                        if (isMatch) bestMatch = h.index;
+                    }
+                });
+
+                // 우선순위: 1. 저장된 매핑 2. 자동 추측
+                if (savedMapping[field.id] !== undefined && savedMapping[field.id] !== null) {
+                    select.value = savedMapping[field.id];
+                } else if (bestMatch !== -1) {
+                    select.value = bestMatch;
+                }
+
+                rowDiv.appendChild(labelDiv);
+                rowDiv.appendChild(select);
+                container.appendChild(rowDiv);
+            });
+
+            document.getElementById('masterMappingModal').style.display = 'flex';
+            } catch (err) {
+                console.error("엑셀 파싱 에러:", err);
+                alert("파일을 읽는 중 에러가 발생했습니다: " + err.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    } catch (err) {
+        console.error("엑셀 파싱 에러:", err);
+        alert("파일을 읽는 중 에러가 발생했습니다.");
+    }
+});
+
+// 업데이트 실행 버튼 클릭 로직
+document.getElementById('btnExecuteMasterUpsert').addEventListener('click', async () => {
+    if (!currentExcelDataForUpsert) return;
+    const statusMaster = document.getElementById('statusMaster');
+    const selects = document.querySelectorAll('.mapping-select');
+    const mapping = {};
+    let hasNameMapped = false;
+    
+    selects.forEach(s => {
+        const val = parseInt(s.value);
+        mapping[s.dataset.field] = val;
+        if (s.dataset.field === 'prod_name' && val !== -1) hasNameMapped = true;
+    });
+
+    if (!hasNameMapped) {
+        alert("'제품명' 항목은 필수적으로 연결되어야 합니다.");
+        return;
+    }
+
+    // 매핑 설정 로컬 스토리지에 저장
+    localStorage.setItem('masterColumnMapping', JSON.stringify(mapping));
+    document.getElementById('masterMappingModal').style.display = 'none';
+    statusMaster.innerHTML = `<i class="fas fa-spinner fa-spin" style="color: #3b82f6; margin-right:4px;"></i>상태: 파싱 및 업데이트 중...`;
+    statusMaster.style.color = '#3b82f6';
+
+    try {
+        const dataPayload = [];
+        // row 0 is header
+        for (let i = 1; i < currentExcelDataForUpsert.length; i++) {
+            const row = currentExcelDataForUpsert[i];
+            if (!row || row.length === 0) continue;
+
+            const nameIdx = mapping['prod_name'];
+            if (nameIdx === -1 || !row[nameIdx]) continue; // 제품명 없으면 스킵
+
+            dataPayload.push({
+                prod_name: String(row[nameIdx]).trim(),
+                business_unit: mapping['business_unit'] !== -1 ? String(row[mapping['business_unit']] || '').trim() : '',
+                prod_type: mapping['prod_type'] !== -1 ? String(row[mapping['prod_type']] || '').trim() : '',
+                width: mapping['width'] !== -1 ? (parseFloat(row[mapping['width']]) || 0) : 0,
+                height: mapping['height'] !== -1 ? (parseFloat(row[mapping['height']]) || 0) : 0,
+                depth: mapping['depth'] !== -1 ? (parseFloat(row[mapping['depth']]) || 0) : 0,
+                weight: mapping['weight'] !== -1 ? (parseFloat(row[mapping['weight']]) || 0) : 0,
+                cbm: mapping['cbm'] !== -1 ? (parseFloat(row[mapping['cbm']]) || 0) : 0,
+            });
+        }
+
+        const response = await fetch(`${API_BASE}/api/upsert-master-json`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: dataPayload })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            statusMaster.innerHTML = `<i class="fas fa-check-circle" style="color: #10b981; margin-right:4px;"></i>상태: ${result.message}`;
+            statusMaster.style.color = '#10b981';
+            
+            if (result.masterData) {
+                productMaster = result.masterData;
+                console.log(`✅ 마스터 데이터 ${productMaster.length}건 새로고침 완료!`);
+            }
+            alert(`DB 갱신 성공!\n\n${result.message}`);
+            if (window.updateDbGlobalStats) window.updateDbGlobalStats();
+            document.getElementById('fileMasterUpload').value = ''; 
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (err) {
+        console.error("❌ 업데이트 실패:", err);
+        statusMaster.innerHTML = `<i class="fas fa-exclamation-circle" style="color: #ef4444; margin-right:4px;"></i>상태: 업데이트 실패`;
+        statusMaster.style.color = '#ef4444';
+        alert(`업데이트 실패: ${err.message}`);
+    }
+});
 
 
 // 파일 업로드 (Files 저장)
@@ -1825,18 +2020,35 @@ if (btnClearDown) {
             return;
         }
 
+        const normalContainerModels = new Set();
+        if (typeof comparisonResult !== 'undefined' && Array.isArray(comparisonResult)) {
+            comparisonResult.forEach(item => {
+                if (getContainerStatus(comparisonResult, item.cntrNo) === 'success' && item.prodName) {
+                    normalContainerModels.add(item.prodName.toUpperCase());
+                }
+            });
+        }
+
         filtered.forEach(row => {
             const tr = document.createElement('tr');
+            const rowModelStr = (row.modelName || '').toUpperCase();
+            const isBlocked = normalContainerModels.has(rowModelStr);
+
             tr.style.borderBottom = '1px solid #edf2f7';
-            tr.style.background = 'white';
+            tr.style.background = isBlocked ? '#fff5f5' : 'white';
             tr.style.transition = 'background-color 0.15s';
-            tr.onmouseenter = () => { tr.style.background = '#f8fafc'; };
-            tr.onmouseleave = () => { tr.style.background = 'white'; };
+            tr.onmouseenter = () => { tr.style.background = isBlocked ? '#fee2e2' : '#f8fafc'; };
+            tr.onmouseleave = () => { tr.style.background = isBlocked ? '#fff5f5' : 'white'; };
+
+            let modelNameHtml = row.modelName || '-';
+            if (isBlocked) {
+                modelNameHtml += ` <span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; margin-left: 5px; display: inline-flex; align-items: center; gap: 3px;"><i class="fas fa-lock"></i>작업걸림</span>`;
+            }
 
             tr.innerHTML = `
                 <td style="padding: 10px 8px; color: #475569;">${row.division || '-'}</td>
                 <td style="padding: 10px 8px; color: #334155; font-weight: 600; white-space: nowrap;">${row.location || '-'}</td>
-                <td style="padding: 10px 8px; text-align: left; color: #0f172a; font-weight: 600;">${row.modelName || '-'}</td>
+                <td style="padding: 10px 8px; text-align: left; color: ${isBlocked ? '#dc2626' : '#0f172a'}; font-weight: 600;">${modelNameHtml}</td>
                 <td style="padding: 10px 8px; color: #475569; font-weight: 500;">${row.totalQty.toLocaleString()} EA</td>
                 <td style="padding: 10px 8px; color: #1e293b; font-weight: 700;">${row.availableQty.toLocaleString()} EA</td>
                 <td style="padding: 10px 8px; color: #64748b;">${row.goodQty.toLocaleString()} EA</td>
@@ -1849,6 +2061,10 @@ if (btnClearDown) {
         });
     };
     window.filterHoldStockTable = renderHoldStockTable;
+
+    if (searchHoldStock) {
+        searchHoldStock.addEventListener('input', renderHoldStockTable);
+    }
 
     // 모달 제어
     if (btnOpenHoldStock) {
@@ -2016,6 +2232,221 @@ if (btnClearDown) {
             }
         });
     }
+})();
+
+// =========================================================================
+//  제품 마우스 오버 시 로케이션별 재고 현황 팝업 & 클립보드 복사
+// =========================================================================
+(function setupProductStockPopoverHandlers() {
+    const popover = document.getElementById('productStockPopover');
+    const popoverModelName = document.getElementById('popoverModelName');
+    const btnPopoverCopyStock = document.getElementById('btnPopoverCopyStock');
+    const popoverSummary = document.getElementById('popoverSummary');
+    const popoverStockTableBody = document.getElementById('popoverStockTableBody');
+
+    if (!popover) return;
+
+    let popoverTimeout = null;
+    let currentDetails = null;
+
+    // 마우스가 팝업 자체에 들어오면 닫기 타이머 취소 (복사 버튼 등을 클릭할 수 있도록)
+    popover.addEventListener('mouseenter', () => {
+        if (popoverTimeout) {
+            clearTimeout(popoverTimeout);
+            popoverTimeout = null;
+        }
+    });
+
+    // 마우스가 팝업에서 나가면 부드럽게 닫기
+    popover.addEventListener('mouseleave', () => {
+        hidePopover(false);
+    });
+
+    function getProductLocationStockDetails(prodName) {
+        if (!warehouseStockLoaded) return null;
+        const nameUpper = (prodName || '').trim().toUpperCase();
+        if (!nameUpper || nameUpper === 'NONASSET.ITEM') return null;
+
+        const stockInfo = (warehouseStockQtyMap && warehouseStockQtyMap[nameUpper]) || {
+            physical: 0,
+            available: 0,
+            block: 0,
+            oqc: 0,
+            longTerm: 0,
+            bin: 0
+        };
+
+        const totalNeeded = window.totalProductRemainMap ? (window.totalProductRemainMap[nameUpper] || 0) : 0;
+
+        // 로케이션별 수량 집계
+        const locMap = {};
+
+        // 1. 전체 재고 목록에서 조회
+        const allMatches = (warehouseAllStockList || []).filter(item => (item.modelName || '').trim().toUpperCase() === nameUpper);
+        allMatches.forEach(item => {
+            const loc = (item.location || '미지정').trim();
+            if (!locMap[loc]) {
+                locMap[loc] = { location: loc, physicalQty: 0, oqcHold: 0, longTermHold: 0, binBlock: 0 };
+            }
+            locMap[loc].physicalQty += (item.physicalQty || 0);
+        });
+
+        // 2. 홀드/롱텀/Bin 상세 목록 매칭 (블록 정보 보강)
+        const holdMatches = (warehouseHoldStockList || []).filter(item => (item.modelName || '').trim().toUpperCase() === nameUpper);
+        holdMatches.forEach(item => {
+            const loc = (item.location || '미지정').trim();
+            if (!locMap[loc]) {
+                locMap[loc] = { location: loc, physicalQty: (item.totalQty || 0), oqcHold: 0, longTermHold: 0, binBlock: 0 };
+            }
+            locMap[loc].oqcHold = Math.max(locMap[loc].oqcHold, item.oqcHold || 0);
+            locMap[loc].longTermHold = Math.max(locMap[loc].longTermHold, item.longTermHold || 0);
+            locMap[loc].binBlock = Math.max(locMap[loc].binBlock, item.binBlock || 0);
+        });
+
+        const locations = Object.values(locMap).sort((a, b) => a.location.localeCompare(b.location));
+
+        return {
+            name: nameUpper,
+            stockInfo,
+            totalNeeded,
+            locations
+        };
+    }
+
+    function formatProductStockTextForClipboard(details) {
+        if (!details) return '';
+        const lines = [
+            `[${details.name}] 창고 재고 로케이션 현황`,
+            `• 전체재고: ${details.stockInfo.physical.toLocaleString()} EA (작업가능: ${details.stockInfo.available.toLocaleString()} EA / 블록: ${details.stockInfo.block.toLocaleString()} EA)`,
+            `• 합산 필요수량: ${details.totalNeeded.toLocaleString()} EA`
+        ];
+
+        if (details.locations.length > 0) {
+            lines.push(`• 로케이션별 수량:`);
+            details.locations.forEach(loc => {
+                const tags = [];
+                if (loc.oqcHold > 0) tags.push(`홀드 ${loc.oqcHold}EA`);
+                if (loc.longTermHold > 0) tags.push(`롱텀 ${loc.longTermHold}EA`);
+                if (loc.binBlock > 0) tags.push(`Bin ${loc.binBlock}EA`);
+                const tagStr = tags.length > 0 ? ` (${tags.join(', ')})` : '';
+                lines.push(`  - ${loc.location}: ${loc.physicalQty.toLocaleString()} EA${tagStr}`);
+            });
+        } else {
+            lines.push(`• 등록된 로케이션 재고가 없습니다.`);
+        }
+
+        return lines.join('\n');
+    }
+
+    function showPopover(prodName, targetEl) {
+        if (popoverTimeout) {
+            clearTimeout(popoverTimeout);
+            popoverTimeout = null;
+        }
+
+        const details = getProductLocationStockDetails(prodName);
+        if (!details) {
+            hidePopover(true);
+            return;
+        }
+
+        currentDetails = details;
+
+        // 팝업 내용 렌더링
+        popoverModelName.textContent = details.name;
+
+        popoverSummary.innerHTML = `
+            <span class="summary-pill total">전체 ${details.stockInfo.physical.toLocaleString()} EA</span>
+            <span class="summary-pill available">작업가능 ${details.stockInfo.available.toLocaleString()} EA</span>
+            ${details.stockInfo.block > 0 ? `<span class="summary-pill blocked">블록 ${details.stockInfo.block.toLocaleString()} EA</span>` : ''}
+        `;
+
+        if (details.locations.length === 0) {
+            popoverStockTableBody.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #94a3b8; padding: 16px;">로케이션 상세 정보가 없습니다.</td>
+                </tr>
+            `;
+        } else {
+            popoverStockTableBody.innerHTML = details.locations.map(loc => {
+                const tags = [];
+                if (loc.oqcHold > 0) tags.push(`<span class="block-tag-mini hold">홀드 ${loc.oqcHold}</span>`);
+                if (loc.longTermHold > 0) tags.push(`<span class="block-tag-mini longterm">롱텀 ${loc.longTermHold}</span>`);
+                if (loc.binBlock > 0) tags.push(`<span class="block-tag-mini bin">Bin ${loc.binBlock}</span>`);
+
+                return `
+                    <tr>
+                        <td class="loc-code">${loc.location}</td>
+                        <td class="loc-qty" style="text-align: right;">${loc.physicalQty.toLocaleString()} EA</td>
+                        <td>${tags.length > 0 ? tags.join(' ') : '<span style="color:#94a3b8; font-size:0.7rem;">정상</span>'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 복사 버튼 이벤트 바인딩
+        if (btnPopoverCopyStock) {
+            btnPopoverCopyStock.onclick = (e) => {
+                e.stopPropagation();
+                const copyText = formatProductStockTextForClipboard(details);
+                window.copyToClipboard(copyText, '재고현황');
+            };
+        }
+
+        // 팝업 위치 계산 (화면 밖으로 나가지 않도록 지능형 위치 보정)
+        popover.style.display = 'block';
+        const rect = targetEl.getBoundingClientRect();
+        const popoverWidth = 360;
+        const popoverHeight = popover.offsetHeight || 260;
+
+        let left = rect.left;
+        let top = rect.bottom + 6;
+
+        // 우측 경계 보정
+        if (left + popoverWidth > window.innerWidth - 16) {
+            left = window.innerWidth - popoverWidth - 16;
+        }
+        if (left < 16) left = 16;
+
+        // 하단 경계 보정 (하단 공간 부족 시 대상 요소 위로 띄움)
+        if (top + popoverHeight > window.innerHeight - 16) {
+            top = Math.max(16, rect.top - popoverHeight - 6);
+        }
+
+        popover.style.left = `${left}px`;
+        popover.style.top = `${top}px`;
+
+        requestAnimationFrame(() => {
+            popover.classList.add('show');
+        });
+    }
+
+    function hidePopover(immediate = false) {
+        if (popoverTimeout) clearTimeout(popoverTimeout);
+
+        if (immediate) {
+            popover.classList.remove('show');
+            popover.style.display = 'none';
+        } else {
+            popoverTimeout = setTimeout(() => {
+                popover.classList.remove('show');
+                setTimeout(() => {
+                    if (!popover.classList.contains('show')) {
+                        popover.style.display = 'none';
+                    }
+                }, 180);
+            }, 200);
+        }
+    }
+
+    // 전역 노출 함수
+    window.handleProductMouseEnter = (prodName, el) => {
+        showPopover(prodName, el);
+    };
+
+    window.handleProductMouseLeave = () => {
+        hidePopover(false);
+    };
 })();
 
 // =========================================================================
@@ -4055,10 +4486,12 @@ function displayResults(results, isDbMode = false) {
                     <td class="col-model" 
                         onclick="window.copyToClipboard('${res.prodName.replace(/'/g, "\\'")}', '제품명')"
                         style="cursor: pointer; ${isCaution ? 'color: #dc2626; font-weight: 700;' : (res.prodName || '').trim().toUpperCase() !== 'NONASSET.ITEM' && (res.dims || '').trim().toLowerCase() === '0x0x0' ? 'color: #ef4444; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'H' ? 'color: #7c3aed; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'Q' ? 'color: #0d9488; font-weight: 700;' : ''}"
-                        title="클릭하여 제품명 복사"
+                        title="클릭하여 제품명 복사 (마우스 오버 시 로케이션별 재고 확인)"
                         class="copyable-item ${(res.prodName || '').trim().toUpperCase() !== 'NONASSET.ITEM' && (res.dims || '').trim().toLowerCase() === '0x0x0' ? 'no-size-model-text' : ''}">
                         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                            <span>${res.prodName}</span>
+                            <span class="product-name-hoverable" 
+                                  onmouseenter="window.handleProductMouseEnter('${res.prodName.replace(/'/g, "\\'")}', this)" 
+                                  onmouseleave="window.handleProductMouseLeave()">${res.prodName}</span>
                             ${(res.prodName || '').trim().toUpperCase() !== 'NONASSET.ITEM' && (res.dims || '').trim().toLowerCase() === '0x0x0' ? '<span class="tag-no-size">사이즈없음</span>' : ''}
                             ${isCaution ? `<span title="주의 비고: ${matchedCaution.remark || '사유 없음'}" style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#ef4444; color:#fff; border-radius:4px; padding:0px 4px; line-height:1.2; cursor:help; white-space:nowrap;">주의</span>` : ''}
                             ${getDongTag(res.prodName, res.prodType)}
@@ -8518,7 +8951,7 @@ if (btnSavePaletteImage) {
 }
 
 // --- Login Screen Logic ---
-document.addEventListener('DOMContentLoaded', () => {
+function initLoginScreen() {
     const loginOverlay = document.getElementById('loginOverlay');
     const loginId = document.getElementById('loginId');
     const loginPw = document.getElementById('loginPw');
@@ -8526,28 +8959,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginErrorMsg = document.getElementById('loginErrorMsg');
     const saveIdCheckbox = document.getElementById('saveIdCheckbox');
     
+    if (!loginOverlay || !btnLogin || !loginId || !loginPw) return;
+
     // Check if there is a saved ID in localStorage
     const savedId = localStorage.getItem('excelcompare_saved_id');
     if (savedId) {
         loginId.value = savedId;
-        saveIdCheckbox.checked = true;
-        // Focus on password if ID is already there
-        setTimeout(() => loginPw.focus(), 100);
+        if (saveIdCheckbox) saveIdCheckbox.checked = true;
+        setTimeout(() => loginPw.focus(), 150);
     } else {
-        setTimeout(() => loginId.focus(), 100);
+        setTimeout(() => loginId.focus(), 150);
     }
 
     function attemptLogin() {
         const id = loginId.value.trim();
         const pw = loginPw.value.trim();
         
+        console.log('[Login Attempt] ID:', id);
+
         if (id === 'admin' && pw === 'z456qwe12!@') {
             // Success
-            loginErrorMsg.style.display = 'none';
+            if (loginErrorMsg) loginErrorMsg.style.display = 'none';
+            loginOverlay.style.transition = 'opacity 0.3s ease';
             loginOverlay.style.opacity = '0';
             
             // Handle Save ID
-            if (saveIdCheckbox.checked) {
+            if (saveIdCheckbox && saveIdCheckbox.checked) {
                 localStorage.setItem('excelcompare_saved_id', id);
             } else {
                 localStorage.removeItem('excelcompare_saved_id');
@@ -8555,26 +8992,32 @@ document.addEventListener('DOMContentLoaded', () => {
             
             setTimeout(() => {
                 loginOverlay.style.display = 'none';
-            }, 400); // Wait for transition
+            }, 300);
         } else {
             // Fail
-            loginErrorMsg.style.display = 'block';
+            if (loginErrorMsg) loginErrorMsg.style.display = 'block';
             loginPw.value = ''; // clear password on fail
             loginPw.focus();
         }
     }
 
-    btnLogin.addEventListener('click', attemptLogin);
+    btnLogin.onclick = attemptLogin;
 
     // Allow Enter key to submit
-    loginId.addEventListener('keypress', (e) => {
+    loginId.onkeydown = (e) => {
         if (e.key === 'Enter') {
             if (loginPw.value) attemptLogin();
             else loginPw.focus();
         }
-    });
+    };
 
-    loginPw.addEventListener('keypress', (e) => {
+    loginPw.onkeydown = (e) => {
         if (e.key === 'Enter') attemptLogin();
-    });
-});
+    };
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLoginScreen);
+} else {
+    initLoginScreen();
+}

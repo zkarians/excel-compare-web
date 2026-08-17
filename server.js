@@ -1147,6 +1147,100 @@ app.post('/api/upload-master', upload.single('masterFile'), async (req, res) => 
     }
 });
 
+// 클라이언트가 파싱/매핑한 JSON 데이터로 마스터 DB 동적 업데이트
+app.post('/api/upsert-master-json', async (req, res) => {
+    try {
+        console.log(`📂[API] 마스터 데이터 동적 매핑 업데이트 요청 수신`);
+        const { data } = req.body;
+        
+        if (!data || !Array.isArray(data)) {
+            return res.status(400).json({ success: false, message: '유효한 JSON 배열 데이터가 없습니다.' });
+        }
+
+        const pool = await getPool();
+        let insertCnt = 0;
+        let updateCnt = 0;
+        let skipCnt = 0;
+
+        // 기존 데이터 가져와서 비교용 맵 생성
+        const { rows: existingRows } = await pool.query('SELECT * FROM product_master_sync');
+        const dbMap = new Map();
+        existingRows.forEach(r => dbMap.set(r.prod_name, r));
+
+        for (const item of data) {
+            const prod_name = item.prod_name?.toString().trim();
+            if (!prod_name) continue;
+
+            const business_unit = item.business_unit?.toString().trim() || '';
+            const prod_type = item.prod_type?.toString().trim() || '';
+            const width = parseFloat(item.width) || 0;
+            const height = parseFloat(item.height) || 0;
+            const depth = parseFloat(item.depth) || 0;
+            const weight = parseFloat(item.weight) || 0;
+            const cbm = parseFloat(item.cbm) || 0;
+
+            const existing = dbMap.get(prod_name);
+
+            if (!existing) {
+                await pool.query(`
+                    INSERT INTO product_master_sync 
+                    (prod_name, business_unit, prod_type, width, height, depth, weight, cbm, updated_at) 
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                `, [prod_name, business_unit, prod_type, width, height, depth, weight, cbm]);
+                insertCnt++;
+            } else {
+                const isChanged = 
+                    (existing.business_unit || '') !== business_unit ||
+                    (existing.prod_type || '') !== prod_type ||
+                    Number(existing.width || 0) !== width ||
+                    Number(existing.height || 0) !== height ||
+                    Number(existing.depth || 0) !== depth ||
+                    Number(existing.weight || 0) !== weight ||
+                    Number(existing.cbm || 0) !== cbm;
+
+                if (isChanged) {
+                    await pool.query(`
+                        UPDATE product_master_sync 
+                        SET business_unit = $2, prod_type = $3, 
+                            width = $4, height = $5, depth = $6, weight = $7, cbm = $8,
+                            updated_at = NOW()
+                        WHERE prod_name = $1
+                    `, [prod_name, business_unit, prod_type, width, height, depth, weight, cbm]);
+                    updateCnt++;
+                } else {
+                    skipCnt++;
+                }
+            }
+        }
+
+        console.log(`✅ [API] 마스터 동적 매핑 업데이트 완료 (신규:${insertCnt}, 업데이트:${updateCnt}, 스킵:${skipCnt})`);
+        
+        // 새로고침용 최신 데이터 반환
+        const { rows: latestRows } = await pool.query('SELECT * FROM product_master_sync');
+        // 클라이언트에서 사용하는 형식(name, weight, width...)으로 변환
+        const formattedData = latestRows.map(r => ({
+            name: r.prod_name,
+            weight: Number(r.weight) || 0,
+            width: Number(r.width) || 0,
+            depth: Number(r.depth) || 0,
+            height: Number(r.height) || 0,
+            cbm: Number(r.cbm) || 0,
+            prodType: r.prod_type || '-'
+        }));
+
+        res.json({
+            success: true,
+            message: `업데이트 완료 (신규: ${insertCnt}, 갱신: ${updateCnt}, 변동없음: ${skipCnt})`,
+            masterData: formattedData,
+            stats: { insertCnt, updateCnt, skipCnt }
+        });
+
+    } catch (err) {
+        console.error("❌ 마스터 동적 업로드 오류:", err);
+        res.status(500).json({ success: false, message: `DB 업데이트 중 오류 발생: ${err.message}` });
+    }
+});
+
 // 규칙 로드 API
 app.get('/api/rules', async (req, res) => {
     try {
