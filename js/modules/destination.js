@@ -561,7 +561,7 @@ function renderDestinationHtml(orig, val, isMismatch) {
     const makeSpan = (code, info) => {
         if (!code || code === '-') return `<span>-</span>`;
         const tooltip = `[도착지 위치 안내]&#10;• 코드: ${code}&#10;• 지역: ${info.kr}&#10;• 영문: ${info.en}&#10;&#10;💡 더블클릭 시 목적지 한국어 명칭을 직접 수정/등록할 수 있습니다.`;
-        return `<span class="dest-code-item" data-code="${code}" title="${tooltip}" ondblclick="window.openDestinationQuickEdit('${code}', event)" style="cursor: help; text-decoration: underline dotted #94a3b8; text-underline-offset: 3px;">${code}</span>`;
+        return `<span class="dest-code-item" data-code="${code}" title="${tooltip}" ondblclick="window.openDestinationQuickEdit('${code}', event)" style="cursor: help;">${code}</span>`;
     };
 
     if (!isMismatch || orig === null) {
