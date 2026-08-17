@@ -3640,6 +3640,95 @@ function displayResults(results, isDbMode = false) {
         return '';
     };
 
+    // Levenshtein Distance (문자열 편집 거리) 계산 함수
+    function getLevenshteinDistance(a, b) {
+        if (a === b) return 0;
+        const al = a.length;
+        const bl = b.length;
+        if (al === 0) return bl;
+        if (bl === 0) return al;
+
+        let v0 = new Array(bl + 1);
+        let v1 = new Array(bl + 1);
+
+        for (let i = 0; i <= bl; i++) v0[i] = i;
+
+        for (let i = 0; i < al; i++) {
+            v1[0] = i + 1;
+            for (let j = 0; j < bl; j++) {
+                const cost = a[i] === b[j] ? 0 : 1;
+                v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+            }
+            for (let j = 0; j <= bl; j++) v0[j] = v1[j];
+        }
+
+        return v1[bl];
+    }
+
+    // [유] 태그 헬퍼: 제품구분이 'Q'인 경우에 한해, 스펠링이 1~2개 차이나는 유사모델이 존재하면 표시
+    const getYuTag = (prodName, masterProdType) => {
+        const pt = (masterProdType || '').toUpperCase().trim();
+        if (pt !== 'Q') return ''; // 제품구분이 Q일 때만 적용
+
+        const nameUpper = (prodName || '').toUpperCase().trim();
+        if (!nameUpper || nameUpper === 'NONASSET.ITEM') return '';
+
+        const targetPrefix = nameUpper.includes('.') ? nameUpper.substring(0, nameUpper.lastIndexOf('.')) : nameUpper;
+        if (targetPrefix.length < 3) return '';
+
+        // 비교 대상 후보군 수집 (현재 비교 결과 및 창고 재고에 존재하는 모든 고유 제품명)
+        const candidates = new Set();
+        if (comparisonResult && Array.isArray(comparisonResult)) {
+            comparisonResult.forEach(item => {
+                if (item.prodName) candidates.add(item.prodName.toUpperCase().trim());
+            });
+        }
+        if (warehouseStockLoaded && warehouseStockQtyMap) {
+            Object.keys(warehouseStockQtyMap).forEach(mName => candidates.add(mName.toUpperCase().trim()));
+        }
+
+        const similarModels = [];
+        candidates.forEach(cand => {
+            if (cand === nameUpper) return; // 자기 자신 제외
+
+            const candPrefix = cand.includes('.') ? cand.substring(0, cand.lastIndexOf('.')) : cand;
+            if (candPrefix === targetPrefix) return; // 동일 접두어는 (동) 태그에서 처리되므로 제외
+
+            // 1. 접두어 간 거리 계산
+            const prefixDist = getLevenshteinDistance(targetPrefix, candPrefix);
+            // 2. 전체 모델명 간 거리 계산
+            const fullDist = getLevenshteinDistance(nameUpper, cand);
+
+            const minDiff = Math.min(prefixDist, fullDist);
+            if (minDiff === 1 || minDiff === 2) {
+                similarModels.push({
+                    modelName: cand,
+                    diff: minDiff
+                });
+            }
+        });
+
+        if (similarModels.length > 0) {
+            // 차이 적은 순, 모델명 순 정렬
+            similarModels.sort((a, b) => a.diff - b.diff || a.modelName.localeCompare(b.modelName));
+
+            const tooltipLines = [
+                `[유사모델 주의 (스펠링 1~2개 차이)]`
+            ];
+            similarModels.slice(0, 8).forEach(item => {
+                tooltipLines.push(`• ${item.modelName} (${item.diff}글자 차이)`);
+            });
+            if (similarModels.length > 8) {
+                tooltipLines.push(`• 외 ${similarModels.length - 8}건 더 있음`);
+            }
+
+            const tooltipContent = tooltipLines.join('\n').replace(/"/g, '&quot;');
+            return `<span title="${tooltipContent}" class="badge-yu">유</span>`;
+        }
+
+        return '';
+    };
+
     // [H/L/B] 배지 헬퍼: 창고재고 블록 타입에 따른 H(OQC), L(Long term), B(Bin) 태그 표시
     const getBlockHoldTag = (prodName) => {
         if (!warehouseStockLoaded || !warehouseStockQtyMap) return '';
@@ -4495,6 +4584,7 @@ function displayResults(results, isDbMode = false) {
                             ${(res.prodName || '').trim().toUpperCase() !== 'NONASSET.ITEM' && (res.dims || '').trim().toLowerCase() === '0x0x0' ? '<span class="tag-no-size">사이즈없음</span>' : ''}
                             ${isCaution ? `<span title="주의 비고: ${matchedCaution.remark || '사유 없음'}" style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#ef4444; color:#fff; border-radius:4px; padding:0px 4px; line-height:1.2; cursor:help; white-space:nowrap;">주의</span>` : ''}
                             ${getDongTag(res.prodName, res.prodType)}
+                            ${getYuTag(res.prodName, res.prodType)}
                             ${getBlockHoldTag(res.prodName)}
                             ${getStockShortageBadge(res.prodName, res.qtyInfo.remain)}
                         </div>
