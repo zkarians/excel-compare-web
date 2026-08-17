@@ -8416,7 +8416,8 @@ function renderModalDbTable(rows) {
                 <td style="text-align: center;">${row.carrier || '-'} / ${(() => {
                     if (!row.destination || row.destination === '-') return '<span>-</span>';
                     const info = typeof getDestinationInfo === 'function' ? getDestinationInfo(row.destination) : { kr: '' };
-                    return `<span title="[도착지 위치] ${info.kr || row.destination} (${info.en || ''})" style="cursor:help;">${row.destination}</span>`;
+                    const tooltip = info.en ? `${info.kr} (${info.en})` : info.kr;
+                    return `<span title="${tooltip || row.destination}" style="cursor:help;">${row.destination}</span>`;
                 })()}</td>
                 <td style="text-align: right; font-weight: 500;">${row.weight_mixed ? parseFloat(row.weight_mixed).toLocaleString() : '0'}</td>
                 <td style="text-align: center;"><span class="badge" style="background: ${row.transporter && row.transporter.includes('천마') ? '#fee2e2; color: #b91c1c' : '#dbeafe; color: #1d4ed8'}; padding: 4px 8px; font-weight: 600;">${row.transporter || '-'}</span></td>

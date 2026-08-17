@@ -533,9 +533,9 @@ function getDestinationInfo(code) {
 
     if (countryName) {
         const fallbackKr = `[${countryName}] ${cleanCode}`;
-        const fallbackEn = `${countryCode} Area / Hub`;
+        const fallbackEn = `${countryCode} Area`;
         return {
-            text: `${fallbackKr} (신규/미등록 거점 - 더블클릭하여 명칭 등록)`,
+            text: `${fallbackKr} (${fallbackEn})`,
             kr: fallbackKr,
             en: fallbackEn,
             isKnown: false
@@ -544,7 +544,7 @@ function getDestinationInfo(code) {
 
     // 3. 국가코드조차 알 수 없는 경우
     return {
-        text: `[미확인 목적지] ${cleanCode} (더블클릭하여 명칭 등록)`,
+        text: `[미확인 목적지] ${cleanCode}`,
         kr: `미확인 목적지 (${cleanCode})`,
         en: cleanCode,
         isKnown: false
@@ -560,7 +560,7 @@ function renderDestinationHtml(orig, val, isMismatch) {
 
     const makeSpan = (code, info) => {
         if (!code || code === '-') return `<span>-</span>`;
-        const tooltip = `[도착지 위치 안내]&#10;• 코드: ${code}&#10;• 지역: ${info.kr}&#10;• 영문: ${info.en}&#10;&#10;💡 더블클릭 시 목적지 한국어 명칭을 직접 수정/등록할 수 있습니다.`;
+        const tooltip = info.en ? `${info.kr} (${info.en})` : info.kr;
         return `<span class="dest-code-item" data-code="${code}" title="${tooltip}" ondblclick="window.openDestinationQuickEdit('${code}', event)" style="cursor: help;">${code}</span>`;
     };
 
