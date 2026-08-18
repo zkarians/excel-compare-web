@@ -2306,47 +2306,105 @@ function getGlobalLevenshteinDistance(a, b) {
 
         const totalNeeded = window.totalProductRemainMap ? (window.totalProductRemainMap[nameUpper] || 0) : 0;
 
-        // 1. 기준 제품 로케이션별 수량 집계
+        // 1. 기준 제품 로케이션별 수량 집계 (작업가능 재고: Good / Pending)
         const locMap = {};
 
         const allMatches = (warehouseAllStockList || []).filter(item => (item.modelName || '').trim().toUpperCase() === nameUpper);
         allMatches.forEach(item => {
             const loc = (item.location || '미지정').trim();
-            if (!locMap[loc]) {
-                locMap[loc] = { 
-                    location: loc, 
-                    physicalQty: 0, 
-                    goodQty: 0, 
-                    pendingQty: 0, 
-                    workTotalQty: 0,
-                    oqcHold: 0, 
-                    longTermHold: 0, 
-                    binBlock: 0 
-                };
+            const good = item.goodQty || 0;
+            const pending = item.pendingQty || 0;
+            const workTotal = good + pending;
+
+            if (workTotal > 0 || (item.physicalQty > 0 && !item.blockQty)) {
+                if (!locMap[loc]) {
+                    locMap[loc] = { 
+                        location: loc, 
+                        physicalQty: 0, 
+                        goodQty: 0, 
+                        pendingQty: 0, 
+                        workTotalQty: 0
+                    };
+                }
+                locMap[loc].physicalQty += (item.physicalQty || 0);
+                locMap[loc].goodQty += good;
+                locMap[loc].pendingQty += pending;
+                locMap[loc].workTotalQty += workTotal;
             }
-            locMap[loc].physicalQty += (item.physicalQty || 0);
-            locMap[loc].goodQty += (item.goodQty || 0);
-            locMap[loc].pendingQty += (item.pendingQty || 0);
-            locMap[loc].workTotalQty += ((item.goodQty || 0) + (item.pendingQty || 0));
         });
 
         const locations = Object.values(locMap).sort((a, b) => a.location.localeCompare(b.location));
 
-        // 합계 산출 (로케이션 집계 기준)
+        // 작업가능 합계 산출 (로케이션 집계 기준)
         const totalGood = locations.reduce((sum, loc) => sum + loc.goodQty, 0);
         const totalPending = locations.reduce((sum, loc) => sum + loc.pendingQty, 0);
         const totalWork = totalGood + totalPending;
 
+        // 2. 블록/홀드/롱텀/BIN 로케이션별 수량 집계
+        const blockLocMap = {};
+
+        // 2-1. warehouseHoldStockList에서 수집
+        const holdItems = (warehouseHoldStockList || []).filter(item => (item.modelName || '').trim().toUpperCase() === nameUpper);
+        holdItems.forEach(item => {
+            const loc = (item.location || '미지정').trim();
+            if (!blockLocMap[loc]) {
+                blockLocMap[loc] = {
+                    location: loc,
+                    oqcHold: 0,
+                    longTermHold: 0,
+                    binBlock: 0,
+                    totalBlock: 0
+                };
+            }
+            blockLocMap[loc].oqcHold += (item.oqcHold || 0);
+            blockLocMap[loc].longTermHold += (item.longTermHold || 0);
+            blockLocMap[loc].binBlock += (item.binBlock || 0);
+            blockLocMap[loc].totalBlock += ((item.oqcHold || 0) + (item.longTermHold || 0) + (item.binBlock || 0));
+        });
+
+        // 2-2. allMatches에서도 block 수량 보완
+        allMatches.forEach(item => {
+            const oqc = item.oqcHold || 0;
+            const lt = item.longTermHold || 0;
+            const bin = item.binBlock || 0;
+            const total = (oqc + lt + bin) || (item.blockQty || 0);
+
+            if (total > 0) {
+                const loc = (item.location || '미지정').trim();
+                if (!blockLocMap[loc]) {
+                    blockLocMap[loc] = {
+                        location: loc,
+                        oqcHold: oqc,
+                        longTermHold: lt,
+                        binBlock: bin,
+                        totalBlock: total
+                    };
+                }
+            }
+        });
+
+        const blockLocations = Object.values(blockLocMap)
+            .filter(loc => loc.totalBlock > 0)
+            .sort((a, b) => a.location.localeCompare(b.location));
+
+        const totalOqc = blockLocations.reduce((s, l) => s + l.oqcHold, 0);
+        const totalLongTerm = blockLocations.reduce((s, l) => s + l.longTermHold, 0);
+        const totalBin = blockLocations.reduce((s, l) => s + l.binBlock, 0);
+        const totalBlock = blockLocations.reduce((s, l) => s + l.totalBlock, 0);
+
         const effectiveStockInfo = {
-            physical: stockInfo.physical || (totalWork + (stockInfo.block || 0)),
+            physical: stockInfo.physical || (totalWork + totalBlock),
             good: stockInfo.good !== undefined && stockInfo.good > 0 ? stockInfo.good : totalGood,
             pending: stockInfo.pending !== undefined && stockInfo.pending > 0 ? stockInfo.pending : totalPending,
             workTotal: totalWork > 0 ? totalWork : (stockInfo.workTotal || (totalGood + totalPending)),
             available: stockInfo.available || totalWork,
-            block: stockInfo.block || 0
+            block: totalBlock > 0 ? totalBlock : (stockInfo.block || 0),
+            oqc: totalOqc > 0 ? totalOqc : (stockInfo.oqc || 0),
+            longTerm: totalLongTerm > 0 ? totalLongTerm : (stockInfo.longTerm || 0),
+            bin: totalBin > 0 ? totalBin : (stockInfo.bin || 0)
         };
 
-        // 2. 연관 모델 탐색 (유사 모델 [유] 및 동일 서픽스 [동]) - 제품구분이 'Q'인 경우에만 적용!
+        // 3. 연관 모델 탐색 (유사 모델 [유] 및 동일 서픽스 [동]) - 제품구분이 'Q'인 경우에만 적용!
         const relatedGroups = [];
         const targetPrefix = nameUpper.includes('.') ? nameUpper.substring(0, nameUpper.lastIndexOf('.')) : nameUpper;
         const pt = (prodType || '').trim().toUpperCase();
@@ -2361,7 +2419,7 @@ function getGlobalLevenshteinDistance(a, b) {
 
         // 제품구분이 'Q'인 경우에 한해 [유] 유사모델 및 [동] 동일접두어 모델 수집
         if (isQType) {
-            // 2-1. [유] 유사 모델 탐색
+            // 3-1. [유] 유사 모델 탐색
             if (targetPrefix.length >= 3) {
                 const candidates = new Set();
                 (warehouseAllStockList || []).forEach(item => {
@@ -2416,7 +2474,7 @@ function getGlobalLevenshteinDistance(a, b) {
                 });
             }
 
-            // 2-2. [동] 동일 접두어 모델 탐색
+            // 3-2. [동] 동일 접두어 모델 탐색
             const dotIdx = nameUpper.lastIndexOf('.');
             if (dotIdx !== -1) {
                 const prefix = nameUpper.substring(0, dotIdx);
@@ -2474,6 +2532,7 @@ function getGlobalLevenshteinDistance(a, b) {
             stockInfo: effectiveStockInfo,
             totalNeeded,
             locations,
+            blockLocations,
             relatedGroups
         };
     }
@@ -2481,18 +2540,31 @@ function getGlobalLevenshteinDistance(a, b) {
     function formatProductStockTextForClipboard(details) {
         if (!details) return '';
         const lines = [
-            `[${details.name}] 창고 재고 현황 (블록 제외)`,
+            `[${details.name}] 창고 재고 현황`,
             `• 작업가능 합계: ${details.stockInfo.workTotal.toLocaleString()} EA (패스: ${details.stockInfo.good.toLocaleString()} EA / 팬딩: ${details.stockInfo.pending.toLocaleString()} EA)`,
             `• 합산 필요수량: ${details.totalNeeded.toLocaleString()} EA`
         ];
 
         if (details.locations.length > 0) {
-            lines.push(`• 로케이션별 수량 (패스 / 팬딩 / 합계):`);
+            lines.push(`• 작업가능 로케이션 (패스 / 팬딩 / 합계):`);
             details.locations.forEach(loc => {
                 lines.push(`  - ${loc.location}: 패스 ${loc.goodQty.toLocaleString()} EA, 팬딩 ${loc.pendingQty.toLocaleString()} EA (합계 ${loc.workTotalQty.toLocaleString()} EA)`);
             });
         } else {
-            lines.push(`• 등록된 로케이션 재고가 없습니다.`);
+            lines.push(`• 등록된 작업가능 로케이션 재고가 없습니다.`);
+        }
+
+        // 블록/홀드/롱텀 로케이션 클립보드 포함
+        if (details.blockLocations && details.blockLocations.length > 0) {
+            lines.push(``);
+            lines.push(`[🚫 블록 / 홀드 / 롱텀 재고 로케이션 (합계: ${details.stockInfo.block.toLocaleString()} EA)]`);
+            details.blockLocations.forEach(loc => {
+                const reasons = [];
+                if (loc.oqcHold > 0) reasons.push(`OQC홀드 ${loc.oqcHold.toLocaleString()} EA`);
+                if (loc.longTermHold > 0) reasons.push(`롱텀홀드 ${loc.longTermHold.toLocaleString()} EA`);
+                if (loc.binBlock > 0) reasons.push(`BIN블럭 ${loc.binBlock.toLocaleString()} EA`);
+                lines.push(`• ${loc.location}: ${reasons.join(', ')} (합계 ${loc.totalBlock.toLocaleString()} EA)`);
+            });
         }
 
         // 연관/유사 모델 클립보드 포함
@@ -2531,17 +2603,22 @@ function getGlobalLevenshteinDistance(a, b) {
         // 팝업 내용 렌더링
         popoverModelName.textContent = details.name;
 
-        popoverSummary.innerHTML = `
+        let summaryPillsHtml = `
             <span class="summary-pill total">합계 ${details.stockInfo.workTotal.toLocaleString()} EA</span>
             <span class="summary-pill pass">패스 ${details.stockInfo.good.toLocaleString()} EA</span>
             <span class="summary-pill pending">팬딩 ${details.stockInfo.pending.toLocaleString()} EA</span>
         `;
+        if (details.stockInfo.block > 0) {
+            summaryPillsHtml += `<span class="summary-pill blocked">🚫 블록 ${details.stockInfo.block.toLocaleString()} EA</span>`;
+        }
+
+        popoverSummary.innerHTML = summaryPillsHtml;
 
         let mainTableRows = '';
         if (details.locations.length === 0) {
             mainTableRows = `
                 <tr>
-                    <td colspan="4" style="text-align: center; color: #94a3b8; padding: 12px;">로케이션 상세 정보가 없습니다.</td>
+                    <td colspan="4" style="text-align: center; color: #94a3b8; padding: 12px;">작업가능 로케이션 정보가 없습니다.</td>
                 </tr>
             `;
         } else {
@@ -2555,6 +2632,43 @@ function getGlobalLevenshteinDistance(a, b) {
                     </tr>
                 `;
             }).join('');
+        }
+
+        // 블록 / 홀드 / 롱텀 섹션 렌더링
+        let blockHtml = '';
+        if (details.blockLocations && details.blockLocations.length > 0) {
+            blockHtml = `
+                <div class="popover-block-section">
+                    <div class="block-section-title">
+                        <span><i class="fas fa-ban"></i> 블록 / 홀드 / 롱텀 재고 로케이션</span>
+                        <span style="margin-left:auto; font-size:0.7rem; font-weight:700; color:#dc2626; background:#fee2e2; padding:1px 6px; border-radius:4px; border:1px solid #fca5a5;">
+                            합계 ${details.stockInfo.block.toLocaleString()} EA
+                        </span>
+                    </div>
+                    <table class="popover-stock-table block-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left;">로케이션</th>
+                                <th style="text-align: right; color: #d97706;">OQC홀드</th>
+                                <th style="text-align: right; color: #b45309;">롱텀홀드</th>
+                                <th style="text-align: right; color: #e11d48;">BIN블럭</th>
+                                <th style="text-align: right; color: #dc2626;">합계</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${details.blockLocations.map(loc => `
+                                <tr>
+                                    <td class="loc-code" style="color: #991b1b;">${loc.location}</td>
+                                    <td class="loc-qty-oqc" style="text-align: right;">${loc.oqcHold > 0 ? `${loc.oqcHold.toLocaleString()} EA` : '<span style="color:#cbd5e1;">-</span>'}</td>
+                                    <td class="loc-qty-longterm" style="text-align: right;">${loc.longTermHold > 0 ? `${loc.longTermHold.toLocaleString()} EA` : '<span style="color:#cbd5e1;">-</span>'}</td>
+                                    <td class="loc-qty-bin" style="text-align: right;">${loc.binBlock > 0 ? `${loc.binBlock.toLocaleString()} EA` : '<span style="color:#cbd5e1;">-</span>'}</td>
+                                    <td class="loc-qty-blocktotal" style="text-align: right;">${loc.totalBlock.toLocaleString()} EA</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
         }
 
         // 연관/유사 모델 섹션 렌더링
@@ -2616,6 +2730,7 @@ function getGlobalLevenshteinDistance(a, b) {
                         ${mainTableRows}
                     </tbody>
                 </table>
+                ${blockHtml}
                 ${relatedHtml}
             `;
         }

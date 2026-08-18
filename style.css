@@ -2478,6 +2478,63 @@ tr.border-group td {
     border: 1px solid #e2e8f0;
 }
 
+/* 블록/홀드/롱텀 섹션 스타일 */
+.product-stock-popover .popover-block-section {
+    margin-top: 10px;
+    border-top: 1px dashed #fca5a5;
+    padding-top: 8px;
+}
+
+.product-stock-popover .block-model-group {
+    margin-bottom: 8px;
+    background: #fff5f5;
+    border-radius: 6px;
+    border: 1px solid #fecaca;
+    padding: 6px 8px;
+}
+
+.product-stock-popover .block-section-title {
+    font-size: 0.73rem;
+    font-weight: 700;
+    color: #dc2626;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.product-stock-popover .popover-stock-table.block-table {
+    background: #ffffff;
+    border-radius: 4px;
+    border: 1px solid #fee2e2;
+}
+
+.product-stock-popover .popover-stock-table.block-table th {
+    background: #fef2f2;
+    color: #991b1b;
+    border-bottom: 1px solid #fecaca;
+}
+
+.product-stock-popover .loc-qty-oqc {
+    font-weight: 600;
+    color: #d97706;
+}
+
+.product-stock-popover .loc-qty-longterm {
+    font-weight: 600;
+    color: #b45309;
+}
+
+.product-stock-popover .loc-qty-bin {
+    font-weight: 600;
+    color: #e11d48;
+}
+
+.product-stock-popover .loc-qty-blocktotal {
+    font-weight: 700;
+    color: #dc2626;
+}
+
 .product-stock-popover .block-tag-mini {
     display: inline-block;
     padding: 1px 4px;
