@@ -2352,7 +2352,7 @@ tr.border-group td {
 }
 
 .product-stock-popover .popover-table-wrapper {
-    max-height: 200px;
+    max-height: 280px;
     overflow-y: auto;
     border: 1px solid #f1f5f9;
     border-radius: 6px;
@@ -2410,6 +2410,72 @@ tr.border-group td {
 .product-stock-popover .loc-qty-total {
     font-weight: 700;
     color: #2563eb;
+}
+
+/* 연관/유사 모델 섹션 스타일 */
+.product-stock-popover .popover-related-section {
+    margin-top: 10px;
+    border-top: 1px dashed #cbd5e1;
+    padding-top: 8px;
+}
+
+.product-stock-popover .related-model-group {
+    margin-bottom: 8px;
+    background: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    padding: 6px 8px;
+}
+
+.product-stock-popover .related-model-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+    font-size: 0.75rem;
+}
+
+.product-stock-popover .related-badge {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 800;
+    font-size: 0.68rem;
+    line-height: 1.2;
+}
+.product-stock-popover .related-badge.yu {
+    background: #ffedd5;
+    color: #ea580c;
+    border: 1px solid #fed7aa;
+}
+.product-stock-popover .related-badge.dong {
+    background: #ede9fe;
+    color: #7c3aed;
+    border: 1px solid #ddd6fe;
+}
+
+.product-stock-popover .related-model-title {
+    color: #0f172a;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.product-stock-popover .related-summary-pill {
+    margin-left: auto;
+    font-size: 0.7rem;
+    color: #475569;
+    font-weight: 600;
+    background: #ffffff;
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+}
+
+.product-stock-popover .popover-stock-table.related-table {
+    background: #ffffff;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
 }
 
 .product-stock-popover .block-tag-mini {
