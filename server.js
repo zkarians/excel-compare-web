@@ -2220,12 +2220,20 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
                 }
             }
 
-            // 전체 재고 데이터 로케이션별 수집 (새로 추가)
+            // 전체 재고 데이터 로케이션별 수집 (Good/Pending/Block 포함)
             if (physicalQty > 0) {
                 const stockItem = {
+                    division: String(row.getCell(1).value || '').trim(),
                     location: locationVal,
                     modelName: name,
-                    physicalQty: physicalQty
+                    physicalQty: physicalQty,
+                    goodQty: goodQty,       // J열 패스(양품) 수량
+                    pendingQty: pendingQty, // K열 팬딩 수량
+                    availableQty: availableQty,
+                    blockQty: blockQty,
+                    oqcHold: oqcQty,
+                    longTermHold: longTermQty,
+                    binBlock: binQty
                 };
                 allStockListWith17.push(stockItem);
                 if (!is17Loc) {
@@ -2235,26 +2243,32 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
 
             // 전체 재고 데이터 합산 (17 포함)
             if (!stockMapWith17[name]) {
-                stockMapWith17[name] = { physical: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0 };
+                stockMapWith17[name] = { physical: 0, good: 0, pending: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0, workTotal: 0 };
             }
             stockMapWith17[name].physical += physicalQty;
+            stockMapWith17[name].good += goodQty;
+            stockMapWith17[name].pending += pendingQty;
             stockMapWith17[name].block += blockQty;
             stockMapWith17[name].oqc += oqcQty;
             stockMapWith17[name].longTerm += longTermQty;
             stockMapWith17[name].bin += binQty;
             stockMapWith17[name].available = stockMapWith17[name].physical - stockMapWith17[name].block;
+            stockMapWith17[name].workTotal = stockMapWith17[name].good + stockMapWith17[name].pending;
 
             // 기본 재고 데이터 합산 (17 제외)
             if (!is17Loc) {
                 if (!stockMap[name]) {
-                    stockMap[name] = { physical: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0 };
+                    stockMap[name] = { physical: 0, good: 0, pending: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0, workTotal: 0 };
                 }
                 stockMap[name].physical += physicalQty;
+                stockMap[name].good += goodQty;
+                stockMap[name].pending += pendingQty;
                 stockMap[name].block += blockQty;
                 stockMap[name].oqc += oqcQty;
                 stockMap[name].longTerm += longTermQty;
                 stockMap[name].bin += binQty;
                 stockMap[name].available = stockMap[name].physical - stockMap[name].block;
+                stockMap[name].workTotal = stockMap[name].good + stockMap[name].pending;
             }
         });
 

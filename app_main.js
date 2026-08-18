@@ -2269,11 +2269,14 @@ if (btnClearDown) {
 
         const stockInfo = (warehouseStockQtyMap && warehouseStockQtyMap[nameUpper]) || {
             physical: 0,
+            good: 0,
+            pending: 0,
             available: 0,
             block: 0,
             oqc: 0,
             longTerm: 0,
-            bin: 0
+            bin: 0,
+            workTotal: 0
         };
 
         const totalNeeded = window.totalProductRemainMap ? (window.totalProductRemainMap[nameUpper] || 0) : 0;
@@ -2281,22 +2284,43 @@ if (btnClearDown) {
         // 로케이션별 수량 집계
         const locMap = {};
 
-        // 1. 전체 재고 목록에서 조회
+        // 1. 전체 재고 목록에서 조회 (Good/Pending 포함)
         const allMatches = (warehouseAllStockList || []).filter(item => (item.modelName || '').trim().toUpperCase() === nameUpper);
         allMatches.forEach(item => {
             const loc = (item.location || '미지정').trim();
             if (!locMap[loc]) {
-                locMap[loc] = { location: loc, physicalQty: 0, oqcHold: 0, longTermHold: 0, binBlock: 0 };
+                locMap[loc] = { 
+                    location: loc, 
+                    physicalQty: 0, 
+                    goodQty: 0, 
+                    pendingQty: 0, 
+                    workTotalQty: 0,
+                    oqcHold: 0, 
+                    longTermHold: 0, 
+                    binBlock: 0 
+                };
             }
             locMap[loc].physicalQty += (item.physicalQty || 0);
+            locMap[loc].goodQty += (item.goodQty || 0);
+            locMap[loc].pendingQty += (item.pendingQty || 0);
+            locMap[loc].workTotalQty += ((item.goodQty || 0) + (item.pendingQty || 0));
         });
 
-        // 2. 홀드/롱텀/Bin 상세 목록 매칭 (블록 정보 보강)
+        // 2. 홀드/롱텀/Bin 상세 목록 매칭
         const holdMatches = (warehouseHoldStockList || []).filter(item => (item.modelName || '').trim().toUpperCase() === nameUpper);
         holdMatches.forEach(item => {
             const loc = (item.location || '미지정').trim();
             if (!locMap[loc]) {
-                locMap[loc] = { location: loc, physicalQty: (item.totalQty || 0), oqcHold: 0, longTermHold: 0, binBlock: 0 };
+                locMap[loc] = { 
+                    location: loc, 
+                    physicalQty: (item.totalQty || 0), 
+                    goodQty: (item.goodQty || 0), 
+                    pendingQty: (item.pendingQty || 0), 
+                    workTotalQty: ((item.goodQty || 0) + (item.pendingQty || 0)),
+                    oqcHold: 0, 
+                    longTermHold: 0, 
+                    binBlock: 0 
+                };
             }
             locMap[loc].oqcHold = Math.max(locMap[loc].oqcHold, item.oqcHold || 0);
             locMap[loc].longTermHold = Math.max(locMap[loc].longTermHold, item.longTermHold || 0);
@@ -2305,9 +2329,23 @@ if (btnClearDown) {
 
         const locations = Object.values(locMap).sort((a, b) => a.location.localeCompare(b.location));
 
+        // 합계 산출 (로케이션 집계 기준)
+        const totalGood = locations.reduce((sum, loc) => sum + loc.goodQty, 0);
+        const totalPending = locations.reduce((sum, loc) => sum + loc.pendingQty, 0);
+        const totalWork = totalGood + totalPending;
+
+        const effectiveStockInfo = {
+            physical: stockInfo.physical || (totalWork + (stockInfo.block || 0)),
+            good: stockInfo.good !== undefined && stockInfo.good > 0 ? stockInfo.good : totalGood,
+            pending: stockInfo.pending !== undefined && stockInfo.pending > 0 ? stockInfo.pending : totalPending,
+            workTotal: totalWork > 0 ? totalWork : (stockInfo.workTotal || (totalGood + totalPending)),
+            available: stockInfo.available || totalWork,
+            block: stockInfo.block || 0
+        };
+
         return {
             name: nameUpper,
-            stockInfo,
+            stockInfo: effectiveStockInfo,
             totalNeeded,
             locations
         };
@@ -2316,20 +2354,15 @@ if (btnClearDown) {
     function formatProductStockTextForClipboard(details) {
         if (!details) return '';
         const lines = [
-            `[${details.name}] 창고 재고 로케이션 현황`,
-            `• 전체재고: ${details.stockInfo.physical.toLocaleString()} EA (작업가능: ${details.stockInfo.available.toLocaleString()} EA / 블록: ${details.stockInfo.block.toLocaleString()} EA)`,
+            `[${details.name}] 창고 재고 현황 (블록 제외)`,
+            `• 작업가능 합계: ${details.stockInfo.workTotal.toLocaleString()} EA (패스: ${details.stockInfo.good.toLocaleString()} EA / 팬딩: ${details.stockInfo.pending.toLocaleString()} EA)`,
             `• 합산 필요수량: ${details.totalNeeded.toLocaleString()} EA`
         ];
 
         if (details.locations.length > 0) {
-            lines.push(`• 로케이션별 수량:`);
+            lines.push(`• 로케이션별 수량 (패스 / 팬딩 / 합계):`);
             details.locations.forEach(loc => {
-                const tags = [];
-                if (loc.oqcHold > 0) tags.push(`홀드 ${loc.oqcHold}EA`);
-                if (loc.longTermHold > 0) tags.push(`롱텀 ${loc.longTermHold}EA`);
-                if (loc.binBlock > 0) tags.push(`Bin ${loc.binBlock}EA`);
-                const tagStr = tags.length > 0 ? ` (${tags.join(', ')})` : '';
-                lines.push(`  - ${loc.location}: ${loc.physicalQty.toLocaleString()} EA${tagStr}`);
+                lines.push(`  - ${loc.location}: 패스 ${loc.goodQty.toLocaleString()} EA, 팬딩 ${loc.pendingQty.toLocaleString()} EA (합계 ${loc.workTotalQty.toLocaleString()} EA)`);
             });
         } else {
             lines.push(`• 등록된 로케이션 재고가 없습니다.`);
@@ -2356,29 +2389,25 @@ if (btnClearDown) {
         popoverModelName.textContent = details.name;
 
         popoverSummary.innerHTML = `
-            <span class="summary-pill total">전체 ${details.stockInfo.physical.toLocaleString()} EA</span>
-            <span class="summary-pill available">작업가능 ${details.stockInfo.available.toLocaleString()} EA</span>
-            ${details.stockInfo.block > 0 ? `<span class="summary-pill blocked">블록 ${details.stockInfo.block.toLocaleString()} EA</span>` : ''}
+            <span class="summary-pill total">합계 ${details.stockInfo.workTotal.toLocaleString()} EA</span>
+            <span class="summary-pill pass">패스 ${details.stockInfo.good.toLocaleString()} EA</span>
+            <span class="summary-pill pending">팬딩 ${details.stockInfo.pending.toLocaleString()} EA</span>
         `;
 
         if (details.locations.length === 0) {
             popoverStockTableBody.innerHTML = `
                 <tr>
-                    <td colspan="3" style="text-align: center; color: #94a3b8; padding: 16px;">로케이션 상세 정보가 없습니다.</td>
+                    <td colspan="4" style="text-align: center; color: #94a3b8; padding: 16px;">로케이션 상세 정보가 없습니다.</td>
                 </tr>
             `;
         } else {
             popoverStockTableBody.innerHTML = details.locations.map(loc => {
-                const tags = [];
-                if (loc.oqcHold > 0) tags.push(`<span class="block-tag-mini hold">홀드 ${loc.oqcHold}</span>`);
-                if (loc.longTermHold > 0) tags.push(`<span class="block-tag-mini longterm">롱텀 ${loc.longTermHold}</span>`);
-                if (loc.binBlock > 0) tags.push(`<span class="block-tag-mini bin">Bin ${loc.binBlock}</span>`);
-
                 return `
                     <tr>
                         <td class="loc-code">${loc.location}</td>
-                        <td class="loc-qty" style="text-align: right;">${loc.physicalQty.toLocaleString()} EA</td>
-                        <td>${tags.length > 0 ? tags.join(' ') : '<span style="color:#94a3b8; font-size:0.7rem;">정상</span>'}</td>
+                        <td class="loc-qty-pass" style="text-align: right;">${loc.goodQty > 0 ? `${loc.goodQty.toLocaleString()} EA` : '<span style="color:#cbd5e1;">-</span>'}</td>
+                        <td class="loc-qty-pending" style="text-align: right;">${loc.pendingQty > 0 ? `${loc.pendingQty.toLocaleString()} EA` : '<span style="color:#cbd5e1;">-</span>'}</td>
+                        <td class="loc-qty-total" style="text-align: right;">${loc.workTotalQty > 0 ? `${loc.workTotalQty.toLocaleString()} EA` : '<span style="color:#cbd5e1;">0 EA</span>'}</td>
                     </tr>
                 `;
             }).join('');
@@ -2396,7 +2425,7 @@ if (btnClearDown) {
         // 팝업 위치 계산 (위/아래 행의 제품명 앞글자 3~4개가 가려지지 않도록 오른쪽으로 80px 오프셋)
         popover.style.display = 'block';
         const rect = targetEl.getBoundingClientRect();
-        const popoverWidth = 360;
+        const popoverWidth = 390;
         const popoverHeight = popover.offsetHeight || 260;
 
         // 제품명 앞 3~4글자(약 80px)를 노출하여 마우스를 상하로 바로 이동할 수 있도록 위치 설정

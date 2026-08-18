@@ -2227,8 +2227,8 @@ tr.border-group td {
 .product-stock-popover {
     position: fixed;
     z-index: 999999;
-    width: 360px;
-    max-width: 90vw;
+    width: 390px;
+    max-width: 92vw;
     background: #ffffff;
     border-radius: 12px;
     box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2), 0 4px 12px rgba(15, 23, 42, 0.1);
@@ -2312,15 +2312,22 @@ tr.border-group td {
 }
 
 .product-stock-popover .summary-pill.total {
-    background: #f1f5f9;
-    color: #475569;
-    border: 1px solid #cbd5e1;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    font-weight: 700;
 }
 
-.product-stock-popover .summary-pill.available {
+.product-stock-popover .summary-pill.pass {
     background: #ecfdf5;
-    color: #059669;
-    border: 1px solid #a7f3d0;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.product-stock-popover .summary-pill.pending {
+    background: #fff7ed;
+    color: #ea580c;
+    border: 1px solid #fed7aa;
 }
 
 .product-stock-popover .summary-pill.blocked {
@@ -2390,9 +2397,19 @@ tr.border-group td {
     font-size: 0.75rem;
 }
 
-.product-stock-popover .loc-qty {
+.product-stock-popover .loc-qty-pass {
+    font-weight: 600;
+    color: #16a34a;
+}
+
+.product-stock-popover .loc-qty-pending {
+    font-weight: 600;
+    color: #ea580c;
+}
+
+.product-stock-popover .loc-qty-total {
     font-weight: 700;
-    color: #0f172a;
+    color: #2563eb;
 }
 
 .product-stock-popover .block-tag-mini {
