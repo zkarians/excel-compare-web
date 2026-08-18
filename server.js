@@ -2103,25 +2103,49 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
         const holdStockListWith17 = []; // 전체 블록 수량이 존재하는 로케이션별 상세 리스트
         const allStockListWith17 = []; // 전체 모든 제품의 로케이션별 상세 리스트 (새로 추가)
 
+        // 동적 헤더 인덱스 매핑 (기본값 설정)
+        let colIdxDivision = 1;  // A열 BA
+        let colIdxLocation = 2;  // B열 Bin
+        let colIdxModel = 7;     // G열 Model
+        let colIdxPhysical = 8;  // H열 Physical Qty
+        let colIdxAvailable = 9; // I열 Avl.Qty
+        let colIdxPending = 13;  // M열 Pending
+        let colIdxOqc = 15;      // O열 OQC Block
+        let colIdxLongTerm = 16; // P열 L.Term Block
+        let colIdxBin = 17;      // Q열 Bin Block
+
+        const headerRow = worksheet.getRow(1);
+        headerRow.eachCell((cell, colNum) => {
+            const h = String(cell.value || '').trim().toLowerCase();
+            if (h === 'model' || h === '모델' || h === '모델명' || h === '품목코드') colIdxModel = colNum;
+            else if (h === 'bin' || h === 'location' || h === '로케이션' || h === 'storage bin') colIdxLocation = colNum;
+            else if (h === 'ba' || h === 'division' || h === '사업부') colIdxDivision = colNum;
+            else if (h === 'physical qty' || h === 'physical' || h === '전체수량' || h === '실물수량') colIdxPhysical = colNum;
+            else if (h === 'avl.qty' || h === 'available qty' || h === '가용수량' || h === '사용가능수량') colIdxAvailable = colNum;
+            else if (h === 'pending' || h === '팬딩' || h === '팬딩수량') colIdxPending = colNum;
+            else if (h.includes('oqc block') || h === 'oqc' || h.includes('oqc hold')) colIdxOqc = colNum;
+            else if (h.includes('term block') || h.includes('long term') || h.includes('l.term')) colIdxLongTerm = colNum;
+            else if (h.includes('bin block') || h.includes('bin blk') || h.includes('binblock')) colIdxBin = colNum;
+        });
+
         worksheet.eachRow((row, rowNumber) => {
             if (rowNumber <= 1) return; // 헤더 스킵
 
-            // G열: 모델명 (제품명)
-            const cellG = row.getCell(7);
-            const val = cellG.text || String(cellG.value || '');
+            // 모델명 (제품명)
+            const cellModel = row.getCell(colIdxModel);
+            const val = cellModel.text || String(cellModel.value || '');
             const name = val.trim().toUpperCase();
 
             if (!name || !name.includes('.')) return;
 
             productNamesInWarehouse.add(name);
 
-            // B열: 로케이션명
-            const locationVal = String(row.getCell(2).value || '').trim();
+            // 로케이션명
+            const locationVal = String(row.getCell(colIdxLocation).value || '').trim();
             const is17Loc = checkIs17Loc(locationVal);
 
-            // H열: Physical Qty (전체수량)
-            const cellH = row.getCell(8);
-            const rawH = cellH.value;
+            // Physical Qty (실물 전체수량)
+            const rawH = row.getCell(colIdxPhysical).value;
             let physicalQty = 0;
             if (typeof rawH === 'number') {
                 physicalQty = rawH;
@@ -2129,9 +2153,8 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
                 physicalQty = parseFloat(String(rawH).replace(/,/g, '')) || 0;
             }
 
-            // O열: OQC BLOCK
-            const cellO = row.getCell(15);
-            const rawO = cellO.value;
+            // OQC BLOCK
+            const rawO = row.getCell(colIdxOqc).value;
             let oqcQty = 0;
             if (typeof rawO === 'number') {
                 oqcQty = rawO;
@@ -2139,9 +2162,8 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
                 oqcQty = parseFloat(String(rawO).replace(/,/g, '')) || 0;
             }
 
-            // P열: long term block
-            const cellP = row.getCell(16);
-            const rawP = cellP.value;
+            // Long Term Block
+            const rawP = row.getCell(colIdxLongTerm).value;
             let longTermQty = 0;
             if (typeof rawP === 'number') {
                 longTermQty = rawP;
@@ -2149,9 +2171,8 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
                 longTermQty = parseFloat(String(rawP).replace(/,/g, '')) || 0;
             }
 
-            // Q열: Bin block
-            const cellQ = row.getCell(17);
-            const rawQ = cellQ.value;
+            // Bin Block
+            const rawQ = row.getCell(colIdxBin).value;
             let binQty = 0;
             if (typeof rawQ === 'number') {
                 binQty = rawQ;
@@ -2169,9 +2190,8 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
                 }
             }
 
-            // I열: Available Qty (사용가능수량)
-            const cellI = row.getCell(9);
-            const rawI = cellI.value;
+            // Available Qty (사용가능수량)
+            const rawI = row.getCell(colIdxAvailable).value;
             let availableQty = 0;
             if (typeof rawI === 'number') {
                 availableQty = rawI;
@@ -2179,39 +2199,31 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
                 availableQty = parseFloat(String(rawI).replace(/,/g, '')) || 0;
             }
 
-            // J열: Good Qty (양품수량)
-            const cellJ = row.getCell(10);
-            const rawJ = cellJ.value;
-            let goodQty = 0;
-            if (typeof rawJ === 'number') {
-                goodQty = rawJ;
-            } else if (rawJ !== null && rawJ !== undefined) {
-                goodQty = parseFloat(String(rawJ).replace(/,/g, '')) || 0;
+            // Pending Qty (진짜 팬딩수량 - 13번째 열)
+            const rawPending = row.getCell(colIdxPending).value;
+            let pendingQty = 0;
+            if (typeof rawPending === 'number') {
+                pendingQty = rawPending;
+            } else if (rawPending !== null && rawPending !== undefined) {
+                pendingQty = parseFloat(String(rawPending).replace(/,/g, '')) || 0;
             }
 
-            // K열: Pending Qty (팬딩수량)
-            const cellK = row.getCell(11);
-            const rawK = cellK.value;
-            let pendingQty = 0;
-            if (typeof rawK === 'number') {
-                pendingQty = rawK;
-            } else if (rawK !== null && rawK !== undefined) {
-                pendingQty = parseFloat(String(rawK).replace(/,/g, '')) || 0;
-            }
+            // 실제 출고 가능한 정상 패스(양품) 수량 = Math.max(0, physicalQty - blockQty - pendingQty)
+            const goodQty = Math.max(0, physicalQty - blockQty - pendingQty);
 
             // 블록 수량이 존재하는 로케이션별 리스트 수집
             if (oqcQty > 0 || longTermQty > 0 || binQty > 0) {
                 const holdItem = {
-                    division: String(row.getCell(1).value || '').trim(), // A열 사업부
-                    location: locationVal, // B열 로케이션
-                    modelName: name, // G열 모델명
-                    totalQty: physicalQty, // H열 전체수량
-                    availableQty: availableQty, // I열 사용가능수량
-                    goodQty: goodQty, // J열 양품수량
-                    pendingQty: pendingQty, // K열 팬딩수량
-                    oqcHold: oqcQty, // O열 OQC Hold
-                    longTermHold: longTermQty, // P열 Long term hold
-                    binBlock: binQty // Q열 Bin block
+                    division: String(row.getCell(colIdxDivision).value || '').trim(), // 사업부
+                    location: locationVal, // 로케이션
+                    modelName: name, // 모델명
+                    totalQty: physicalQty, // 전체수량
+                    availableQty: availableQty, // 사용가능수량
+                    goodQty: goodQty, // 출고가능 양품수량
+                    pendingQty: pendingQty, // 팬딩수량
+                    oqcHold: oqcQty, // OQC Hold
+                    longTermHold: longTermQty, // Long term hold
+                    binBlock: binQty // Bin block
                 };
 
                 holdStockListWith17.push(holdItem);
@@ -2223,12 +2235,12 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
             // 전체 재고 데이터 로케이션별 수집 (Good/Pending/Block 포함)
             if (physicalQty > 0) {
                 const stockItem = {
-                    division: String(row.getCell(1).value || '').trim(),
+                    division: String(row.getCell(colIdxDivision).value || '').trim(),
                     location: locationVal,
                     modelName: name,
                     physicalQty: physicalQty,
-                    goodQty: goodQty,       // J열 패스(양품) 수량
-                    pendingQty: pendingQty, // K열 팬딩 수량
+                    goodQty: goodQty,       // 정상 패스(양품) 수량
+                    pendingQty: pendingQty, // 팬딩 수량
                     availableQty: availableQty,
                     blockQty: blockQty,
                     oqcHold: oqcQty,
