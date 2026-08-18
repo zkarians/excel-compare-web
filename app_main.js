@@ -3842,11 +3842,9 @@ function displayResults(results, isDbMode = false) {
         });
     }
 
-    // (동) 태그 헬퍼: 창고재고 업로드 시 + 마스터 prodType Q/H 이면 + 동일접두어 존재 시 표시
+    // (동) 태그 헬퍼: 창고재고 업로드 시 동일 접두어가 2개 이상 존재하는 제품이면 표시
     const getDongTag = (prodName, masterProdType) => {
         if (!warehouseStockLoaded || warehouseStockDongPrefixes.size === 0) return '';
-        const pt = (masterProdType || '').toUpperCase().trim();
-        if (pt !== 'Q' && pt !== 'H') return '';
         const nameUpper = (prodName || '').toUpperCase().trim();
         const dotIdx = nameUpper.lastIndexOf('.');
         if (dotIdx === -1) return '';
@@ -3861,7 +3859,10 @@ function displayResults(results, isDbMode = false) {
                 const grouped = {};
                 relatedItems.forEach(item => {
                     if (!grouped[item.modelName]) grouped[item.modelName] = [];
-                    grouped[item.modelName].push(`[${item.location || '로케이션 없음'}] ${item.physicalQty} EA`);
+                    const qty = (item.goodQty !== undefined || item.pendingQty !== undefined)
+                        ? ((item.goodQty || 0) + (item.pendingQty || 0))
+                        : (item.physicalQty || 0);
+                    grouped[item.modelName].push(`[${item.location || '로케이션 없음'}] ${qty} EA`);
                 });
                 
                 const tooltipLines = [];
@@ -3871,7 +3872,7 @@ function displayResults(results, isDbMode = false) {
                 }
                 
                 if (tooltipLines.length > 0) {
-                    tooltipContent = ` title="${tooltipLines.join('&#10;')}"`;
+                    tooltipContent = ` title="${tooltipLines.join('\n').replace(/"/g, '&quot;')}"`;
                 }
             }
             return `<span${tooltipContent} style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#7c3aed; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; cursor:help;">동</span>`;
