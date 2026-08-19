@@ -2432,15 +2432,17 @@ function getGlobalLevenshteinDistance(a, b) {
                 }
 
                 const simList = [];
+                // 점 앞 접두어 길이에 따라 허용 차이 동적 결정: 7글자 이하 -> 1글자만 / 8글자 이상 -> 최대 2글자까지
+                const maxAllowedDiff = (targetPrefix.length <= 7) ? 1 : 2;
+
                 candidates.forEach(cand => {
                     if (cand === nameUpper) return;
                     const candPrefix = cand.includes('.') ? cand.substring(0, cand.lastIndexOf('.')) : cand;
                     if (candPrefix === targetPrefix) return; // 동일 접두어는 아래 [동]에서 처리
+                    // 서피스넘버(점 뒤 단어)를 제외하고 접두어만 순수 비교
                     const prefixDist = getGlobalLevenshteinDistance(targetPrefix, candPrefix);
-                    const fullDist = getGlobalLevenshteinDistance(nameUpper, cand);
-                    const minDiff = Math.min(prefixDist, fullDist);
-                    if (minDiff === 1 || minDiff === 2) {
-                        simList.push({ name: cand, diff: minDiff });
+                    if (prefixDist >= 1 && prefixDist <= maxAllowedDiff) {
+                        simList.push({ name: cand, diff: prefixDist });
                     }
                 });
 
@@ -4120,22 +4122,21 @@ function displayResults(results, isDbMode = false) {
         }
 
         const similarModels = [];
+        // 점 앞 접두어 길이에 따라 허용 차이 동적 결정: 7글자 이하 -> 1글자만 / 8글자 이상 -> 최대 2글자까지
+        const maxAllowedDiff = (targetPrefix.length <= 7) ? 1 : 2;
+
         candidates.forEach(cand => {
             if (cand === nameUpper) return; // 자기 자신 제외
 
             const candPrefix = cand.includes('.') ? cand.substring(0, cand.lastIndexOf('.')) : cand;
             if (candPrefix === targetPrefix) return; // 동일 접두어는 (동) 태그에서 처리되므로 제외
 
-            // 1. 접두어 간 거리 계산
+            // 서피스넘버(점 뒤 단어)를 제외하고 접두어만 순수 비교
             const prefixDist = getLevenshteinDistance(targetPrefix, candPrefix);
-            // 2. 전체 모델명 간 거리 계산
-            const fullDist = getLevenshteinDistance(nameUpper, cand);
-
-            const minDiff = Math.min(prefixDist, fullDist);
-            if (minDiff === 1 || minDiff === 2) {
+            if (prefixDist >= 1 && prefixDist <= maxAllowedDiff) {
                 similarModels.push({
                     modelName: cand,
-                    diff: minDiff
+                    diff: prefixDist
                 });
             }
         });
