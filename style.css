@@ -2450,9 +2450,9 @@ tr.border-group td {
     border: 1px solid #fed7aa;
 }
 .product-stock-popover .related-badge.dong {
-    background: #ede9fe;
-    color: #7c3aed;
-    border: 1px solid #ddd6fe;
+    background: #d1fae5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
 }
 
 .product-stock-popover .related-model-title {
@@ -2522,7 +2522,7 @@ tr.border-group td {
 
 .product-stock-popover .loc-qty-longterm {
     font-weight: 600;
-    color: #b45309;
+    color: #7c3aed;
 }
 
 .product-stock-popover .loc-qty-bin {
@@ -2544,29 +2544,51 @@ tr.border-group td {
     margin-left: 2px;
 }
 .product-stock-popover .block-tag-mini.hold { background: #fee2e2; color: #dc2626; }
-.product-stock-popover .block-tag-mini.longterm { background: #fef3c7; color: #d97706; }
-.product-stock-popover .block-tag-mini.bin { background: #dbeafe; color: #2563eb; }
+.product-stock-popover .block-tag-mini.longterm { background: #ede9fe; color: #7c3aed; }
+.product-stock-popover .block-tag-mini.bin { background: #ffe4e6; color: #e11d48; }
 
-/* [유] 유사모델 경고 배지 */
+/* [유] 유사모델 경고 배지 (선명한 비비드 오렌지) */
 .badge-yu {
     display: inline-block;
     margin-left: 4px;
     font-size: 0.72rem;
     color: #ffffff;
-    background: #f59e0b;
+    background: #f97316;
     border-radius: 4px;
     padding: 1px 5px;
     font-weight: 700;
     vertical-align: middle;
     line-height: 1.4;
     cursor: help;
-    box-shadow: 0 1px 2px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 1px 2px rgba(249, 115, 22, 0.3);
     transition: transform 0.15s ease;
 }
 
 .badge-yu:hover {
     transform: scale(1.1);
-    background: #d97706;
+    background: #ea580c;
+}
+
+/* [동] 동일 접두어 모델 배지 (에메랄드 그린) */
+.badge-dong {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 0.72rem;
+    color: #ffffff;
+    background: #059669;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-weight: 700;
+    vertical-align: middle;
+    line-height: 1.4;
+    cursor: help;
+    box-shadow: 0 1px 2px rgba(5, 150, 105, 0.3);
+    transition: transform 0.15s ease;
+}
+
+.badge-dong:hover {
+    transform: scale(1.1);
+    background: #047857;
 }
 
 

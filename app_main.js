@@ -4067,7 +4067,7 @@ function displayResults(results, isDbMode = false) {
                     tooltipContent = ` title="${tooltipLines.join('\n').replace(/"/g, '&quot;')}"`;
                 }
             }
-            return `<span${tooltipContent} style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#7c3aed; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; cursor:help;">동</span>`;
+            return `<span${tooltipContent} class="badge-dong">동</span>`;
         }
         return '';
     };
@@ -4215,10 +4215,10 @@ function displayResults(results, isDbMode = false) {
             tags.push(`<span title="${tooltipText}" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#ef4444; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em; cursor:help;">H</span>`);
         }
         if (stockInfo.longTerm > 0) {
-            tags.push(`<span title="${tooltipText}" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#eab308; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em; cursor:help;">L</span>`);
+            tags.push(`<span title="${tooltipText}" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#8b5cf6; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em; cursor:help;">L</span>`);
         }
         if (stockInfo.bin > 0) {
-            tags.push(`<span title="${tooltipText}" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#3b82f6; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em; cursor:help;">B</span>`);
+            tags.push(`<span title="${tooltipText}" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#e11d48; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em; cursor:help;">B</span>`);
         }
         return tags.join('');
     };
