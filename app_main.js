@@ -3283,6 +3283,19 @@ function updateDashboard() {
         }
 
         const rows = comparisonResult.filter(r => r.cntrNo === cntrNo);
+
+        // [전산 누락 방지] 전산 파일에 데이터가 아예 없는 컨테이너(모든 행이 missing 또는 plan이 없는 원본 전용 건)는
+        // 사용자가 승인했더라도 전산 데이터가 들어오기 전까지는 정상(success)으로 이동하지 않고 missing으로 유지
+        const isPureMissing = rows.every(r => 
+            (r.origBadgeClass === 'missing' || r.badgeClass === 'missing') ||
+            (r.qtyInfo && r.qtyInfo.origPlan !== null && (r.qtyInfo.plan === null || r.qtyInfo.plan === undefined))
+        );
+
+        if (isPureMissing) {
+            missingCntrs.add(cntrNo);
+            return;
+        }
+
         // 수동 승인 여부 확인 헬퍼
         const checkApproved = (r) => manualApprovedItems.has(`${(r.cntrNo || "").trim()}_${(r.prodName || "").trim()}`);
 
@@ -4006,6 +4019,17 @@ window.reCompareFilteredData = reCompareFilteredData;
 function getContainerStatus(results, cntrNo) {
     const rows = results.filter(r => r.cntrNo === cntrNo);
     if (rows.length === 0) return 'none';
+
+    // [전산 누락 방지] 전산 파일에 데이터가 아예 없는 컨테이너(모든 행이 missing 또는 plan이 없는 원본 전용 건)는
+    // 사용자가 승인했더라도 전산 데이터가 들어오기 전까지는 정상(success)으로 이동하지 않고 missing으로 유지
+    const isPureMissing = rows.every(r => 
+        (r.origBadgeClass === 'missing' || r.badgeClass === 'missing') ||
+        (r.qtyInfo && r.qtyInfo.origPlan !== null && (r.qtyInfo.plan === null || r.qtyInfo.plan === undefined))
+    );
+
+    if (isPureMissing) {
+        return 'missing';
+    }
 
     // 수동 승인 여부 확인 헬퍼 (r.isApproved 플래그 및 manualApprovedItems Set 동시 확인)
     const checkApproved = (r) => r.isApproved || manualApprovedItems.has(`${(r.cntrNo || "").trim()}_${(r.prodName || "").trim()}`);
