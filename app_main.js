@@ -3284,11 +3284,11 @@ function updateDashboard() {
 
         const rows = comparisonResult.filter(r => r.cntrNo === cntrNo);
 
-        // [전산 누락 방지] 전산 파일에 데이터가 아예 없는 컨테이너(모든 행이 missing 또는 plan이 없는 원본 전용 건)는
+        // [전산 누락 방지] 전산 파일에 데이터가 아예 없는 컨테이너는
         // 사용자가 승인했더라도 전산 데이터가 들어오기 전까지는 정상(success)으로 이동하지 않고 missing으로 유지
         const isPureMissing = rows.every(r => 
-            (r.origBadgeClass === 'missing' || r.badgeClass === 'missing') ||
-            (r.qtyInfo && r.qtyInfo.origPlan !== null && (r.qtyInfo.plan === null || r.qtyInfo.plan === undefined))
+            (r.initialBadgeClass === 'missing' || r.origBadgeClass === 'missing' || r.badgeClass === 'missing') ||
+            (r.destination && r.destination.val === '-' && r.carrierName && r.carrierName.val === '-')
         );
 
         if (isPureMissing) {
@@ -3925,6 +3925,10 @@ btnCompare.addEventListener('click', async () => {
             carrierMap,
             normalizeCarrier
         );
+        comparisonResult.forEach(r => {
+            r.initialBadgeClass = r.badgeClass;
+            r.origBadgeClass = r.badgeClass;
+        });
 
         setProcessStatus("화면 업데이트 중...", 95);
 
@@ -4008,6 +4012,10 @@ function reCompareFilteredData() {
         carrierMap,
         normalizeCarrier
     );
+    comparisonResult.forEach(r => {
+        r.initialBadgeClass = r.badgeClass;
+        r.origBadgeClass = r.badgeClass;
+    });
 
     updateDashboard();
     displayResults(comparisonResult);
@@ -4020,11 +4028,11 @@ function getContainerStatus(results, cntrNo) {
     const rows = results.filter(r => r.cntrNo === cntrNo);
     if (rows.length === 0) return 'none';
 
-    // [전산 누락 방지] 전산 파일에 데이터가 아예 없는 컨테이너(모든 행이 missing 또는 plan이 없는 원본 전용 건)는
+    // [전산 누락 방지] 전산 파일에 데이터가 아예 없는 컨테이너는
     // 사용자가 승인했더라도 전산 데이터가 들어오기 전까지는 정상(success)으로 이동하지 않고 missing으로 유지
     const isPureMissing = rows.every(r => 
-        (r.origBadgeClass === 'missing' || r.badgeClass === 'missing') ||
-        (r.qtyInfo && r.qtyInfo.origPlan !== null && (r.qtyInfo.plan === null || r.qtyInfo.plan === undefined))
+        (r.initialBadgeClass === 'missing' || r.origBadgeClass === 'missing' || r.badgeClass === 'missing') ||
+        (r.destination && r.destination.val === '-' && r.carrierName && r.carrierName.val === '-')
     );
 
     if (isPureMissing) {
@@ -4329,7 +4337,10 @@ function displayResults(results, isDbMode = false) {
         // --- 수동 승인 데이터 반영 ---
         results.forEach(r => {
             const approvalKey = `${(r.cntrNo || "").trim()}_${(r.prodName || "").trim()}`;
-            r.origBadgeClass = r.badgeClass; // 수동 승인 전 원본 배지 정보 보관 (탭 분류용)
+            if (!r.initialBadgeClass) {
+                r.initialBadgeClass = r.badgeClass; // 수동 승인 전 원본 배지 정보 영구 보존
+            }
+            r.origBadgeClass = r.initialBadgeClass;
 
             if (manualApprovedItems.has(approvalKey)) {
                 let calculatedType = '대기';
@@ -4357,6 +4368,7 @@ function displayResults(results, isDbMode = false) {
                 const originalDetail = r.detail || "";
                 r.detail = `<span style="color: #7c3aed; font-weight: bold;">[사용자 수동 정상전환]</span> ${originalDetail ? `(${originalDetail})` : ''}`;
             } else {
+                r.badgeClass = r.initialBadgeClass;
                 r.isApproved = false;
             }
         });
