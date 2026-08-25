@@ -2597,7 +2597,7 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
                             });
 
                             if (isMixed) {
-                                goodLocList.push(`${g.location}: ${parts.join(' + ')} [⚠️ ${mixReason} 혼적주의]`);
+                                goodLocList.push(`${g.location}: ${parts.join(' + ')} [⚠️ ${mixReason} 혼적]`);
                             } else {
                                 goodLocList.push(`${g.location}: ${parts.join(' + ')}`);
                             }
@@ -2713,7 +2713,7 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
                             <i class="fas fa-exclamation-triangle" style="font-size:0.75rem; margin-right:5px; color:#d97706;"></i>
                             <span style="color:#9a3412; font-weight:700; font-family:monospace, sans-serif; font-size:0.83rem;">${g.location}</span><span style="color:#94a3b8; margin:0 3px;">:</span>
                             <span style="color:#047857; font-weight:800; font-size:0.83rem;">${g.qtyStr}</span>
-                            <span style="display:inline-block; background:#ea580c; color:white; padding:1px 6px; border-radius:3px; font-size:0.68rem; font-weight:700; vertical-align:middle; margin-left:6px;">⚠️ (${g.mixReason} 혼적주의)</span>
+                            <span style="display:inline-block; background:#ea580c; color:white; padding:1px 6px; border-radius:3px; font-size:0.68rem; font-weight:700; vertical-align:middle; margin-left:6px;">⚠️ (${g.mixReason} 혼적)</span>
                         </div>`;
                     } else {
                         return `<div style="line-height:1.6; font-size:0.8rem; white-space:nowrap;">
