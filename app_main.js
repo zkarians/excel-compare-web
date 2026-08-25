@@ -2234,6 +2234,393 @@ if (btnClearDown) {
     }
 })();
 
+// =========================================================================
+//  홀드·롱텀·BIN블록 작업 공지 리스트 및 이미지 복사/엑셀 다운로드
+// =========================================================================
+(function setupBlockWorkListHandlers() {
+    const btnOpenBlockWork = document.getElementById('btnOpenBlockWork');
+    const btnOpenBlockWorkFromToolbar = document.getElementById('btnOpenBlockWorkFromToolbar');
+    const blockWorkModal = document.getElementById('blockWorkModal');
+    const closeBlockWorkBtn = document.getElementById('closeBlockWorkBtn');
+    const closeBlockWorkBottomBtn = document.getElementById('closeBlockWorkBottomBtn');
+    const btnCopyBlockWorkImage = document.getElementById('btnCopyBlockWorkImage');
+    const btnDownloadBlockWorkExcel = document.getElementById('btnDownloadBlockWorkExcel');
+    const searchBlockWork = document.getElementById('searchBlockWork');
+    const blockWorkBadge = document.getElementById('blockWorkBadge');
+
+    // 블록 연관 작업 항목 수집 함수
+    const getBlockWorkItems = () => {
+        if (!comparisonResult || !Array.isArray(comparisonResult) || comparisonResult.length === 0) return [];
+        if (!warehouseStockLoaded || !warehouseStockQtyMap) return [];
+
+        const blockItems = [];
+        comparisonResult.forEach(item => {
+            if (!item.prodName) return;
+            const status = typeof getContainerStatus === 'function' ? getContainerStatus(comparisonResult, item.cntrNo) : 'success';
+            // 정상 작업 컨테이너(또는 승인된 항목)를 우선 대상
+            if (status !== 'success' && !item.isApproved) return;
+
+            const nameUpper = item.prodName.trim().toUpperCase();
+            const stockInfo = warehouseStockQtyMap[nameUpper];
+            if (!stockInfo) return;
+
+            const hasOqc = (stockInfo.oqc || 0) > 0;
+            const hasLongTerm = (stockInfo.longTerm || 0) > 0;
+            const hasBin = (stockInfo.bin || 0) > 0;
+
+            if (hasOqc || hasLongTerm || hasBin) {
+                // 로케이션 정보 추출
+                const details = typeof getProductLocationStockDetails === 'function' ? getProductLocationStockDetails(item.prodName, item.prodType) : null;
+                
+                // 1. 블록 로케이션 문자열 구성
+                const blockLocList = [];
+                if (details && details.blockLocations && details.blockLocations.length > 0) {
+                    details.blockLocations.forEach(b => {
+                        const tags = [];
+                        if (b.oqcHold > 0) tags.push(`[H] ${b.oqcHold}개`);
+                        if (b.longTermHold > 0) tags.push(`[L] ${b.longTermHold}개`);
+                        if (b.binBlock > 0) tags.push(`[B] ${b.binBlock}개`);
+                        blockLocList.push(`${b.location} (${tags.join(', ')})`);
+                    });
+                } else {
+                    const fallbackTags = [];
+                    if (hasOqc) fallbackTags.push(`OQC: ${stockInfo.oqc}EA`);
+                    if (hasLongTerm) fallbackTags.push(`롱텀: ${stockInfo.longTerm}EA`);
+                    if (hasBin) fallbackTags.push(`BIN: ${stockInfo.bin}EA`);
+                    blockLocList.push(fallbackTags.join(', '));
+                }
+
+                // 2. 정상 가용 로케이션 문자열 구성
+                const goodLocList = [];
+                if (details && details.locations && details.locations.length > 0) {
+                    details.locations.forEach(g => {
+                        if (g.goodQty > 0 || g.pendingQty > 0) {
+                            goodLocList.push(`${g.location} (${g.goodQty}EA${g.pendingQty > 0 ? ` + 팬딩 ${g.pendingQty}` : ''})`);
+                        }
+                    });
+                }
+                if (goodLocList.length === 0) {
+                    goodLocList.push(stockInfo.good > 0 ? `양품재고: ${stockInfo.good}EA` : '가용 로케이션 없음');
+                }
+
+                blockItems.push({
+                    cntrNo: item.cntrNo || '-',
+                    type: item.type || '대기',
+                    division: item.division || '-',
+                    prodType: item.prodType || '-',
+                    prodName: item.prodName || '-',
+                    qtyInfo: item.qtyInfo || {},
+                    hasOqc,
+                    hasLongTerm,
+                    hasBin,
+                    stockInfo,
+                    blockLocStr: blockLocList.join('\n') || '-',
+                    goodLocStr: goodLocList.join('\n') || '-',
+                    remark: item.origRemark || item.adj1 || item.adj2 || item.detail || '-'
+                });
+            }
+        });
+
+        return blockItems;
+    };
+
+    // 테이블 렌더링
+    const renderBlockWorkTable = () => {
+        const tableBody = document.getElementById('blockWorkTableBody');
+        const countEl = document.getElementById('blockWorkCount');
+        const cntrCountEl = document.getElementById('blockWorkCntrCount');
+        const filterText = (searchBlockWork ? searchBlockWork.value : '').trim().toUpperCase();
+
+        if (!tableBody) return;
+        tableBody.innerHTML = '';
+
+        const allItems = getBlockWorkItems();
+        const filtered = allItems.filter(row => {
+            const cntr = (row.cntrNo || '').toUpperCase();
+            const prod = (row.prodName || '').toUpperCase();
+            return cntr.includes(filterText) || prod.includes(filterText);
+        });
+
+        const uniqueCntrs = new Set(filtered.map(r => r.cntrNo));
+        if (countEl) countEl.textContent = filtered.length;
+        if (cntrCountEl) cntrCountEl.textContent = uniqueCntrs.size;
+
+        if (filtered.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="padding: 35px; color: #94a3b8; text-align: center; font-size: 0.85rem;">
+                        <i class="fas fa-check-circle" style="font-size: 1.3rem; margin-bottom: 6px; display: block; color: #10b981;"></i>
+                        ${filterText ? '검색 조건과 일치하는 블록 작업이 없습니다.' : '현재 작업 건 중 홀드/롱텀/BIN블록 재고가 걸려있는 항목이 없습니다.'}
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        filtered.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #e2e8f0';
+            tr.style.transition = 'background-color 0.15s';
+            tr.onmouseenter = () => { tr.style.background = '#faf5ff'; };
+            tr.onmouseleave = () => { tr.style.background = 'white'; };
+
+            // 태그 뱃지 생성
+            const tags = [];
+            if (row.hasOqc) tags.push(`<span style="display:inline-block; margin-left:3px; font-size:0.7rem; color:#fff; background:#ef4444; border-radius:3px; padding:1px 4px; font-weight:700;">H</span>`);
+            if (row.hasLongTerm) tags.push(`<span style="display:inline-block; margin-left:3px; font-size:0.7rem; color:#fff; background:#8b5cf6; border-radius:3px; padding:1px 4px; font-weight:700;">L</span>`);
+            if (row.hasBin) tags.push(`<span style="display:inline-block; margin-left:3px; font-size:0.7rem; color:#fff; background:#e11d48; border-radius:3px; padding:1px 4px; font-weight:700;">B</span>`);
+            const tagHtml = tags.join('');
+
+            const planQty = row.qtyInfo.origPlan || row.qtyInfo.plan || 0;
+            const remainQty = row.qtyInfo.remain !== undefined ? row.qtyInfo.remain : planQty;
+
+            const blockLocFormatted = row.blockLocStr.split('\n').map(l => `<div style="line-height:1.4; color:#b91c1c; font-weight:600;"><i class="fas fa-ban" style="font-size:0.7rem; margin-right:3px;"></i>${l}</div>`).join('');
+            const goodLocFormatted = row.goodLocStr.split('\n').map(l => `<div style="line-height:1.4; color:#047857; font-weight:600;"><i class="fas fa-check" style="font-size:0.7rem; margin-right:3px;"></i>${l}</div>`).join('');
+
+            tr.innerHTML = `
+                <td style="padding: 10px 8px; font-weight: 700; color: #1e293b; white-space: nowrap;">${row.cntrNo}</td>
+                <td style="padding: 10px 6px; color: #64748b; font-size: 0.78rem;">${row.type}</td>
+                <td style="padding: 10px 8px; text-align: left; font-weight: 600; color: #0f172a;">
+                    ${row.prodName} ${tagHtml}
+                </td>
+                <td style="padding: 10px 6px; color: #334155; font-weight: 600; white-space: nowrap;">
+                    ${planQty} <span style="font-size:0.72rem; color:#64748b;">(잔여 ${remainQty})</span>
+                </td>
+                <td style="padding: 10px 8px; text-align: left; background: #fff5f5;">
+                    ${blockLocFormatted}
+                </td>
+                <td style="padding: 10px 8px; text-align: left; background: #f0fdf4;">
+                    ${goodLocFormatted}
+                </td>
+                <td style="padding: 10px 8px; text-align: left; color: #475569; font-size: 0.78rem; max-width: 220px; word-break: break-word;">
+                    ${row.remark.replace(/<[^>]*>?/gm, '')}
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    };
+
+    window.updateBlockWorkBadge = () => {
+        const items = getBlockWorkItems();
+        if (blockWorkBadge) {
+            if (items.length > 0) {
+                blockWorkBadge.style.display = 'inline-block';
+                blockWorkBadge.textContent = items.length;
+            } else {
+                blockWorkBadge.style.display = 'none';
+            }
+        }
+    };
+
+    const openModal = () => {
+        if (blockWorkModal) {
+            blockWorkModal.style.display = 'block';
+            if (searchBlockWork) searchBlockWork.value = '';
+            renderBlockWorkTable();
+        }
+    };
+
+    const closeModal = () => {
+        if (blockWorkModal) blockWorkModal.style.display = 'none';
+    };
+
+    if (btnOpenBlockWork) btnOpenBlockWork.addEventListener('click', openModal);
+    if (btnOpenBlockWorkFromToolbar) btnOpenBlockWorkFromToolbar.addEventListener('click', openModal);
+    if (closeBlockWorkBtn) closeBlockWorkBtn.addEventListener('click', closeModal);
+    if (closeBlockWorkBottomBtn) closeBlockWorkBottomBtn.addEventListener('click', closeModal);
+
+    window.addEventListener('click', (event) => {
+        if (event.target === blockWorkModal) {
+            closeModal();
+        }
+    });
+
+    if (searchBlockWork) {
+        searchBlockWork.addEventListener('input', renderBlockWorkTable);
+    }
+
+    // 1. 이미지 복사 구현 (html2canvas)
+    if (btnCopyBlockWorkImage) {
+        btnCopyBlockWorkImage.addEventListener('click', () => {
+            const captureContainer = document.getElementById('blockWorkCaptureContainer');
+            const captureHeader = document.getElementById('blockWorkCaptureHeader');
+            const captureTime = document.getElementById('blockWorkCaptureTime');
+
+            const allItems = getBlockWorkItems();
+            if (allItems.length === 0) {
+                alert("공지할 블록 재고 작업 데이터가 없습니다.");
+                return;
+            }
+
+            if (captureHeader && captureTime) {
+                captureHeader.style.display = 'flex';
+                const now = new Date();
+                captureTime.textContent = `발행일시: ${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+            }
+
+            const scrollWrapper = document.getElementById('blockWorkScrollWrapper');
+            let originalMaxHeight = '';
+            let originalOverflowY = '';
+            if (scrollWrapper) {
+                originalMaxHeight = scrollWrapper.style.maxHeight;
+                originalOverflowY = scrollWrapper.style.overflowY;
+                scrollWrapper.style.maxHeight = 'none';
+                scrollWrapper.style.overflowY = 'visible';
+            }
+
+            const originalWidth = captureContainer.style.width;
+            captureContainer.style.width = '1050px';
+
+            btnCopyBlockWorkImage.disabled = true;
+            btnCopyBlockWorkImage.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 복사 중...';
+
+            setTimeout(() => {
+                html2canvas(captureContainer, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,
+                    useCORS: true
+                }).then(canvas => {
+                    if (captureHeader) captureHeader.style.display = 'none';
+                    if (scrollWrapper) {
+                        scrollWrapper.style.maxHeight = originalMaxHeight;
+                        scrollWrapper.style.overflowY = originalOverflowY;
+                    }
+                    captureContainer.style.width = originalWidth;
+
+                    try {
+                        const dataUrl = canvas.toDataURL('image/png');
+                        window.electronAPI.writeImageToClipboard(dataUrl).then(res => {
+                            if (res && res.success) {
+                                alert("📋 홀드·롱텀·BIN블록 작업 공지 이미지가 클립보드에 성공적으로 복사되었습니다!\n카카오톡 또는 사내 메신저(Ctrl+V)에 바로 붙여넣어 근무자에게 공지할 수 있습니다.");
+                            } else {
+                                const errMsg = res ? res.error : '알 수 없는 오류';
+                                alert("클립보드 이미지 복사 실패: " + errMsg);
+                            }
+                        }).catch(err => {
+                            console.error("클립보드 복사 API 호출 실패:", err);
+                            alert("클립보드 복사 중 오류가 발생했습니다: " + err.message);
+                        });
+                    } catch (err) {
+                        console.error("데이터 변환 실패:", err);
+                        alert("이미지 변환 오류: " + err.message);
+                    }
+
+                    btnCopyBlockWorkImage.disabled = false;
+                    btnCopyBlockWorkImage.innerHTML = '<i class="far fa-copy"></i> 이미지 복사 (카톡 공지용)';
+                }).catch(err => {
+                    if (captureHeader) captureHeader.style.display = 'none';
+                    if (scrollWrapper) {
+                        scrollWrapper.style.maxHeight = originalMaxHeight;
+                        scrollWrapper.style.overflowY = originalOverflowY;
+                    }
+                    captureContainer.style.width = originalWidth;
+
+                    btnCopyBlockWorkImage.disabled = false;
+                    btnCopyBlockWorkImage.innerHTML = '<i class="far fa-copy"></i> 이미지 복사 (카톡 공지용)';
+                    console.error("html2canvas 오류:", err);
+                    alert("이미지 캡처 중 오류가 발생했습니다: " + err.message);
+                });
+            }, 100);
+        });
+    }
+
+    // 2. 엑셀 다운로드 구현
+    if (btnDownloadBlockWorkExcel) {
+        btnDownloadBlockWorkExcel.addEventListener('click', async () => {
+            const allItems = getBlockWorkItems();
+            if (allItems.length === 0) {
+                alert("다운로드할 데이터가 없습니다.");
+                return;
+            }
+
+            const filterText = (searchBlockWork ? searchBlockWork.value : '').trim().toUpperCase();
+            const filtered = allItems.filter(row => {
+                const cntr = (row.cntrNo || '').toUpperCase();
+                const prod = (row.prodName || '').toUpperCase();
+                return cntr.includes(filterText) || prod.includes(filterText);
+            });
+
+            btnDownloadBlockWorkExcel.disabled = true;
+            btnDownloadBlockWorkExcel.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 내보내는 중...';
+
+            try {
+                const wb = new ExcelJS.Workbook();
+                const ws = wb.addWorksheet('블록작업공지');
+
+                ws.columns = [
+                    { header: '컨테이너번호', key: 'cntrNo', width: 16 },
+                    { header: '작업구분', key: 'type', width: 10 },
+                    { header: '제품모델명', key: 'prodName', width: 25 },
+                    { header: '계획수량', key: 'planQty', width: 10 },
+                    { header: '적재수량', key: 'loadQty', width: 10 },
+                    { header: '잔여수량', key: 'remainQty', width: 10 },
+                    { header: '🚫 블록 재고 위치 (피할 곳)', key: 'blockLoc', width: 35 },
+                    { header: '✅ 정상 피킹 위치 (사용할 곳)', key: 'goodLoc', width: 35 },
+                    { header: '특이사항 / 주기정보', key: 'remark', width: 30 }
+                ];
+
+                const headerRow = ws.getRow(1);
+                headerRow.font = { name: '맑은 고딕', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+                headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B21A8' } };
+                headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+                headerRow.height = 28;
+
+                filtered.forEach(item => {
+                    const row = ws.addRow({
+                        cntrNo: item.cntrNo,
+                        type: item.type,
+                        prodName: item.prodName,
+                        planQty: item.qtyInfo.origPlan || item.qtyInfo.plan || 0,
+                        loadQty: item.qtyInfo.load || 0,
+                        remainQty: item.qtyInfo.remain !== undefined ? item.qtyInfo.remain : (item.qtyInfo.origPlan || 0),
+                        blockLoc: item.blockLocStr,
+                        goodLoc: item.goodLocStr,
+                        remark: item.remark.replace(/<[^>]*>?/gm, '')
+                    });
+
+                    row.font = { name: '맑은 고딕', size: 10 };
+                    row.alignment = { vertical: 'middle', wrapText: true };
+                    row.getCell('cntrNo').alignment = { vertical: 'middle', horizontal: 'center' };
+                    row.getCell('type').alignment = { vertical: 'middle', horizontal: 'center' };
+                    row.getCell('planQty').alignment = { vertical: 'middle', horizontal: 'right' };
+                    row.getCell('loadQty').alignment = { vertical: 'middle', horizontal: 'right' };
+                    row.getCell('remainQty').alignment = { vertical: 'middle', horizontal: 'right' };
+                    row.getCell('blockLoc').font = { name: '맑은 고딕', size: 10, color: { argb: 'FFDC2626' }, bold: true };
+                    row.getCell('goodLoc').font = { name: '맑은 고딕', size: 10, color: { argb: 'FF047857' } };
+                });
+
+                const buffer = await wb.xlsx.writeBuffer();
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+                const fileName = `블록작업_공지리스트_${dateStr}.xlsx`;
+
+                if (window.electronAPI && window.electronAPI.saveExcel) {
+                    const res = await window.electronAPI.saveExcel(buffer, fileName);
+                    if (res && res.success) {
+                        alert(`✅ 엑셀 파일이 저장되었습니다:\n${res.filePath}`);
+                    }
+                } else {
+                    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }
+            } catch (err) {
+                console.error("블록작업 엑셀 내보내기 오류:", err);
+                alert("엑셀 다운로드 중 오류가 발생했습니다: " + err.message);
+            } finally {
+                btnDownloadBlockWorkExcel.disabled = false;
+                btnDownloadBlockWorkExcel.innerHTML = '<i class="far fa-file-excel"></i> 엑셀 다운로드';
+            }
+        });
+    }
+})();
+
 // Levenshtein Distance (문자열 편집 거리) 전역 계산 함수
 function getGlobalLevenshteinDistance(a, b) {
     if (a === b) return 0;
@@ -3418,6 +3805,10 @@ function updateDashboard() {
             }
         });
         transporterCard._hasClickHandler = true;
+    }
+
+    if (typeof window.updateBlockWorkBadge === 'function') {
+        window.updateBlockWorkBadge();
     }
 }
 
