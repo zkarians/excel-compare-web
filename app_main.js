@@ -2359,41 +2359,42 @@ if (btnClearDown) {
 
         filtered.forEach(row => {
             const tr = document.createElement('tr');
-            tr.style.borderBottom = '1px solid #e2e8f0';
             tr.style.transition = 'background-color 0.15s';
             tr.onmouseenter = () => { tr.style.background = '#faf5ff'; };
             tr.onmouseleave = () => { tr.style.background = 'white'; };
 
             // 태그 뱃지 생성
             const tags = [];
-            if (row.hasOqc) tags.push(`<span style="display:inline-block; margin-left:3px; font-size:0.7rem; color:#fff; background:#ef4444; border-radius:3px; padding:1px 4px; font-weight:700;">H</span>`);
-            if (row.hasLongTerm) tags.push(`<span style="display:inline-block; margin-left:3px; font-size:0.7rem; color:#fff; background:#8b5cf6; border-radius:3px; padding:1px 4px; font-weight:700;">L</span>`);
-            if (row.hasBin) tags.push(`<span style="display:inline-block; margin-left:3px; font-size:0.7rem; color:#fff; background:#e11d48; border-radius:3px; padding:1px 4px; font-weight:700;">B</span>`);
+            if (row.hasOqc) tags.push(`<span style="display:inline-block; margin-left:3px; font-size:0.7rem; color:#fff; background:#ef4444; border-radius:3px; padding:1px 5px; font-weight:700;">H</span>`);
+            if (row.hasLongTerm) tags.push(`<span style="display:inline-block; margin-left:3px; font-size:0.7rem; color:#fff; background:#8b5cf6; border-radius:3px; padding:1px 5px; font-weight:700;">L</span>`);
+            if (row.hasBin) tags.push(`<span style="display:inline-block; margin-left:3px; font-size:0.7rem; color:#fff; background:#e11d48; border-radius:3px; padding:1px 5px; font-weight:700;">B</span>`);
             const tagHtml = tags.join('');
 
             const planQty = row.qtyInfo.origPlan || row.qtyInfo.plan || 0;
             const remainQty = row.qtyInfo.remain !== undefined ? row.qtyInfo.remain : planQty;
 
-            const blockLocFormatted = row.blockLocStr.split('\n').map(l => `<div style="line-height:1.4; color:#b91c1c; font-weight:600;"><i class="fas fa-ban" style="font-size:0.7rem; margin-right:3px;"></i>${l}</div>`).join('');
-            const goodLocFormatted = row.goodLocStr.split('\n').map(l => `<div style="line-height:1.4; color:#047857; font-weight:600;"><i class="fas fa-check" style="font-size:0.7rem; margin-right:3px;"></i>${l}</div>`).join('');
+            const blockLocFormatted = row.blockLocStr.split('\n').map(l => `<div style="line-height:1.45; color:#b91c1c; font-weight:600; font-size:0.78rem;"><i class="fas fa-ban" style="font-size:0.7rem; margin-right:3px;"></i>${l}</div>`).join('');
+            const goodLocFormatted = row.goodLocStr.split('\n').map(l => `<div style="line-height:1.45; color:#047857; font-weight:600; font-size:0.78rem;"><i class="fas fa-check" style="font-size:0.7rem; margin-right:3px;"></i>${l}</div>`).join('');
+
+            const cleanRemark = row.remark ? row.remark.replace(/<[^>]*>?/gm, '').trim() : '-';
 
             tr.innerHTML = `
-                <td style="padding: 10px 8px; font-weight: 700; color: #1e293b; white-space: nowrap;">${row.cntrNo}</td>
-                <td style="padding: 10px 6px; color: #64748b; font-size: 0.78rem;">${row.type}</td>
-                <td style="padding: 10px 8px; text-align: left; font-weight: 600; color: #0f172a;">
+                <td style="padding: 8px 6px; font-weight: 700; color: #1e293b; border: 1px solid #cbd5e1; vertical-align: middle; text-align: center; font-size: 0.82rem;">${row.cntrNo}</td>
+                <td style="padding: 8px 4px; color: #64748b; font-size: 0.78rem; border: 1px solid #cbd5e1; vertical-align: middle; text-align: center;">${row.type}</td>
+                <td style="padding: 8px 8px; text-align: left; font-weight: 600; color: #0f172a; border: 1px solid #cbd5e1; vertical-align: middle; word-break: break-word;">
                     ${row.prodName} ${tagHtml}
                 </td>
-                <td style="padding: 10px 6px; color: #334155; font-weight: 600; white-space: nowrap;">
-                    ${planQty} <span style="font-size:0.72rem; color:#64748b;">(잔여 ${remainQty})</span>
+                <td style="padding: 8px 4px; color: #334155; font-weight: 600; border: 1px solid #cbd5e1; vertical-align: middle; text-align: center; font-size: 0.82rem;">
+                    ${planQty}<br><span style="font-size:0.72rem; color:#64748b;">(잔여 ${remainQty})</span>
                 </td>
-                <td style="padding: 10px 8px; text-align: left; background: #fff5f5;">
+                <td style="padding: 8px 8px; text-align: left; background: #fef2f2; border: 1px solid #cbd5e1; vertical-align: middle; word-break: break-word;">
                     ${blockLocFormatted}
                 </td>
-                <td style="padding: 10px 8px; text-align: left; background: #f0fdf4;">
+                <td style="padding: 8px 8px; text-align: left; background: #ecfdf5; border: 1px solid #cbd5e1; vertical-align: middle; word-break: break-word;">
                     ${goodLocFormatted}
                 </td>
-                <td style="padding: 10px 8px; text-align: left; color: #475569; font-size: 0.78rem; max-width: 220px; word-break: break-word;">
-                    ${row.remark.replace(/<[^>]*>?/gm, '')}
+                <td style="padding: 8px 6px; text-align: center; color: #475569; font-size: 0.76rem; border: 1px solid #cbd5e1; vertical-align: middle; word-break: break-word;">
+                    ${cleanRemark || '-'}
                 </td>
             `;
             tableBody.appendChild(tr);
