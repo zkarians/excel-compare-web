@@ -2849,6 +2849,8 @@ tr.border-group td {
     padding: 6px 6px;
     font-size: 0.78rem;
     font-weight: 700;
+    text-align: center !important;
+    vertical-align: middle;
 }
 
 .avail-table td {
