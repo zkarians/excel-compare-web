@@ -2235,6 +2235,263 @@ if (btnClearDown) {
 })();
 
 // =========================================================================
+//  제품 로케이션별 상세 재고 집계 전역 함수 (작업가능/블록/유사/동일 모델)
+// =========================================================================
+function getProductLocationStockDetails(prodName, prodType = '') {
+    if (!warehouseStockLoaded) return null;
+    const nameUpper = (prodName || '').trim().toUpperCase();
+    if (!nameUpper || nameUpper === 'NONASSET.ITEM') return null;
+
+    const stockInfo = (warehouseStockQtyMap && warehouseStockQtyMap[nameUpper]) || {
+        physical: 0,
+        good: 0,
+        pending: 0,
+        available: 0,
+        block: 0,
+        oqc: 0,
+        longTerm: 0,
+        bin: 0,
+        workTotal: 0
+    };
+
+    const totalNeeded = window.totalProductRemainMap ? (window.totalProductRemainMap[nameUpper] || 0) : 0;
+
+    // 1. 기준 제품 로케이션별 수량 집계 (작업가능 재고: Good / Pending)
+    const locMap = {};
+
+    const allMatches = (warehouseAllStockList || []).filter(item => (item.modelName || '').trim().toUpperCase() === nameUpper);
+    allMatches.forEach(item => {
+        const loc = (item.location || '미지정').trim();
+        const good = item.goodQty || 0;
+        const pending = item.pendingQty || 0;
+        const workTotal = good + pending;
+
+        if (workTotal > 0 || (item.physicalQty > 0 && !item.blockQty)) {
+            if (!locMap[loc]) {
+                locMap[loc] = { 
+                    location: loc, 
+                    physicalQty: 0, 
+                    goodQty: 0, 
+                    pendingQty: 0, 
+                    workTotalQty: 0
+                };
+            }
+            locMap[loc].physicalQty += (item.physicalQty || 0);
+            locMap[loc].goodQty += good;
+            locMap[loc].pendingQty += pending;
+            locMap[loc].workTotalQty += workTotal;
+        }
+    });
+
+    const locations = Object.values(locMap).sort((a, b) => a.location.localeCompare(b.location));
+
+    // 작업가능 합계 산출 (로케이션 집계 기준)
+    const totalGood = locations.reduce((sum, loc) => sum + loc.goodQty, 0);
+    const totalPending = locations.reduce((sum, loc) => sum + loc.pendingQty, 0);
+    const totalWork = totalGood + totalPending;
+
+    // 2. 블록/홀드/롱텀/BIN 로케이션별 수량 집계
+    const blockLocMap = {};
+
+    // 2-1. warehouseHoldStockList에서 수집
+    const holdItems = (warehouseHoldStockList || []).filter(item => (item.modelName || '').trim().toUpperCase() === nameUpper);
+    holdItems.forEach(item => {
+        const loc = (item.location || '미지정').trim();
+        if (!blockLocMap[loc]) {
+            blockLocMap[loc] = {
+                location: loc,
+                oqcHold: 0,
+                longTermHold: 0,
+                binBlock: 0,
+                totalBlock: 0
+            };
+        }
+        blockLocMap[loc].oqcHold += (item.oqcHold || 0);
+        blockLocMap[loc].longTermHold += (item.longTermHold || 0);
+        blockLocMap[loc].binBlock += (item.binBlock || 0);
+        blockLocMap[loc].totalBlock += ((item.oqcHold || 0) + (item.longTermHold || 0) + (item.binBlock || 0));
+    });
+
+    // 2-2. allMatches에서도 block 수량 보완
+    allMatches.forEach(item => {
+        const oqc = item.oqcHold || 0;
+        const lt = item.longTermHold || 0;
+        const bin = item.binBlock || 0;
+        const total = (oqc + lt + bin) || (item.blockQty || 0);
+
+        if (total > 0) {
+            const loc = (item.location || '미지정').trim();
+            if (!blockLocMap[loc]) {
+                blockLocMap[loc] = {
+                    location: loc,
+                    oqcHold: oqc,
+                    longTermHold: lt,
+                    binBlock: bin,
+                    totalBlock: total
+                };
+            }
+        }
+    });
+
+    const blockLocations = Object.values(blockLocMap)
+        .filter(loc => loc.totalBlock > 0)
+        .sort((a, b) => a.location.localeCompare(b.location));
+
+    const totalOqc = blockLocations.reduce((s, l) => s + l.oqcHold, 0);
+    const totalLongTerm = blockLocations.reduce((s, l) => s + l.longTermHold, 0);
+    const totalBin = blockLocations.reduce((s, l) => s + l.binBlock, 0);
+    const totalBlock = blockLocations.reduce((s, l) => s + l.totalBlock, 0);
+
+    const effectiveStockInfo = {
+        physical: stockInfo.physical || (totalWork + totalBlock),
+        good: stockInfo.good !== undefined && stockInfo.good > 0 ? stockInfo.good : totalGood,
+        pending: stockInfo.pending !== undefined && stockInfo.pending > 0 ? stockInfo.pending : totalPending,
+        workTotal: totalWork > 0 ? totalWork : (stockInfo.workTotal || (totalGood + totalPending)),
+        available: stockInfo.available || totalWork,
+        block: totalBlock > 0 ? totalBlock : (stockInfo.block || 0),
+        oqc: totalOqc > 0 ? totalOqc : (stockInfo.oqc || 0),
+        longTerm: totalLongTerm > 0 ? totalLongTerm : (stockInfo.longTerm || 0),
+        bin: totalBin > 0 ? totalBin : (stockInfo.bin || 0)
+    };
+
+    // 3. 연관 모델 탐색 (유사 모델 [유] 및 동일 서픽스 [동]) - 제품구분이 'Q'인 경우에만 적용!
+    const relatedGroups = [];
+    const targetPrefix = nameUpper.includes('.') ? nameUpper.substring(0, nameUpper.lastIndexOf('.')) : nameUpper;
+    const pt = (prodType || '').trim().toUpperCase();
+
+    let isQType = (pt === 'Q');
+    if (!isQType && comparisonResult && Array.isArray(comparisonResult)) {
+        const foundItem = comparisonResult.find(it => (it.prodName || '').trim().toUpperCase() === nameUpper);
+        if (foundItem && (foundItem.prodType || '').trim().toUpperCase() === 'Q') {
+            isQType = true;
+        }
+    }
+
+    if (isQType) {
+        // 3-1. [유] 유사 모델 탐색
+        if (targetPrefix.length >= 3) {
+            const candidates = new Set();
+            (warehouseAllStockList || []).forEach(item => {
+                if (item.modelName) candidates.add(item.modelName.toUpperCase().trim());
+            });
+            if (comparisonResult && Array.isArray(comparisonResult)) {
+                comparisonResult.forEach(item => {
+                    if (item.prodName) candidates.add(item.prodName.toUpperCase().trim());
+                });
+            }
+
+            const simList = [];
+            const maxAllowedDiff = (targetPrefix.length <= 7) ? 1 : 2;
+
+            candidates.forEach(cand => {
+                if (cand === nameUpper) return;
+                const candPrefix = cand.includes('.') ? cand.substring(0, cand.lastIndexOf('.')) : cand;
+                if (candPrefix === targetPrefix) return;
+                const prefixDist = getGlobalLevenshteinDistance(targetPrefix, candPrefix);
+                if (prefixDist >= 1 && prefixDist <= maxAllowedDiff) {
+                    simList.push({ name: cand, diff: prefixDist });
+                }
+            });
+
+            simList.sort((a, b) => a.diff - b.diff || a.name.localeCompare(b.name));
+
+            simList.forEach(sim => {
+                const simName = sim.name;
+                const simLocMap = {};
+                const matches = (warehouseAllStockList || []).filter(item => (item.modelName || '').trim().toUpperCase() === simName);
+                matches.forEach(item => {
+                    const loc = (item.location || '미지정').trim();
+                    if (!simLocMap[loc]) {
+                        simLocMap[loc] = { location: loc, goodQty: 0, pendingQty: 0, workTotalQty: 0 };
+                    }
+                    simLocMap[loc].goodQty += (item.goodQty || 0);
+                    simLocMap[loc].pendingQty += (item.pendingQty || 0);
+                    simLocMap[loc].workTotalQty += ((item.goodQty || 0) + (item.pendingQty || 0));
+                });
+                const simLocations = Object.values(simLocMap).sort((a, b) => a.location.localeCompare(b.location));
+                const simGood = simLocations.reduce((s, l) => s + l.goodQty, 0);
+                const simPending = simLocations.reduce((s, l) => s + l.pendingQty, 0);
+                const simTotal = simGood + simPending;
+
+                relatedGroups.push({
+                    type: 'similar',
+                    tag: '유',
+                    title: `유사 모델 (${sim.diff}글자 차이)`,
+                    modelName: simName,
+                    locations: simLocations,
+                    totalGood: simGood,
+                    totalPending: simPending,
+                    totalWork: simTotal
+                });
+            });
+        }
+
+        // 3-2. [동] 동일 접두어 모델 탐색
+        if (targetPrefix.length >= 3 && nameUpper.includes('.')) {
+            const prefix = targetPrefix;
+            const dongCandidates = new Set();
+
+            (warehouseAllStockList || []).forEach(item => {
+                const mUpper = (item.modelName || '').trim().toUpperCase();
+                if (mUpper !== nameUpper && mUpper.startsWith(prefix + '.')) {
+                    dongCandidates.add(mUpper);
+                }
+            });
+
+            if (comparisonResult && Array.isArray(comparisonResult)) {
+                comparisonResult.forEach(item => {
+                    const mUpper = (item.prodName || '').trim().toUpperCase();
+                    if (mUpper !== nameUpper && mUpper.startsWith(prefix + '.')) {
+                        dongCandidates.add(mUpper);
+                    }
+                });
+            }
+
+            dongCandidates.forEach(dongName => {
+                if (relatedGroups.some(g => g.modelName === dongName)) return;
+
+                const dongLocMap = {};
+                const matches = (warehouseAllStockList || []).filter(item => (item.modelName || '').trim().toUpperCase() === dongName);
+                matches.forEach(item => {
+                    const loc = (item.location || '미지정').trim();
+                    if (!dongLocMap[loc]) {
+                        dongLocMap[loc] = { location: loc, goodQty: 0, pendingQty: 0, workTotalQty: 0 };
+                    }
+                    dongLocMap[loc].goodQty += (item.goodQty || 0);
+                    dongLocMap[loc].pendingQty += (item.pendingQty || 0);
+                    dongLocMap[loc].workTotalQty += ((item.goodQty || 0) + (item.pendingQty || 0));
+                });
+                const dongLocations = Object.values(dongLocMap).sort((a, b) => a.location.localeCompare(b.location));
+                const dongGood = dongLocations.reduce((s, l) => s + l.goodQty, 0);
+                const dongPending = dongLocations.reduce((s, l) => s + l.pendingQty, 0);
+                const dongTotal = dongGood + dongPending;
+
+                relatedGroups.push({
+                    type: 'dong',
+                    tag: '동',
+                    title: `동일 제품군 (접두어 일치)`,
+                    modelName: dongName,
+                    locations: dongLocations,
+                    totalGood: dongGood,
+                    totalPending: dongPending,
+                    totalWork: dongTotal
+                });
+            });
+        }
+    }
+
+    return {
+        name: nameUpper,
+        stockInfo: effectiveStockInfo,
+        totalNeeded,
+        locations,
+        blockLocations,
+        relatedGroups
+    };
+}
+window.getProductLocationStockDetails = getProductLocationStockDetails;
+
+// =========================================================================
 //  홀드·롱텀·BIN블록 작업 공지 리스트 및 이미지 복사/엑셀 다운로드
 // =========================================================================
 (function setupBlockWorkListHandlers() {
@@ -2270,37 +2527,41 @@ if (btnClearDown) {
 
             if (hasOqc || hasLongTerm || hasBin) {
                 // 로케이션 정보 추출
-                const details = typeof getProductLocationStockDetails === 'function' ? getProductLocationStockDetails(item.prodName, item.prodType) : null;
+                const details = getProductLocationStockDetails(item.prodName, item.prodType);
                 
                 // 1. 블록 로케이션 문자열 구성
                 const blockLocList = [];
                 if (details && details.blockLocations && details.blockLocations.length > 0) {
                     details.blockLocations.forEach(b => {
                         const tags = [];
-                        if (b.oqcHold > 0) tags.push(`[H] ${b.oqcHold}개`);
-                        if (b.longTermHold > 0) tags.push(`[L] ${b.longTermHold}개`);
-                        if (b.binBlock > 0) tags.push(`[B] ${b.binBlock}개`);
-                        blockLocList.push(`${b.location} (${tags.join(', ')})`);
+                        if (b.oqcHold > 0) tags.push(`[H] ${b.oqcHold}EA`);
+                        if (b.longTermHold > 0) tags.push(`[L] ${b.longTermHold}EA`);
+                        if (b.binBlock > 0) tags.push(`[B] ${b.binBlock}EA`);
+                        if (tags.length === 0 && b.totalBlock > 0) tags.push(`블록 ${b.totalBlock}EA`);
+                        blockLocList.push(`${b.location}: ${tags.join(', ')}`);
                     });
                 } else {
                     const fallbackTags = [];
-                    if (hasOqc) fallbackTags.push(`OQC: ${stockInfo.oqc}EA`);
-                    if (hasLongTerm) fallbackTags.push(`롱텀: ${stockInfo.longTerm}EA`);
-                    if (hasBin) fallbackTags.push(`BIN: ${stockInfo.bin}EA`);
-                    blockLocList.push(fallbackTags.join(', '));
+                    if (hasOqc) fallbackTags.push(`[H] ${stockInfo.oqc}EA`);
+                    if (hasLongTerm) fallbackTags.push(`[L] ${stockInfo.longTerm}EA`);
+                    if (hasBin) fallbackTags.push(`[B] ${stockInfo.bin}EA`);
+                    blockLocList.push(`위치 미지정 (${fallbackTags.join(', ')})`);
                 }
 
                 // 2. 정상 가용 로케이션 문자열 구성
                 const goodLocList = [];
                 if (details && details.locations && details.locations.length > 0) {
                     details.locations.forEach(g => {
-                        if (g.goodQty > 0 || g.pendingQty > 0) {
-                            goodLocList.push(`${g.location} (${g.goodQty}EA${g.pendingQty > 0 ? ` + 팬딩 ${g.pendingQty}` : ''})`);
+                        if (g.goodQty > 0 || g.pendingQty > 0 || g.workTotalQty > 0) {
+                            const parts = [];
+                            if (g.goodQty > 0) parts.push(`${g.goodQty}EA`);
+                            if (g.pendingQty > 0) parts.push(`팬딩 ${g.pendingQty}EA`);
+                            goodLocList.push(`${g.location}: ${parts.join(' + ')}`);
                         }
                     });
                 }
                 if (goodLocList.length === 0) {
-                    goodLocList.push(stockInfo.good > 0 ? `양품재고: ${stockInfo.good}EA` : '가용 로케이션 없음');
+                    goodLocList.push(stockInfo.good > 0 ? `양품: ${stockInfo.good}EA (위치 미지정)` : '가용 로케이션 없음');
                 }
 
                 blockItems.push({
@@ -2315,8 +2576,7 @@ if (btnClearDown) {
                     hasBin,
                     stockInfo,
                     blockLocStr: blockLocList.join('\n') || '-',
-                    goodLocStr: goodLocList.join('\n') || '-',
-                    remark: item.origRemark || item.adj1 || item.adj2 || item.detail || '-'
+                    goodLocStr: goodLocList.join('\n') || '-'
                 });
             }
         });
@@ -2348,7 +2608,7 @@ if (btnClearDown) {
         if (filtered.length === 0) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="padding: 35px; color: #94a3b8; text-align: center; font-size: 0.85rem;">
+                    <td colspan="6" style="padding: 35px; color: #94a3b8; text-align: center; font-size: 0.85rem; border: 1px solid #cbd5e1;">
                         <i class="fas fa-check-circle" style="font-size: 1.3rem; margin-bottom: 6px; display: block; color: #10b981;"></i>
                         ${filterText ? '검색 조건과 일치하는 블록 작업이 없습니다.' : '현재 작업 건 중 홀드/롱텀/BIN블록 재고가 걸려있는 항목이 없습니다.'}
                     </td>
@@ -2373,10 +2633,8 @@ if (btnClearDown) {
             const planQty = row.qtyInfo.origPlan || row.qtyInfo.plan || 0;
             const remainQty = row.qtyInfo.remain !== undefined ? row.qtyInfo.remain : planQty;
 
-            const blockLocFormatted = row.blockLocStr.split('\n').map(l => `<div style="line-height:1.45; color:#b91c1c; font-weight:600; font-size:0.78rem;"><i class="fas fa-ban" style="font-size:0.7rem; margin-right:3px;"></i>${l}</div>`).join('');
-            const goodLocFormatted = row.goodLocStr.split('\n').map(l => `<div style="line-height:1.45; color:#047857; font-weight:600; font-size:0.78rem;"><i class="fas fa-check" style="font-size:0.7rem; margin-right:3px;"></i>${l}</div>`).join('');
-
-            const cleanRemark = row.remark ? row.remark.replace(/<[^>]*>?/gm, '').trim() : '-';
+            const blockLocFormatted = row.blockLocStr.split('\n').map(l => `<div style="line-height:1.45; color:#b91c1c; font-weight:700; font-size:0.8rem;"><i class="fas fa-ban" style="font-size:0.7rem; margin-right:4px;"></i>${l}</div>`).join('');
+            const goodLocFormatted = row.goodLocStr.split('\n').map(l => `<div style="line-height:1.45; color:#047857; font-weight:700; font-size:0.8rem;"><i class="fas fa-check" style="font-size:0.7rem; margin-right:4px;"></i>${l}</div>`).join('');
 
             tr.innerHTML = `
                 <td style="padding: 8px 6px; font-weight: 700; color: #1e293b; border: 1px solid #cbd5e1; vertical-align: middle; text-align: center; font-size: 0.82rem;">${row.cntrNo}</td>
@@ -2392,9 +2650,6 @@ if (btnClearDown) {
                 </td>
                 <td style="padding: 8px 8px; text-align: left; background: #ecfdf5; border: 1px solid #cbd5e1; vertical-align: middle; word-break: break-word;">
                     ${goodLocFormatted}
-                </td>
-                <td style="padding: 8px 6px; text-align: center; color: #475569; font-size: 0.76rem; border: 1px solid #cbd5e1; vertical-align: middle; word-break: break-word;">
-                    ${cleanRemark || '-'}
                 </td>
             `;
             tableBody.appendChild(tr);
@@ -2470,7 +2725,7 @@ if (btnClearDown) {
             }
 
             const originalWidth = captureContainer.style.width;
-            captureContainer.style.width = '1050px';
+            captureContainer.style.width = '1150px';
 
             btnCopyBlockWorkImage.disabled = true;
             btnCopyBlockWorkImage.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 복사 중...';
@@ -2551,13 +2806,12 @@ if (btnClearDown) {
                 ws.columns = [
                     { header: '컨테이너번호', key: 'cntrNo', width: 16 },
                     { header: '작업구분', key: 'type', width: 10 },
-                    { header: '제품모델명', key: 'prodName', width: 25 },
+                    { header: '제품모델명', key: 'prodName', width: 26 },
                     { header: '계획수량', key: 'planQty', width: 10 },
                     { header: '적재수량', key: 'loadQty', width: 10 },
                     { header: '잔여수량', key: 'remainQty', width: 10 },
-                    { header: '🚫 블록 재고 위치 (피할 곳)', key: 'blockLoc', width: 35 },
-                    { header: '✅ 정상 피킹 위치 (사용할 곳)', key: 'goodLoc', width: 35 },
-                    { header: '특이사항 / 주기정보', key: 'remark', width: 30 }
+                    { header: '🚫 블록 재고 위치 (피할 곳)', key: 'blockLoc', width: 38 },
+                    { header: '✅ 정상 피킹 위치 (사용할 곳)', key: 'goodLoc', width: 38 }
                 ];
 
                 const headerRow = ws.getRow(1);
@@ -2575,8 +2829,7 @@ if (btnClearDown) {
                         loadQty: item.qtyInfo.load || 0,
                         remainQty: item.qtyInfo.remain !== undefined ? item.qtyInfo.remain : (item.qtyInfo.origPlan || 0),
                         blockLoc: item.blockLocStr,
-                        goodLoc: item.goodLocStr,
-                        remark: item.remark.replace(/<[^>]*>?/gm, '')
+                        goodLoc: item.goodLocStr
                     });
 
                     row.font = { name: '맑은 고딕', size: 10 };
