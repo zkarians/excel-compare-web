@@ -2534,17 +2534,17 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
                 if (details && details.blockLocations && details.blockLocations.length > 0) {
                     details.blockLocations.forEach(b => {
                         const tags = [];
-                        if (b.oqcHold > 0) tags.push(`[H] ${b.oqcHold}EA`);
-                        if (b.longTermHold > 0) tags.push(`[L] ${b.longTermHold}EA`);
-                        if (b.binBlock > 0) tags.push(`[B] ${b.binBlock}EA`);
-                        if (tags.length === 0 && b.totalBlock > 0) tags.push(`블록 ${b.totalBlock}EA`);
+                        if (b.oqcHold > 0) tags.push(`${b.oqcHold}EA (홀드)`);
+                        if (b.longTermHold > 0) tags.push(`${b.longTermHold}EA (롱텀)`);
+                        if (b.binBlock > 0) tags.push(`${b.binBlock}EA (BIN블록)`);
+                        if (tags.length === 0 && b.totalBlock > 0) tags.push(`${b.totalBlock}EA (블록)`);
                         blockLocList.push(`${b.location}: ${tags.join(', ')}`);
                     });
                 } else {
                     const fallbackTags = [];
-                    if (hasOqc) fallbackTags.push(`[H] ${stockInfo.oqc}EA`);
-                    if (hasLongTerm) fallbackTags.push(`[L] ${stockInfo.longTerm}EA`);
-                    if (hasBin) fallbackTags.push(`[B] ${stockInfo.bin}EA`);
+                    if (hasOqc) fallbackTags.push(`${stockInfo.oqc}EA (홀드)`);
+                    if (hasLongTerm) fallbackTags.push(`${stockInfo.longTerm}EA (롱텀)`);
+                    if (hasBin) fallbackTags.push(`${stockInfo.bin}EA (BIN블록)`);
                     blockLocList.push(`위치 미지정 (${fallbackTags.join(', ')})`);
                 }
 
@@ -2635,8 +2635,14 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
             const planQty = row.qtyInfo.origPlan || row.qtyInfo.plan || 0;
             const remainQty = row.qtyInfo.remain !== undefined ? row.qtyInfo.remain : planQty;
 
-            const blockLocFormatted = row.blockLocStr.split('\n').map(l => `<div style="line-height:1.45; color:#b91c1c; font-weight:700; font-size:0.8rem;"><i class="fas fa-ban" style="font-size:0.7rem; margin-right:4px;"></i>${l}</div>`).join('');
-            const goodLocFormatted = row.goodLocStr.split('\n').map(l => `<div style="line-height:1.45; color:#047857; font-weight:700; font-size:0.8rem;"><i class="fas fa-check" style="font-size:0.7rem; margin-right:4px;"></i>${l}</div>`).join('');
+            const blockLocFormatted = row.blockLocStr.split('\n').map(l => {
+                const formatted = l
+                    .replace(/(\d+EA)\s*\(홀드\)/g, '$1 <span style="display:inline-block; background:#ef4444; color:white; padding:1px 5px; border-radius:3px; font-size:0.7rem; font-weight:700; vertical-align:middle;">홀드</span>')
+                    .replace(/(\d+EA)\s*\(롱텀\)/g, '$1 <span style="display:inline-block; background:#8b5cf6; color:white; padding:1px 5px; border-radius:3px; font-size:0.7rem; font-weight:700; vertical-align:middle;">롱텀</span>')
+                    .replace(/(\d+EA)\s*\(BIN블록\)/g, '$1 <span style="display:inline-block; background:#e11d48; color:white; padding:1px 5px; border-radius:3px; font-size:0.7rem; font-weight:700; vertical-align:middle;">BIN블록</span>');
+                return `<div style="line-height:1.55; color:#b91c1c; font-weight:700; font-size:0.8rem;"><i class="fas fa-ban" style="font-size:0.7rem; margin-right:4px;"></i>${formatted}</div>`;
+            }).join('');
+            const goodLocFormatted = row.goodLocStr.split('\n').map(l => `<div style="line-height:1.55; color:#047857; font-weight:700; font-size:0.8rem;"><i class="fas fa-check" style="font-size:0.7rem; margin-right:4px;"></i>${l}</div>`).join('');
 
             // 운송사별 색상 구분 (천마=빨강, BNI=파랑)
             const trans = (row.transporter || '').toUpperCase();
