@@ -2529,16 +2529,34 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
                 // 로케이션 정보 추출
                 const details = getProductLocationStockDetails(item.prodName, item.prodType);
                 
-                // 1. 블록 로케이션 문자열 구성
+                // 1. 블록 로케이션 문자열 구성 및 로케이션별 블록 맵
                 const blockLocList = [];
+                const blockLocWarningMap = {}; // { '24-1-04-14-0': '롱텀 2EA' }
                 if (details && details.blockLocations && details.blockLocations.length > 0) {
                     details.blockLocations.forEach(b => {
                         const tags = [];
-                        if (b.oqcHold > 0) tags.push(`${b.oqcHold}EA (홀드)`);
-                        if (b.longTermHold > 0) tags.push(`${b.longTermHold}EA (롱텀)`);
-                        if (b.binBlock > 0) tags.push(`${b.binBlock}EA (BIN블록)`);
-                        if (tags.length === 0 && b.totalBlock > 0) tags.push(`${b.totalBlock}EA (블록)`);
+                        const warnTags = [];
+                        if (b.oqcHold > 0) {
+                            tags.push(`${b.oqcHold}EA (홀드)`);
+                            warnTags.push(`홀드 ${b.oqcHold}EA`);
+                        }
+                        if (b.longTermHold > 0) {
+                            tags.push(`${b.longTermHold}EA (롱텀)`);
+                            warnTags.push(`롱텀 ${b.longTermHold}EA`);
+                        }
+                        if (b.binBlock > 0) {
+                            tags.push(`${b.binBlock}EA (BIN블록)`);
+                            warnTags.push(`BIN블록 ${b.binBlock}EA`);
+                        }
+                        if (tags.length === 0 && b.totalBlock > 0) {
+                            tags.push(`${b.totalBlock}EA (블록)`);
+                            warnTags.push(`블록 ${b.totalBlock}EA`);
+                        }
                         blockLocList.push(`${b.location}: ${tags.join(', ')}`);
+                        const cleanLoc = (b.location || '').trim().toUpperCase();
+                        if (cleanLoc && cleanLoc !== '미지정') {
+                            blockLocWarningMap[cleanLoc] = warnTags.join(', ');
+                        }
                     });
                 } else {
                     const fallbackTags = [];
@@ -2548,15 +2566,31 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
                     blockLocList.push(`위치 미지정 (${fallbackTags.join(', ')})`);
                 }
 
-                // 2. 정상 가용 로케이션 문자열 구성
+                // 2. 정상 가용 로케이션 문자열 구성 (혼적 검사 포함)
                 const goodLocList = [];
+                const goodLocItemObjects = [];
                 if (details && details.locations && details.locations.length > 0) {
                     details.locations.forEach(g => {
                         if (g.goodQty > 0 || g.pendingQty > 0 || g.workTotalQty > 0) {
                             const parts = [];
                             if (g.goodQty > 0) parts.push(`${g.goodQty}EA`);
                             if (g.pendingQty > 0) parts.push(`팬딩 ${g.pendingQty}EA`);
-                            goodLocList.push(`${g.location}: ${parts.join(' + ')}`);
+                            const cleanLoc = (g.location || '').trim().toUpperCase();
+                            const isMixed = cleanLoc && cleanLoc !== '미지정' && !!blockLocWarningMap[cleanLoc];
+                            const mixReason = isMixed ? blockLocWarningMap[cleanLoc] : '';
+                            
+                            goodLocItemObjects.push({
+                                location: g.location,
+                                qtyStr: parts.join(' + '),
+                                isMixed: isMixed,
+                                mixReason: mixReason
+                            });
+
+                            if (isMixed) {
+                                goodLocList.push(`${g.location}: ${parts.join(' + ')} [⚠️ ${mixReason} 혼적주의]`);
+                            } else {
+                                goodLocList.push(`${g.location}: ${parts.join(' + ')}`);
+                            }
                         }
                     });
                 }
@@ -2577,7 +2611,8 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
                     hasBin,
                     stockInfo,
                     blockLocStr: blockLocList.join('\n') || '-',
-                    goodLocStr: goodLocList.join('\n') || '-'
+                    goodLocStr: goodLocList.join('\n') || '-',
+                    goodLocItems: goodLocItemObjects
                 });
             }
         });
@@ -2642,7 +2677,25 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
                     .replace(/(\d+EA)\s*\(BIN블록\)/g, '$1 <span style="display:inline-block; background:#e11d48; color:white; padding:1px 5px; border-radius:3px; font-size:0.7rem; font-weight:700; vertical-align:middle;">BIN블록</span>');
                 return `<div style="line-height:1.55; color:#b91c1c; font-weight:700; font-size:0.8rem;"><i class="fas fa-ban" style="font-size:0.7rem; margin-right:4px;"></i>${formatted}</div>`;
             }).join('');
-            const goodLocFormatted = row.goodLocStr.split('\n').map(l => `<div style="line-height:1.55; color:#047857; font-weight:700; font-size:0.8rem;"><i class="fas fa-check" style="font-size:0.7rem; margin-right:4px;"></i>${l}</div>`).join('');
+
+            let goodLocFormatted = '';
+            if (row.goodLocItems && row.goodLocItems.length > 0) {
+                goodLocFormatted = row.goodLocItems.map(g => {
+                    if (g.isMixed) {
+                        return `<div style="line-height:1.55; color:#c2410c; font-weight:700; font-size:0.8rem;">
+                            <i class="fas fa-exclamation-triangle" style="font-size:0.75rem; margin-right:4px; color:#ea580c;"></i>
+                            <span style="color:#ea580c; font-weight:800; text-decoration: underline;">${g.location}: ${g.qtyStr}</span>
+                            <span style="display:inline-block; background:#ea580c; color:white; padding:1px 6px; border-radius:3px; font-size:0.7rem; font-weight:700; vertical-align:middle; margin-left:3px;">⚠️ (${g.mixReason} 혼적주의)</span>
+                        </div>`;
+                    } else {
+                        return `<div style="line-height:1.55; color:#047857; font-weight:700; font-size:0.8rem;">
+                            <i class="fas fa-check" style="font-size:0.7rem; margin-right:4px;"></i>${g.location}: ${g.qtyStr}
+                        </div>`;
+                    }
+                }).join('');
+            } else {
+                goodLocFormatted = row.goodLocStr.split('\n').map(l => `<div style="line-height:1.55; color:#047857; font-weight:700; font-size:0.8rem;"><i class="fas fa-check" style="font-size:0.7rem; margin-right:4px;"></i>${l}</div>`).join('');
+            }
 
             // 운송사별 색상 구분 (천마=빨강, BNI=파랑)
             const trans = (row.transporter || '').toUpperCase();
