@@ -2566,6 +2566,7 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
 
                 blockItems.push({
                     cntrNo: item.cntrNo || '-',
+                    transporter: item.transporter || '',
                     type: item.type || '대기',
                     division: item.division || '-',
                     prodType: item.prodType || '-',
@@ -2598,7 +2599,8 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
         const filtered = allItems.filter(row => {
             const cntr = (row.cntrNo || '').toUpperCase();
             const prod = (row.prodName || '').toUpperCase();
-            return cntr.includes(filterText) || prod.includes(filterText);
+            const trans = (row.transporter || '').toUpperCase();
+            return cntr.includes(filterText) || prod.includes(filterText) || trans.includes(filterText);
         });
 
         const uniqueCntrs = new Set(filtered.map(r => r.cntrNo));
@@ -2636,8 +2638,22 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
             const blockLocFormatted = row.blockLocStr.split('\n').map(l => `<div style="line-height:1.45; color:#b91c1c; font-weight:700; font-size:0.8rem;"><i class="fas fa-ban" style="font-size:0.7rem; margin-right:4px;"></i>${l}</div>`).join('');
             const goodLocFormatted = row.goodLocStr.split('\n').map(l => `<div style="line-height:1.45; color:#047857; font-weight:700; font-size:0.8rem;"><i class="fas fa-check" style="font-size:0.7rem; margin-right:4px;"></i>${l}</div>`).join('');
 
+            // 운송사별 색상 구분 (천마=빨강, BNI=파랑)
+            const trans = (row.transporter || '').toUpperCase();
+            let cntrColor = '#1e293b';
+            let transBadge = '';
+            if (trans.includes('천마')) {
+                cntrColor = '#dc2626'; // 빨강
+                transBadge = `<span style="display:inline-block; font-size:0.68rem; background:#fee2e2; color:#b91c1c; padding:1px 5px; border-radius:4px; margin-left:4px; font-weight:700; border:1px solid #fca5a5;">천마</span>`;
+            } else if (trans.includes('BNI')) {
+                cntrColor = '#2563eb'; // 파랑
+                transBadge = `<span style="display:inline-block; font-size:0.68rem; background:#dbeafe; color:#1d4ed8; padding:1px 5px; border-radius:4px; margin-left:4px; font-weight:700; border:1px solid #93c5fd;">BNI</span>`;
+            }
+
             tr.innerHTML = `
-                <td style="padding: 8px 6px; font-weight: 700; color: #1e293b; border: 1px solid #cbd5e1; vertical-align: middle; text-align: center; font-size: 0.82rem;">${row.cntrNo}</td>
+                <td style="padding: 8px 6px; font-weight: 800; color: ${cntrColor}; border: 1px solid #cbd5e1; vertical-align: middle; text-align: center; font-size: 0.84rem; white-space: nowrap;">
+                    ${row.cntrNo} ${transBadge}
+                </td>
                 <td style="padding: 8px 4px; color: #64748b; font-size: 0.78rem; border: 1px solid #cbd5e1; vertical-align: middle; text-align: center;">${row.type}</td>
                 <td style="padding: 8px 8px; text-align: left; font-weight: 600; color: #0f172a; border: 1px solid #cbd5e1; vertical-align: middle; word-break: break-word;">
                     ${row.prodName} ${tagHtml}
@@ -2835,6 +2851,12 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
                     row.font = { name: '맑은 고딕', size: 10 };
                     row.alignment = { vertical: 'middle', wrapText: true };
                     row.getCell('cntrNo').alignment = { vertical: 'middle', horizontal: 'center' };
+                    const trans = (item.transporter || '').toUpperCase();
+                    if (trans.includes('천마')) {
+                        row.getCell('cntrNo').font = { name: '맑은 고딕', size: 10, bold: true, color: { argb: 'FFDC2626' } };
+                    } else if (trans.includes('BNI')) {
+                        row.getCell('cntrNo').font = { name: '맑은 고딕', size: 10, bold: true, color: { argb: 'FF2563EB' } };
+                    }
                     row.getCell('type').alignment = { vertical: 'middle', horizontal: 'center' };
                     row.getCell('planQty').alignment = { vertical: 'middle', horizontal: 'right' };
                     row.getCell('loadQty').alignment = { vertical: 'middle', horizontal: 'right' };
