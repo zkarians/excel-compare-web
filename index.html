@@ -49,86 +49,89 @@
 
     <div class="container">
         <header
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; gap: 8px;">
-            <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-                <img src="build/icon.png" alt="logo" style="width: 32px; height: 32px; border-radius: 7px; object-fit: cover; box-shadow: 0 2px 8px rgba(6,182,212,0.25);">
-                <div style="display: flex; gap: 3px; background: #f1f5f9; padding: 3px; border-radius: 8px;">
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.4rem; gap: 6px; flex-wrap: nowrap; overflow-x: auto;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                <img src="build/icon.png" alt="logo" style="width: 28px; height: 28px; border-radius: 6px; object-fit: cover; box-shadow: 0 2px 6px rgba(6,182,212,0.25);">
+                <div style="display: flex; gap: 2px; background: #f1f5f9; padding: 2px; border-radius: 7px;">
                     <button id="mainTabBtnSelection" class="header-tab-btn header-tab-active"
-                        style="padding: 0.28rem 0.85rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; border: none; cursor: pointer; background: #fff; color: #0ea5e9; box-shadow: 0 1px 4px rgba(0,0,0,0.10); transition: all 0.18s;">
-                        <i class="fas fa-file-upload" style="margin-right:4px;"></i>데이터 선택
+                        style="padding: 0.22rem 0.65rem; font-size: 0.76rem; border-radius: 5px; font-weight: 600; border: none; cursor: pointer; background: #fff; color: #0ea5e9; box-shadow: 0 1px 4px rgba(0,0,0,0.10); transition: all 0.18s; white-space: nowrap;">
+                        <i class="fas fa-file-upload" style="margin-right:3px;"></i>데이터 선택
                     </button>
                     <button id="mainTabBtnResults" class="header-tab-btn"
-                        style="padding: 0.28rem 0.85rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; border: none; cursor: pointer; background: transparent; color: #64748b; transition: all 0.18s;">
-                        <i class="fas fa-chart-bar" style="margin-right:4px;"></i>비교 결과
+                        style="padding: 0.22rem 0.65rem; font-size: 0.76rem; border-radius: 5px; font-weight: 600; border: none; cursor: pointer; background: transparent; color: #64748b; transition: all 0.18s; white-space: nowrap;">
+                        <i class="fas fa-chart-bar" style="margin-right:3px;"></i>비교 결과
+                    </button>
+                    <button id="mainTabBtnAvailability" class="header-tab-btn"
+                        style="padding: 0.22rem 0.65rem; font-size: 0.76rem; border-radius: 5px; font-weight: 600; border: none; cursor: pointer; background: transparent; color: #64748b; transition: all 0.18s; white-space: nowrap;">
+                        <i class="fas fa-clipboard-check" style="margin-right:3px;"></i>작업 가용성 분석
                     </button>
                 </div>
             </div>
             <div id="cloudStatsBadge" class="header-actions"
-                style="display: flex; gap: 12px; align-items: center; background: #f0fdf4; padding: 6px 12px; border-radius: 10px; border: 1px solid #bbf7d0; margin-left: auto; font-size: 0.8rem; color: #166534;">
-                <div title="클라우드에 저장된 선사 매핑 수">🚢 선사: <strong id="cloudCarrierCnt">0</strong></div>
-                <div style="width: 1px; height: 12px; background: #bbf7d0;"></div>
-                <div title="클라우드에 저장된 자동분류 규칙 수">📋 규칙: <strong id="cloudRuleCnt">0</strong></div>
-                <div style="width: 1px; height: 12px; background: #bbf7d0;"></div>
-                <div title="클라우드에 저장된 제품 마스터 수">📦 마스터: <strong id="cloudMasterCnt">0</strong></div>
+                style="display: flex; gap: 6px; align-items: center; background: #f0fdf4; padding: 3px 8px; border-radius: 7px; border: 1px solid #bbf7d0; font-size: 0.72rem; color: #166534; flex-shrink: 0; white-space: nowrap;">
+                <div title="선사 매핑 수">🚢선사: <strong id="cloudCarrierCnt">0</strong></div>
+                <div style="width: 1px; height: 10px; background: #bbf7d0;"></div>
+                <div title="자동분류 규칙 수">📋규칙: <strong id="cloudRuleCnt">0</strong></div>
+                <div style="width: 1px; height: 10px; background: #bbf7d0;"></div>
+                <div title="제품 마스터 수">📦마스터: <strong id="cloudMasterCnt">0</strong></div>
                 <button id="btnRefreshCloudStats"
-                    style="background: none; border: none; cursor: pointer; color: #10b981; padding: 2px;"
+                    style="background: none; border: none; cursor: pointer; color: #10b981; padding: 1px;"
                     title="클라우드 상태 새로고침">
-                    <i class="fas fa-sync-alt"></i>
+                    <i class="fas fa-sync-alt" style="font-size: 0.68rem;"></i>
                 </button>
             </div>
 
             <div class="header-actions"
-                style="display: flex; gap: 4px; align-items: center; background: #f8fafc; padding: 3px; border-radius: 10px; border: 1px solid #e2e8f0; flex-wrap: nowrap; flex-shrink: 1; overflow: hidden;">
+                style="display: flex; gap: 3px; align-items: center; background: #f8fafc; padding: 2px 4px; border-radius: 7px; border: 1px solid #e2e8f0; flex-wrap: nowrap; flex-shrink: 0; white-space: nowrap;">
                 <button id="btnOpenMappingSettings" class="btn btn-warning-soft"
-                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; white-space: nowrap;">
+                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; white-space: nowrap;">
                     <i class="fas fa-sitemap"></i> 매핑
                 </button>
                 <button id="btnOpenSettings" class="btn btn-secondary-outline"
-                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 500; white-space: nowrap;">⚙️ 선사</button>
+                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 500; white-space: nowrap;">⚙️선사</button>
                 <button id="btnOpenDestSettings" class="btn btn-secondary-outline"
-                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 500; white-space: nowrap;">🗺️ 도착지</button>
+                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 500; white-space: nowrap;">🗺️도착지</button>
                 <button id="btnOpenRules" class="btn btn-primary-soft"
-                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; white-space: nowrap;">📋 자동분류</button>
+                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; white-space: nowrap;">📋자동분류</button>
                 <button id="btnOpenPalette" class="btn"
-                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #fdf5e6; color: #b45309; border: 1px solid #fef3c7; white-space: nowrap;">
-                    📦 파레트 재고
+                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #fdf5e6; color: #b45309; border: 1px solid #fef3c7; white-space: nowrap;">
+                    📦파레트
                 </button>
                 <button id="btnOpenCautionModels" class="btn"
-                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; white-space: nowrap;">⚠️ 주의모델</button>
+                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; white-space: nowrap;">⚠️주의모델</button>
                 <button id="btnOpenProductMaster" class="btn"
-                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; white-space: nowrap;">
+                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; white-space: nowrap;">
                     <i class="fas fa-box-open"></i> 제품검색
                 </button>
                 <button id="btnOpenHoldStock" class="btn"
-                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; white-space: nowrap;">
+                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; white-space: nowrap;">
                     <i class="fas fa-exclamation-circle"></i> H재고
                 </button>
                 <button id="btnOpenBlockWork" class="btn"
-                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff; white-space: nowrap;">
+                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff; white-space: nowrap;">
                     <i class="fas fa-lock"></i> 블록작업
                     <span id="blockWorkBadge"
-                        style="display:none; background:#7e22ce; color:white; font-size:0.65rem; padding:1px 5px; border-radius:8px; margin-left:2px; font-weight:700;">0</span>
+                        style="display:none; background:#7e22ce; color:white; font-size:0.62rem; padding:1px 4px; border-radius:8px; margin-left:1px; font-weight:700;">0</span>
                 </button>
                 <button id="btnOpenPopWeight" class="btn"
-                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; white-space: nowrap;">
+                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; white-space: nowrap;">
                     <i class="fas fa-weight-hanging"></i> POP
                     <span id="popWeightBadge"
-                        style="display:none; background:#ea580c; color:white; font-size:0.65rem; padding:1px 4px; border-radius:8px; margin-left:2px; font-weight:700;">0</span>
+                        style="display:none; background:#ea580c; color:white; font-size:0.62rem; padding:1px 4px; border-radius:8px; margin-left:1px; font-weight:700;">0</span>
                 </button>
                 <button id="btnOpenDbSettings" class="btn"
-                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; white-space: nowrap;">
+                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; white-space: nowrap;">
                     <i class="fas fa-mobile-alt"></i> DB설정
                 </button>
                 <button id="btnOpenDbSearchModal" class="btn"
-                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #fdf4ff; color: #86198f; border: 1px solid #f5d0fe; white-space: nowrap;">
+                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #fdf4ff; color: #86198f; border: 1px solid #f5d0fe; white-space: nowrap;">
                     <i class="fas fa-database"></i> DB조회
                 </button>
                 <button id="btnOpenEmailSettings" class="btn"
-                    style="padding: 0.25rem 0.55rem; font-size: 0.75rem; border-radius: 6px; font-weight: 600; background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; white-space: nowrap;">
+                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; white-space: nowrap;">
                     <i class="fas fa-envelope"></i> 메일
                 </button>
             </div>
-
         </header>
 
         <!-- Main Navigation Tabs: 헤더 내 인라인 탭으로 이동됨 -->
@@ -1250,7 +1253,7 @@
     <div id="tabContentSelection" class="tab-content active">
         <!-- New selection grid layout to conserve vertical space -->
         <div class="card selection-grid"
-            style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 1.5rem;">
+            style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 1.1rem 1.3rem;">
             <!-- Left Column: Source Excel files -->
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <div class="file-input-group" style="margin-bottom: 0;">
@@ -1544,25 +1547,43 @@
             </div>
         </div>
 
-        <div
-            style="text-align: center; margin: 0.5rem 0 1rem 0; padding: 1.5rem; background: var(--bg-card); border-radius: var(--radius-lg); box-shadow: var(--shadow-premium); border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px;">
+        <!-- 하단 액션 컨트롤 바 (상단 박스와 폭 일치 & 컴팩트한 모던 UI) -->
+        <div class="bottom-action-bar"
+            style="max-width: 1200px; width: 100%; margin: 0.5rem auto 0.4rem auto; padding: 0.45rem 0.9rem; background: #ffffff; border-radius: 10px; box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06); border: 1px solid #e2e8f0; display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 10px; box-sizing: border-box;">
+            
+            <!-- 1. 원격 DB 동시저장 토글 (좌측 컴팩트 배지) -->
             <div id="remoteSyncToggleArea"
-                style="display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px;">
-                <i class="fas fa-cloud-upload-alt" style="color: #0284c7; font-size: 1rem;"></i>
-                <span style="font-size: 0.88rem; color: #0369a1; font-weight: 600;">원격 DB 동시저장 (ungdong)</span>
+                style="display: flex; align-items: center; gap: 6px; padding: 4px 9px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; flex-shrink: 0; transition: all 0.2s ease;">
+                <i class="fas fa-cloud-upload-alt" style="color: #0284c7; font-size: 0.85rem;"></i>
+                <span style="font-size: 0.76rem; color: #0369a1; font-weight: 700; white-space: nowrap;">원격 DB 동시저장</span>
                 <label
-                    style="position: relative; display: inline-block; width: 44px; height: 24px; margin-left: 4px; cursor: pointer;">
+                    style="position: relative; display: inline-block; width: 30px; height: 16px; margin-left: 2px; margin-bottom: 0; cursor: pointer;">
                     <input type="checkbox" id="chkRemoteSync" checked style="opacity: 0; width: 0; height: 0;">
                     <span
-                        style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; border-radius: 24px; transition: 0.3s;"></span>
+                        style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; border-radius: 16px; transition: 0.25s;"></span>
                     <span
-                        style="position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"></span>
+                        style="position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; background: white; border-radius: 50%; transition: 0.25s; box-shadow: 0 1px 2px rgba(0,0,0,0.2);"></span>
                 </label>
-                <span id="remoteSyncStatusText" style="font-size: 0.8rem; color: #0284c7; font-weight: 500;">ON</span>
+                <span id="remoteSyncStatusText" style="font-size: 0.72rem; color: #0284c7; font-weight: 800; min-width: 18px;">ON</span>
             </div>
-            <button id="btnCompare" class="btn primary"
-                style="width: 100%; max-width: 800px; padding: 1.2rem; font-size: 1.3rem; font-weight: 800; border-radius: 12px; background: linear-gradient(135deg, var(--primary) 0%, #312e81 100%); border: none; box-shadow: 0 8px 20px rgba(67, 97, 238, 0.35); transition: transform 0.2s ease, box-shadow 0.2s ease; letter-spacing: 0.5px; color: white;"
-                disabled>데이터 비교 시작</button>
+
+            <!-- 2. 실행 버튼 2개 (가로 나란히 배치) -->
+            <div style="display: flex; gap: 8px; flex: 1; align-items: center;">
+                <!-- 데이터 비교 시작 버튼 -->
+                <button id="btnCompare" class="btn btn-compare-main"
+                    style="flex: 1.15; padding: 0.45rem 0.85rem; font-size: 0.86rem; font-weight: 700; border-radius: 6px; background: linear-gradient(135deg, #4361ee 0%, #312e81 100%); border: none; box-shadow: 0 2px 8px rgba(67, 97, 238, 0.28); transition: transform 0.15s ease, box-shadow 0.15s ease; color: white; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; height: 34px;"
+                    disabled>
+                    <i class="fas fa-columns" style="font-size: 0.85rem;"></i>
+                    <span>데이터 비교 시작 (원본 ↔ 전산)</span>
+                </button>
+
+                <!-- 작업 가용성 분석 실행 버튼 -->
+                <button id="btnRunAvailability" class="btn btn-avail-main"
+                    style="flex: 1; padding: 0.45rem 0.85rem; font-size: 0.84rem; font-weight: 700; border-radius: 6px; background: linear-gradient(135deg, #0d9488 0%, #115e59 100%); border: none; box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25); color: white; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; display: flex; align-items: center; justify-content: center; gap: 6px; height: 34px;">
+                    <i class="fas fa-clipboard-check" style="font-size: 0.85rem;"></i>
+                    <span>작업 가용성(홀드·롱텀) 분석</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1883,6 +1904,177 @@
                     </thead>
                     <tbody id="resultBody">
                         <!-- 결과 데이터 행이 들어갈 곳 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB CONTENT: 작업 가용성 분석 (Availability Analysis)                     -->
+    <!-- ========================================================================= -->
+    <div id="tabContentAvailability" class="tab-content">
+        <!-- 요약 대시보드 (KPI Cards) -->
+        <div class="avail-dashboard-container" id="availDashboardContainer">
+            <div class="avail-summary-card total" id="availCardTotal" onclick="window.filterAvailByStatus('all')">
+                <div class="avail-card-icon"><i class="fas fa-tasks"></i></div>
+                <div class="avail-card-info">
+                    <h4>총 분석 작업</h4>
+                    <div class="value" id="valAvailTotalJobs">0 <span class="unit">건</span></div>
+                    <div class="sub-info" id="subAvailTotalItems">품목 0개 / 0 EA</div>
+                </div>
+            </div>
+            <div class="avail-summary-card success" id="availCardSuccess" onclick="window.filterAvailByStatus('OK')">
+                <div class="avail-card-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="avail-card-info">
+                    <h4>작업 가능 (정상)</h4>
+                    <div class="value" id="valAvailSuccessJobs">0 <span class="unit">건</span></div>
+                    <div class="sub-info" id="subAvailSuccessItems">가용재고 충분 & 블록 0</div>
+                </div>
+            </div>
+            <div class="avail-summary-card warning" id="availCardBlockWarn" onclick="window.filterAvailByStatus('BLOCK_WARN')">
+                <div class="avail-card-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="avail-card-info">
+                    <h4>블록 주의 (홀드/롱텀/빈)</h4>
+                    <div class="value" id="valAvailBlockWarnJobs">0 <span class="unit">건</span></div>
+                    <div class="sub-info" id="subAvailBlockWarnItems">블록 재고 0 EA 감지</div>
+                </div>
+            </div>
+            <div class="avail-summary-card danger" id="availCardShortage" onclick="window.filterAvailByStatus('SHORTAGE')">
+                <div class="avail-card-icon"><i class="fas fa-times-circle"></i></div>
+                <div class="avail-card-info">
+                    <h4>재고 부족 (출하불가)</h4>
+                    <div class="value" id="valAvailShortageJobs">0 <span class="unit">건</span></div>
+                    <div class="sub-info" id="subAvailShortageItems">가용재고 &lt; 계획수량</div>
+                </div>
+            </div>
+            <div class="avail-summary-card unknown" id="availCardNoStock" onclick="window.filterAvailByStatus('NO_STOCK')">
+                <div class="avail-card-icon"><i class="fas fa-question-circle"></i></div>
+                <div class="avail-card-info">
+                    <h4>재고 미확인</h4>
+                    <div class="value" id="valAvailNoStockJobs">0 <span class="unit">건</span></div>
+                    <div class="sub-info" id="subAvailNoStockItems">창고재고 데이터 없음</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 컨트롤 바: 시트 탭 + 불가능작업 전용 탭 + 상태 필터 + 검색 필드 선택 + 액션 버튼 -->
+        <div class="avail-controls-card card" style="margin-bottom: 0.75rem; padding: 0.75rem 1rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(15,23,42,0.05); border: 1px solid #e2e8f0;">
+            <!-- 1행: 시트 탭 + 불가능 작업 모아보기 전용 탭 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed #e2e8f0;">
+                <div class="avail-sheet-tabs" id="availSheetTabs" style="display: flex; gap: 4px; background: #f1f5f9; padding: 3px; border-radius: 8px; flex-wrap: wrap;">
+                    <button class="avail-sheet-tab active" data-sheet="all" onclick="window.filterAvailBySheet('all')">전체 시트 (<span id="cntAvailSheetAll">0</span>)</button>
+                    <button class="avail-sheet-tab" data-sheet="직선적당일" onclick="window.filterAvailBySheet('직선적당일')">직선적당일 (<span id="cntAvailSheetDirect">0</span>)</button>
+                    <button class="avail-sheet-tab" data-sheet="법인당일" onclick="window.filterAvailBySheet('법인당일')">법인당일 (<span id="cntAvailSheetCorp">0</span>)</button>
+                    <button class="avail-sheet-tab" data-sheet="혼적당일" onclick="window.filterAvailBySheet('혼적당일')">혼적당일 (<span id="cntAvailSheetMixed">0</span>)</button>
+                    <button class="avail-sheet-tab" data-sheet="재작업당일" id="tabAvailSheetRework" style="display:none;" onclick="window.filterAvailBySheet('재작업당일')">재작업당일 (<span id="cntAvailSheetRework">0</span>)</button>
+                    <button class="avail-sheet-tab tab-possible" data-sheet="possible" onclick="window.filterAvailBySheet('possible')" style="color: #059669; font-weight: 700;" title="모든 품목이 정상 출고 가능한 작업만 필터">
+                        <i class="fas fa-check-circle" style="margin-right:3px;"></i>🟢 가능 작업만 (<span id="cntAvailSheetPossible">0</span>)
+                    </button>
+                    <button class="avail-sheet-tab tab-impossible" data-sheet="impossible" onclick="window.filterAvailBySheet('impossible')" style="color: #dc2626; font-weight: 800;" title="재고부족, 블록주의, 재고미확인이 1개라도 있는 작업만 필터">
+                        <i class="fas fa-exclamation-triangle" style="margin-right:3px;"></i>🚨 불가능(부족·블록) 작업만 (<span id="cntAvailSheetImpossible">0</span>)
+                    </button>
+                </div>
+
+                <!-- 우측 상단 결과 요약 텍스트 -->
+                <div id="availFilterCountSummary" style="font-size: 0.78rem; font-weight: 700; color: #475569; background: #f8fafc; padding: 4px 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    조회 결과: 총 0개 작업 (0건)
+                </div>
+            </div>
+
+            <!-- 2행: 상태 필터 + 검색 필드 드롭다운 + 검색창 + 액션 버튼 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <!-- 상태 필터 버튼 -->
+                <div class="avail-status-filters" style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                    <span style="font-size: 0.76rem; font-weight: 700; color: #64748b; margin-right: 2px;">상태:</span>
+                    <button class="avail-status-btn active" data-status="all" onclick="window.filterAvailByStatus('all')">전체</button>
+                    <button class="avail-status-btn btn-ok" data-status="OK" onclick="window.filterAvailByStatus('OK')">🟢 작업가능</button>
+                    <button class="avail-status-btn btn-warn" data-status="BLOCK_WARN" onclick="window.filterAvailByStatus('BLOCK_WARN')">🟣 블록주의</button>
+                    <button class="avail-status-btn btn-danger" data-status="SHORTAGE" onclick="window.filterAvailByStatus('SHORTAGE')">🔴 재고부족</button>
+                    <button class="avail-status-btn btn-unknown" data-status="NO_STOCK" onclick="window.filterAvailByStatus('NO_STOCK')">🟡 미확인</button>
+                </div>
+
+                <!-- 검색창 및 액션 버튼 -->
+                <div style="display: flex; gap: 6px; align-items: center; margin-left: auto; flex-wrap: wrap;">
+                    <!-- 검색 항목 선택 드롭다운 -->
+                    <select id="availSearchField" onchange="window.handleAvailSearchFieldChange(this.value)"
+                        style="padding: 4px 8px; font-size: 0.78rem; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-weight: 600; cursor: pointer; height: 30px;">
+                        <option value="all">🔍 전체 항목 검색</option>
+                        <option value="jobName">작업명</option>
+                        <option value="cntrNo">컨테이너번호</option>
+                        <option value="prodName">제품모델명</option>
+                        <option value="dest">도착지</option>
+                        <option value="carrier">선사</option>
+                    </select>
+
+                    <div style="position: relative; width: 180px;">
+                        <input type="text" id="availSearchInput" placeholder="검색어 입력..."
+                            style="width: 100%; padding: 4px 26px 4px 8px; font-size: 0.78rem; border-radius: 6px; border: 1px solid #cbd5e1; height: 30px; box-sizing: border-box;"
+                            oninput="window.handleAvailSearch(this.value)">
+                        <i class="fas fa-search" style="position: absolute; right: 8px; top: 8px; color: #94a3b8; font-size: 0.75rem;"></i>
+                    </div>
+
+                    <!-- 초기화 버튼 -->
+                    <button id="btnResetAvailFilters" class="btn" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; height: 30px; cursor: pointer;" onclick="window.resetAvailFilters()" title="모든 필터 및 검색 초기화">
+                        <i class="fas fa-undo" style="margin-right:2px;"></i> 초기화
+                    </button>
+
+                    <input type="file" id="fileAvailDirect" accept=".xlsx, .xls, .xlsm" style="display: none;">
+                    <button id="btnAvailPickFile" class="btn" style="padding: 4px 9px; font-size: 0.76rem; border-radius: 6px; font-weight: 700; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; cursor: pointer; height: 30px;" onclick="document.getElementById('fileAvailDirect').click()">
+                        <i class="fas fa-file-upload"></i> 원본 선택
+                    </button>
+                    <button id="btnExportAvailExcel" class="btn btn-success" style="padding: 4px 9px; font-size: 0.76rem; border-radius: 6px; height: 30px;" onclick="window.exportAvailabilityToExcel()">
+                        <i class="fas fa-file-excel"></i> 엑셀
+                    </button>
+                    <button id="btnCopyAvailNotice" class="btn btn-primary" style="padding: 4px 9px; font-size: 0.76rem; border-radius: 6px; height: 30px;" onclick="window.copyAvailabilityNotice()">
+                        <i class="fas fa-clipboard"></i> 공지
+                    </button>
+                    <button id="btnRefreshAvail" class="btn btn-secondary-outline" style="padding: 4px 7px; font-size: 0.76rem; border-radius: 6px; height: 30px;" onclick="window.runPreWorkAvailabilityCheck()" title="새로고침">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 상세 테이블 카드 -->
+        <div class="card" style="padding: 0; overflow: hidden; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="max-height: calc(100vh - 270px); overflow-y: auto; overflow-x: auto;">
+                <table id="availTable" class="avail-table" style="width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 1200px;">
+                    <thead style="position: sticky; top: 0; z-index: 10; background: #f8fafc; border-bottom: 2px solid #cbd5e1;">
+                        <tr>
+                            <th style="width: 38px; text-align: center;">선택</th>
+                            <th style="width: 70px; text-align: center;">시트구분</th>
+                            <th style="width: 130px; text-align: left;">작업명</th>
+                            <th style="width: 105px; text-align: center;">컨테이너번호</th>
+                            <th style="width: 60px; text-align: center;">도착지</th>
+                            <th style="width: 55px; text-align: center;">선사</th>
+                            <th style="width: 50px; text-align: center;">규격</th>
+                            <th style="width: 60px; text-align: center;">제품구분</th>
+                            <th style="width: 65px; text-align: center;">사업부</th>
+                            <th style="width: 180px; text-align: left;">제품모델명</th>
+                            <th style="width: 65px; text-align: right;">계획수량</th>
+                            <th style="width: 70px; text-align: right; color: #16a34a;">가용(양품)</th>
+                            <th style="width: 60px; text-align: right; color: #dc2626;">OQC홀드</th>
+                            <th style="width: 60px; text-align: right; color: #8b5cf6;">롱텀</th>
+                            <th style="width: 60px; text-align: right; color: #db2777;">빈블럭</th>
+                            <th style="width: 60px; text-align: right; color: #d97706;">팬딩</th>
+                            <th style="width: 80px; text-align: center;">판정상태</th>
+                            <th style="width: 110px; text-align: left; color: #4338ca;">구분1</th>
+                            <th style="width: 110px; text-align: left; color: #4338ca;">구분2</th>
+                            <th style="width: auto; min-width: 160px; text-align: left; color: #dc2626;">블록 로케이션 및 비고</th>
+                        </tr>
+                    </thead>
+                    <tbody id="availTableBody">
+                        <tr>
+                            <td colspan="20" style="padding: 40px; text-align: center; color: #64748b;">
+                                <i class="fas fa-file-excel" style="font-size: 2.8rem; color: #0d9488; margin-bottom: 14px; display: block;"></i>
+                                <div style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 6px;">선택된 원본 엑셀 파일이 없습니다.</div>
+                                <div style="font-size: 0.82rem; color: #64748b; margin-bottom: 14px;">원본 엑셀 파일(직선적당일, 법인당일, 혼적당일)을 선택하여 바로 분석을 시작하세요.</div>
+                                <button class="btn" style="padding: 9px 20px; font-size: 0.9rem; font-weight: 700; border-radius: 8px; background: linear-gradient(135deg, #0d9488 0%, #115e59 100%); border: none; cursor: pointer; color: white; box-shadow: 0 4px 12px rgba(13,148,136,0.35);" onclick="document.getElementById('fileAvailDirect').click()">
+                                    <i class="fas fa-folder-open" style="margin-right: 6px;"></i>원본 엑셀 파일 선택하고 바로 분석하기
+                                </button>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>

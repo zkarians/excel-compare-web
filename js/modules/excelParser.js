@@ -40,13 +40,18 @@ function getTransporterFromColor(fontColor) {
 }
 
 const _colLetterToIndex = (letters) => {
-    if (!letters) return undefined;
-    letters = letters.toUpperCase();
+    if (letters === undefined || letters === null) return undefined;
+    if (typeof letters === 'number') return letters;
+    if (!isNaN(Number(letters))) return Number(letters);
+    letters = String(letters).toUpperCase().trim();
     let idx = 0;
     for (let i = 0; i < letters.length; i++) {
-        idx = idx * 26 + (letters.charCodeAt(i) - 64);
+        const code = letters.charCodeAt(i);
+        if (code >= 65 && code <= 90) {
+            idx = idx * 26 + (code - 64);
+        }
     }
-    return idx;
+    return idx > 0 ? idx : undefined;
 };
 
 // Workbook 로드 헬퍼 함수
@@ -78,6 +83,7 @@ async function parseOriginalExcel(fileInput, mapping = {}, targetSheets = ["직�
     const stopOnEmptyRow = options.stopOnEmptyRow !== false; // 기본값 true (백엔드 기본 동작)
     const legacyCntrDetection = options.legacyCntrDetection !== false; // 기본값 true (백엔드 기본 동작)
     const includeExtraFields = options.includeExtraFields === true; // 기본값 false (백엔드 기본 동작)
+    const allowEmptyCntr = options.allowEmptyCntr === true; // 기본값 false (사전 가용성 분석 시 true)
 
     const COL = { 
         JOB_NAME: _colLetterToIndex(mapping.jobName) || 1, 
@@ -107,8 +113,11 @@ async function parseOriginalExcel(fileInput, mapping = {}, targetSheets = ["직�
 
     workbook.worksheets.forEach((worksheet, sheetIndex) => {
         const sheetName = (worksheet.name || "").trim();
-        const isTarget = targetSheets.some(s => s.trim().toLowerCase() === sheetName.toLowerCase()) ||
-            (source === 'rework' && (sheetName.includes('재작업') || workbook.worksheets.length === 1));
+        const normSheet = sheetName.replace(/\s+/g, '').toLowerCase();
+        const isTarget = targetSheets.some(s => {
+            const normTarget = s.replace(/\s+/g, '').toLowerCase();
+            return normTarget === normSheet;
+        }) || (source === 'rework' && (normSheet.includes('재작업') || workbook.worksheets.length === 1));
 
         if (isTarget) {
             let lastValidCntrNo = "";
@@ -206,7 +215,8 @@ async function parseOriginalExcel(fileInput, mapping = {}, targetSheets = ["직�
                     let cellCntrNo = safeGetText(COL.CNTR_NO);
                     let cellR = safeGetText(COL.REMARK);
 
-                    if (i === 1 && (cellProd === '품목명' || cellProd === '품명' || cellProd.toLowerCase().includes('product'))) {
+                    const isHeader = cellProd === '품목명' || cellProd === '품명' || cellProd === '제품명' || cellProd.toLowerCase() === 'model' || cellProd.toLowerCase().includes('product');
+                    if (isHeader) {
                         continue;
                     }
 
@@ -297,7 +307,13 @@ async function parseOriginalExcel(fileInput, mapping = {}, targetSheets = ["직�
                         fontColor = isNewCntr ? currentFontColor : lastFontColor;
                     }
 
-                    if (!cntrNo || cntrNo.toUpperCase().includes("WAIT")) continue;
+                    if (!allowEmptyCntr) {
+                        if (!cntrNo || cntrNo.toUpperCase().includes("WAIT")) continue;
+                    } else {
+                        if (!cntrNo || cntrNo.toUpperCase().includes("WAIT")) {
+                            cntrNo = cntrNo ? cntrNo : "미지정";
+                        }
+                    }
 
                     // 수량 체크(qty <= 0) 이전에 컨테이너 규격(Type)과 선사(Carrier)를 추출하여 state를 갱신해야 합니다.
                     // 그래야 첫 번째 상품 행의 수량이 0(쇼티지 등)이라도 뒤따르는 상품 행이 컨테이너 정보를 정상적으로 상속받을 수 있습니다.

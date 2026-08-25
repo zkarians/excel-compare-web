@@ -653,16 +653,16 @@ table {
 }
 
 #resultTable .col-manage {
-    width: 50px !important;
-    min-width: 50px !important;
-    max-width: 50px !important;
+    width: 70px !important;
+    min-width: 70px !important;
+    max-width: 70px !important;
     text-align: center;
 }
 
 #resultTable .col-work {
-    width: 70px !important;
-    min-width: 70px !important;
-    max-width: 70px !important;
+    width: 82px !important;
+    min-width: 82px !important;
+    max-width: 82px !important;
     text-align: center;
 }
 
@@ -740,11 +740,40 @@ table {
 }
 
 #resultTable .col-gw {
-    width: 90px !important;
-    min-width: 90px !important;
-    max-width: 90px !important;
-    text-align: right;
+    width: 140px !important;
+    min-width: 130px !important;
+    max-width: 155px !important;
+    text-align: center;
+    font-weight: 500;
+}
+
+.gw-mismatch-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.76rem;
+    line-height: 1.35;
+    padding: 2px 0;
+}
+
+.gw-mismatch-box .gw-orig,
+.gw-mismatch-box .gw-mixed {
+    color: #475569;
+    white-space: nowrap;
+}
+
+.gw-mismatch-box .gw-diff-error {
+    color: #ef4444;
+    font-weight: 800;
+    margin-top: 1px;
+    white-space: nowrap;
+}
+
+.gw-mismatch-box .gw-diff-approved {
+    color: #7c3aed;
     font-weight: 700;
+    margin-top: 1px;
+    white-space: nowrap;
 }
 
 #resultTable .col-gw-entry {
@@ -2590,5 +2619,418 @@ tr.border-group td {
     transform: scale(1.1);
     background: #047857;
 }
+
+/* =========================================================================
+ *  작업 가용성 분석 (Availability Analysis) 전용 스타일
+ * ========================================================================= */
+.avail-dashboard-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+    margin-bottom: 0.75rem;
+}
+
+.avail-summary-card {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #cbd5e1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.avail-summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.avail-summary-card.total { border-left-color: #3b82f6; }
+.avail-summary-card.success { border-left-color: #10b981; }
+.avail-summary-card.warning { border-left-color: #8b5cf6; }
+.avail-summary-card.danger { border-left-color: #ef4444; }
+.avail-summary-card.unknown { border-left-color: #f59e0b; }
+
+.avail-card-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+
+.avail-summary-card.total .avail-card-icon { background: #eff6ff; color: #2563eb; }
+.avail-summary-card.success .avail-card-icon { background: #ecfdf5; color: #059669; }
+.avail-summary-card.warning .avail-card-icon { background: #f5f3ff; color: #7c3aed; }
+.avail-summary-card.danger .avail-card-icon { background: #fef2f2; color: #dc2626; }
+.avail-summary-card.unknown .avail-card-icon { background: #fffbeb; color: #d97706; }
+
+.avail-card-info h4 {
+    margin: 0 0 2px 0;
+    font-size: 0.76rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.avail-card-info .value {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1.1;
+}
+
+.avail-card-info .value .unit {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+.avail-card-info .sub-info {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.avail-sheet-tab {
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.avail-sheet-tab.active {
+    background: #ffffff;
+    color: #0d9488;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.avail-status-btn {
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.avail-status-btn.active {
+    background: #1e293b;
+    color: #ffffff;
+    border-color: #1e293b;
+}
+
+.avail-status-btn.btn-ok.active { background: #10b981; border-color: #10b981; }
+.avail-status-btn.btn-warn.active { background: #8b5cf6; border-color: #8b5cf6; }
+.avail-status-btn.btn-danger.active { background: #ef4444; border-color: #ef4444; }
+.avail-status-btn.btn-unknown.active { background: #f59e0b; border-color: #f59e0b; }
+
+.avail-table th {
+    padding: 7px 6px;
+    font-weight: 700;
+    color: #334155;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.avail-table td {
+    padding: 5px 6px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.avail-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.avail-table tbody tr.row-shortage {
+    background-color: #fff1f2;
+}
+
+.avail-table tbody tr.row-block-warn {
+    background-color: #faf5ff;
+}
+
+.tag-avail-sheet {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.tag-avail-sheet.direct { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
+.tag-avail-sheet.corp { background: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4; }
+.tag-avail-sheet.mixed { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.tag-avail-sheet.rework { background: #fce7f3; color: #db2777; border: 1px solid #fbcfe8; }
+
+.badge-avail-status {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.73rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+.badge-avail-status.ok { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.badge-avail-status.partial { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.badge-avail-status.warn { background: #ede9fe; color: #6b21a8; border: 1px solid #ddd6fe; }
+.badge-avail-status.danger { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.badge-avail-status.unknown { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+/* =========================================================================
+ *  하단 액션 바 및 버튼 스타일 (가로 배치 & 프리미엄 UI)
+ * ========================================================================= */
+.bottom-action-bar {
+    transition: all 0.2s ease;
+}
+
+.btn-compare-main {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-compare-main:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 20px rgba(67, 97, 238, 0.45) !important;
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%) !important;
+}
+
+.btn-compare-main:not(:disabled):active {
+    transform: translateY(0);
+}
+
+.btn-compare-main:disabled {
+    opacity: 0.55;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.btn-avail-main:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 20px rgba(13, 148, 136, 0.42) !important;
+    background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%) !important;
+}
+
+.btn-avail-main:active {
+    transform: translateY(0);
+}
+
+/* =========================================================================
+ *  작업 가용성 분석 테이블 그룹핑 및 시각화 스타일
+ * ========================================================================= */
+.avail-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+}
+
+.avail-table th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f1f5f9;
+    border-bottom: 2px solid #cbd5e1;
+    padding: 6px 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.avail-table td {
+    padding: 4px 6px;
+    font-size: 0.79rem;
+    line-height: 1.3;
+}
+
+/* 작업 그룹 첫 행 상단 굵은 구분선 */
+.avail-row.avail-group-first td {
+    border-top: 2px solid #94a3b8 !important;
+}
+
+/* 그룹별 교차 배경색 (Zebra Grouping) */
+.avail-row.avail-group-even {
+    background-color: #ffffff;
+}
+
+.avail-row.avail-group-even:hover {
+    background-color: #f1f5f9;
+}
+
+.avail-row.avail-group-odd {
+    background-color: #f8fafc;
+}
+
+.avail-row.avail-group-odd:hover {
+    background-color: #eef2f6;
+}
+
+/* 재고부족 / 블록주의 그룹 테두리 및 배경 틴트 */
+.avail-row.avail-group-shortage {
+    background-color: #fff1f2 !important;
+}
+
+.avail-row.avail-group-shortage:hover {
+    background-color: #ffe4e6 !important;
+}
+
+.avail-row.avail-group-warn {
+    background-color: #faf5ff !important;
+}
+
+.avail-row.avail-group-warn:hover {
+    background-color: #f3e8ff !important;
+}
+
+.avail-row.avail-group-shortage td:first-child {
+    border-left: 4px solid #ef4444 !important;
+}
+
+.avail-row.avail-group-warn td:first-child {
+    border-left: 4px solid #8b5cf6 !important;
+}
+
+/* 병합된 공통 셀 스타일 */
+.avail-row td.merged-cell {
+    border-right: 1px solid #e2e8f0;
+    border-bottom: 2px solid #94a3b8;
+    background-color: inherit;
+    padding: 4px 8px;
+}
+
+/* 품목 개별 행 사이 얇은 구분선 */
+.avail-row:not(.avail-group-first) td:not(.merged-cell) {
+    border-top: 1px dashed #e2e8f0;
+}
+
+/* 작업별 요약 통계 배지 */
+.avail-item-count-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.70rem;
+    font-weight: 700;
+    background: #e2e8f0;
+    color: #334155;
+    white-space: nowrap;
+    border: 1px solid #cbd5e1;
+}
+
+/* 불가능 / 가능 전용 필터 탭 스타일 */
+.avail-sheet-tab.tab-impossible {
+    color: #dc2626 !important;
+    background: #fef2f2 !important;
+    border: 1px solid #fecaca !important;
+}
+
+.avail-sheet-tab.tab-impossible.active {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    border-color: #dc2626 !important;
+}
+
+.avail-sheet-tab.tab-possible {
+    color: #059669 !important;
+    background: #f0fdf4 !important;
+    border: 1px solid #bbf7d0 !important;
+}
+
+.avail-sheet-tab.tab-possible.active {
+    background: #059669 !important;
+    color: #ffffff !important;
+    border-color: #059669 !important;
+}
+
+/* 정상/가용 재고 로케이션 배지 스타일 (산뜻한 블루/스카이) */
+.tag-stock-loc {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.69rem;
+    font-weight: 600;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    white-space: nowrap;
+}
+
+/* 제품명 앞 사업부(구분) 배지 스타일 */
+.tag-prod-type {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.70rem;
+    font-weight: 800;
+    color: #334155;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    line-height: 1.25;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+}
+
+.tag-prod-type.q-type {
+    color: #0d9488;
+    background: #f0fdfa;
+    border-color: #99f6e4;
+}
+
+.tag-prod-type.h-type {
+    color: #7c3aed;
+    background: #faf5ff;
+    border-color: #ddd6fe;
+}
+
+/* 사업부 배지 스타일 (CVZ, CNZ, CDZ 등) */
+.tag-prod-division {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.69rem;
+    font-weight: 800;
+    color: #475569;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    line-height: 1.25;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+}
+
+.tag-prod-division.cvz-type {
+    color: #c2410c;
+    background: #fff7ed;
+    border-color: #ffedd5;
+}
+
+.tag-prod-division.cnz-type {
+    color: #1d4ed8;
+    background: #eff6ff;
+    border-color: #dbeafe;
+}
+
+.tag-prod-division.cdz-type {
+    color: #0e7490;
+    background: #ecfeff;
+    border-color: #cffafe;
+}
+
+
+
+
+
 
 

@@ -2253,9 +2253,14 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
                 }
             }
 
+            // 사업부 추출
+            const rowDivision = String(row.getCell(colIdxDivision).value || '').trim();
+
             // 전체 재고 데이터 합산 (17 포함)
             if (!stockMapWith17[name]) {
-                stockMapWith17[name] = { physical: 0, good: 0, pending: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0, workTotal: 0 };
+                stockMapWith17[name] = { division: rowDivision, physical: 0, good: 0, pending: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0, workTotal: 0 };
+            } else if (!stockMapWith17[name].division && rowDivision) {
+                stockMapWith17[name].division = rowDivision;
             }
             stockMapWith17[name].physical += physicalQty;
             stockMapWith17[name].good += goodQty;
@@ -2270,7 +2275,9 @@ app.post('/api/parse-warehouse-stock', upload.single('warehouseFile'), async (re
             // 기본 재고 데이터 합산 (17 제외)
             if (!is17Loc) {
                 if (!stockMap[name]) {
-                    stockMap[name] = { physical: 0, good: 0, pending: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0, workTotal: 0 };
+                    stockMap[name] = { division: rowDivision, physical: 0, good: 0, pending: 0, block: 0, oqc: 0, longTerm: 0, bin: 0, available: 0, workTotal: 0 };
+                } else if (!stockMap[name].division && rowDivision) {
+                    stockMap[name].division = rowDivision;
                 }
                 stockMap[name].physical += physicalQty;
                 stockMap[name].good += goodQty;

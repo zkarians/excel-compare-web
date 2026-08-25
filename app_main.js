@@ -688,13 +688,15 @@ const syncStatusText = document.getElementById('syncStatusText');
 const syncProgressBar = document.getElementById('syncProgressBar');
 
 /* =========================================================================
- *  MAIN NAVIGATION TABS ( Selection vs Results )
+ *  MAIN NAVIGATION TABS ( Selection vs Results vs Availability )
  * ========================================================================= */
 function switchMainTab(tabId) {
     const mainTabBtnSelection = document.getElementById('mainTabBtnSelection');
     const mainTabBtnResults = document.getElementById('mainTabBtnResults');
+    const mainTabBtnAvailability = document.getElementById('mainTabBtnAvailability');
     const tabContentSelection = document.getElementById('tabContentSelection');
     const tabContentResults = document.getElementById('tabContentResults');
+    const tabContentAvailability = document.getElementById('tabContentAvailability');
 
     function setActive(btn) {
         if (!btn) return;
@@ -711,15 +713,26 @@ function switchMainTab(tabId) {
         btn.classList.remove('active');
     }
 
+    // 모든 탭 비활성화
+    setInactive(mainTabBtnSelection);
+    setInactive(mainTabBtnResults);
+    setInactive(mainTabBtnAvailability);
+    if (tabContentSelection) tabContentSelection.classList.remove('active');
+    if (tabContentResults) tabContentResults.classList.remove('active');
+    if (tabContentAvailability) tabContentAvailability.classList.remove('active');
+
     if (tabId === 'selection') {
         setActive(mainTabBtnSelection);
-        setInactive(mainTabBtnResults);
         if (tabContentSelection) tabContentSelection.classList.add('active');
-        if (tabContentResults) tabContentResults.classList.remove('active');
+    } else if (tabId === 'availability') {
+        setActive(mainTabBtnAvailability);
+        if (tabContentAvailability) tabContentAvailability.classList.add('active');
+        // 가용성 데이터가 아직 없는데 원본 데이터가 메모리에 있으면 자동 분석
+        if ((!processedAvailabilityData || processedAvailabilityData.length === 0) && originalData && originalData.length > 0) {
+            runPreWorkAvailabilityCheck(true);
+        }
     } else {
-        setInactive(mainTabBtnSelection);
         setActive(mainTabBtnResults);
-        if (tabContentSelection) tabContentSelection.classList.remove('active');
         if (tabContentResults) tabContentResults.classList.add('active');
     }
 }
@@ -727,8 +740,35 @@ function switchMainTab(tabId) {
 document.addEventListener('DOMContentLoaded', () => {
     const btnSelection = document.getElementById('mainTabBtnSelection');
     const btnResults = document.getElementById('mainTabBtnResults');
+    const btnAvailability = document.getElementById('mainTabBtnAvailability');
     if (btnSelection) btnSelection.addEventListener('click', () => switchMainTab('selection'));
     if (btnResults) btnResults.addEventListener('click', () => switchMainTab('results'));
+    if (btnAvailability) btnAvailability.addEventListener('click', () => switchMainTab('availability'));
+
+    const fileAvailDirect = document.getElementById('fileAvailDirect');
+    if (fileAvailDirect) {
+        fileAvailDirect.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                const parsedData = await readExcelFile(file, 'original');
+                originalData = parsedData.filter(item => (item.qty || 0) > 0);
+                originalFile = file;
+                if (statusOriginal) {
+                    statusOriginal.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${originalData.length}건)`;
+                    statusOriginal.style.color = '#059669';
+                }
+                rawAvailabilityItems = originalData;
+                processAvailabilityData(originalData);
+                renderAvailabilityDashboard();
+                renderAvailabilityTable();
+                switchMainTab('availability');
+            } catch (err) {
+                console.error("가용성 원본 파일 직접 로드 실패:", err);
+                alert("원본 엑셀 파일 파싱에 실패했습니다: " + err.message);
+            }
+        });
+    }
 });
 
 
@@ -1324,7 +1364,8 @@ async function readExcelFile(file, type) {
                     results = await window.excelParser.parseOriginalExcel(data, mapping, targetSheets, type, {
                         stopOnEmptyRow: false,
                         legacyCntrDetection: false,
-                        includeExtraFields: true
+                        includeExtraFields: true,
+                        allowEmptyCntr: true
                     });
                 } else {
                     results = await window.excelParser.parseDownloadExcel(data, mapping);
@@ -4695,6 +4736,17 @@ btnCompare.addEventListener('click', async () => {
         setActiveTab('success');
         switchMainTab('results'); // 결과 탭으로 자동 전환
 
+        // 작업 가용성 분석 데이터도 함께 사전 계산 (가용성 탭 전환 시 즉시 표시되도록)
+        try {
+            if (originalData && originalData.length > 0) {
+                rawAvailabilityItems = originalData;
+                processAvailabilityData(originalData);
+                renderAvailabilityDashboard();
+                renderAvailabilityTable();
+            }
+        } catch (availErr) {
+            console.warn("작업 가용성 백그라운드 분석 중 경고:", availErr);
+        }
 
         // 대시보드 및 결과 영역 표시
         dashboardContainer.style.display = 'flex';
@@ -4808,6 +4860,223 @@ function getContainerStatus(results, cntrNo) {
     return 'success';
 }
 
+// Levenshtein Distance (문자열 편집 거리) 계산 함수
+function getLevenshteinDistance(a, b) {
+    if (a === b) return 0;
+    const al = a.length;
+    const bl = b.length;
+    if (al === 0) return bl;
+    if (bl === 0) return al;
+
+    let v0 = new Array(bl + 1);
+    let v1 = new Array(bl + 1);
+
+    for (let i = 0; i <= bl; i++) v0[i] = i;
+
+    for (let i = 0; i < al; i++) {
+        v1[0] = i + 1;
+        for (let j = 0; j < bl; j++) {
+            const cost = a[i] === b[j] ? 0 : 1;
+            v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+        }
+        for (let j = 0; j <= bl; j++) v0[j] = v1[j];
+    }
+
+    return v1[bl];
+}
+
+// (동) 태그 헬퍼: 창고재고 업로드 시 + 제품구분이 'Q'인 경우에 한해 동일 접두어가 2개 이상 존재하는 제품이면 표시
+function getDongTag(prodName, masterProdType) {
+    if (!warehouseStockLoaded || warehouseStockDongPrefixes.size === 0) return '';
+    const pt = (masterProdType || '').toUpperCase().trim();
+    if (pt !== 'Q') return ''; // 제품구분이 Q일 때만 적용
+
+    const nameUpper = (prodName || '').toUpperCase().trim();
+    const dotIdx = nameUpper.lastIndexOf('.');
+    if (dotIdx === -1) return '';
+    const prefix = nameUpper.substring(0, dotIdx);
+    if (warehouseStockDongPrefixes.has(prefix)) {
+        let tooltipContent = '';
+        if (warehouseAllStockList && warehouseAllStockList.length > 0) {
+            const relatedItems = warehouseAllStockList.filter(item => 
+                item.modelName !== nameUpper && item.modelName.startsWith(prefix + '.')
+            );
+            
+            const grouped = {};
+            relatedItems.forEach(item => {
+                if (!grouped[item.modelName]) grouped[item.modelName] = [];
+                const qty = (item.goodQty !== undefined || item.pendingQty !== undefined)
+                    ? ((item.goodQty || 0) + (item.pendingQty || 0))
+                    : (item.physicalQty || 0);
+                grouped[item.modelName].push(`[${item.location || '로케이션 없음'}] ${qty} EA`);
+            });
+            
+            const tooltipLines = [];
+            for (const [mName, locs] of Object.entries(grouped)) {
+                tooltipLines.push(`[${mName}]`);
+                locs.forEach(loc => tooltipLines.push(`  - ${loc}`));
+            }
+            
+            if (tooltipLines.length > 0) {
+                tooltipContent = ` title="${tooltipLines.join('\n').replace(/"/g, '&quot;')}"`;
+            }
+        }
+        return `<span${tooltipContent} class="badge-dong">동</span>`;
+    }
+    return '';
+}
+
+// [유] 태그 헬퍼: 제품구분이 'Q'인 경우에 한해, 스펠링이 1~2개 차이나는 유사모델이 존재하면 표시
+function getYuTag(prodName, masterProdType) {
+    const pt = (masterProdType || '').toUpperCase().trim();
+    if (pt !== 'Q') return ''; // 제품구분이 Q일 때만 적용
+
+    const nameUpper = (prodName || '').toUpperCase().trim();
+    if (!nameUpper || nameUpper === 'NONASSET.ITEM') return '';
+
+    const targetPrefix = nameUpper.includes('.') ? nameUpper.substring(0, nameUpper.lastIndexOf('.')) : nameUpper;
+    if (targetPrefix.length < 3) return '';
+
+    // 비교 대상 후보군 수집 (현재 비교 결과 및 창고 재고에 존재하는 모든 고유 제품명)
+    const candidates = new Set();
+    if (comparisonResult && Array.isArray(comparisonResult)) {
+        comparisonResult.forEach(item => {
+            if (item.prodName) candidates.add(item.prodName.toUpperCase().trim());
+        });
+    }
+    if (warehouseStockLoaded && warehouseStockQtyMap) {
+        Object.keys(warehouseStockQtyMap).forEach(mName => candidates.add(mName.toUpperCase().trim()));
+    }
+
+    const similarModels = [];
+    // 점 앞 접두어 길이에 따라 허용 차이 동적 결정: 7글자 이하 -> 1글자만 / 8글자 이상 -> 최대 2글자까지
+    const maxAllowedDiff = (targetPrefix.length <= 7) ? 1 : 2;
+
+    candidates.forEach(cand => {
+        if (cand === nameUpper) return; // 자기 자신 제외
+
+        const candPrefix = cand.includes('.') ? cand.substring(0, cand.lastIndexOf('.')) : cand;
+        if (candPrefix === targetPrefix) return; // 동일 접두어는 (동) 태그에서 처리되므로 제외
+
+        // 서피스넘버(점 뒤 단어)를 제외하고 접두어만 순수 비교
+        const prefixDist = getLevenshteinDistance(targetPrefix, candPrefix);
+        if (prefixDist >= 1 && prefixDist <= maxAllowedDiff) {
+            similarModels.push({
+                modelName: cand,
+                diff: prefixDist
+            });
+        }
+    });
+
+    if (similarModels.length > 0) {
+        // 차이 적은 순, 모델명 순 정렬
+        similarModels.sort((a, b) => a.diff - b.diff || a.modelName.localeCompare(b.modelName));
+
+        const tooltipLines = [
+            `[유사모델 주의 (스펠링 1~2개 차이)]`
+        ];
+        similarModels.slice(0, 8).forEach(item => {
+            tooltipLines.push(`• ${item.modelName} (${item.diff}글자 차이)`);
+        });
+        if (similarModels.length > 8) {
+            tooltipLines.push(`• 외 ${similarModels.length - 8}건 더 있음`);
+        }
+
+        const tooltipContent = tooltipLines.join('\n').replace(/"/g, '&quot;');
+        return `<span title="${tooltipContent}" class="badge-yu">유</span>`;
+    }
+
+    return '';
+}
+
+// [H/L/B] 배지 헬퍼: 창고재고 블록 타입에 따른 H(OQC), L(Long term), B(Bin) 태그 표시
+function getBlockHoldTag(prodName) {
+    if (!warehouseStockLoaded || !warehouseStockQtyMap) return '';
+    const nameUpper = (prodName || '').toUpperCase().trim();
+    const stockInfo = warehouseStockQtyMap[nameUpper];
+    if (!stockInfo) return '';
+
+    const available = stockInfo.available || 0;
+    const totalNeeded = window.totalProductRemainMap ? (window.totalProductRemainMap[nameUpper] || 0) : 0;
+    const physical = stockInfo.physical || 0;
+
+    let statusText = '';
+    if (totalNeeded > available) {
+        statusText = `재고부족 (-${totalNeeded - available} EA)`;
+    } else {
+        statusText = `작업가능 (여유: ${available - totalNeeded} EA)`;
+    }
+
+    // 로케이션별 홀드/롱텀/Bin 블럭 수량 상세 구성
+    const locDetails = [];
+    if (Array.isArray(warehouseHoldStockList) && warehouseHoldStockList.length > 0) {
+        const matches = warehouseHoldStockList.filter(item => item.modelName === nameUpper);
+        matches.forEach(item => {
+            const parts = [];
+            if (item.oqcHold > 0) parts.push(`홀드: ${item.oqcHold} EA`);
+            if (item.longTermHold > 0) parts.push(`롱텀: ${item.longTermHold} EA`);
+            if (item.binBlock > 0) parts.push(`bin블럭: ${item.binBlock} EA`);
+            if (parts.length > 0) {
+                locDetails.push(`  - [${item.location || '로케이션 없음'}] ${parts.join(', ')}`);
+            }
+        });
+    }
+
+    const tooltipLines = [
+        `[재고 분석 상세]`,
+        `• 전체재고수량: ${physical} EA`,
+        `• 작업가능 수량: ${available} EA`,
+        `• 합산 필요 수량: ${totalNeeded} EA`,
+        `• 상태: ${statusText}`
+    ];
+
+    if (locDetails.length > 0) {
+        tooltipLines.push(``);
+        tooltipLines.push(`• 로케이션별 블록 상세:`);
+        tooltipLines.push(...locDetails);
+    }
+
+    const tooltipText = tooltipLines.join('\n').replace(/"/g, '&quot;');
+
+    let tags = [];
+    if (stockInfo.oqc > 0) {
+        tags.push(`<span title="${tooltipText}" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#ef4444; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em; cursor:help;">H</span>`);
+    }
+    if (stockInfo.longTerm > 0) {
+        tags.push(`<span title="${tooltipText}" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#8b5cf6; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em; cursor:help;">L</span>`);
+    }
+    if (stockInfo.bin > 0) {
+        tags.push(`<span title="${tooltipText}" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#e11d48; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em; cursor:help;">B</span>`);
+    }
+    return tags.join('');
+}
+
+// 재고부족 배지 헬퍼: 전체 합산 필요 수량과 사용 가능 재고를 대조하여 부족분을 표시 (해당 행의 필요 수량이 0인 완료 건은 미노출)
+function getStockShortageBadge(prodName, rowRemain) {
+    if (!warehouseStockLoaded || !warehouseStockQtyMap) return '';
+    const nameUpper = (prodName || '').toUpperCase().trim();
+    const stockInfo = warehouseStockQtyMap[nameUpper];
+    if (!stockInfo) return '';
+    
+    const available = stockInfo.available;
+    const totalNeeded = window.totalProductRemainMap ? (window.totalProductRemainMap[nameUpper] || 0) : 0;
+    const thisRowRemain = Number(rowRemain) || 0;
+
+    // 본인 행의 잔여 필요 수량이 0 이하이면 표시 안 함 (적재 완료 건 제외)
+    if (thisRowRemain <= 0) return '';
+
+    // 합산 필요 수량이 창고의 사용 가능 재고보다 큰 경우에만 재고 부족 표시
+    if (totalNeeded > available) {
+        const shortage = totalNeeded - available;
+        return `
+            <div class="stock-shortage-badge" title="[재고 분석 상세]\n• 전체 실물재고: ${stockInfo.physical} EA\n• OQC Hold: ${stockInfo.oqc || 0} EA\n• Long Term Hold: ${stockInfo.longTerm || 0} EA\n• Bin Block: ${stockInfo.bin || 0} EA\n• 작업가능 재고: ${available} EA\n• 합산 필요 수량: ${totalNeeded} EA">
+                <i class="fas fa-exclamation-triangle"></i> 재고부족 (-${shortage} EA)
+            </div>
+        `;
+    }
+    return '';
+}
+
 function displayResults(results, isDbMode = false) {
 
     // [사용자 요청] 전체 컨테이너에 대해 동일 제품별 잔여 필요수량(remain)을 합산하여 맵핑
@@ -4820,223 +5089,6 @@ function displayResults(results, isDbMode = false) {
             window.totalProductRemainMap[nameUpper] = (window.totalProductRemainMap[nameUpper] || 0) + remain;
         });
     }
-
-    // (동) 태그 헬퍼: 창고재고 업로드 시 + 제품구분이 'Q'인 경우에 한해 동일 접두어가 2개 이상 존재하는 제품이면 표시
-    const getDongTag = (prodName, masterProdType) => {
-        if (!warehouseStockLoaded || warehouseStockDongPrefixes.size === 0) return '';
-        const pt = (masterProdType || '').toUpperCase().trim();
-        if (pt !== 'Q') return ''; // 제품구분이 Q일 때만 적용
-
-        const nameUpper = (prodName || '').toUpperCase().trim();
-        const dotIdx = nameUpper.lastIndexOf('.');
-        if (dotIdx === -1) return '';
-        const prefix = nameUpper.substring(0, dotIdx);
-        if (warehouseStockDongPrefixes.has(prefix)) {
-            let tooltipContent = '';
-            if (warehouseAllStockList && warehouseAllStockList.length > 0) {
-                const relatedItems = warehouseAllStockList.filter(item => 
-                    item.modelName !== nameUpper && item.modelName.startsWith(prefix + '.')
-                );
-                
-                const grouped = {};
-                relatedItems.forEach(item => {
-                    if (!grouped[item.modelName]) grouped[item.modelName] = [];
-                    const qty = (item.goodQty !== undefined || item.pendingQty !== undefined)
-                        ? ((item.goodQty || 0) + (item.pendingQty || 0))
-                        : (item.physicalQty || 0);
-                    grouped[item.modelName].push(`[${item.location || '로케이션 없음'}] ${qty} EA`);
-                });
-                
-                const tooltipLines = [];
-                for (const [mName, locs] of Object.entries(grouped)) {
-                    tooltipLines.push(`[${mName}]`);
-                    locs.forEach(loc => tooltipLines.push(`  - ${loc}`));
-                }
-                
-                if (tooltipLines.length > 0) {
-                    tooltipContent = ` title="${tooltipLines.join('\n').replace(/"/g, '&quot;')}"`;
-                }
-            }
-            return `<span${tooltipContent} class="badge-dong">동</span>`;
-        }
-        return '';
-    };
-
-    // Levenshtein Distance (문자열 편집 거리) 계산 함수
-    function getLevenshteinDistance(a, b) {
-        if (a === b) return 0;
-        const al = a.length;
-        const bl = b.length;
-        if (al === 0) return bl;
-        if (bl === 0) return al;
-
-        let v0 = new Array(bl + 1);
-        let v1 = new Array(bl + 1);
-
-        for (let i = 0; i <= bl; i++) v0[i] = i;
-
-        for (let i = 0; i < al; i++) {
-            v1[0] = i + 1;
-            for (let j = 0; j < bl; j++) {
-                const cost = a[i] === b[j] ? 0 : 1;
-                v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
-            }
-            for (let j = 0; j <= bl; j++) v0[j] = v1[j];
-        }
-
-        return v1[bl];
-    }
-
-    // [유] 태그 헬퍼: 제품구분이 'Q'인 경우에 한해, 스펠링이 1~2개 차이나는 유사모델이 존재하면 표시
-    const getYuTag = (prodName, masterProdType) => {
-        const pt = (masterProdType || '').toUpperCase().trim();
-        if (pt !== 'Q') return ''; // 제품구분이 Q일 때만 적용
-
-        const nameUpper = (prodName || '').toUpperCase().trim();
-        if (!nameUpper || nameUpper === 'NONASSET.ITEM') return '';
-
-        const targetPrefix = nameUpper.includes('.') ? nameUpper.substring(0, nameUpper.lastIndexOf('.')) : nameUpper;
-        if (targetPrefix.length < 3) return '';
-
-        // 비교 대상 후보군 수집 (현재 비교 결과 및 창고 재고에 존재하는 모든 고유 제품명)
-        const candidates = new Set();
-        if (comparisonResult && Array.isArray(comparisonResult)) {
-            comparisonResult.forEach(item => {
-                if (item.prodName) candidates.add(item.prodName.toUpperCase().trim());
-            });
-        }
-        if (warehouseStockLoaded && warehouseStockQtyMap) {
-            Object.keys(warehouseStockQtyMap).forEach(mName => candidates.add(mName.toUpperCase().trim()));
-        }
-
-        const similarModels = [];
-        // 점 앞 접두어 길이에 따라 허용 차이 동적 결정: 7글자 이하 -> 1글자만 / 8글자 이상 -> 최대 2글자까지
-        const maxAllowedDiff = (targetPrefix.length <= 7) ? 1 : 2;
-
-        candidates.forEach(cand => {
-            if (cand === nameUpper) return; // 자기 자신 제외
-
-            const candPrefix = cand.includes('.') ? cand.substring(0, cand.lastIndexOf('.')) : cand;
-            if (candPrefix === targetPrefix) return; // 동일 접두어는 (동) 태그에서 처리되므로 제외
-
-            // 서피스넘버(점 뒤 단어)를 제외하고 접두어만 순수 비교
-            const prefixDist = getLevenshteinDistance(targetPrefix, candPrefix);
-            if (prefixDist >= 1 && prefixDist <= maxAllowedDiff) {
-                similarModels.push({
-                    modelName: cand,
-                    diff: prefixDist
-                });
-            }
-        });
-
-        if (similarModels.length > 0) {
-            // 차이 적은 순, 모델명 순 정렬
-            similarModels.sort((a, b) => a.diff - b.diff || a.modelName.localeCompare(b.modelName));
-
-            const tooltipLines = [
-                `[유사모델 주의 (스펠링 1~2개 차이)]`
-            ];
-            similarModels.slice(0, 8).forEach(item => {
-                tooltipLines.push(`• ${item.modelName} (${item.diff}글자 차이)`);
-            });
-            if (similarModels.length > 8) {
-                tooltipLines.push(`• 외 ${similarModels.length - 8}건 더 있음`);
-            }
-
-            const tooltipContent = tooltipLines.join('\n').replace(/"/g, '&quot;');
-            return `<span title="${tooltipContent}" class="badge-yu">유</span>`;
-        }
-
-        return '';
-    };
-
-    // [H/L/B] 배지 헬퍼: 창고재고 블록 타입에 따른 H(OQC), L(Long term), B(Bin) 태그 표시
-    const getBlockHoldTag = (prodName) => {
-        if (!warehouseStockLoaded || !warehouseStockQtyMap) return '';
-        const nameUpper = (prodName || '').toUpperCase().trim();
-        const stockInfo = warehouseStockQtyMap[nameUpper];
-        if (!stockInfo) return '';
-
-        const available = stockInfo.available || 0;
-        const totalNeeded = window.totalProductRemainMap ? (window.totalProductRemainMap[nameUpper] || 0) : 0;
-        const physical = stockInfo.physical || 0;
-
-        let statusText = '';
-        if (totalNeeded > available) {
-            statusText = `재고부족 (-${totalNeeded - available} EA)`;
-        } else {
-            statusText = `작업가능 (여유: ${available - totalNeeded} EA)`;
-        }
-
-        // 로케이션별 홀드/롱텀/Bin 블럭 수량 상세 구성
-        const locDetails = [];
-        if (Array.isArray(warehouseHoldStockList) && warehouseHoldStockList.length > 0) {
-            const matches = warehouseHoldStockList.filter(item => item.modelName === nameUpper);
-            matches.forEach(item => {
-                const parts = [];
-                if (item.oqcHold > 0) parts.push(`홀드: ${item.oqcHold} EA`);
-                if (item.longTermHold > 0) parts.push(`롱텀: ${item.longTermHold} EA`);
-                if (item.binBlock > 0) parts.push(`bin블럭: ${item.binBlock} EA`);
-                if (parts.length > 0) {
-                    locDetails.push(`  - [${item.location || '로케이션 없음'}] ${parts.join(', ')}`);
-                }
-            });
-        }
-
-        const tooltipLines = [
-            `[재고 분석 상세]`,
-            `• 전체재고수량: ${physical} EA`,
-            `• 작업가능 수량: ${available} EA`,
-            `• 합산 필요 수량: ${totalNeeded} EA`,
-            `• 상태: ${statusText}`
-        ];
-
-        if (locDetails.length > 0) {
-            tooltipLines.push(``);
-            tooltipLines.push(`• 로케이션별 블록 상세:`);
-            tooltipLines.push(...locDetails);
-        }
-
-        const tooltipText = tooltipLines.join('\n').replace(/"/g, '&quot;');
-
-        let tags = [];
-        if (stockInfo.oqc > 0) {
-            tags.push(`<span title="${tooltipText}" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#ef4444; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em; cursor:help;">H</span>`);
-        }
-        if (stockInfo.longTerm > 0) {
-            tags.push(`<span title="${tooltipText}" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#8b5cf6; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em; cursor:help;">L</span>`);
-        }
-        if (stockInfo.bin > 0) {
-            tags.push(`<span title="${tooltipText}" style="display:inline-block; margin-left:4px; font-size:0.72rem; color:#fff; background:#e11d48; border-radius:4px; padding:1px 5px; font-weight:700; vertical-align:middle; line-height:1.4; letter-spacing:0.03em; cursor:help;">B</span>`);
-        }
-        return tags.join('');
-    };
-
-    // 재고부족 배지 헬퍼: 전체 합산 필요 수량과 사용 가능 재고를 대조하여 부족분을 표시 (해당 행의 필요 수량이 0인 완료 건은 미노출)
-    const getStockShortageBadge = (prodName, rowRemain) => {
-        if (!warehouseStockLoaded || !warehouseStockQtyMap) return '';
-        const nameUpper = (prodName || '').toUpperCase().trim();
-        const stockInfo = warehouseStockQtyMap[nameUpper];
-        if (!stockInfo) return '';
-        
-        const available = stockInfo.available;
-        const totalNeeded = window.totalProductRemainMap ? (window.totalProductRemainMap[nameUpper] || 0) : 0;
-        const thisRowRemain = Number(rowRemain) || 0;
-
-        // 본인 행의 잔여 필요 수량이 0 이하이면 표시 안 함 (적재 완료 건 제외)
-        if (thisRowRemain <= 0) return '';
-
-        // 합산 필요 수량이 창고의 사용 가능 재고보다 큰 경우에만 재고 부족 표시
-        if (totalNeeded > available) {
-            const shortage = totalNeeded - available;
-            return `
-                <div class="stock-shortage-badge" title="[재고 분석 상세]\n• 전체 실물재고: ${stockInfo.physical} EA\n• OQC Hold: ${stockInfo.oqc || 0} EA\n• Long Term Hold: ${stockInfo.longTerm || 0} EA\n• Bin Block: ${stockInfo.bin || 0} EA\n• 작업가능 재고: ${available} EA\n• 합산 필요 수량: ${totalNeeded} EA">
-                    <i class="fas fa-exclamation-triangle"></i> 재고부족 (-${shortage} EA)
-                </div>
-            `;
-        }
-        return '';
-    };
 
     const renderMismatch = (orig, down, isMismatch) => {
         if (!isMismatch || !orig) return `<span>${down}</span>`;
@@ -10351,3 +10403,1007 @@ if (document.readyState === 'loading') {
 } else {
     initLoginScreen();
 }
+
+/* =========================================================================
+ *  PRE-WORK AVAILABILITY ANALYSIS (사전 작업 가용성 & 재고 분석 모듈)
+ * ========================================================================= */
+let rawAvailabilityItems = [];       // 원본 엑셀에서 추출한 전체 작업 행 데이터
+let processedAvailabilityData = [];   // 재고 대조 및 상태 판정이 완료된 분석 데이터
+let currentAvailSheetFilter = 'all';  // 'all', '직선적당일', '법인당일', '혼적당일', '재작업당일', 'possible', 'impossible'
+let currentAvailStatusFilter = 'all'; // 'all', 'OK', 'BLOCK_WARN', 'SHORTAGE', 'NO_STOCK'
+let currentAvailSearchQuery = '';
+let currentAvailSearchField = 'all';
+let selectedAvailRows = new Set();    // 체크박스 선택된 항목 키 Set
+
+// 실행 함수: 전산파일 없이 원본 3개 시트 + 창고재고 대조
+window.runPreWorkAvailabilityCheck = async function(isSilent = false) {
+    let allRows = [];
+
+    // 1. 이미 originalData(Array)가 메모리에 있는 경우 바로 사용
+    if (originalData && Array.isArray(originalData) && originalData.length > 0) {
+        allRows = originalData;
+    } else {
+        const origPath = (pathOriginal && pathOriginal.value.trim() !== "") ? pathOriginal.value.trim() : (localStorage.getItem('pathOrig') || '');
+        if (origPath) {
+            try {
+                await reloadLatestFile('original');
+                if (originalData && Array.isArray(originalData) && originalData.length > 0) {
+                    allRows = originalData;
+                }
+            } catch (e) {
+                console.error("원본 파일 로드 실패:", e);
+            }
+        }
+    }
+
+    if (!allRows || allRows.length === 0) {
+        if (!isSilent) alert("원본 엑셀 파일(직선적/법인/혼적당일)을 먼저 선택해주세요.");
+        return;
+    }
+
+    if (!isSilent && (!warehouseStockLoaded || Object.keys(warehouseStockQtyMap).length === 0)) {
+        const proceed = confirm("창고 재고 파일이 아직 등록되지 않았습니다.\n(재고 파일 없이 진행 시 계획 수량만 표시되며 재고 상태는 '미확인'으로 표시됩니다.)\n\n계속 분석을 진행하시겠습니까?");
+        if (!proceed) return;
+    }
+
+    const btn = document.getElementById('btnRunAvailability');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:4px;"></i>분석 중...';
+    }
+
+    try {
+        rawAvailabilityItems = allRows;
+        processAvailabilityData(allRows);
+        renderAvailabilityDashboard();
+        renderAvailabilityTable();
+        switchMainTab('availability');
+    } catch (err) {
+        console.error("작업 가용성 분석 실패:", err);
+        if (!isSilent) alert("작업 가용성 분석 중 오류가 발생했습니다: " + err.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-clipboard-check" style="font-size: 0.85rem;"></i><span>작업 가용성(홀드·롱텀) 분석</span>';
+        }
+    }
+};
+
+// 재고 대조 및 상태 판정 처리
+function processAvailabilityData(rows) {
+    selectedAvailRows.clear();
+
+    // 1. 동일 작업(시트+작업명+컨테이너+도착지+선사+규격) 내에서 동일 제품(cleanName)끼리 계획수량(qty) 합산
+    const mergedRowsMap = new Map();
+    rows.forEach(r => {
+        const sheetName = (r.sheetName || "").trim();
+        const jobName = (r.jobName || "").trim() || '-';
+        const cntrNo = (r.cntrNo || "").trim();
+        const dest = (r.dest || "").trim() || '-';
+        const carrier = (r.carrier || "").trim() || '-';
+        const cntrType = (r.cntrType || "").trim() || '-';
+        const remark = (r.remark || "").trim() || '-';
+        const adj1 = (r.adj1 || "").trim() || (r.rawRow && r.rawRow[21] ? String(r.rawRow[21]).trim() : "-");
+        const adj2 = (r.adj2 || "").trim() || (r.rawRow && r.rawRow[22] ? String(r.rawRow[22]).trim() : "-");
+        const prodName = (r.prodName || "").trim();
+        const cleanName = prodName.toUpperCase();
+        const qty = parseInt(r.qty) || 0;
+
+        const mergeKey = `${sheetName}__${jobName}__${cntrNo}__${dest}__${carrier}__${cntrType}__${cleanName}`;
+
+        if (!mergedRowsMap.has(mergeKey)) {
+            mergedRowsMap.set(mergeKey, {
+                ...r,
+                sheetName,
+                jobName,
+                cntrNo,
+                dest,
+                carrier,
+                cntrType,
+                remark,
+                adj1,
+                adj2,
+                prodName,
+                cleanName,
+                qty: qty
+            });
+        } else {
+            const existing = mergedRowsMap.get(mergeKey);
+            existing.qty += qty;
+            if ((!existing.prodType || existing.prodType === '-') && r.prodType) existing.prodType = r.prodType;
+            if ((!existing.division || existing.division === '-') && r.division) existing.division = r.division;
+            if ((!existing.adj1 || existing.adj1 === '-') && adj1 !== '-') existing.adj1 = adj1;
+            if ((!existing.adj2 || existing.adj2 === '-') && adj2 !== '-') existing.adj2 = adj2;
+            if ((!existing.remark || existing.remark === '-') && remark !== '-') existing.remark = remark;
+        }
+    });
+
+    const consolidatedRows = Array.from(mergedRowsMap.values());
+
+    // 당일 전체 작업 기준 모델(cleanName)별 총소요 계획 수량 사전 집계
+    const totalModelReqMap = new Map();
+    consolidatedRows.forEach(r => {
+        const cName = r.cleanName;
+        const q = r.qty || 0;
+        totalModelReqMap.set(cName, (totalModelReqMap.get(cName) || 0) + q);
+    });
+
+    processedAvailabilityData = consolidatedRows.map((r, idx) => {
+        const prodName = r.prodName;
+        const cleanName = r.cleanName;
+        const sheetName = r.sheetName;
+        const qty = r.qty;
+        const totalModelReq = totalModelReqMap.get(cleanName) || qty;
+        const cntrNo = r.cntrNo;
+        const jobName = r.jobName;
+        const dest = r.dest;
+        const carrier = r.carrier;
+        const cntrType = r.cntrType;
+        const remark = r.remark;
+        const adj1 = r.adj1 || '-';
+        const adj2 = r.adj2 || '-';
+
+        // 제품구분(prodType) 및 사업부(division) 추출
+        let rawProdType = (r.prodType || "").trim();
+        let division = (r.division || "").trim();
+        let prodType = rawProdType;
+
+        // 원본 G열이 3자리 사업부 코드(CVZ, CNZ, CDZ, DFZ 등)인 경우 사업부로 할당
+        const isDivCode = /^[A-Z]{2}Z$/i.test(rawProdType) || ["DFZ", "CVZ", "CNZ", "CDZ"].includes(rawProdType.toUpperCase());
+        if (isDivCode && !division) {
+            division = rawProdType;
+            prodType = '';
+        }
+
+        // 창고 재고 조회
+        const stockInfo = warehouseStockQtyMap[cleanName];
+        let hasStock = !!stockInfo;
+        let physical = 0, good = 0, oqc = 0, longTerm = 0, bin = 0, pending = 0, block = 0;
+
+        if (stockInfo) {
+            physical = stockInfo.physical || 0;
+            good = stockInfo.good !== undefined ? stockInfo.good : (stockInfo.available || 0);
+            oqc = stockInfo.oqc || 0;
+            longTerm = stockInfo.longTerm || 0;
+            bin = stockInfo.bin || 0;
+            pending = stockInfo.pending || 0;
+            block = stockInfo.block || (oqc + longTerm + bin);
+            if (!division && stockInfo.division) {
+                division = stockInfo.division;
+            }
+        }
+
+        // 창고 재고 리스트에서 사업부 보완
+        if (!division && warehouseAllStockList && Array.isArray(warehouseAllStockList)) {
+            const stockMatch = warehouseAllStockList.find(s => (s.modelName || '').trim().toUpperCase() === cleanName);
+            if (stockMatch && stockMatch.division) {
+                division = stockMatch.division;
+            }
+        }
+
+        // 제품 마스터에서 제품구분 및 사업부 보완
+        if (productMaster && Array.isArray(productMaster)) {
+            const pmMatch = productMaster.find(p => (p.name || '').trim().toUpperCase() === cleanName);
+            if (pmMatch) {
+                if (!prodType || prodType === '-') prodType = pmMatch.prodType || pmMatch.type || '';
+                if (!division || division === '-') division = pmMatch.division || pmMatch.ba || '';
+            }
+        }
+
+        if (!prodType) prodType = '-';
+        if (!division) division = '-';
+
+        // 1. 정상/가용 재고 로케이션 목록 수집 (창고 전체 재고에서 추출)
+        let stockLocs = [];
+        if (warehouseAllStockList && Array.isArray(warehouseAllStockList)) {
+            const locMatches = warehouseAllStockList.filter(item => (item.modelName || '').trim().toUpperCase() === cleanName);
+            locMatches.forEach(item => {
+                const locName = (item.location || '미지정').trim();
+                const goodQty = item.goodQty !== undefined ? item.goodQty : 0;
+                const pendingQty = item.pendingQty !== undefined ? item.pendingQty : 0;
+                const totalWork = goodQty + pendingQty;
+                const finalQty = totalWork > 0 ? totalWork : (item.physicalQty || 0);
+                if (finalQty > 0) {
+                    stockLocs.push(`[${locName}] ${finalQty.toLocaleString()} EA`);
+                }
+            });
+        }
+
+        // 2. 블록 로케이션 상세 목록 수집
+        let blockLocs = [];
+        if (warehouseHoldStockList && Array.isArray(warehouseHoldStockList)) {
+            const locList = warehouseHoldStockList.filter(h => (h.modelName || "").trim().toUpperCase() === cleanName);
+            locList.forEach(loc => {
+                let tags = [];
+                if (loc.oqcHold > 0) tags.push(`OQC ${loc.oqcHold}EA`);
+                if (loc.longTermHold > 0) tags.push(`롱텀 ${loc.longTermHold}EA`);
+                if (loc.binBlock > 0) tags.push(`BIN ${loc.binBlock}EA`);
+                if (tags.length > 0) {
+                    blockLocs.push(`[${loc.location || '-'}] ${tags.join(', ')}`);
+                }
+            });
+        }
+
+        // 상태 판정 (당일 전체 작업 총소요 수량 기준 대조)
+        let status = 'OK';
+        let statusLabel = '작업가능';
+        let statusClass = 'ok';
+        let shortage = 0;
+
+        const isNonAsset = cleanName === 'NONASSET.ITEM' || cleanName.includes('NONASSET');
+
+        if (isNonAsset) {
+            hasStock = true;
+            good = qty;
+            physical = qty;
+            status = 'OK';
+            statusLabel = '작업가능';
+            statusClass = 'ok';
+            shortage = 0;
+            if (stockLocs.length === 0) {
+                stockLocs = ['전산재고 미관리(작업가능)'];
+            }
+        } else if (!hasStock && (!warehouseStockLoaded || Object.keys(warehouseStockQtyMap).length === 0)) {
+            status = 'NO_STOCK';
+            statusLabel = '재고 미확인';
+            statusClass = 'unknown';
+        } else if (!hasStock || (good === 0 && physical === 0)) {
+            status = 'NO_STOCK';
+            statusLabel = '재고 없음';
+            statusClass = 'danger';
+            shortage = totalModelReq;
+        } else if (good < totalModelReq) {
+            // 가용재고가 모든 작업의 총합보다 부족할 경우: 일부작업가능
+            status = 'PARTIAL_OK';
+            shortage = totalModelReq - good;
+            statusLabel = `일부작업가능 (부족 ${shortage.toLocaleString()}EA)`;
+            statusClass = 'partial';
+        } else if (block > 0) {
+            status = 'BLOCK_WARN';
+            statusLabel = `블록주의 (${block.toLocaleString()}EA)`;
+            statusClass = 'warn';
+        } else {
+            // 가용재고가 모든 작업의 총합을 넘어서면: 작업가능
+            status = 'OK';
+            statusLabel = '작업가능';
+            statusClass = 'ok';
+        }
+
+        return {
+            id: `avail_${idx}`,
+            sheetName,
+            jobName,
+            cntrNo: (!cntrNo || cntrNo === '미지정' || cntrNo.includes('WAIT')) ? '미지정' : cntrNo,
+            dest,
+            carrier,
+            cntrType,
+            prodName,
+            cleanName,
+            prodType,
+            division,
+            qty,
+            totalModelReq,
+            good,
+            oqc,
+            longTerm,
+            bin,
+            pending,
+            block,
+            physical,
+            shortage,
+            status,
+            statusLabel,
+            statusClass,
+            isNonAsset,
+            stockLocs,
+            blockLocs,
+            adj1,
+            adj2,
+            remark,
+            transporter: r.transporter || '',
+            rawRow: r
+        };
+    });
+}
+
+// 작업 가용성 대시보드 통계 렌더링
+function renderAvailabilityDashboard() {
+    if (!processedAvailabilityData || processedAvailabilityData.length === 0) return;
+
+    // 전체 고유 작업(컨테이너 그룹) 단위로 그룹핑
+    const uniqueJobGroupMap = new Map();
+    processedAvailabilityData.forEach(item => {
+        const groupKey = `${item.sheetName}__${item.jobName}__${item.cntrNo}__${item.dest}__${item.carrier}__${item.cntrType}`;
+        if (!uniqueJobGroupMap.has(groupKey)) {
+            uniqueJobGroupMap.set(groupKey, {
+                sheetName: item.sheetName,
+                items: []
+            });
+        }
+        uniqueJobGroupMap.get(groupKey).items.push(item);
+    });
+
+    const totalUniqueJobs = uniqueJobGroupMap.size;
+    const totalQty = processedAvailabilityData.reduce((acc, d) => acc + d.qty, 0);
+    const uniqueModels = new Set(processedAvailabilityData.map(d => d.cleanName)).size;
+
+    let directJobCount = 0;
+    let corpJobCount = 0;
+    let mixedJobCount = 0;
+    let reworkJobCount = 0;
+    let possibleGroupCount = 0;
+    let partialGroupCount = 0;
+    let blockWarnGroupCount = 0;
+    let noStockGroupCount = 0;
+
+    uniqueJobGroupMap.forEach(group => {
+        if (group.sheetName.includes('직선적')) directJobCount++;
+        else if (group.sheetName.includes('법인')) corpJobCount++;
+        else if (group.sheetName.includes('혼적')) mixedJobCount++;
+        else if (group.sheetName.includes('재작업')) reworkJobCount++;
+
+        const hasNoStock = group.items.some(it => it.status === 'NO_STOCK');
+        const hasPartial = group.items.some(it => it.status === 'PARTIAL_OK');
+        const hasWarn = group.items.some(it => it.status === 'BLOCK_WARN');
+
+        if (hasNoStock) noStockGroupCount++;
+        else if (hasPartial) partialGroupCount++;
+        else if (hasWarn) blockWarnGroupCount++;
+        else possibleGroupCount++;
+    });
+
+    const impossibleGroupCount = partialGroupCount + blockWarnGroupCount + noStockGroupCount;
+
+    // 대시보드 상단 수량 카드 렌더링
+    const elTotal = document.getElementById('valAvailTotalJobs');
+    const elTotalSub = document.getElementById('subAvailTotalItems');
+    if (elTotal) elTotal.innerHTML = `${totalUniqueJobs.toLocaleString()} <span class="unit">건</span>`;
+    if (elTotalSub) elTotalSub.textContent = `품목 ${uniqueModels.toLocaleString()}개 / ${totalQty.toLocaleString()} EA`;
+
+    const elOk = document.getElementById('valAvailSuccessJobs');
+    const elOkSub = document.getElementById('subAvailSuccessItems');
+    if (elOk) elOk.innerHTML = `${possibleGroupCount.toLocaleString()} <span class="unit">건</span>`;
+    if (elOkSub) elOkSub.textContent = `가용재고 충분 & 블록 0`;
+
+    const elWarn = document.getElementById('valAvailBlockWarnJobs');
+    const elWarnSub = document.getElementById('subAvailBlockWarnItems');
+    if (elWarn) elWarn.innerHTML = `${blockWarnGroupCount.toLocaleString()} <span class="unit">건</span>`;
+    const totalBlockQty = processedAvailabilityData.reduce((acc, d) => acc + d.block, 0);
+    if (elWarnSub) elWarnSub.textContent = `블록재고 ${totalBlockQty.toLocaleString()} EA 감지`;
+
+    const elShort = document.getElementById('valAvailShortageJobs');
+    const elShortSub = document.getElementById('subAvailShortageItems');
+    if (elShort) elShort.innerHTML = `${partialGroupCount.toLocaleString()} <span class="unit">건</span>`;
+    const partialModels = Array.from(new Set(processedAvailabilityData.filter(d => d.status === 'PARTIAL_OK').map(d => d.cleanName)));
+    if (elShortSub) elShortSub.textContent = `일부작업가능 ${partialModels.length}개 모델 감지`;
+
+    const elNoStock = document.getElementById('valAvailNoStockJobs');
+    const elNoStockSub = document.getElementById('subAvailNoStockItems');
+    if (elNoStock) elNoStock.innerHTML = `${noStockGroupCount.toLocaleString()} <span class="unit">건</span>`;
+    if (elNoStockSub) elNoStockSub.textContent = `창고재고 파일 내 미확인`;
+
+    const elSheetAll = document.getElementById('cntAvailSheetAll');
+    const elSheetDirect = document.getElementById('cntAvailSheetDirect');
+    const elSheetCorp = document.getElementById('cntAvailSheetCorp');
+    const elSheetMixed = document.getElementById('cntAvailSheetMixed');
+    const elSheetRework = document.getElementById('cntAvailSheetRework');
+    const elSheetImpossible = document.getElementById('cntAvailSheetImpossible');
+    const elSheetPossible = document.getElementById('cntAvailSheetPossible');
+
+    if (elSheetAll) elSheetAll.textContent = totalUniqueJobs;
+    if (elSheetDirect) elSheetDirect.textContent = directJobCount;
+    if (elSheetCorp) elSheetCorp.textContent = corpJobCount;
+    if (elSheetMixed) elSheetMixed.textContent = mixedJobCount;
+    if (elSheetRework) elSheetRework.textContent = reworkJobCount;
+    if (elSheetPossible) elSheetPossible.textContent = possibleGroupCount;
+    if (elSheetImpossible) elSheetImpossible.textContent = impossibleGroupCount;
+}
+
+// 상세 테이블 렌더링 (작업/컨테이너 단위 Rowspan 병합 & 다중 조건 필터링)
+function renderAvailabilityTable() {
+    const tbody = document.getElementById('availTableBody');
+    if (!tbody) return;
+
+    // 1. 먼저 전체 데이터를 작업 단위(Group)로 매핑
+    const allGroupsMap = new Map();
+    processedAvailabilityData.forEach(item => {
+        const groupKey = `${item.sheetName}__${item.jobName}__${item.cntrNo}__${item.dest}__${item.carrier}__${item.cntrType}`;
+        if (!allGroupsMap.has(groupKey)) {
+            allGroupsMap.set(groupKey, {
+                groupKey,
+                sheetName: item.sheetName,
+                jobName: item.jobName,
+                cntrNo: item.cntrNo,
+                dest: item.dest,
+                carrier: item.carrier,
+                cntrType: item.cntrType,
+                transporter: item.transporter || '',
+                remark: item.remark,
+                items: []
+            });
+        }
+        allGroupsMap.get(groupKey).items.push(item);
+    });
+
+    let groups = Array.from(allGroupsMap.values());
+
+    // 2. 시트 및 '불가능/가능 작업만' 필터 적용 (그룹 단위)
+    if (currentAvailSheetFilter === 'impossible') {
+        groups = groups.filter(g => {
+            const hasNoStock = g.items.some(it => it.status === 'NO_STOCK');
+            const hasPartial = g.items.some(it => it.status === 'PARTIAL_OK');
+            const hasBlockWarn = g.items.some(it => it.status === 'BLOCK_WARN');
+            return hasNoStock || hasPartial || hasBlockWarn;
+        });
+    } else if (currentAvailSheetFilter === 'possible') {
+        groups = groups.filter(g => {
+            const hasNoStock = g.items.some(it => it.status === 'NO_STOCK');
+            const hasPartial = g.items.some(it => it.status === 'PARTIAL_OK');
+            const hasBlockWarn = g.items.some(it => it.status === 'BLOCK_WARN');
+            return !hasNoStock && !hasPartial && !hasBlockWarn;
+        });
+    } else if (currentAvailSheetFilter !== 'all') {
+        groups = groups.filter(g => g.sheetName.includes(currentAvailSheetFilter));
+    }
+
+    // 3. 상태 필터 적용 (품목 단위가 아닌 그룹 내 조건 포함 여부)
+    if (currentAvailStatusFilter !== 'all') {
+        groups = groups.filter(g => {
+            if (currentAvailStatusFilter === 'OK') return g.items.every(it => it.status === 'OK');
+            if (currentAvailStatusFilter === 'PARTIAL_OK') return g.items.some(it => it.status === 'PARTIAL_OK');
+            if (currentAvailStatusFilter === 'BLOCK_WARN') return g.items.some(it => it.status === 'BLOCK_WARN');
+            if (currentAvailStatusFilter === 'SHORTAGE') return g.items.some(it => it.status === 'SHORTAGE' || it.status === 'PARTIAL_OK');
+            if (currentAvailStatusFilter === 'NO_STOCK') return g.items.some(it => it.status === 'NO_STOCK');
+            return true;
+        });
+    }
+
+    // 4. 다중 조건 텍스트 검색 필터 적용
+    const q = (currentAvailSearchQuery || "").trim().toLowerCase();
+    if (q) {
+        groups = groups.filter(g => {
+            if (currentAvailSearchField === 'jobName') {
+                return (g.jobName || '').toLowerCase().includes(q);
+            } else if (currentAvailSearchField === 'cntrNo') {
+                return (g.cntrNo || '').toLowerCase().includes(q);
+            } else if (currentAvailSearchField === 'model') {
+                return g.items.some(it => (it.prodName || '').toLowerCase().includes(q) || (it.cleanName || '').toLowerCase().includes(q));
+            } else if (currentAvailSearchField === 'dest') {
+                return (g.dest || '').toLowerCase().includes(q);
+            } else if (currentAvailSearchField === 'carrier') {
+                return (g.carrier || '').toLowerCase().includes(q);
+            } else {
+                // 통합 검색 ('all')
+                const inGroupMeta = (g.sheetName || '').toLowerCase().includes(q) ||
+                                    (g.jobName || '').toLowerCase().includes(q) ||
+                                    (g.cntrNo || '').toLowerCase().includes(q) ||
+                                    (g.dest || '').toLowerCase().includes(q) ||
+                                    (g.carrier || '').toLowerCase().includes(q) ||
+                                    (g.cntrType || '').toLowerCase().includes(q) ||
+                                    (g.remark || '').toLowerCase().includes(q);
+                const inItems = g.items.some(it => (it.prodName || '').toLowerCase().includes(q) || 
+                                                  (it.cleanName || '').toLowerCase().includes(q) ||
+                                                  (it.statusLabel || '').toLowerCase().includes(q) ||
+                                                  (it.division || '').toLowerCase().includes(q) ||
+                                                  (it.adj1 || '').toLowerCase().includes(q) ||
+                                                  (it.adj2 || '').toLowerCase().includes(q));
+                return inGroupMeta || inItems;
+            }
+        });
+    }
+
+    if (groups.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="20" style="padding: 40px; text-align: center; color: #94a3b8;">
+                    <i class="fas fa-search" style="font-size: 2.2rem; color: #cbd5e1; margin-bottom: 10px; display: block;"></i>
+                    조건에 해당하는 분석 결과가 없습니다.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    groups.forEach((group, gIdx) => {
+        const N = group.items.length;
+        const totalPlanQty = group.items.reduce((acc, it) => acc + it.qty, 0);
+
+        // 그룹 종합 상태 판정
+        const hasNoStock = group.items.some(it => it.status === 'NO_STOCK');
+        const hasPartial = group.items.some(it => it.status === 'PARTIAL_OK');
+        const hasBlockWarn = group.items.some(it => it.status === 'BLOCK_WARN');
+        const allNoStock = group.items.every(it => it.status === 'NO_STOCK');
+
+        let groupStatus = 'OK';
+        let groupStatusLabel = '작업가능';
+        let groupStatusClass = 'ok';
+        if (hasNoStock) {
+            groupStatus = 'NO_STOCK';
+            groupStatusLabel = '재고부족';
+            groupStatusClass = 'danger';
+        } else if (hasPartial) {
+            groupStatus = 'PARTIAL_OK';
+            groupStatusLabel = '일부작업가능';
+            groupStatusClass = 'partial';
+        } else if (hasBlockWarn) {
+            groupStatus = 'BLOCK_WARN';
+            groupStatusLabel = '블록주의';
+            groupStatusClass = 'warn';
+        } else if (allNoStock) {
+            groupStatus = 'NO_STOCK';
+            groupStatusLabel = '미확인';
+            groupStatusClass = 'unknown';
+        }
+
+        let sheetTagClass = 'direct';
+        if (group.sheetName.includes('법인')) sheetTagClass = 'corp';
+        else if (group.sheetName.includes('혼적')) sheetTagClass = 'mixed';
+        else if (group.sheetName.includes('재작업')) sheetTagClass = 'rework';
+
+        // 그룹 내 모든 블록 로케이션 취합
+        const allLocs = [];
+        group.items.forEach(it => {
+            if (it.blockLocs && it.blockLocs.length > 0) {
+                it.blockLocs.forEach(loc => {
+                    const desc = `[${it.prodName}] ${loc}`;
+                    if (!allLocs.includes(desc)) allLocs.push(desc);
+                });
+            }
+        });
+        const groupBlockLocText = allLocs.length > 0 ? allLocs.join('\n') : (group.remark !== '-' ? group.remark : '-');
+
+        const isGroupAllChecked = group.items.every(it => selectedAvailRows.has(it.id));
+        const zebraClass = (gIdx % 2 === 0) ? 'avail-group-even' : 'avail-group-odd';
+        const groupBorderClass = hasNoStock ? 'avail-group-shortage' : (hasPartial ? 'avail-group-partial' : (hasBlockWarn ? 'avail-group-warn' : ''));
+
+        // 컨테이너 번호 색상 판정 (천마: 빨강 #dc2626, BNI: 파랑 #2563eb, 기타: #0f172a, 미지정: #94a3b8)
+        const trans = (group.transporter || (group.items[0] && group.items[0].transporter) || '').trim();
+        let cntrColor = '#0f172a';
+        let transTitle = '클릭하여 컨테이너번호 복사';
+
+        if (group.cntrNo === '미지정') {
+            cntrColor = '#94a3b8';
+        } else if (trans.includes('천마') || trans.includes('빨강')) {
+            cntrColor = '#dc2626'; // 빨강 (천마)
+            transTitle = '천마(빨강) - 클릭하여 복사';
+        } else if (trans.includes('BNI') || trans.includes('파랑')) {
+            cntrColor = '#2563eb'; // 파랑 (BNI)
+            transTitle = 'BNI(파랑) - 클릭하여 복사';
+        } else {
+            cntrColor = '#0f172a'; // 일반
+        }
+
+        group.items.forEach((item, idx) => {
+            const tr = document.createElement('tr');
+            tr.className = `avail-row ${zebraClass} ${groupBorderClass} ${idx === 0 ? 'avail-group-first' : ''}`;
+            if (item.status === 'SHORTAGE' || item.status === 'NO_STOCK') tr.classList.add('item-shortage');
+
+            let html = '';
+
+            // 첫 번째 행에서만 공통 컬럼들을 rowspan으로 병합 출력
+            if (idx === 0) {
+                html += `
+                    <td rowspan="${N}" class="merged-cell text-center" style="vertical-align: middle; background: inherit; text-align: center;">
+                        <input type="checkbox" ${isGroupAllChecked ? 'checked' : ''} 
+                               onchange="window.toggleSelectAvailGroup('${group.groupKey.replace(/'/g, "\\'")}', event)" 
+                               style="width: 15px; height: 15px; cursor: pointer;" title="해당 작업 전체 선택">
+                    </td>
+                    <td rowspan="${N}" class="merged-cell text-center" style="vertical-align: middle; background: inherit; text-align: center;">
+                        <span class="tag-avail-sheet ${sheetTagClass}">${group.sheetName}</span>
+                    </td>
+                    <td rowspan="${N}" class="merged-cell text-center" style="vertical-align: middle; background: inherit; text-align: center;">
+                        <div style="font-weight: 700; color: #0f172a; font-size: 0.84rem; text-align: center;" title="${group.jobName}">${group.jobName}</div>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 3px; flex-wrap: wrap;">
+                            <span class="avail-item-count-badge">${N}개 모델 / 총 ${totalPlanQty.toLocaleString()} EA</span>
+                            <span class="badge-avail-status ${groupStatusClass}" style="font-size: 0.68rem; padding: 1px 5px;">${groupStatusLabel}</span>
+                        </div>
+                    </td>
+                    <td rowspan="${N}" class="merged-cell text-center" style="vertical-align: middle; background: inherit; text-align: center; color: ${cntrColor}; font-weight: ${group.cntrNo === '미지정' ? '500' : '800'};">
+                        <strong onclick="window.copyToClipboard('${group.cntrNo}', '컨테이너')" style="cursor: pointer; color: ${cntrColor};" title="${transTitle}">${group.cntrNo}</strong>
+                    </td>
+                    <td rowspan="${N}" class="merged-cell text-center" style="vertical-align: middle; background: inherit; text-align: center; font-weight: 600;">${group.dest}</td>
+                    <td rowspan="${N}" class="merged-cell text-center" style="vertical-align: middle; background: inherit; text-align: center;">${group.carrier}</td>
+                    <td rowspan="${N}" class="merged-cell text-center" style="vertical-align: middle; background: inherit; text-align: center;">${group.cntrType}</td>
+                `;
+            }
+
+            // 품목별 개별 열 출력 (모든 행)
+            const prodType = item.prodType && item.prodType !== '-' ? item.prodType : '';
+            const division = item.division && item.division !== '-' ? item.division : '';
+            const prodTypeClass = prodType === 'Q' ? 'q-type' : (prodType === 'H' ? 'h-type' : '');
+            let divClass = '';
+            if (division.includes('CVZ')) divClass = 'cvz-type';
+            else if (division.includes('CNZ')) divClass = 'cnz-type';
+            else if (division.includes('CDZ')) divClass = 'cdz-type';
+
+            html += `
+                <td class="text-center" style="vertical-align: middle; background: inherit;">
+                    ${prodType ? `<span class="tag-prod-type ${prodTypeClass}">${prodType}</span>` : '<span style="color:#cbd5e1;">-</span>'}
+                </td>
+                <td class="text-center" style="vertical-align: middle; background: inherit;">
+                    ${division ? `<span class="tag-prod-division ${divClass}">${division}</span>` : '<span style="color:#cbd5e1;">-</span>'}
+                </td>
+                <td style="cursor: pointer; vertical-align: middle; background: inherit;" 
+                    onclick="window.copyToClipboard('${item.prodName.replace(/'/g, "\\'")}', '제품명')"
+                    title="클릭하여 제품명 복사 (마우스 오버 시 로케이션별 재고 확인)">
+                    <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                        <span class="product-name-hoverable" 
+                              onmouseenter="window.handleProductMouseEnter('${item.prodName.replace(/'/g, "\\'")}', this, '${(item.prodType || '').replace(/'/g, "\\'")}')" 
+                              onmouseleave="window.handleProductMouseLeave()"
+                              style="color: ${item.prodType === 'H' ? '#7c3aed' : item.prodType === 'Q' ? '#0d9488' : '#0f172a'}; font-weight: 700;">
+                            ${item.prodName}
+                        </span>
+                        ${getDongTag(item.prodName, item.prodType)}
+                        ${getYuTag(item.prodName, item.prodType)}
+                        ${item.status === 'PARTIAL_OK' ? `<span class="badge" style="background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; font-size: 0.65rem; padding: 1px 4px; font-weight: 700;" title="당일 전체 작업 총 소요: ${item.totalModelReq.toLocaleString()} EA / 가용재고: ${item.good.toLocaleString()} EA / 부족: ${item.shortage.toLocaleString()} EA">총소요 ${item.totalModelReq.toLocaleString()}EA (부족 ${item.shortage.toLocaleString()})</span>` : ''}
+                        ${item.status === 'NO_STOCK' ? `<span class="badge" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; font-size: 0.65rem; padding: 1px 4px; font-weight: 700;" title="가용 재고 없음">재고없음</span>` : ''}
+                    </div>
+                </td>
+                <td style="text-align: right; vertical-align: middle; font-weight: 800; color: #1e293b; font-size: 0.88rem; background: inherit;">
+                    <div>${item.qty.toLocaleString()}</div>
+                    ${item.status === 'PARTIAL_OK' ? `<div style="font-size: 0.66rem; color: #c2410c; font-weight: 600;" title="당일 전체 작업 총 필요 수량: ${item.totalModelReq.toLocaleString()} EA">총 ${item.totalModelReq.toLocaleString()}EA</div>` : ''}
+                </td>
+                <td style="text-align: right; vertical-align: middle; font-weight: 700; color: ${item.good >= item.totalModelReq ? '#16a34a' : (item.good > 0 ? '#d97706' : '#dc2626')}; font-size: 0.88rem; background: inherit;" title="창고 가용재고 (당일 총필요 ${item.totalModelReq.toLocaleString()} EA)">
+                    ${item.good.toLocaleString()}
+                </td>
+                <td style="text-align: right; vertical-align: middle; color: ${item.oqc > 0 ? '#dc2626; font-weight: 800;' : '#94a3b8;'} background: inherit;">${item.oqc > 0 ? item.oqc.toLocaleString() : '-'}</td>
+                <td style="text-align: right; vertical-align: middle; color: ${item.longTerm > 0 ? '#8b5cf6; font-weight: 800;' : '#94a3b8;'} background: inherit;">${item.longTerm > 0 ? item.longTerm.toLocaleString() : '-'}</td>
+                <td style="text-align: right; vertical-align: middle; color: ${item.bin > 0 ? '#db2777; font-weight: 800;' : '#94a3b8;'} background: inherit;">${item.bin > 0 ? item.bin.toLocaleString() : '-'}</td>
+                <td style="text-align: right; vertical-align: middle; color: ${item.pending > 0 ? '#d97706; font-weight: 700;' : '#94a3b8;'} background: inherit;">${item.pending > 0 ? item.pending.toLocaleString() : '-'}</td>
+                <td style="text-align: center; vertical-align: middle; background: inherit;">
+                    <span class="badge-avail-status ${item.statusClass}">${item.statusLabel}</span>
+                </td>
+                <td style="vertical-align: middle; font-size: 0.74rem; color: #334155; max-width: 120px; line-height: 1.35; background: inherit;" title="${item.adj1 || '-'}">
+                    <div style="white-space: pre-line;">${item.adj1 && item.adj1 !== '-' ? item.adj1 : '<span style="color:#cbd5e1;">-</span>'}</div>
+                </td>
+                <td style="vertical-align: middle; font-size: 0.74rem; color: #334155; max-width: 120px; line-height: 1.35; background: inherit;" title="${item.adj2 || '-'}">
+                    <div style="white-space: pre-line;">${item.adj2 && item.adj2 !== '-' ? item.adj2 : '<span style="color:#cbd5e1;">-</span>'}</div>
+                </td>
+            `;
+
+            // 마지막 열: 블록 로케이션 및 비고 (첫 행에서 rowspan으로 1회만 병합 출력)
+            if (idx === 0) {
+                html += `
+                    <td rowspan="${N}" class="merged-cell" style="vertical-align: middle; font-size: 0.74rem; color: #475569; max-width: 220px; line-height: 1.35; background: inherit;" title="${groupBlockLocText.replace(/"/g, '&quot;')}">
+                        <div style="max-height: ${Math.max(45, N * 24)}px; overflow-y: auto; white-space: pre-line;">
+                            ${groupBlockLocText}
+                        </div>
+                    </td>
+                `;
+            }
+
+            tr.innerHTML = html;
+            fragment.appendChild(tr);
+        });
+    });
+
+    tbody.innerHTML = '';
+    tbody.appendChild(fragment);
+}
+
+// 작업 그룹 전체 선택 토글
+window.toggleSelectAvailGroup = function(groupKey, event) {
+    const isChecked = event.target.checked;
+    processedAvailabilityData.forEach(item => {
+        const itKey = `${item.sheetName}__${item.jobName}__${item.cntrNo}__${item.dest}__${item.carrier}__${item.cntrType}__${item.remark}__${item.adj1}__${item.adj2}`;
+        if (itKey === groupKey) {
+            if (isChecked) selectedAvailRows.add(item.id);
+            else selectedAvailRows.delete(item.id);
+        }
+    });
+    renderAvailabilityTable();
+};
+
+// 개별 체크박스 토글
+window.toggleSelectAvailRow = function(rowId, event) {
+    if (event.target.checked) selectedAvailRows.add(rowId);
+    else selectedAvailRows.delete(rowId);
+};
+
+// 시트 필터 전환
+window.filterAvailBySheet = function(sheet) {
+    currentAvailSheetFilter = sheet;
+    const tabs = document.querySelectorAll('.avail-sheet-tab');
+    tabs.forEach(t => {
+        if (t.dataset.sheet === sheet) t.classList.add('active');
+        else t.classList.remove('active');
+    });
+    renderAvailabilityTable();
+};
+
+// 상태 필터 전환
+window.filterAvailByStatus = function(status) {
+    currentAvailStatusFilter = status;
+    const btns = document.querySelectorAll('.avail-status-btn');
+    btns.forEach(b => {
+        if (b.dataset.status === status) b.classList.add('active');
+        else b.classList.remove('active');
+    });
+    renderAvailabilityTable();
+};
+
+// 텍스트 검색
+window.searchAvailability = function() {
+    const searchInput = document.getElementById('availSearchInput');
+    const searchSelect = document.getElementById('availSearchField');
+    if (searchInput) currentAvailSearchQuery = searchInput.value;
+    if (searchSelect) currentAvailSearchField = searchSelect.value;
+    renderAvailabilityTable();
+};
+
+// 검색 및 필터 초기화
+window.resetAvailFilters = function() {
+    currentAvailSheetFilter = 'all';
+    currentAvailStatusFilter = 'all';
+    currentAvailSearchQuery = '';
+    currentAvailSearchField = 'all';
+
+    const tabs = document.querySelectorAll('.avail-sheet-tab');
+    tabs.forEach(t => {
+        if (t.dataset.sheet === 'all') t.classList.add('active');
+        else t.classList.remove('active');
+    });
+
+    const btns = document.querySelectorAll('.avail-status-btn');
+    btns.forEach(b => {
+        if (b.dataset.status === 'all') b.classList.add('active');
+        else b.classList.remove('active');
+    });
+
+    const searchInput = document.getElementById('availSearchInput');
+    if (searchInput) searchInput.value = '';
+
+    const searchSelect = document.getElementById('availSearchField');
+    if (searchSelect) searchSelect.value = 'all';
+
+    renderAvailabilityTable();
+};
+
+// 엑셀 내보내기 (ExcelJS 기반)
+window.exportAvailabilityToExcel = async function() {
+    if (!processedAvailabilityData || processedAvailabilityData.length === 0) {
+        alert("내보낼 작업 가용성 분석 데이터가 없습니다.");
+        return;
+    }
+
+    try {
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'ExcelCompare';
+        workbook.created = new Date();
+
+        const worksheet = workbook.addWorksheet('작업가용성_상세내역');
+
+        worksheet.columns = [
+            { header: '시트구분', key: 'sheetName', width: 12 },
+            { header: '작업명', key: 'jobName', width: 22 },
+            { header: '컨테이너번호', key: 'cntrNo', width: 18 },
+            { header: '도착지', key: 'dest', width: 10 },
+            { header: '선사', key: 'carrier', width: 10 },
+            { header: '규격', key: 'cntrType', width: 10 },
+            { header: '제품구분', key: 'prodType', width: 10 },
+            { header: '사업부', key: 'division', width: 12 },
+            { header: '제품모델명', key: 'prodName', width: 30 },
+            { header: '계획수량', key: 'qty', width: 12 },
+            { header: '가용재고(양품)', key: 'good', width: 14 },
+            { header: 'OQC홀드', key: 'oqc', width: 12 },
+            { header: '롱텀홀드', key: 'longTerm', width: 12 },
+            { header: 'BIN블록', key: 'bin', width: 12 },
+            { header: '팬딩재고', key: 'pending', width: 12 },
+            { header: '부족수량', key: 'shortage', width: 12 },
+            { header: '판정상태', key: 'statusLabel', width: 16 },
+            { header: '구분1', key: 'adj1', width: 20 },
+            { header: '구분2', key: 'adj2', width: 20 },
+            { header: '블록 로케이션 및 비고', key: 'blockLocs', width: 35 }
+        ];
+
+        // 헤더 스타일링
+        const headerRow = worksheet.getRow(1);
+        headerRow.height = 26;
+        headerRow.eachCell(cell => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: '1E293B' }
+            };
+            cell.font = { color: { argb: 'FFFFFF' }, bold: true, size: 10 };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        });
+
+        // 데이터 행 추가
+        processedAvailabilityData.forEach(d => {
+            const row = worksheet.addRow({
+                sheetName: d.sheetName,
+                jobName: d.jobName,
+                cntrNo: d.cntrNo,
+                dest: d.dest,
+                carrier: d.carrier,
+                cntrType: d.cntrType,
+                prodType: d.prodType || '-',
+                division: d.division || '-',
+                prodName: d.prodName,
+                qty: d.qty,
+                good: d.good,
+                oqc: d.oqc,
+                longTerm: d.longTerm,
+                bin: d.bin,
+                pending: d.pending,
+                shortage: d.shortage > 0 ? d.shortage : 0,
+                statusLabel: d.statusLabel,
+                adj1: d.adj1 && d.adj1 !== '-' ? d.adj1 : '',
+                adj2: d.adj2 && d.adj2 !== '-' ? d.adj2 : '',
+                blockLocs: d.blockLocs && d.blockLocs.length > 0 ? d.blockLocs.join(' | ') : (d.remark !== '-' ? d.remark : '')
+            });
+
+            // 상태별 색상 강조
+            if (d.status === 'SHORTAGE') {
+                row.eachCell(cell => {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FEE2E2' } };
+                });
+            } else if (d.status === 'BLOCK_WARN') {
+                row.eachCell(cell => {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FAF5FF' } };
+                });
+            }
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const dateStr = new Date().toISOString().split('T')[0];
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, `작업가용성_분석내역_${dateStr}.xlsx`);
+    } catch (err) {
+        console.error("엑셀 내보내기 실패:", err);
+        alert("엑셀 내보내기 중 오류가 발생했습니다: " + err.message);
+    }
+};
+
+// 엑셀 바로보기
+window.openAvailabilityInExcel = async function() {
+    if (!processedAvailabilityData || processedAvailabilityData.length === 0) {
+        alert("열람할 작업 가용성 분석 데이터가 없습니다.");
+        return;
+    }
+
+    try {
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'ExcelCompare';
+        workbook.created = new Date();
+
+        const worksheet = workbook.addWorksheet('작업가용성_상세내역');
+
+        worksheet.columns = [
+            { header: '시트구분', key: 'sheetName', width: 12 },
+            { header: '작업명', key: 'jobName', width: 22 },
+            { header: '컨테이너번호', key: 'cntrNo', width: 18 },
+            { header: '도착지', key: 'dest', width: 10 },
+            { header: '선사', key: 'carrier', width: 10 },
+            { header: '규격', key: 'cntrType', width: 10 },
+            { header: '제품구분', key: 'prodType', width: 10 },
+            { header: '사업부', key: 'division', width: 12 },
+            { header: '제품모델명', key: 'prodName', width: 30 },
+            { header: '계획수량', key: 'qty', width: 12 },
+            { header: '가용재고(양품)', key: 'good', width: 14 },
+            { header: 'OQC홀드', key: 'oqc', width: 12 },
+            { header: '롱텀홀드', key: 'longTerm', width: 12 },
+            { header: 'BIN블록', key: 'bin', width: 12 },
+            { header: '팬딩재고', key: 'pending', width: 12 },
+            { header: '부족수량', key: 'shortage', width: 12 },
+            { header: '판정상태', key: 'statusLabel', width: 16 },
+            { header: '구분1', key: 'adj1', width: 20 },
+            { header: '구분2', key: 'adj2', width: 20 },
+            { header: '블록 로케이션 및 비고', key: 'blockLocs', width: 35 }
+        ];
+
+        const headerRow = worksheet.getRow(1);
+        headerRow.height = 26;
+        headerRow.eachCell(cell => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: '1E293B' }
+            };
+            cell.font = { color: { argb: 'FFFFFF' }, bold: true, size: 10 };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        });
+
+        processedAvailabilityData.forEach(d => {
+            worksheet.addRow({
+                sheetName: d.sheetName,
+                jobName: d.jobName,
+                cntrNo: d.cntrNo,
+                dest: d.dest,
+                carrier: d.carrier,
+                cntrType: d.cntrType,
+                prodType: d.prodType || '-',
+                division: d.division || '-',
+                prodName: d.prodName,
+                qty: d.qty,
+                good: d.good,
+                oqc: d.oqc,
+                longTerm: d.longTerm,
+                bin: d.bin,
+                pending: d.pending,
+                shortage: d.shortage > 0 ? d.shortage : 0,
+                statusLabel: d.statusLabel,
+                adj1: d.adj1 && d.adj1 !== '-' ? d.adj1 : '',
+                adj2: d.adj2 && d.adj2 !== '-' ? d.adj2 : '',
+                blockLocs: d.blockLocs && d.blockLocs.length > 0 ? d.blockLocs.join(' | ') : (d.remark !== '-' ? d.remark : '')
+            });
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const dateStr = new Date().toISOString().split('T')[0];
+        const fileName = `작업가용성_분석내역_${dateStr}.xlsx`;
+        const base64 = bufToBase64(buffer);
+
+        await fetch(`${API_BASE}/api/open-excel`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ buffer: base64, fileName: fileName })
+        });
+    } catch (err) {
+        console.error("엑셀 바로보기 실패:", err);
+        alert("엑셀 바로보기 실행 중 오류가 발생했습니다: " + err.message);
+    }
+};
+
+// 제품 마우스 오버 시 로케이션별 재고 상세 툴팁 팝업 핸들러
+window.handleProductMouseEnter = function(prodName, targetEl, prodType) {
+    if (!prodName || !warehouseAllStockList || warehouseAllStockList.length === 0) return;
+
+    const cleanName = prodName.trim().toUpperCase();
+    const matches = warehouseAllStockList.filter(item => (item.modelName || '').trim().toUpperCase() === cleanName);
+    if (matches.length === 0) return;
+
+    // 기존 툴팁 제거
+    window.handleProductMouseLeave();
+
+    const tooltip = document.createElement('div');
+    tooltip.id = 'availStockLocTooltip';
+    tooltip.className = 'avail-stock-loc-tooltip';
+
+    let listHtml = matches.map(m => {
+        const isBlock = (m.blockQty || 0) > 0;
+        const isPending = (m.pendingQty || 0) > 0;
+        const statusBadge = isBlock ? `<span style="color:#ef4444; font-weight:800; font-size:0.68rem;">[블록]</span>` :
+                            isPending ? `<span style="color:#f59e0b; font-weight:800; font-size:0.68rem;">[팬딩]</span>` :
+                            `<span style="color:#10b981; font-weight:800; font-size:0.68rem;">[정상]</span>`;
+
+        return `
+            <div style="display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-bottom: 1px dashed #334155; font-size: 0.74rem;">
+                <span>${statusBadge} <strong style="color:#93c5fd;">${m.location || '미지정'}</strong></span>
+                <span style="color: #f8fafc; font-weight: 700;">${(m.physicalQty || 0).toLocaleString()} EA</span>
+            </div>
+        `;
+    }).join('');
+
+    tooltip.innerHTML = `
+        <div style="font-weight: 800; color: #38bdf8; font-size: 0.78rem; margin-bottom: 6px; border-bottom: 1px solid #475569; padding-bottom: 3px;">
+            <i class="fas fa-cubes" style="margin-right: 4px;"></i>${prodName} 재고 현황
+        </div>
+        <div style="max-height: 200px; overflow-y: auto;">
+            ${listHtml}
+        </div>
+    `;
+
+    document.body.appendChild(tooltip);
+
+    const rect = targetEl.getBoundingClientRect();
+    tooltip.style.position = 'fixed';
+    tooltip.style.left = `${rect.left}px`;
+    tooltip.style.top = `${rect.bottom + 4}px`;
+    tooltip.style.zIndex = '99999';
+    tooltip.style.backgroundColor = 'rgba(15, 23, 42, 0.95)';
+    tooltip.style.color = '#ffffff';
+    tooltip.style.padding = '8px 12px';
+    tooltip.style.borderRadius = '6px';
+    tooltip.style.boxShadow = '0 6px 18px rgba(0,0,0,0.35)';
+    tooltip.style.pointerEvents = 'none';
+};
+
+window.handleProductMouseLeave = function() {
+    const existing = document.getElementById('availStockLocTooltip');
+    if (existing) existing.remove();
+};
+
