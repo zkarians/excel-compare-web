@@ -2531,28 +2531,38 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
                 
                 // 1. 블록 로케이션 문자열 구성 및 로케이션별 블록 맵
                 const blockLocList = [];
+                const blockLocItemObjects = [];
                 const blockLocWarningMap = {}; // { '24-1-04-14-0': '롱텀 2EA' }
                 if (details && details.blockLocations && details.blockLocations.length > 0) {
                     details.blockLocations.forEach(b => {
                         const tags = [];
                         const warnTags = [];
+                        const badgeList = [];
                         if (b.oqcHold > 0) {
                             tags.push(`${b.oqcHold}EA (홀드)`);
                             warnTags.push(`홀드 ${b.oqcHold}EA`);
+                            badgeList.push({ qty: `${b.oqcHold}EA`, type: '홀드', bg: '#ef4444' });
                         }
                         if (b.longTermHold > 0) {
                             tags.push(`${b.longTermHold}EA (롱텀)`);
                             warnTags.push(`롱텀 ${b.longTermHold}EA`);
+                            badgeList.push({ qty: `${b.longTermHold}EA`, type: '롱텀', bg: '#8b5cf6' });
                         }
                         if (b.binBlock > 0) {
                             tags.push(`${b.binBlock}EA (BIN블록)`);
                             warnTags.push(`BIN블록 ${b.binBlock}EA`);
+                            badgeList.push({ qty: `${b.binBlock}EA`, type: 'BIN블록', bg: '#e11d48' });
                         }
                         if (tags.length === 0 && b.totalBlock > 0) {
                             tags.push(`${b.totalBlock}EA (블록)`);
                             warnTags.push(`블록 ${b.totalBlock}EA`);
+                            badgeList.push({ qty: `${b.totalBlock}EA`, type: '블록', bg: '#64748b' });
                         }
                         blockLocList.push(`${b.location}: ${tags.join(', ')}`);
+                        blockLocItemObjects.push({
+                            location: b.location,
+                            badges: badgeList
+                        });
                         const cleanLoc = (b.location || '').trim().toUpperCase();
                         if (cleanLoc && cleanLoc !== '미지정') {
                             blockLocWarningMap[cleanLoc] = warnTags.join(', ');
@@ -2611,6 +2621,7 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
                     hasBin,
                     stockInfo,
                     blockLocStr: blockLocList.join('\n') || '-',
+                    blockLocItems: blockLocItemObjects,
                     goodLocStr: goodLocList.join('\n') || '-',
                     goodLocItems: goodLocItemObjects
                 });
@@ -2670,31 +2681,50 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
             const planQty = row.qtyInfo.origPlan || row.qtyInfo.plan || 0;
             const remainQty = row.qtyInfo.remain !== undefined ? row.qtyInfo.remain : planQty;
 
-            const blockLocFormatted = row.blockLocStr.split('\n').map(l => {
-                const formatted = l
-                    .replace(/(\d+EA)\s*\(홀드\)/g, '$1 <span style="display:inline-block; background:#ef4444; color:white; padding:1px 5px; border-radius:3px; font-size:0.7rem; font-weight:700; vertical-align:middle;">홀드</span>')
-                    .replace(/(\d+EA)\s*\(롱텀\)/g, '$1 <span style="display:inline-block; background:#8b5cf6; color:white; padding:1px 5px; border-radius:3px; font-size:0.7rem; font-weight:700; vertical-align:middle;">롱텀</span>')
-                    .replace(/(\d+EA)\s*\(BIN블록\)/g, '$1 <span style="display:inline-block; background:#e11d48; color:white; padding:1px 5px; border-radius:3px; font-size:0.7rem; font-weight:700; vertical-align:middle;">BIN블록</span>');
-                return `<div style="line-height:1.55; color:#b91c1c; font-weight:700; font-size:0.8rem;"><i class="fas fa-ban" style="font-size:0.7rem; margin-right:4px;"></i>${formatted}</div>`;
-            }).join('');
+            // 1. 블록 로케이션 (로케이션 폰트와 수량 컬러 분리)
+            let blockLocFormatted = '';
+            if (row.blockLocItems && row.blockLocItems.length > 0) {
+                blockLocFormatted = row.blockLocItems.map(b => {
+                    const badgeHtml = b.badges.map(bg => 
+                        `<span style="color:#dc2626; font-weight:800; font-size:0.83rem;">${bg.qty}</span> <span style="display:inline-block; background:${bg.bg}; color:white; padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; vertical-align:middle; margin-left:2px; margin-right:4px;">${bg.type}</span>`
+                    ).join('');
+                    return `<div style="line-height:1.6; font-size:0.8rem; white-space:nowrap;">
+                        <i class="fas fa-ban" style="font-size:0.7rem; margin-right:5px; color:#ef4444;"></i>
+                        <span style="color:#0f172a; font-weight:700; font-family:monospace, sans-serif; font-size:0.83rem;">${b.location}</span><span style="color:#94a3b8; margin:0 3px;">:</span>
+                        ${badgeHtml}
+                    </div>`;
+                }).join('');
+            } else {
+                blockLocFormatted = row.blockLocStr.split('\n').map(l => {
+                    const formatted = l
+                        .replace(/(\d+EA)\s*\(홀드\)/g, '<span style="color:#dc2626; font-weight:800;">$1</span> <span style="display:inline-block; background:#ef4444; color:white; padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; vertical-align:middle;">홀드</span>')
+                        .replace(/(\d+EA)\s*\(롱텀\)/g, '<span style="color:#dc2626; font-weight:800;">$1</span> <span style="display:inline-block; background:#8b5cf6; color:white; padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; vertical-align:middle;">롱텀</span>')
+                        .replace(/(\d+EA)\s*\(BIN블록\)/g, '<span style="color:#dc2626; font-weight:800;">$1</span> <span style="display:inline-block; background:#e11d48; color:white; padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; vertical-align:middle;">BIN블록</span>');
+                    return `<div style="line-height:1.6; font-size:0.8rem; white-space:nowrap;"><i class="fas fa-ban" style="font-size:0.7rem; margin-right:5px; color:#ef4444;"></i>${formatted}</div>`;
+                }).join('');
+            }
 
+            // 2. 정상 피킹 로케이션 (로케이션과 수량 색상 분리 및 혼적 태그 인라인 배치)
             let goodLocFormatted = '';
             if (row.goodLocItems && row.goodLocItems.length > 0) {
                 goodLocFormatted = row.goodLocItems.map(g => {
                     if (g.isMixed) {
-                        return `<div style="line-height:1.55; color:#c2410c; font-weight:700; font-size:0.8rem;">
-                            <i class="fas fa-exclamation-triangle" style="font-size:0.75rem; margin-right:4px; color:#ea580c;"></i>
-                            <span style="color:#ea580c; font-weight:800; text-decoration: underline;">${g.location}: ${g.qtyStr}</span>
-                            <span style="display:inline-block; background:#ea580c; color:white; padding:1px 6px; border-radius:3px; font-size:0.7rem; font-weight:700; vertical-align:middle; margin-left:3px;">⚠️ (${g.mixReason} 혼적주의)</span>
+                        return `<div style="line-height:1.6; font-size:0.8rem; white-space:nowrap;">
+                            <i class="fas fa-exclamation-triangle" style="font-size:0.75rem; margin-right:5px; color:#d97706;"></i>
+                            <span style="color:#9a3412; font-weight:700; font-family:monospace, sans-serif; font-size:0.83rem;">${g.location}</span><span style="color:#94a3b8; margin:0 3px;">:</span>
+                            <span style="color:#047857; font-weight:800; font-size:0.83rem;">${g.qtyStr}</span>
+                            <span style="display:inline-block; background:#ea580c; color:white; padding:1px 6px; border-radius:3px; font-size:0.68rem; font-weight:700; vertical-align:middle; margin-left:6px;">⚠️ (${g.mixReason} 혼적주의)</span>
                         </div>`;
                     } else {
-                        return `<div style="line-height:1.55; color:#047857; font-weight:700; font-size:0.8rem;">
-                            <i class="fas fa-check" style="font-size:0.7rem; margin-right:4px;"></i>${g.location}: ${g.qtyStr}
+                        return `<div style="line-height:1.6; font-size:0.8rem; white-space:nowrap;">
+                            <i class="fas fa-check" style="font-size:0.7rem; margin-right:5px; color:#10b981;"></i>
+                            <span style="color:#0f172a; font-weight:700; font-family:monospace, sans-serif; font-size:0.83rem;">${g.location}</span><span style="color:#94a3b8; margin:0 3px;">:</span>
+                            <span style="color:#047857; font-weight:800; font-size:0.83rem;">${g.qtyStr}</span>
                         </div>`;
                     }
                 }).join('');
             } else {
-                goodLocFormatted = row.goodLocStr.split('\n').map(l => `<div style="line-height:1.55; color:#047857; font-weight:700; font-size:0.8rem;"><i class="fas fa-check" style="font-size:0.7rem; margin-right:4px;"></i>${l}</div>`).join('');
+                goodLocFormatted = row.goodLocStr.split('\n').map(l => `<div style="line-height:1.6; color:#047857; font-weight:700; font-size:0.8rem; white-space:nowrap;"><i class="fas fa-check" style="font-size:0.7rem; margin-right:5px;"></i>${l}</div>`).join('');
             }
 
             // 운송사별 색상 구분 (천마=빨강, BNI=파랑)
@@ -2800,7 +2830,7 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
             }
 
             const originalWidth = captureContainer.style.width;
-            captureContainer.style.width = '1150px';
+            captureContainer.style.width = '1300px';
 
             btnCopyBlockWorkImage.disabled = true;
             btnCopyBlockWorkImage.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 복사 중...';
