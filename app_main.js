@@ -14033,7 +14033,7 @@ window.lightboxDownload = function() {
             const dateStr = dateGroup.dateStr || dateGroup.date;
             const uploaders = dateGroup.uploaders || [];
             let dateContainerCount = 0;
-            const dateCarrierMap = { 'BNI': 0, '천마': 0 };
+            const dateCarrierMap = { 'BNI': 0, '천마': 0, '재작업': 0 };
 
             uploaders.forEach(u => {
                 (u.containers || []).forEach(c => {
@@ -14044,8 +14044,11 @@ window.lightboxDownload = function() {
                         totalContainers++;
                         const cTrans = (c.transporter || '').trim();
                         let cName = '기타';
-                        if (cTrans.includes('천마') || u.teamName.includes('천마')) cName = '천마';
-                        else if (cTrans.includes('BNI') || cTrans.includes('비엔아이') || u.teamName.includes('BNI') || u.teamName.includes('비엔아이')) cName = 'BNI';
+                        if (cTrans.includes('재작업') || (c.category || '').includes('재작업') || (c.adminComment || '').includes('재작업')) cName = '재작업';
+                        else if (cTrans.includes('천마')) cName = '천마';
+                        else if (cTrans.includes('BNI') || cTrans.includes('비엔아이')) cName = 'BNI';
+                        else if (u.teamName.includes('천마')) cName = '천마';
+                        else if (u.teamName.includes('BNI') || u.teamName.includes('비엔아이')) cName = 'BNI';
 
                         dateCarrierMap[cName] = (dateCarrierMap[cName] || 0) + 1;
                         globalCarrierMap[cName] = (globalCarrierMap[cName] || 0) + 1;
@@ -14057,10 +14060,11 @@ window.lightboxDownload = function() {
             const displayTotal = Object.values(finalCarrierCounts).reduce((a, b) => a + (Number(b) || 0), 0);
             const bniCount = finalCarrierCounts['BNI'] !== undefined ? finalCarrierCounts['BNI'] : (dateCarrierMap['BNI'] || 0);
             const chunmaCount = finalCarrierCounts['천마'] !== undefined ? finalCarrierCounts['천마'] : (dateCarrierMap['천마'] || 0);
+            const reworkCount = finalCarrierCounts['재작업'] !== undefined ? finalCarrierCounts['재작업'] : (dateCarrierMap['재작업'] || 0);
 
-            // 기타 운송사
-            const otherEntries = Object.entries(finalCarrierCounts).filter(([k]) => k !== 'BNI' && k !== '천마' && finalCarrierCounts[k] > 0);
-            const otherCarriersHtml = otherEntries.map(([k, v]) => ` , <span class="report-carrier-rework">${k}: ${v}개</span>`).join('');
+            const reworkHtml = reworkCount > 0 ? ` , <span class="report-carrier-rework">재작업: ${reworkCount}개</span>` : '';
+            const otherEntries = Object.entries(finalCarrierCounts).filter(([k]) => k !== 'BNI' && k !== '천마' && k !== '재작업' && finalCarrierCounts[k] > 0);
+            const otherCarriersHtml = otherEntries.map(([k, v]) => ` , <span style="color: #64748b; font-weight: 900;">${k}: ${v}개</span>`).join('');
 
             const numTeams = uploaders.length;
             const gridColsStyle = numTeams === 1 ? 'style="grid-template-columns: 1fr;"' : (numTeams === 2 ? 'style="grid-template-columns: repeat(2, 1fr);"' : 'style="grid-template-columns: repeat(3, 1fr);"');
@@ -14092,7 +14096,7 @@ window.lightboxDownload = function() {
                             <div class="report-header-total-badge">
                                 <span>총합계: ${displayTotal}개 작업완료</span>
                                 <span class="report-carrier-counts-wrap">
-                                    ( <span class="report-carrier-bni">BNI: ${bniCount}개</span> , <span class="report-carrier-chunma">천마: ${chunmaCount}개</span>${otherCarriersHtml} )
+                                    ( <span class="report-carrier-bni">BNI: ${bniCount}개</span> , <span class="report-carrier-chunma">천마: ${chunmaCount}개</span>${reworkHtml}${otherCarriersHtml} )
                                 </span>
                                 ${dateGroup.customRemark ? `<span style="border-left: 1px solid #cbd5e1; padding-left: 8px; margin-left: 4px; color: #475569; font-size: 0.8rem; font-weight: 700;">비고: ${dateGroup.customRemark}</span>` : ''}
                                 <button type="button" class="btn-edit-report-header" onclick="window.handleEditReportHeader('${dateStr}', event)" title="총합계 및 비고 수정">
@@ -14118,9 +14122,10 @@ window.lightboxDownload = function() {
                                     <div class="report-cntr-list">
                                         ${cntrs.map(c => {
                                             const cTrans = (c.transporter || '').trim();
-                                            const isChunma = cTrans.includes('천마') || team.teamName.includes('천마');
-                                            const isBni = cTrans.includes('BNI') || cTrans.includes('비엔아이') || team.teamName.includes('BNI') || team.teamName.includes('비엔아이');
-                                            const carrierColorClass = isChunma ? 'carrier-chunma' : (isBni ? 'carrier-bni' : 'carrier-default');
+                                            const isRework = cTrans.includes('재작업') || (c.category || '').includes('재작업') || (c.adminComment || '').includes('재작업');
+                                            const isChunma = !isRework && (cTrans.includes('천마') || (cTrans === '' && team.teamName.includes('천마')));
+                                            const isBni = !isRework && (cTrans.includes('BNI') || cTrans.includes('비엔아이') || (cTrans === '' && (team.teamName.includes('BNI') || team.teamName.includes('비엔아이'))));
+                                            const carrierColorClass = isRework ? 'carrier-rework' : (isChunma ? 'carrier-chunma' : (isBni ? 'carrier-bni' : 'carrier-default'));
 
                                             const isCancelled = c.isCancelled || (c.adminComment || '').includes('[작업취소]') || (c.adminComment || '').includes('[취소]');
                                             const isExcluded = (c.adminComment || '').includes('[작업제외]');
@@ -14135,7 +14140,9 @@ window.lightboxDownload = function() {
                                                 ? '<span style="background:rgba(217,119,6,0.15); color:#b45309; border:1px solid rgba(217,119,6,0.3); font-size:0.68rem; padding:1px 5px; border-radius:4px; margin-left:4px; font-weight:900;">[작업제외]</span>'
                                                 : isCancelled 
                                                 ? '<span style="background:rgba(225,29,72,0.15); color:#e11d48; border:1px solid rgba(225,29,72,0.3); font-size:0.68rem; padding:1px 5px; border-radius:4px; margin-left:4px; font-weight:900;">[작업취소]</span>'
-                                                : '';
+                                                : (isRework 
+                                                ? '<span style="background:rgba(217,119,6,0.15); color:#d97706; border:1px solid rgba(217,119,6,0.3); font-size:0.68rem; padding:1px 5px; border-radius:4px; margin-left:4px; font-weight:900;">[재작업]</span>'
+                                                : '');
 
                                             const displayRemark = (c.remark || c.lastRemark || '').replace(/^지연사유:\s*/, '').trim();
 
@@ -14783,8 +14790,11 @@ window.lightboxDownload = function() {
                     if (!isCancelled && !isExcluded) {
                         const cTrans = (c.transporter || '').trim();
                         let cName = '기타';
-                        if (cTrans.includes('천마') || u.teamName.includes('천마')) cName = '천마';
-                        else if (cTrans.includes('BNI') || cTrans.includes('비엔아이') || u.teamName.includes('BNI')) cName = 'BNI';
+                        if (cTrans.includes('재작업') || (c.category || '').includes('재작업') || (c.adminComment || '').includes('재작업')) cName = '재작업';
+                        else if (cTrans.includes('천마')) cName = '천마';
+                        else if (cTrans.includes('BNI') || cTrans.includes('비엔아이')) cName = 'BNI';
+                        else if (u.teamName.includes('천마')) cName = '천마';
+                        else if (u.teamName.includes('BNI') || u.teamName.includes('비엔아이')) cName = 'BNI';
                         activeCarrierCounts[cName] = (activeCarrierCounts[cName] || 0) + 1;
                     }
                 });

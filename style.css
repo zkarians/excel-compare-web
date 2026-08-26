@@ -5309,8 +5309,16 @@ tr.border-group td {
 .report-cntr-no.carrier-bni {
     color: #4f46e5 !important;
 }
+.report-cntr-no.carrier-rework {
+    color: #d97706 !important;
+}
 .report-cntr-no.carrier-default {
     color: #1e293b !important;
+}
+
+.report-carrier-rework {
+    color: #d97706 !important;
+    font-weight: 900;
 }
 
 .report-card-action-btn {
