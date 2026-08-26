@@ -9,7 +9,7 @@
     <link href="css/libs/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/libs/fontawesome.min.css">
     <link rel="stylesheet" href="css/libs/animate.min.css">
-    <link rel="stylesheet" href="style.css?v=20260827-fixcolwidth">
+    <link rel="stylesheet" href="style.css?v=20260827-folderfab">
     <!-- Local JS Libraries -->
     <script src="js/libs/exceljs.min.js"></script>
     <script src="js/libs/FileSaver.min.js"></script>
@@ -2678,10 +2678,11 @@
                     <!-- 선택 개수 표시 배지 -->
                     <div class="ctnr-action-selected-badge">
                         <span id="actionSelectedCount" class="badge-num">1</span>
-                        <span class="badge-text">사진 선택됨</span>
+                        <span id="actionSelectedLabel" class="badge-text">사진 선택됨</span>
                     </div>
 
-                    <div class="ctnr-action-buttons-group">
+                    <!-- 1) 사진 선택 액션 그룹 (사진 상세 모드) -->
+                    <div id="photoActionButtonsGroup" class="ctnr-action-buttons-group" style="display: flex;">
                         <!-- 1. 삭제 (휴지통 이동) -->
                         <button type="button" class="ctnr-act-btn btn-rose-light" onclick="window.handleDeleteSelectedPhotos()" title="선택한 사진 삭제 (휴지통 이동)">
                             <i class="fas fa-trash-alt"></i> 삭제
@@ -2728,9 +2729,42 @@
                         </button>
                     </div>
 
+                    <!-- 2) 폴더 선택 액션 그룹 (메인 폴더 목록 모드) -->
+                    <div id="folderActionButtonsGroup" class="ctnr-action-buttons-group" style="display: none;">
+                        <!-- 1. 삭제 (휴지통 이동) -->
+                        <button type="button" id="btnFolderActionTrash" class="ctnr-act-btn btn-rose-light" onclick="window.handleDeleteSelectedFolders()" title="선택한 폴더 삭제 (휴지통 이동)">
+                            <i class="fas fa-trash-alt"></i> 삭제
+                        </button>
+
+                        <!-- 2. 완료 처리 / 완료 취소 / 복구 (탭에 따라 전환) -->
+                        <button type="button" id="btnFolderActionComplete" class="ctnr-act-btn btn-emerald-light" onclick="window.handleToggleSelectedFoldersCompletion()" title="작업 상태 일괄 변경">
+                            <i class="fas fa-check"></i> <span id="btnFolderActionCompleteText">완료 처리</span>
+                        </button>
+
+                        <!-- 3. 중복 정리 -->
+                        <button type="button" id="btnFolderActionDuplicates" class="ctnr-act-btn btn-amber-light" onclick="window.handleCleanupSelectedFoldersDuplicates()" title="선택한 폴더들의 중복 사진 자동 정리 (휴지통 이동)">
+                            <i class="fas fa-images"></i> 중복 정리
+                        </button>
+
+                        <!-- 4. 로컬 복사 -->
+                        <button type="button" class="ctnr-act-btn btn-emerald" onclick="window.handleOpenLocalCopyModalForFolders()" title="선택한 폴더들의 사진을 로컬 폴더로 직접 복사">
+                            <i class="fas fa-folder-plus"></i> 로컬 복사
+                        </button>
+
+                        <!-- 5. ZIP 다운로드 -->
+                        <button type="button" class="ctnr-act-btn btn-sky" onclick="window.handleDownloadSelectedFolders()" title="선택한 폴더들의 사진 일괄 다운로드">
+                            <i class="fas fa-download"></i> ZIP
+                        </button>
+
+                        <!-- 6. 조 변경 -->
+                        <button type="button" class="ctnr-act-btn btn-indigo" onclick="window.handleOpenChangeTeamModalForFolders()" title="선택한 폴더들의 작업 조 일괄 변경">
+                            <i class="fas fa-users"></i> 조 변경
+                        </button>
+                    </div>
+
                     <!-- 선택 해제 (X) -->
                     <div class="ctnr-action-bar-divider"></div>
-                    <button type="button" class="ctnr-action-bar-close" onclick="window.clearGalleryPhotoSelection()" title="선택 취소">
+                    <button type="button" class="ctnr-action-bar-close" onclick="window.clearAllGallerySelection()" title="선택 취소">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -2846,7 +2880,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260827-inplacerotate"></script>
+    <script src="app_main.js?v=20260827-folderfab"></script>
 </body>
 
 </html>

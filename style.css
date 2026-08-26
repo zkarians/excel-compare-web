@@ -4213,6 +4213,59 @@ tr.border-group td {
     color: #0f172a;
 }
 
+.ctnr-act-btn.btn-emerald-light {
+    background: #d1fae5;
+    color: #059669;
+}
+.ctnr-act-btn.btn-emerald-light:hover {
+    background: #a7f3d0;
+    color: #047857;
+}
+
+.ctnr-act-btn.btn-amber-light {
+    background: #fef3c7;
+    color: #d97706;
+}
+.ctnr-act-btn.btn-amber-light:hover {
+    background: #fde68a;
+    color: #b45309;
+}
+
+.ctnr-act-btn.btn-purple-light {
+    background: #f3e8ff;
+    color: #7e22ce;
+}
+.ctnr-act-btn.btn-purple-light:hover {
+    background: #e9d5ff;
+    color: #6b21a8;
+}
+
+/* 폴더 선택 스타일 */
+.ctnr-folder-card.selected {
+    border-color: #0284c7 !important;
+    background: #f0f9ff !important;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15) !important;
+}
+
+.ctnr-team-btn-select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.ctnr-team-btn-select-all:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
 .ctnr-action-bar-divider {
     width: 1px;
     height: 20px;

@@ -11347,7 +11347,11 @@ window.setGallerySort = function(sortBy) {
     window.renderGalleryPhotos();
 };
 
-// 전체 선택
+// ==================== 사진 및 폴더 선택 & 하단 플로팅 액션바 관리 ====================
+window.selectedPhotoIds = window.selectedPhotoIds || new Set();
+window.selectedFolderKeys = window.selectedFolderKeys || new Set();
+
+// 1. 사진 전체 선택 (사진 상세 뷰)
 window.toggleSelectAllPhotos = function(checked) {
     if (checked) {
         window.currentGalleryPhotos.forEach(p => window.selectedPhotoIds.add(String(p.id)));
@@ -11367,7 +11371,7 @@ window.toggleSelectAllPhotos = function(checked) {
     window.updateGalleryActionBar();
 };
 
-// 개별 사진 선택
+// 2. 개별 사진 선택
 window.togglePhotoSelect = function(id, e) {
     if (e) e.stopPropagation();
     const strId = String(id);
@@ -11377,7 +11381,6 @@ window.togglePhotoSelect = function(id, e) {
         window.selectedPhotoIds.add(strId);
     }
     
-    // UI 클래스 및 체크박스 반영
     const cards = document.querySelectorAll(`[data-photo-id="${strId}"]`);
     cards.forEach(card => {
         if (window.selectedPhotoIds.has(strId)) card.classList.add('selected');
@@ -11403,38 +11406,394 @@ window.handleCardClick = function(photoId, event) {
     }
 };
 
-// 선택 취소
-window.clearGalleryPhotoSelection = function() {
-    window.selectedPhotoIds.clear();
-    const selectAllChk = document.getElementById('gallerySelectAllChk');
-    if (selectAllChk) selectAllChk.checked = false;
-    document.querySelectorAll('.ctnr-photo-card.selected, .ctnr-card-large.selected').forEach(c => c.classList.remove('selected'));
-    document.querySelectorAll('.ctnr-photo-chk').forEach(c => c.checked = false);
+// 3. 개별 폴더 선택 (메인 폴더 뷰)
+window.toggleFolderSelect = function(folderKey, e) {
+    if (e) e.stopPropagation();
+    const key = String(folderKey);
+    if (window.selectedFolderKeys.has(key)) {
+        window.selectedFolderKeys.delete(key);
+    } else {
+        window.selectedFolderKeys.add(key);
+    }
+
+    const cards = document.querySelectorAll(`[data-folder-key="${key}"]`);
+    cards.forEach(card => {
+        if (window.selectedFolderKeys.has(key)) card.classList.add('selected');
+        else card.classList.remove('selected');
+        const chk = card.querySelector('.ctnr-folder-chk');
+        if (chk) chk.checked = window.selectedFolderKeys.has(key);
+    });
+
     window.updateGalleryActionBar();
+    window.refreshFolderHeaderSelectState();
 };
 
-// 하단 플로팅 액션바 상태 업데이트
+// 폴더 카드 클릭 시
+window.handleFolderCardClick = function(folderKey, cntrNo, workDateStr, event) {
+    if (window.selectedFolderKeys.size > 0) {
+        window.toggleFolderSelect(folderKey, event);
+    } else {
+        window.openContainerFolderPhotos(cntrNo, workDateStr);
+    }
+};
+
+// 날짜 그룹 전체 선택 / 해제
+window.toggleDateGroupFolders = function(dateStr, e) {
+    if (e) e.stopPropagation();
+    const targetFolders = [];
+    document.querySelectorAll(`[data-date-group="${dateStr}"] [data-folder-key]`).forEach(el => {
+        const k = el.getAttribute('data-folder-key');
+        if (k) targetFolders.push(k);
+    });
+
+    if (targetFolders.length === 0) return;
+    const allSelected = targetFolders.length > 0 && targetFolders.every(k => window.selectedFolderKeys.has(k));
+
+    if (allSelected) {
+        targetFolders.forEach(k => window.selectedFolderKeys.delete(k));
+    } else {
+        targetFolders.forEach(k => window.selectedFolderKeys.add(k));
+    }
+
+    document.querySelectorAll(`[data-date-group="${dateStr}"] [data-folder-key]`).forEach(card => {
+        const k = card.getAttribute('data-folder-key');
+        const isSel = window.selectedFolderKeys.has(k);
+        if (isSel) card.classList.add('selected');
+        else card.classList.remove('selected');
+        const chk = card.querySelector('.ctnr-folder-chk');
+        if (chk) chk.checked = isSel;
+    });
+
+    window.updateGalleryActionBar();
+    window.refreshFolderHeaderSelectState();
+};
+
+// 조(Team) 그룹 전체 선택 / 해제
+window.toggleTeamGroupFolders = function(dateStr, teamName, e) {
+    if (e) e.stopPropagation();
+    const targetFolders = [];
+    document.querySelectorAll(`[data-date-group="${dateStr}"][data-team-group="${teamName}"] [data-folder-key]`).forEach(el => {
+        const k = el.getAttribute('data-folder-key');
+        if (k) targetFolders.push(k);
+    });
+
+    if (targetFolders.length === 0) return;
+    const allSelected = targetFolders.length > 0 && targetFolders.every(k => window.selectedFolderKeys.has(k));
+
+    if (allSelected) {
+        targetFolders.forEach(k => window.selectedFolderKeys.delete(k));
+    } else {
+        targetFolders.forEach(k => window.selectedFolderKeys.add(k));
+    }
+
+    document.querySelectorAll(`[data-date-group="${dateStr}"][data-team-group="${teamName}"] [data-folder-key]`).forEach(card => {
+        const k = card.getAttribute('data-folder-key');
+        const isSel = window.selectedFolderKeys.has(k);
+        if (isSel) card.classList.add('selected');
+        else card.classList.remove('selected');
+        const chk = card.querySelector('.ctnr-folder-chk');
+        if (chk) chk.checked = isSel;
+    });
+
+    window.updateGalleryActionBar();
+    window.refreshFolderHeaderSelectState();
+};
+
+// 날짜/조 헤더 선택 카운트 텍스트 갱신
+window.refreshFolderHeaderSelectState = function() {
+    document.querySelectorAll('.ctnr-date-card').forEach(dateCard => {
+        const dateStr = dateCard.getAttribute('data-date-str');
+        if (!dateStr) return;
+        const totalItems = dateCard.querySelectorAll('[data-folder-key]').length;
+        let selCount = 0;
+        dateCard.querySelectorAll('[data-folder-key]').forEach(el => {
+            const k = el.getAttribute('data-folder-key');
+            if (window.selectedFolderKeys.has(k)) selCount++;
+        });
+
+        const chk = dateCard.querySelector('.ctnr-date-btn-select-all input[type="checkbox"]');
+        const textSpan = dateCard.querySelector('.ctnr-date-btn-select-all span');
+        const dayNum = parseInt(dateStr.split('-')[2] || '0', 10);
+        if (chk) chk.checked = (totalItems > 0 && selCount === totalItems);
+        if (textSpan) textSpan.textContent = `${dayNum}일 전체 선택 (${selCount}/${totalItems})`;
+    });
+
+    document.querySelectorAll('.ctnr-team-card').forEach(teamCard => {
+        const totalItems = teamCard.querySelectorAll('[data-folder-key]').length;
+        let selCount = 0;
+        teamCard.querySelectorAll('[data-folder-key]').forEach(el => {
+            const k = el.getAttribute('data-folder-key');
+            if (window.selectedFolderKeys.has(k)) selCount++;
+        });
+        const btn = teamCard.querySelector('.ctnr-team-btn-select-all');
+        if (btn) {
+            btn.textContent = (totalItems > 0 && selCount === totalItems) ? '전체 해제' : '전체 선택';
+        }
+    });
+};
+
+// 전체 선택 해제 (폴더 및 사진 공통)
+window.clearAllGallerySelection = function() {
+    window.selectedPhotoIds.clear();
+    window.selectedFolderKeys.clear();
+
+    const selectAllChk = document.getElementById('gallerySelectAllChk');
+    if (selectAllChk) selectAllChk.checked = false;
+
+    document.querySelectorAll('.ctnr-photo-card.selected, .ctnr-card-large.selected, .ctnr-folder-item.selected').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('.ctnr-photo-chk, .ctnr-folder-chk').forEach(c => c.checked = false);
+
+    window.refreshFolderHeaderSelectState();
+    window.updateGalleryActionBar();
+};
+window.clearGalleryPhotoSelection = window.clearAllGallerySelection;
+
+// 하단 플로팅 액션바 상태 및 모드 업데이트 (폴더 모드 vs 사진 모드)
 window.updateGalleryActionBar = function() {
     const bar = document.getElementById('photoGalleryActionBar');
     const countBadge = document.getElementById('actionSelectedCount');
-    const sealText = document.getElementById('btnActionSealText');
-    const count = window.selectedPhotoIds.size;
+    const labelBadge = document.getElementById('actionSelectedLabel');
+    const photoGroup = document.getElementById('photoActionButtonsGroup');
+    const folderGroup = document.getElementById('folderActionButtonsGroup');
 
     if (!bar) return;
 
-    if (count === 0) {
-        bar.style.display = 'none';
+    const folderCount = window.selectedFolderKeys ? window.selectedFolderKeys.size : 0;
+    const photoCount = window.selectedPhotoIds ? window.selectedPhotoIds.size : 0;
+
+    // 1. 폴더 선택 모드
+    if (folderCount > 0) {
+        bar.style.display = 'flex';
+        if (countBadge) countBadge.textContent = folderCount;
+        if (labelBadge) labelBadge.textContent = '폴더 선택됨';
+        if (photoGroup) photoGroup.style.display = 'none';
+        if (folderGroup) folderGroup.style.display = 'flex';
+
+        const isTrash = window.galleryTabState === 'TRASH';
+        const isCompleted = window.galleryTabState === 'COMPLETED';
+
+        const btnTrash = document.getElementById('btnFolderActionTrash');
+        const btnComplete = document.getElementById('btnFolderActionComplete');
+        const btnCompleteText = document.getElementById('btnFolderActionCompleteText');
+        const btnDuplicates = document.getElementById('btnFolderActionDuplicates');
+
+        if (isTrash) {
+            if (btnTrash) btnTrash.style.display = 'none';
+            if (btnComplete) {
+                btnComplete.style.display = 'inline-flex';
+                btnComplete.className = 'ctnr-act-btn btn-purple-light';
+            }
+            if (btnCompleteText) btnCompleteText.textContent = '복구';
+            if (btnDuplicates) btnDuplicates.style.display = 'none';
+        } else if (isCompleted) {
+            if (btnTrash) btnTrash.style.display = 'inline-flex';
+            if (btnComplete) {
+                btnComplete.style.display = 'inline-flex';
+                btnComplete.className = 'ctnr-act-btn btn-amber-light';
+            }
+            if (btnCompleteText) btnCompleteText.textContent = '완료 취소';
+            if (btnDuplicates) btnDuplicates.style.display = 'none';
+        } else {
+            if (btnTrash) btnTrash.style.display = 'inline-flex';
+            if (btnComplete) {
+                btnComplete.style.display = 'inline-flex';
+                btnComplete.className = 'ctnr-act-btn btn-emerald-light';
+            }
+            if (btnCompleteText) btnCompleteText.textContent = '완료 처리';
+            if (btnDuplicates) btnDuplicates.style.display = 'inline-flex';
+        }
         return;
     }
 
-    bar.style.display = 'flex';
-    if (countBadge) countBadge.textContent = count;
+    // 2. 사진 선택 모드
+    if (photoCount > 0) {
+        bar.style.display = 'flex';
+        if (countBadge) countBadge.textContent = photoCount;
+        if (labelBadge) labelBadge.textContent = '사진 선택됨';
+        if (photoGroup) photoGroup.style.display = 'flex';
+        if (folderGroup) folderGroup.style.display = 'none';
 
-    // 선택된 사진들의 씰 상태 분석
-    const selectedPhotos = window.currentGalleryPhotos.filter(p => window.selectedPhotoIds.has(String(p.id)));
-    const hasNormal = selectedPhotos.some(p => p.photo_type !== 'seal');
-    if (sealText) {
-        sealText.textContent = hasNormal ? '씰 지정' : '씰 해제';
+        const sealText = document.getElementById('btnActionSealText');
+        const selectedPhotos = (window.currentGalleryPhotos || []).filter(p => window.selectedPhotoIds.has(String(p.id)));
+        const hasNormal = selectedPhotos.some(p => p.photo_type !== 'seal');
+        if (sealText) {
+            sealText.textContent = hasNormal ? '씰 지정' : '씰 해제';
+        }
+        return;
+    }
+
+    // 3. 아무것도 선택 안 됨
+    bar.style.display = 'none';
+};
+
+// [폴더 액션 1] 선택한 폴더 일괄 삭제 (휴지통 이동)
+window.handleDeleteSelectedFolders = async function() {
+    const keys = Array.from(window.selectedFolderKeys);
+    if (keys.length === 0) return;
+    const cntrNos = Array.from(new Set(keys.map(k => k.split('|')[0])));
+
+    if (!confirm(`선택한 ${cntrNos.length}개 컨테이너 폴더와 모든 사진을 삭제(휴지통 이동)하시겠습니까?`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'trash_folder',
+                cntrNos: cntrNos
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.clearAllGallerySelection();
+            await window.loadPhotoGallery();
+            if (window.fetchContainerPhotoCounts) window.fetchContainerPhotoCounts();
+        } else {
+            alert(`삭제 실패: ${data.error || data.message}`);
+        }
+    } catch (err) {
+        alert("폴더 삭제 중 오류가 발생했습니다: " + err.message);
+    }
+};
+
+// [폴더 액션 2] 선택한 폴더 일괄 완료 처리 / 완료 취소 / 복구
+window.handleToggleSelectedFoldersCompletion = async function() {
+    const keys = Array.from(window.selectedFolderKeys);
+    if (keys.length === 0) return;
+    const cntrNos = Array.from(new Set(keys.map(k => k.split('|')[0])));
+
+    const isTrash = window.galleryTabState === 'TRASH';
+    const isCompleted = window.galleryTabState === 'COMPLETED';
+
+    if (isTrash) {
+        // 복구 처리
+        if (!confirm(`선택한 ${cntrNos.length}개 컨테이너 폴더를 복구하시겠습니까?`)) return;
+        try {
+            const res = await fetch(`${API_BASE}/api/photos`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'restore_folder', cntrNos: cntrNos })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.clearAllGallerySelection();
+                await window.loadPhotoGallery();
+                if (window.fetchContainerPhotoCounts) window.fetchContainerPhotoCounts();
+            } else {
+                alert(`복구 실패: ${data.error || data.message}`);
+            }
+        } catch (e) {
+            alert("복구 중 오류가 발생했습니다: " + e.message);
+        }
+        return;
+    }
+
+    const targetCompleted = !isCompleted;
+    const actionName = targetCompleted ? '완료 처리' : '완료 취소(진행 중으로 되돌리기)';
+    if (!confirm(`선택한 ${cntrNos.length}개 컨테이너 작업을 ${actionName}하시겠습니까?`)) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'toggle_complete_folder',
+                cntrNos: cntrNos,
+                isCompleted: targetCompleted
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.clearAllGallerySelection();
+            await window.loadPhotoGallery();
+        } else {
+            alert(`상태 변경 실패: ${data.error || data.message}`);
+        }
+    } catch (e) {
+        alert("상태 변경 중 오류: " + e.message);
+    }
+};
+
+// [폴더 액션 3] 선택한 폴더 중복 사진 정리
+window.handleCleanupSelectedFoldersDuplicates = async function() {
+    const keys = Array.from(window.selectedFolderKeys);
+    if (keys.length === 0) return;
+    const cntrNos = Array.from(new Set(keys.map(k => k.split('|')[0])));
+
+    if (!confirm(`선택한 ${cntrNos.length}개 폴더 내의 중복 업로드된 사진을 자동으로 감지하여 정리(휴지통 이동)하시겠습니까?`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos/duplicates`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cntrNos: cntrNos })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message || `성공적으로 중복 사진 ${data.cleanedCount}장을 정리했습니다.`);
+            window.clearAllGallerySelection();
+            await window.loadPhotoGallery();
+        } else {
+            alert(`중복 정리 실패: ${data.error || data.message}`);
+        }
+    } catch (e) {
+        alert("중복 사진 정리 중 오류: " + e.message);
+    }
+};
+
+// [폴더 액션 4] 선택한 폴더 조 변경 모달 열기
+window.handleOpenChangeTeamModalForFolders = function() {
+    const keys = Array.from(window.selectedFolderKeys);
+    if (keys.length === 0) return;
+    const countEl = document.getElementById('changeTeamPhotoCount');
+    if (countEl) countEl.textContent = `${keys.length}개 폴더`;
+
+    window.handleOpenChangeTeamModal();
+};
+
+// [폴더 액션 5] 선택한 폴더 로컬 복사 모달 열기
+window.handleOpenLocalCopyModalForFolders = function() {
+    const keys = Array.from(window.selectedFolderKeys);
+    if (keys.length === 0) return;
+    const countEl = document.getElementById('localCopyPhotoCount');
+    if (countEl) countEl.textContent = `${keys.length}개 폴더`;
+
+    window.handleOpenLocalCopyModal();
+};
+
+// [폴더 액션 6] 선택한 폴더 사진 일괄 다운로드
+window.handleDownloadSelectedFolders = async function() {
+    const keys = Array.from(window.selectedFolderKeys);
+    if (keys.length === 0) return;
+    const cntrNos = new Set(keys.map(k => k.split('|')[0]));
+
+    const targetPhotos = (window.currentGalleryPhotos || []).filter(p => cntrNos.has((p.cntr_no || '').toUpperCase().trim()));
+    if (targetPhotos.length === 0) {
+        alert("다운로드할 사진이 없습니다.");
+        return;
+    }
+
+    if (!confirm(`선택한 ${cntrNos.size}개 컨테이너의 사진 총 ${targetPhotos.length}장을 다운로드하시겠습니까?`)) {
+        return;
+    }
+
+    for (let i = 0; i < targetPhotos.length; i++) {
+        const p = targetPhotos[i];
+        const rawPath = (p.photo_path || '').split('?')[0];
+        const downloadUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(rawPath)}&download=1`;
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = rawPath.split('/').pop() || 'photo.jpg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        if (targetPhotos.length > 1) {
+            await new Promise(r => setTimeout(r, 200));
+        }
     }
 };
 
@@ -11507,13 +11866,14 @@ window.handleBatchToggleSealPhoto = async function() {
 // 3. 작업 조(팀) 변경 모달 & 실행
 window.selectedTargetTeamId = null;
 window.handleOpenChangeTeamModal = async function() {
-    const count = window.selectedPhotoIds.size;
+    const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
+    const count = isFolderMode ? window.selectedFolderKeys.size : window.selectedPhotoIds.size;
     if (count === 0) {
-        alert("작업 조를 변경할 사진을 선택해 주세요.");
+        alert("작업 조를 변경할 폴더 또는 사진을 선택해 주세요.");
         return;
     }
     const countEl = document.getElementById('changeTeamPhotoCount');
-    if (countEl) countEl.textContent = count;
+    if (countEl) countEl.textContent = isFolderMode ? `${count}개 폴더` : `${count}장`;
 
     try {
         const res = await fetch(`${API_BASE}/api/teams`);
@@ -11564,6 +11924,35 @@ window.closeChangeTeamModal = function() {
 };
 
 window.executeChangeTeam = async function() {
+    const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
+    
+    if (isFolderMode) {
+        const keys = Array.from(window.selectedFolderKeys);
+        const cntrNos = Array.from(new Set(keys.map(k => k.split('|')[0])));
+        try {
+            const res = await fetch(`${API_BASE}/api/photos`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'change_team_folder',
+                    cntrNos: cntrNos,
+                    teamId: window.selectedTargetTeamId
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.closeChangeTeamModal();
+                window.clearAllGallerySelection();
+                await window.loadPhotoGallery();
+            } else {
+                alert(`조 변경 실패: ${data.error || data.message}`);
+            }
+        } catch (e) {
+            alert("조 변경 중 오류: " + e.message);
+        }
+        return;
+    }
+
     const ids = Array.from(window.selectedPhotoIds);
     if (ids.length === 0) return;
 
@@ -11656,10 +12045,11 @@ window.handleDownloadSelectedPhotos = async function() {
 
     for (let i = 0; i < selectedPhotos.length; i++) {
         const p = selectedPhotos[i];
-        const downloadUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(p.photo_path)}&download=1`;
+        const rawPath = (p.photo_path || '').split('?')[0];
+        const downloadUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(rawPath)}&download=1`;
         const a = document.createElement('a');
         a.href = downloadUrl;
-        a.download = p.photo_path.split('/').pop() || 'photo.jpg';
+        a.download = rawPath.split('/').pop() || 'photo.jpg';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -11671,13 +12061,14 @@ window.handleDownloadSelectedPhotos = async function() {
 
 // 6. 로컬 폴더 복사 모달 & 실행
 window.handleOpenLocalCopyModal = function() {
-    const count = window.selectedPhotoIds.size;
+    const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
+    const count = isFolderMode ? window.selectedFolderKeys.size : window.selectedPhotoIds.size;
     if (count === 0) {
-        alert("복사할 사진을 선택해 주세요.");
+        alert("복사할 폴더 또는 사진을 선택해 주세요.");
         return;
     }
     const countEl = document.getElementById('localCopyPhotoCount');
-    if (countEl) countEl.textContent = count;
+    if (countEl) countEl.textContent = isFolderMode ? `${count}개 폴더` : `${count}장`;
     const inputEl = document.getElementById('inputLocalCopyPath');
     if (inputEl) {
         inputEl.value = localStorage.getItem('lastPhotoLocalCopyPath') || 'W:\\helpdesk\\사진보관';
@@ -11691,12 +12082,27 @@ window.closeLocalCopyModal = function() {
 };
 
 window.executeLocalCopy = async function() {
-    const ids = Array.from(window.selectedPhotoIds);
+    const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
+    let ids = [];
+
+    if (isFolderMode) {
+        const keys = Array.from(window.selectedFolderKeys);
+        const cntrNos = new Set(keys.map(k => k.split('|')[0]));
+        const photos = (window.currentGalleryPhotos || []).filter(p => cntrNos.has((p.cntr_no || '').toUpperCase().trim()));
+        ids = photos.map(p => p.id);
+    } else {
+        ids = Array.from(window.selectedPhotoIds);
+    }
+
     const targetPath = document.getElementById('inputLocalCopyPath')?.value?.trim();
     const conflictAction = document.querySelector('input[name="localCopyConflict"]:checked')?.value || 'overwrite';
 
     if (!targetPath) {
         alert("대상 로컬 폴더 경로를 입력해 주세요.");
+        return;
+    }
+    if (ids.length === 0) {
+        alert("복사할 대상 사진이 없습니다.");
         return;
     }
     localStorage.setItem('lastPhotoLocalCopyPath', targetPath);
@@ -12246,6 +12652,8 @@ window.renderGalleryPhotos = function() {
         const dateFolders = dateMap[dateStr];
         const totalDatePhotos = dateFolders.reduce((sum, f) => sum + f.photos.length, 0);
         const dayNum = parseInt(dateStr.split('-')[2] || '0', 10);
+        const dateSelectedCount = dateFolders.filter(f => window.selectedFolderKeys && window.selectedFolderKeys.has(`${f.cntrNo}|${f.workDateStr}`)).length;
+        const allDateSelected = (dateFolders.length > 0 && dateSelectedCount === dateFolders.length);
 
         // 조(Team)별 그룹핑
         const teamMap = {};
@@ -12258,17 +12666,17 @@ window.renderGalleryPhotos = function() {
         const sortedTeamNames = Object.keys(teamMap).sort((a, b) => a.localeCompare(b, 'ko-KR'));
 
         html += `
-            <div class="ctnr-date-card">
+            <div class="ctnr-date-card" data-date-str="${dateStr}">
                 <!-- Date Section Header -->
-                <div class="ctnr-date-header">
+                <div class="ctnr-date-header" data-date-group="${dateStr}">
                     <div class="ctnr-date-title-box">
                         <div class="ctnr-date-title">
                             <i class="fas fa-calendar-alt" style="color:#0284c7;"></i>
                             <span>${formatKoreanDate(dateStr)} 작업</span>
                         </div>
-                        <button class="ctnr-date-btn-select-all" onclick="event.stopPropagation()">
-                            <input type="checkbox" style="cursor:pointer; margin:0;" onchange="event.stopPropagation()">
-                            <span>${dayNum}일 전체 선택 (0/${dateFolders.length})</span>
+                        <button class="ctnr-date-btn-select-all" onclick="window.toggleDateGroupFolders('${dateStr}', event)">
+                            <input type="checkbox" style="cursor:pointer; margin:0;" ${allDateSelected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="window.toggleDateGroupFolders('${dateStr}', event)">
+                            <span>${dayNum}일 전체 선택 (${dateSelectedCount}/${dateFolders.length})</span>
                         </button>
                         <span class="ctnr-date-info-summary">
                             컨테이너 <strong>${dateFolders.length}개</strong> · 총 <strong>${totalDatePhotos}장</strong>
@@ -12280,18 +12688,25 @@ window.renderGalleryPhotos = function() {
                 ${sortedTeamNames.map(tName => {
                     const tFolders = teamMap[tName];
                     const tPhotosCount = tFolders.reduce((sum, f) => sum + f.photos.length, 0);
+                    const tSelectedCount = tFolders.filter(f => window.selectedFolderKeys && window.selectedFolderKeys.has(`${f.cntrNo}|${f.workDateStr}`)).length;
+                    const allTeamSelected = (tFolders.length > 0 && tSelectedCount === tFolders.length);
 
                     return `
-                        <div class="ctnr-team-card">
-                            <div class="ctnr-team-header">
+                        <div class="ctnr-team-card" data-date-group="${dateStr}" data-team-group="${tName}">
+                            <div class="ctnr-team-header" style="display:flex; justify-content:space-between; align-items:center;">
                                 <div class="ctnr-team-title">
                                     <i class="fas fa-user-friends"></i>
                                     <span>${tName}</span>
                                     <span class="ctnr-team-summary">(${tFolders.length}개 컨테이너 · ${tPhotosCount}장)</span>
                                 </div>
+                                <button class="ctnr-team-btn-select-all" onclick="window.toggleTeamGroupFolders('${dateStr}', '${tName}', event)">
+                                    ${allTeamSelected ? '전체 해제' : '전체 선택'}
+                                </button>
                             </div>
                             <div class="ctnr-folders-grid">
                                 ${tFolders.map(f => {
+                                    const folderKey = `${f.cntrNo}|${f.workDateStr}`;
+                                    const isFolderSelected = window.selectedFolderKeys && window.selectedFolderKeys.has(folderKey);
                                     const cleanCarrier = f.transporter ? (f.transporter.includes('천마') ? '천마' : (f.transporter.includes('BNI') || f.transporter.includes('비엔아이') ? 'BNI' : f.transporter.split('(')[0])) : '';
                                     const timeStr = f.lastUploadedAt ? new Date(f.lastUploadedAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
 
@@ -12323,10 +12738,10 @@ window.renderGalleryPhotos = function() {
                                     }
 
                                     return `
-                                        <div class="ctnr-folder-item" onclick="window.openContainerFolderPhotos('${f.cntrNo}', '${f.workDateStr}')" title="클릭하여 '${f.cntrNo}' 사진 ${f.photos.length}장 보기">
+                                        <div class="ctnr-folder-item ${isFolderSelected ? 'selected' : ''}" data-folder-key="${folderKey}" onclick="window.handleFolderCardClick('${folderKey}', '${f.cntrNo}', '${f.workDateStr}', event)" title="클릭하여 '${f.cntrNo}' 사진 ${f.photos.length}장 보기">
                                             <div class="ctnr-folder-top-row">
                                                 <div class="ctnr-folder-left-info">
-                                                    <input type="checkbox" class="ctnr-folder-chk" onclick="event.stopPropagation()">
+                                                    <input type="checkbox" class="ctnr-folder-chk" ${isFolderSelected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="window.toggleFolderSelect('${folderKey}', event)">
                                                     <i class="fas fa-folder" style="color:#38bdf8; font-size:1rem;"></i>
                                                     <strong class="ctnr-folder-name-red">${f.cntrNo}</strong>
                                                     ${cleanCarrier ? `<span class="ctnr-folder-carrier-tag">[${cleanCarrier}]</span>` : ''}
@@ -12352,6 +12767,7 @@ window.renderGalleryPhotos = function() {
     });
     html += '</div>';
     listEl.innerHTML = html;
+    window.updateGalleryActionBar();
 };
 
 window.filterPhotoGallery = function() {

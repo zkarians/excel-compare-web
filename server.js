@@ -3082,17 +3082,24 @@ app.patch('/api/photos', async (req, res) => {
             });
         }
 
-        // 6. 폴더 단위 완료 토글
-        if (action === 'toggle_complete_folder' && cntrNo) {
+        // 6. 폴더 단위 완료 토글 (단일 및 다중 지원)
+        if (action === 'toggle_complete_folder') {
             const targetCompleted = !!isCompleted;
             const completedAt = targetCompleted ? new Date() : null;
-            await pool.query(
-                `UPDATE container_photos 
-                 SET is_completed = $1, completed_at = $2 
-                 WHERE cntr_no = $3`,
-                [targetCompleted, completedAt, cntrNo.toUpperCase().trim()]
-            );
-            return res.json({ success: true, message: `컨테이너 '${cntrNo}' 작업 상태가 변경되었습니다.` });
+            const targetList = Array.isArray(req.body.cntrNos) ? req.body.cntrNos.map(c => String(c).toUpperCase().trim()) : (cntrNo ? [cntrNo.toUpperCase().trim()] : []);
+
+            if (targetList.length > 0) {
+                await pool.query(
+                    `UPDATE container_photos 
+                     SET is_completed = $1, completed_at = $2 
+                     WHERE cntr_no = ANY($3)`,
+                    [targetCompleted, completedAt, targetList]
+                );
+                return res.json({ 
+                    success: true, 
+                    message: `${targetList.length}개 컨테이너 폴더가 [${targetCompleted ? '완료' : '진행 중'}](으)로 변경되었습니다.` 
+                });
+            }
         }
 
         // 7. 개별 사진 완료 토글
@@ -3108,26 +3115,135 @@ app.patch('/api/photos', async (req, res) => {
             return res.json({ success: true, message: `선택한 사진 ${ids.length}장 작업 상태가 변경되었습니다.` });
         }
 
-        // 8. 폴더 단위 삭제 / 복구
-        if (action === 'trash_folder' && cntrNo) {
-            await pool.query(
-                `UPDATE container_photos SET is_deleted = true WHERE cntr_no = $1`,
-                [cntrNo.toUpperCase().trim()]
-            );
-            return res.json({ success: true, message: `컨테이너 '${cntrNo}' 사진이 휴지통으로 이동되었습니다.` });
+        // 8. 폴더 단위 삭제 / 복구 (단일 및 다중 지원)
+        if (action === 'trash_folder') {
+            const targetList = Array.isArray(req.body.cntrNos) ? req.body.cntrNos.map(c => String(c).toUpperCase().trim()) : (cntrNo ? [cntrNo.toUpperCase().trim()] : []);
+            if (targetList.length > 0) {
+                await pool.query(
+                    `UPDATE container_photos SET is_deleted = true WHERE cntr_no = ANY($1)`,
+                    [targetList]
+                );
+                return res.json({ success: true, message: `${targetList.length}개 컨테이너 폴더가 휴지통으로 이동되었습니다.` });
+            }
         }
 
-        if (action === 'restore_folder' && cntrNo) {
-            await pool.query(
-                `UPDATE container_photos SET is_deleted = false WHERE cntr_no = $1`,
-                [cntrNo.toUpperCase().trim()]
-            );
-            return res.json({ success: true, message: `컨테이너 '${cntrNo}' 사진이 복구되었습니다.` });
+        if (action === 'restore_folder') {
+            const targetList = Array.isArray(req.body.cntrNos) ? req.body.cntrNos.map(c => String(c).toUpperCase().trim()) : (cntrNo ? [cntrNo.toUpperCase().trim()] : []);
+            if (targetList.length > 0) {
+                await pool.query(
+                    `UPDATE container_photos SET is_deleted = false WHERE cntr_no = ANY($1)`,
+                    [targetList]
+                );
+                return res.json({ success: true, message: `${targetList.length}개 컨테이너 폴더가 복구되었습니다.` });
+            }
+        }
+
+        // 9. 폴더 단위 작업 조(Team) 일괄 변경
+        if (action === 'change_team_folder') {
+            const targetList = Array.isArray(req.body.cntrNos) ? req.body.cntrNos.map(c => String(c).toUpperCase().trim()) : (cntrNo ? [cntrNo.toUpperCase().trim()] : []);
+            const targetTeamId = (teamId !== undefined && teamId !== null && teamId !== '' && teamId !== 'null') ? parseInt(String(teamId), 10) : null;
+            if (targetList.length > 0) {
+                await pool.query(
+                    `UPDATE container_photos SET team_id = $1 WHERE cntr_no = ANY($2)`,
+                    [targetTeamId, targetList]
+                );
+                let teamName = '미지정 조';
+                if (targetTeamId) {
+                    try {
+                        const tRes = await pool.query(`SELECT name FROM teams WHERE id = $1`, [targetTeamId]);
+                        if (tRes.rows.length > 0) teamName = tRes.rows[0].name;
+                    } catch (e) {}
+                }
+                return res.json({
+                    success: true,
+                    count: targetList.length,
+                    teamId: targetTeamId,
+                    teamName,
+                    message: `${targetList.length}개 폴더의 작업 조가 [${teamName}](으)로 변경되었습니다.`
+                });
+            }
         }
 
         res.status(400).json({ success: false, error: 'Unknown action' });
     } catch (err) {
         console.error("PATCH /api/photos error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 중복 사진 정리 API (CTNR 동일 기능)
+app.post('/api/photos/duplicates', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const { cntrNo, folders, cntrNos } = req.body;
+        const targetCntrs = [];
+
+        if (Array.isArray(cntrNos) && cntrNos.length > 0) {
+            cntrNos.forEach(c => targetCntrs.push(String(c).toUpperCase().trim()));
+        } else if (Array.isArray(folders) && folders.length > 0) {
+            folders.forEach(f => {
+                const c = (typeof f === 'string' ? f.split('|')[0] : f.cntrNo);
+                if (c) targetCntrs.push(String(c).toUpperCase().trim());
+            });
+        } else if (cntrNo) {
+            targetCntrs.push(String(cntrNo).toUpperCase().trim());
+        }
+
+        if (targetCntrs.length === 0) {
+            return res.status(400).json({ success: false, error: '정리할 컨테이너가 지정되지 않았습니다.' });
+        }
+
+        const pRes = await pool.query(
+            `SELECT id, photo_path, cntr_no, uploaded_at 
+             FROM container_photos 
+             WHERE cntr_no = ANY($1) AND (is_deleted IS NOT TRUE)
+             ORDER BY uploaded_at ASC, id ASC`,
+            [targetCntrs]
+        );
+
+        const crypto = require('crypto');
+        const getFileMd5 = (filePath) => {
+            try {
+                if (!fs.existsSync(filePath)) return null;
+                const buf = fs.readFileSync(filePath);
+                return crypto.createHash('md5').update(buf).digest('hex');
+            } catch (e) {
+                return null;
+            }
+        };
+
+        const duplicateIds = [];
+        const seenHashMap = {};
+
+        for (const row of pRes.rows) {
+            const fullPath = path.resolve(CTNR_UPLOADS_DIR, row.photo_path);
+            const hash = getFileMd5(fullPath);
+            if (hash) {
+                const key = `${row.cntr_no}_${hash}`;
+                if (seenHashMap[key]) {
+                    duplicateIds.push(row.id);
+                } else {
+                    seenHashMap[key] = row.id;
+                }
+            }
+        }
+
+        let cleanedCount = 0;
+        if (duplicateIds.length > 0) {
+            await pool.query(
+                `UPDATE container_photos SET is_deleted = true WHERE id = ANY($1)`,
+                [duplicateIds]
+            );
+            cleanedCount = duplicateIds.length;
+        }
+
+        res.json({
+            success: true,
+            cleanedCount,
+            message: `성공적으로 중복 사진 ${cleanedCount}장을 정리(휴지통 이동)했습니다.`
+        });
+    } catch (err) {
+        console.error("POST /api/photos/duplicates error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
