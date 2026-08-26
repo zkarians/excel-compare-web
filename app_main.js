@@ -5959,6 +5959,24 @@ function displayResults(results, isDbMode = false) {
                             else if (oRaw > 0) curUnitW = oRaw / planQty;
                         }
 
+                        // 해당 컨테이너 전체 작업 총중량 및 총수량 집계
+                        let cntrTotalW = 0;
+                        let cntrTotalQty = 0;
+                        const cleanCntr = (res.cntrNo || '').trim();
+                        if (cleanCntr && typeof comparisonResult !== 'undefined' && Array.isArray(comparisonResult)) {
+                            const cntrItems = comparisonResult.filter(it => (it.cntrNo || '').trim() === cleanCntr);
+                            if (cntrItems.length > 0) {
+                                cntrTotalW = cntrItems.reduce((sum, it) => {
+                                    const w = parseFloat(it.weights?.down || it.weights?.mixed || it.weights?.orig) || 0;
+                                    return sum + w;
+                                }, 0);
+                                cntrTotalQty = cntrItems.reduce((sum, it) => {
+                                    const q = (it.qtyInfo?.plan || it.qtyInfo?.origPlan || it.qtyInfo?.load || 0);
+                                    return sum + q;
+                                }, 0);
+                            }
+                        }
+
                         const lines = [];
                         if (dbUnitW !== undefined && !isNaN(dbUnitW) && dbUnitW > 0) {
                             lines.push(`• DB 마스터 개별중량: ${dbUnitW.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg/EA`);
@@ -5971,15 +5989,19 @@ function displayResults(results, isDbMode = false) {
                             }
                         }
                         if (planQty > 0) {
-                            lines.push(`• 작업 수량: ${planQty.toLocaleString()} EA`);
+                            lines.push(`• 품목 작업수량: ${planQty.toLocaleString()} EA`);
                         }
                         const totalW = dRaw > 0 ? dRaw : oRaw;
                         if (totalW > 0) {
-                            lines.push(`• 총 중량: ${totalW.toLocaleString()} kg`);
+                            lines.push(`• 품목 합계중량: ${totalW.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`);
+                        }
+                        if (cntrTotalW > 0) {
+                            lines.push(`────────────────────`);
+                            lines.push(`📦 [${cleanCntr}] 컨테이너 작업총중량: ${cntrTotalW.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg (총 ${cntrTotalQty.toLocaleString()} EA)`);
                         }
 
                         if (lines.length > 0) {
-                            const tooltipContent = `[개별중량 정보]\n` + lines.join('\n');
+                            const tooltipContent = `[중량 및 작업 상세 정보]\n` + lines.join('\n');
                             return `title="${tooltipContent.replace(/"/g, '&quot;')}" style="text-align: right; vertical-align: middle; padding: 4px 6px; cursor: help;"`;
                         }
                         return `style="text-align: right; vertical-align: middle; padding: 4px 6px;"`;
