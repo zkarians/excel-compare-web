@@ -5973,15 +5973,17 @@ function displayResults(results, isDbMode = false) {
                     <td style="text-align: center; color: ${/^(US|CA)/i.test(res.destination.val) ? 'inherit' : '#ef4444'}; font-weight: ${/^(US|CA)/i.test(res.destination.val) ? 'normal' : 'bold'};">
                         ${typeof renderDestinationHtml === 'function' ? renderDestinationHtml(null, res.destination.val, false) : res.destination.val}
                     </td>
-                    <td style="color: ${effectiveCntrColor}; ${hasPop ? 'font-style:italic;' : ''}">
-                        <div style="display: flex; align-items: center; gap: 4px;">
-                            <strong onclick="window.copyToClipboard('${res.cntrNo.replace(/'/g, "\\'")}', '컨테이너')" 
-                                    style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
-                                    title="클릭하여 컨테이너 복사"
-                                    class="copyable-item">${res.cntrNo}</strong>
-                            ${typeof window.renderContainerPhotoBtn === 'function' ? window.renderContainerPhotoBtn(res.cntrNo) : ''}
-                            ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; margin-left:3px; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
-                            ${hasPop ? `<span style="display:inline-block;margin-left:3px;font-size:0.65rem;background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;border-radius:4px;padding:0px 4px;vertical-align:middle;">POP</span>` : ''}
+                    <td style="color: ${effectiveCntrColor}; ${hasPop ? 'font-style:italic;' : ''}; padding: 6px 8px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%;">
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <strong onclick="window.copyToClipboard('${res.cntrNo.replace(/'/g, "\\'")}', '컨테이너')" 
+                                        style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
+                                        title="클릭하여 컨테이너 복사"
+                                        class="copyable-item">${res.cntrNo}</strong>
+                                ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
+                                ${hasPop ? `<span style="display:inline-block;font-size:0.65rem;background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;border-radius:4px;padding:0px 4px;vertical-align:middle;">POP</span>` : ''}
+                            </div>
+                            ${typeof window.renderContainerPhotoBtn === 'function' ? window.renderContainerPhotoBtn(res.cntrNo, { iconOnly: true }) : ''}
                         </div>
                     </td>
                     <td style="text-align: center; color: #3b82f6; font-weight: 500;">${res.sealNo || '-'}</td>
@@ -11671,7 +11673,7 @@ window.fetchContainerPhotoCounts = async function() {
     }
 };
 
-window.renderContainerPhotoBtn = function(cntrNo) {
+window.renderContainerPhotoBtn = function(cntrNo, options = {}) {
     if (!cntrNo) return '';
     const cleanCntr = cntrNo.trim().toUpperCase();
     const info = window.containerPhotoCounts ? window.containerPhotoCounts[cleanCntr] : null;
@@ -11703,6 +11705,10 @@ window.renderContainerPhotoBtn = function(cntrNo) {
     } else {
         colorClass = 'badge-blue'; // 1. 씰사진 없음 (파란색)
         titleText = `사진 ${total}장 (일반 ${normal}장 / 씰사진 미등록)`;
+    }
+
+    if (options && options.iconOnly) {
+        return `<button class="btn-cntr-photo btn-cntr-photo-icon-only ${colorClass}" onclick="window.openContainerPhotoModal('${cleanCntr.replace(/'/g, "\\'")}', event)" title="${titleText}"><i class="fas fa-camera"></i></button>`;
     }
 
     return `<button class="btn-cntr-photo ${colorClass}" onclick="window.openContainerPhotoModal('${cleanCntr.replace(/'/g, "\\'")}', event)" title="${titleText}"><i class="fas fa-camera"></i> <span class="photo-badge-num">${total}</span></button>`;
