@@ -4035,48 +4035,44 @@ async function handleAutoLoad(type) {
         inputEl = pathWarehouse; statusEl = statusWarehouseStock; lastEl = lastWarehouseStock; reloadBtn = btnReloadWarehouse; storageKey = 'dirWarehouse';
     }
 
-    let pathVal = inputEl.value.trim();
+    let pathVal = inputEl ? inputEl.value.trim() : "";
     let dirPath = "";
 
-    if (pathVal) {
-        // 입력값에서 디렉토리 추출 (파일일 경우를 대비)
+    if (pathVal && !pathVal.startsWith('선택된 파일:')) {
         const lastSlash = Math.max(pathVal.lastIndexOf('/'), pathVal.lastIndexOf('\\'));
-        // 확장자가 있으면(.xlsx 등) 파일로 간주하고 디렉토리만 추출
-        if (pathVal.toLowerCase().endsWith('.xlsx') || pathVal.toLowerCase().endsWith('.xls')) {
+        if (pathVal.toLowerCase().endsWith('.xlsx') || pathVal.toLowerCase().endsWith('.xls') || pathVal.toLowerCase().endsWith('.xlsm')) {
             dirPath = lastSlash !== -1 ? pathVal.substring(0, lastSlash) : pathVal;
         } else {
-            dirPath = pathVal; // 이미 디렉토리인 경우
+            dirPath = pathVal;
         }
     } else {
-        dirPath = localStorage.getItem(storageKey);
+        dirPath = localStorage.getItem(storageKey) || "";
     }
 
-    if (!dirPath) {
-        alert("폴더 경로를 입력하거나 파일을 먼저 선택해주세요.");
-        inputEl.focus();
-        return;
-    }
+    const typeKor = type === 'original' ? '원본' : (type === 'download' ? '전산(다운로드)' : (type === 'warehouse' ? '창고재고' : '재작업'));
 
     try {
-        // 클라우드 버전에서 로컬 경로(Y:\, C:\ 등) 접근 시도 감지 및 경고
-        const isLocalPath = /^[a-zA-Z]:\\/.test(dirPath) || dirPath.startsWith('\\\\');
-        const isRemoteServer = !window.isElectron && window.location.hostname !== 'localhost';
-
-        if (isLocalPath && isRemoteServer) {
-            alert("⚠️ 현재 웹(클라우드) 버전에서는 내 컴퓨터의 로컬 폴더(Y:, C: 등)에 직접 접근할 수 없습니다.\n\n" +
-                "로컬 폴더 자동 불러오기 기능을 사용하려면:\n" +
-                "1. 일렉트론(내 PC 실행용) 프로그램을 사용하시거나\n" +
-                "2. 파일을 아래 '파일 선택' 버튼으로 직접 업로드해 주세요.");
-            return;
-        }
-
-        statusEl.textContent = `상태: ${type === 'original' ? '원본' : '전산'} 최신 파일 탐색 중...`;
+        statusEl.innerHTML = `<i class="fas fa-spinner fa-spin" style="color:#3b82f6; margin-right:4px;"></i>상태: ${typeKor} 최신 파일 탐색 중...`;
         statusEl.style.color = '#3b82f6';
 
-        const response = await fetch(`${API_BASE}/api/load-latest-from-dir?dirPath=${encodeURIComponent(dirPath)}&t=${Date.now()}`);
+        let response = await fetch(`${API_BASE}/api/load-latest-from-dir?dirPath=${encodeURIComponent(dirPath)}&t=${Date.now()}`);
+
+        // 경로를 찾지 못한 경우 사용자에게 폴더 입력 요청
+        if (!response.ok) {
+            const defaultPrompt = dirPath || (localStorage.getItem(storageKey) || "C:\\Users\\Administrator\\Downloads");
+            const inputDir = prompt(`[${typeKor}] 엑셀 파일이 저장되는 폴더 경로를 입력해주세요.\n(예: C:\\Users\\Administrator\\Downloads)`, defaultPrompt);
+            if (!inputDir || !inputDir.trim()) {
+                statusEl.innerHTML = `상태: 대기 중`;
+                statusEl.style.color = '#64748b';
+                return;
+            }
+            dirPath = inputDir.trim();
+            localStorage.setItem(storageKey, dirPath);
+            response = await fetch(`${API_BASE}/api/load-latest-from-dir?dirPath=${encodeURIComponent(dirPath)}&t=${Date.now()}`);
+        }
 
         if (!response.ok) {
-            let errMsg = `파일을 찾을 수 없습니다. 경로를 확인해주세요.`;
+            let errMsg = `파일을 찾을 수 없습니다. 폴더 경로를 확인해주세요.`;
             try {
                 const errData = await response.json();
                 if (errData && errData.message) errMsg = errData.message;
@@ -4092,6 +4088,10 @@ async function handleAutoLoad(type) {
             for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
             const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const file = new File([blob], result.fileName, { type: blob.type });
+
+            // 메모리 캐시에 보관 (불러오기 버튼 연동)
+            window.savedRawFiles = window.savedRawFiles || {};
+            window.savedRawFiles[type] = file;
 
             const parsed = await readExcelFile(file, type);
             if (type === 'original') {
@@ -4110,39 +4110,34 @@ async function handleAutoLoad(type) {
                 localStorage.setItem('lastReworkName', result.fileName);
                 if (btnClearRework) btnClearRework.style.display = 'inline-block';
             } else if (type === 'warehouse') {
-                // 창고재고는 parsed 데이터 외에 추가 처리 필요 (dongPrefixes 등)
-                // loadNativeWarehouseFile 로직과 합치는게 좋음
                 await loadNativeWarehouseFile(result.fullPath);
-                return; // loadNativeWarehouseFile에서 UI 업데이트함
+                return;
             }
 
             statusEl.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${result.fileName})`;
             statusEl.style.color = '#059669';
-            lastEl.textContent = `최근 사용: ${result.fileName}`;
-            reloadBtn.style.display = 'inline-block';
+            if (lastEl) lastEl.textContent = `최근 사용: ${result.fileName}`;
+            if (reloadBtn) reloadBtn.style.display = 'inline-block';
 
             if (result.fullPath) {
-                if (window.electronAPI && typeof window.electronAPI.saveFilePath === 'function') {
-                    window.electronAPI.saveFilePath(type, result.fullPath);
-                }
                 const pathKey = type === 'original' ? 'pathOrig' : (type === 'download' ? 'pathDown' : (type === 'rework' ? 'pathRework' : 'pathWarehouse'));
                 localStorage.setItem(pathKey, result.fullPath);
-                localStorage.setItem(storageKey, dirPath);
+                if (result.dirPath) localStorage.setItem(storageKey, result.dirPath);
                 if (inputEl) {
-                    inputEl.value = (type === 'download') ? dirPath : result.fullPath;
+                    inputEl.value = (type === 'download') ? (result.dirPath || dirPath) : result.fullPath;
                 }
             }
 
             checkReadyStatus();
-            alert(`${type === 'original' ? '원본' : '전산'} 최신 파일 '${result.fileName}'을 불러왔습니다.`);
+            alert(`✅ ${typeKor} 최신 파일 '${result.fileName}'을(를) 성공적으로 불러왔습니다.`);
         } else {
             throw new Error(result.message);
         }
     } catch (err) {
-        console.error(`❌ ${type} 자동 로드 실패:`, err);
-        statusEl.textContent = `상태: 로드 실패 (${err.message})`;
+        console.error("handleAutoLoad error:", err);
+        statusEl.innerHTML = `<i class="fas fa-exclamation-circle" style="color:#ef4444; margin-right:4px;"></i>상태: 오류 (${err.message})`;
         statusEl.style.color = '#ef4444';
-        alert(`불러오기 실패: ${err.message}`);
+        alert(`❌ 최신 파일 로드 실패:\n${err.message}`);
     }
 }
 

@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { exec } = require('child_process');
 const nodemailer = require('nodemailer');
 
@@ -806,37 +807,51 @@ app.get('/api/load-file-raw', async (req, res) => {
 // 특정 폴더에서 가장 최신 엑셀 파일(EXPORT_...) 찾아서 전산용으로 자동 로드
 app.get('/api/load-latest-from-dir', async (req, res) => {
     try {
-        const dirPath = req.query.dirPath;
-        if (!dirPath || !fs.existsSync(dirPath)) {
-            return res.status(404).json({ success: false, message: "입력된 폴더 경로를 찾을 수 없습니다." });
+        let dirPath = req.query.dirPath ? req.query.dirPath.trim() : '';
+
+        // 경로가 비어있거나 'undefined'/'null'인 경우 윈도우 기본 다운로드 폴더로 자동 폴백
+        if (!dirPath || dirPath === 'null' || dirPath === 'undefined' || dirPath.startsWith('선택된 파일:')) {
+            dirPath = path.join(os.homedir(), 'Downloads');
         }
 
-        const files = fs.readdirSync(dirPath).filter(f => f.endsWith('.xlsx') && !f.startsWith('~'));
+        if (!fs.existsSync(dirPath)) {
+            return res.status(404).json({ success: false, message: `입력된 폴더 경로를 찾을 수 없습니다: ${dirPath}` });
+        }
+
+        const files = fs.readdirSync(dirPath).filter(f => 
+            (f.toLowerCase().endsWith('.xlsx') || f.toLowerCase().endsWith('.xls') || f.toLowerCase().endsWith('.xlsm')) && 
+            !f.startsWith('~') && 
+            !f.startsWith('.')
+        );
+
         if (files.length === 0) {
-            return res.status(404).json({ success: false, message: "해당 폴더에 엑셀 파일이 없습니다." });
+            return res.status(404).json({ success: false, message: `'${dirPath}' 폴더에 엑셀 파일이 없습니다.` });
         }
 
-        // 가장 최근에 수정된 파일 찾기
+        // 가장 최근에 수정/생성된 파일 찾기
         let latestFile = null;
         let latestTime = 0;
 
         for (const file of files) {
-            const filePath = path.join(dirPath, file);
-            const stats = fs.statSync(filePath);
-            if (stats.mtimeMs > latestTime) {
-                latestTime = stats.mtimeMs;
-                latestFile = {
-                    name: file,
-                    path: filePath
-                };
-            }
+            try {
+                const filePath = path.join(dirPath, file);
+                const stats = fs.statSync(filePath);
+                const fileTime = Math.max(stats.mtimeMs || 0, stats.birthtimeMs || 0);
+                if (fileTime > latestTime) {
+                    latestTime = fileTime;
+                    latestFile = {
+                        name: file,
+                        path: filePath
+                    };
+                }
+            } catch (e) {}
         }
 
         if (!latestFile) {
             return res.status(404).json({ success: false, message: "최신 파일을 찾을 수 없습니다." });
         }
 
-        console.log(`📂[API] 폴더에서 자동 로드: ${latestFile.path} `);
+        console.log(`📂 [API] 폴더에서 자동 로드: ${latestFile.path}`);
 
         // raw buffer로 반환 (브라우저에서 readExcelFile로 직접 파싱하기 위해)
         const fileBuffer = fs.readFileSync(latestFile.path);
@@ -846,12 +861,13 @@ app.get('/api/load-latest-from-dir', async (req, res) => {
             success: true,
             base64,
             fileName: latestFile.name,
-            fullPath: latestFile.path
+            fullPath: latestFile.path,
+            dirPath: dirPath
         });
 
     } catch (err) {
         console.error("❌ 폴더 자동 로드 오류:", err);
-        res.status(500).json({ success: false, message: `폴더에서 파일을 찾는 중 오류 발생: ${err.message} ` });
+        res.status(500).json({ success: false, message: `폴더에서 파일을 찾는 중 오류 발생: ${err.message}` });
     }
 });
 
