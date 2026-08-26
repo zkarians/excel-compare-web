@@ -2700,12 +2700,16 @@ app.delete('/api/email/history/:id', async (req, res) => {
 // --- 컨테이너 사진 관련 API ---
 const CTNR_UPLOADS_DIR = process.env.CTNR_UPLOAD_DIR || 'C:\\Program Files (x86)\\CTNR\\uploads';
 
-// 0. 컨테이너별 등록된 사진 수 조회 API (카메라 아이콘 노출 여부 판단용)
+// 0. 컨테이너별 등록된 사진 수 조회 API (카메라 아이콘 노출 및 씰/일반 구분용)
 app.get('/api/photos/counts', async (req, res) => {
     try {
         const pool = await getPool();
         const sql = `
-            SELECT UPPER(TRIM(cntr_no)) as cntr_no, COUNT(*)::int as count 
+            SELECT 
+                UPPER(TRIM(cntr_no)) as cntr_no, 
+                COUNT(*)::int as total,
+                COUNT(CASE WHEN photo_type = 'seal' THEN 1 END)::int as seal,
+                COUNT(CASE WHEN photo_type IS NULL OR photo_type != 'seal' THEN 1 END)::int as normal
             FROM container_photos 
             WHERE (is_deleted IS NULL OR is_deleted = false) 
             GROUP BY UPPER(TRIM(cntr_no))
@@ -2713,7 +2717,13 @@ app.get('/api/photos/counts', async (req, res) => {
         const result = await pool.query(sql);
         const counts = {};
         result.rows.forEach(r => {
-            if (r.cntr_no) counts[r.cntr_no] = r.count;
+            if (r.cntr_no) {
+                counts[r.cntr_no] = {
+                    total: r.total || 0,
+                    seal: r.seal || 0,
+                    normal: r.normal || 0
+                };
+            }
         });
         res.json({ success: true, counts });
     } catch (err) {

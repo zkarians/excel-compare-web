@@ -11634,9 +11634,38 @@ window.fetchContainerPhotoCounts = async function() {
 window.renderContainerPhotoBtn = function(cntrNo) {
     if (!cntrNo) return '';
     const cleanCntr = cntrNo.trim().toUpperCase();
-    const count = window.containerPhotoCounts ? (window.containerPhotoCounts[cleanCntr] || 0) : 0;
-    if (count <= 0) return '';
-    return `<button class="btn-cntr-photo has-photos" onclick="window.openContainerPhotoModal('${cleanCntr.replace(/'/g, "\\'")}', event)" title="사진 ${count}장 등록됨 (클릭하여 보기)"><i class="fas fa-camera"></i> <span class="photo-badge-num">${count}</span></button>`;
+    const info = window.containerPhotoCounts ? window.containerPhotoCounts[cleanCntr] : null;
+    if (!info) return '';
+
+    let total = 0;
+    let seal = 0;
+    let normal = 0;
+
+    if (typeof info === 'number') {
+        total = info;
+    } else if (typeof info === 'object') {
+        total = info.total || 0;
+        seal = info.seal || 0;
+        normal = info.normal || 0;
+    }
+
+    if (total <= 0) return '';
+
+    let colorClass = 'badge-blue'; // 1. 씰사진 없음 (파란색)
+    let titleText = `사진 ${total}장 (씰사진 미등록)`;
+
+    if (seal > 0 && normal > 0) {
+        colorClass = 'badge-green'; // 3. 일반사진 + 씰사진 모두 있음 (녹색)
+        titleText = `사진 ${total}장 (일반 ${normal}장 + 씰 ${seal}장)`;
+    } else if (seal > 0 && normal === 0) {
+        colorClass = 'badge-red'; // 2. 씰사진만 있음 (빨간색)
+        titleText = `사진 ${total}장 (씰사진만 ${seal}장)`;
+    } else {
+        colorClass = 'badge-blue'; // 1. 씰사진 없음 (파란색)
+        titleText = `사진 ${total}장 (일반 ${normal}장 / 씰사진 미등록)`;
+    }
+
+    return `<button class="btn-cntr-photo ${colorClass}" onclick="window.openContainerPhotoModal('${cleanCntr.replace(/'/g, "\\'")}', event)" title="${titleText}"><i class="fas fa-camera"></i> <span class="photo-badge-num">${total}</span></button>`;
 };
 
 let lightboxPhotos = [];
