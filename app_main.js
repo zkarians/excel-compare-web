@@ -12112,6 +12112,7 @@ window.renderGalleryPhotos = function() {
                         </div>
                         ${isSeal ? `<span class="ctnr-card-seal-tag"><i class="fas fa-camera"></i> 씰</span>` : ''}
                         <img src="${photoUrl}" alt="${p.cntr_no}" loading="lazy" onerror="this.src='https://placehold.co/600x800/11111a/94a3b8?text=Image+Load+Fail'">
+                        <div class="ctnr-card-gradient-overlay"></div>
                     </div>
                     <div class="ctnr-card-bottom-info">
                         <div class="ctnr-card-title-red">${p.cntr_no || '-'}</div>

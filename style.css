@@ -3455,7 +3455,23 @@ tr.border-group td {
     height: 100%;
     object-fit: contain;
     display: block;
+    image-rendering: -webkit-optimize-contrast;
+    filter: contrast(1.05) saturate(1.08);
     transition: transform 0.3s ease;
+}
+
+.ctnr-card-gradient-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.15) 35%, transparent 65%);
+    opacity: 0.65;
+    transition: opacity 0.3s ease;
+    z-index: 5;
+}
+
+.ctnr-card-large:hover .ctnr-card-gradient-overlay {
+    opacity: 0.85;
 }
 
 .ctnr-card-large:hover .ctnr-card-img-wrapper img {
@@ -4041,4 +4057,16 @@ tr.border-group td {
 
 .lightbox-nav-btn.next {
     right: 20px;
+}
+
+#lightboxImg {
+    max-width: 90vw;
+    max-height: 85vh;
+    object-fit: contain;
+    transform-origin: center center;
+    transition: transform 0.1s ease-out;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85);
+    border-radius: 8px;
+    image-rendering: -webkit-optimize-contrast;
+    filter: contrast(1.04) saturate(1.06);
 }
