@@ -12289,8 +12289,13 @@ window.resetGalleryFilters = function() {
     if (searchEl) searchEl.value = '';
     if (typeEl) typeEl.value = 'all';
 
-    window.setGalleryTabState('ACTIVE');
+    window.galleryTabState = 'ACTIVE';
+    document.querySelectorAll('.ctnr-tab-btn').forEach(btn => btn.classList.remove('active'));
+    const activeTabBtn = document.getElementById('tabBtnActive');
+    if (activeTabBtn) activeTabBtn.classList.add('active');
+
     window.currentGalleryTargetCntr = '';
+    window.clearAllGallerySelection();
     window.loadPhotoGallery('');
 };
 
@@ -12354,18 +12359,20 @@ window.openContainerPhotoModal = function(cntrNo, event) {
 };
 
 // 2. 사진 목록 로드 (서버 API 호출)
-window.loadPhotoGallery = async function(targetCntr = '') {
+window.loadPhotoGallery = async function(targetCntr = null) {
     const loadingEl = document.getElementById('photoGalleryLoading');
     const listEl = document.getElementById('photoGalleryList');
     const summaryEl = document.getElementById('photoGallerySummary');
     const searchInputEl = document.getElementById('photoGallerySearchCntr');
 
-    const searchCntr = (targetCntr !== undefined && targetCntr !== null && targetCntr !== '' ? targetCntr : (searchInputEl?.value || '')).trim().toUpperCase();
-    window.currentGalleryTargetCntr = searchCntr;
-
-    if (searchInputEl && searchCntr) {
-        searchInputEl.value = searchCntr;
+    let searchCntr = '';
+    if (targetCntr !== null && targetCntr !== undefined) {
+        searchCntr = String(targetCntr).trim().toUpperCase();
+        if (searchInputEl) searchInputEl.value = searchCntr;
+    } else {
+        searchCntr = (searchInputEl?.value || '').trim().toUpperCase();
     }
+    window.currentGalleryTargetCntr = searchCntr;
 
     const startDate = document.getElementById('photoGalleryStartDate')?.value || '';
     const endDate = document.getElementById('photoGalleryEndDate')?.value || '';
