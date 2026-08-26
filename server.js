@@ -865,6 +865,8 @@ app.post('/api/pick-file', async (req, res) => {
 
         const psScript = `
 Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+[System.Windows.Forms.Application]::EnableVisualStyles()
 $dialog = New-Object System.Windows.Forms.OpenFileDialog
 $dialog.Title = '${safeTitle}'
 $dialog.Filter = '${safeFilter}'
@@ -876,14 +878,22 @@ if ($initDir -ne '' -and (Test-Path $initDir)) {
 }
 $dialog.RestoreDirectory = $true
 $dialog.CheckFileExists = $true
+
 $form = New-Object System.Windows.Forms.Form
 $form.TopMost = $true
-$form.Opacity = 0
+$form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+$form.Size = New-Object System.Drawing.Size(1, 1)
+$form.Opacity = 0.01
 $form.ShowInTaskbar = $false
+$form.Show()
+$form.Activate()
+$form.BringToFront()
+
 $result = $dialog.ShowDialog($form)
 if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
     [Console]::Out.Write($dialog.FileName)
 }
+$form.Close()
 $form.Dispose()
 $dialog.Dispose()
 `;

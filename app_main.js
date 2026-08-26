@@ -4314,6 +4314,7 @@ function evaluateMathString(currentVal, expr) {
 
         btn.addEventListener('click', async () => {
             let filePath = null;
+            const originalHtml = btn.innerHTML;
 
             // 1. Electron 데스크톱 앱 환경인 경우 -> Electron native dialog 호출
             if (window.electronAPI && typeof window.electronAPI.selectFile === 'function') {
@@ -4321,6 +4322,9 @@ function evaluateMathString(currentVal, expr) {
                 filePath = await window.electronAPI.selectFile(p.type, lastDir);
             } else {
                 // 2. 웹 브라우저 (localhost) 환경인 경우 -> 백엔드 Windows Native OpenFileDialog 호출
+                btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 열기 중...`;
+                btn.disabled = true;
+
                 try {
                     const lastDir = localStorage.getItem(p.storageKey) || '';
                     const res = await fetch(`${API_BASE}/api/pick-file`, {
@@ -4332,13 +4336,20 @@ function evaluateMathString(currentVal, expr) {
                     if (data.success && data.filePath) {
                         filePath = data.filePath;
                     } else if (data.canceled) {
+                        btn.innerHTML = originalHtml;
+                        btn.disabled = false;
                         return; // 사용자가 취소함
                     }
                 } catch (e) {
                     console.warn("Backend pick-file failed, falling back to HTML input:", e);
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
                     const fileInput = document.getElementById(p.fileInputId);
                     if (fileInput) fileInput.click();
                     return;
+                } finally {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
                 }
             }
 
