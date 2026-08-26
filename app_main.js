@@ -13061,6 +13061,16 @@ window.lightboxDownload = function() {
     window.currentReportData = null;
     window.currentReportText = '';
 
+    function formatReportYMD(d) {
+        if (!d) return '';
+        const dateObj = new Date(d);
+        if (isNaN(dateObj.getTime())) return '';
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     window.openReportModal = function(targetDate = null, event = null) {
         if (event) event.stopPropagation();
         const modal = document.getElementById('reportModal');
@@ -13074,7 +13084,7 @@ window.lightboxDownload = function() {
             if (now.getHours() < 13) {
                 now.setDate(now.getDate() - 1);
             }
-            if (dateInput) dateInput.value = formatYMD(now);
+            if (dateInput) dateInput.value = formatReportYMD(now);
         }
 
         modal.style.display = 'flex';
@@ -13092,13 +13102,13 @@ window.lightboxDownload = function() {
 
         const cur = new Date(dateInput.value);
         cur.setDate(cur.getDate() + dir);
-        dateInput.value = formatYMD(cur);
+        dateInput.value = formatReportYMD(cur);
         window.loadReportData();
     };
 
     window.loadReportData = async function() {
         const dateInput = document.getElementById('reportTargetDate');
-        const targetDate = dateInput?.value || formatYMD(new Date());
+        const targetDate = dateInput?.value || formatReportYMD(new Date());
 
         const loadingEl = document.getElementById('reportLoading');
         const contentEl = document.getElementById('reportContentArea');
@@ -13469,7 +13479,7 @@ window.lightboxDownload = function() {
         }
 
         const dateInput = document.getElementById('reportTargetDate');
-        const targetDate = dateInput?.value || formatYMD(new Date());
+        const targetDate = dateInput?.value || formatReportYMD(new Date());
 
         try {
             const canvas = await html2canvas(captureArea, {
