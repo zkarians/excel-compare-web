@@ -11353,11 +11353,23 @@ window.selectedFolderKeys = window.selectedFolderKeys || new Set();
 
 // 1. 사진 전체 선택 (사진 상세 뷰)
 window.toggleSelectAllPhotos = function(checked) {
-    if (checked) {
-        window.currentGalleryPhotos.forEach(p => window.selectedPhotoIds.add(String(p.id)));
-    } else {
-        window.selectedPhotoIds.clear();
+    let targetList = window.currentGalleryPhotos || [];
+    if (window.currentGalleryTargetCntr) {
+        const targetCntrUpper = window.currentGalleryTargetCntr.toUpperCase().trim();
+        targetList = targetList.filter(p => (p.cntr_no || '').toUpperCase().trim() === targetCntrUpper);
     }
+
+    if (checked === undefined) {
+        const allSelected = targetList.length > 0 && targetList.every(p => window.selectedPhotoIds.has(String(p.id)));
+        checked = !allSelected;
+    }
+
+    if (checked) {
+        targetList.forEach(p => window.selectedPhotoIds.add(String(p.id)));
+    } else {
+        targetList.forEach(p => window.selectedPhotoIds.delete(String(p.id)));
+    }
+
     document.querySelectorAll('.ctnr-photo-card, .ctnr-card-large').forEach(card => {
         const id = card.getAttribute('data-photo-id');
         if (id) {
@@ -11373,6 +11385,16 @@ window.toggleSelectAllPhotos = function(checked) {
             }
         }
     });
+
+    const selectAllBtn = document.getElementById('btnGallerySelectAllInView');
+    if (selectAllBtn && window.currentGalleryTargetCntr) {
+        const targetCntrUpper = window.currentGalleryTargetCntr.toUpperCase().trim();
+        const currentPhotos = (window.currentGalleryPhotos || []).filter(p => (p.cntr_no || '').toUpperCase().trim() === targetCntrUpper);
+        const selCount = currentPhotos.filter(p => window.selectedPhotoIds.has(String(p.id))).length;
+        const allSel = currentPhotos.length > 0 && selCount === currentPhotos.length;
+        selectAllBtn.innerHTML = allSel ? '<i class="fas fa-check-square"></i> 전체 해제' : `<i class="far fa-check-square"></i> 전체 선택 (${selCount}/${currentPhotos.length})`;
+    }
+
     window.updateGalleryActionBar();
 };
 
@@ -12558,6 +12580,22 @@ window.renderGalleryPhotos = function() {
         if (badgeCount) badgeCount.textContent = `${photos.length}장`;
         if (btnBack) btnBack.style.display = 'inline-flex';
 
+        const selCount = photos.filter(p => window.selectedPhotoIds.has(String(p.id))).length;
+        const allSel = photos.length > 0 && selCount === photos.length;
+        let selectAllBtn = document.getElementById('btnGallerySelectAllInView');
+        if (!selectAllBtn && badgeBox) {
+            selectAllBtn = document.createElement('button');
+            selectAllBtn.id = 'btnGallerySelectAllInView';
+            selectAllBtn.className = 'ctnr-team-btn-select-all';
+            selectAllBtn.style.marginLeft = '8px';
+            selectAllBtn.onclick = () => window.toggleSelectAllPhotos();
+            badgeBox.appendChild(selectAllBtn);
+        }
+        if (selectAllBtn) {
+            selectAllBtn.style.display = 'inline-flex';
+            selectAllBtn.innerHTML = allSel ? '<i class="fas fa-check-square"></i> 전체 해제' : `<i class="far fa-check-square"></i> 전체 선택 (${selCount}/${photos.length})`;
+        }
+
         if (photos.length === 0) {
             listEl.innerHTML = `<div style="text-align:center; padding:80px 20px; color:#94a3b8; font-weight:700;">'${targetCntrUpper}' 컨테이너에 등록된 사진이 없습니다.</div>`;
             return;
@@ -12610,6 +12648,8 @@ window.renderGalleryPhotos = function() {
     // 2. 특정 컨테이너가 지정되지 않은 메인 사진함 화면 -> CTNR과 100% 동일한 날짜별/조별 폴더 계층 목록 렌더링 (Screenshot 2)
     if (badgeBox) badgeBox.style.display = 'none';
     if (btnBack) btnBack.style.display = 'none';
+    const selAllBtn = document.getElementById('btnGallerySelectAllInView');
+    if (selAllBtn) selAllBtn.style.display = 'none';
 
     // 폴더 그룹핑 (cntrNo + workDateStr)
     const folderGroup = {};

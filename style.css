@@ -4297,31 +4297,33 @@ tr.border-group td {
     position: absolute;
     top: 10px;
     left: 10px;
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
-    background: rgba(15, 23, 42, 0.6);
+    background: rgba(15, 23, 42, 0.65);
     border: 2px solid rgba(255, 255, 255, 0.85);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 15;
+    z-index: 30;
+    pointer-events: auto;
     transition: all 0.15s ease;
-    color: transparent;
-    font-size: 0.75rem;
+    box-sizing: border-box;
 }
 
 .ctnr-photo-select-chk i {
-    font-size: 11px;
+    font-size: 13px;
+    font-weight: 900;
+    color: white;
     opacity: 0;
     transition: opacity 0.15s ease;
 }
 
 .ctnr-photo-select-chk:hover {
-    background: rgba(2, 132, 199, 0.85);
-    border-color: white;
-    transform: scale(1.1);
+    background: rgba(2, 132, 199, 0.9);
+    border-color: #ffffff;
+    transform: scale(1.15);
 }
 
 /* 선택된 사진 체크 서클 & 카드 테두리 스타일 (CTNR 100% 동일) */
@@ -4330,8 +4332,7 @@ tr.border-group td {
 .ctnr-photo-card.selected .ctnr-photo-select-chk {
     background: #0284c7 !important;
     border-color: #ffffff !important;
-    color: #ffffff !important;
-    box-shadow: 0 0 10px rgba(2, 132, 199, 0.8) !important;
+    box-shadow: 0 0 12px rgba(2, 132, 199, 0.9) !important;
 }
 
 .ctnr-photo-select-chk.selected i,
@@ -4339,6 +4340,7 @@ tr.border-group td {
 .ctnr-photo-card.selected .ctnr-photo-select-chk i {
     opacity: 1 !important;
     color: #ffffff !important;
+    display: inline-block !important;
 }
 
 .ctnr-card-large.selected,
