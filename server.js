@@ -4138,6 +4138,315 @@ app.post('/api/reports/comment', async (req, res) => {
     }
 });
 
+// --- 보고서 영구 저장 (Save Daily Report) ---
+app.post('/api/reports/save', async (req, res) => {
+    try {
+        const { workDate, reportText, reportData, savedBy } = req.body;
+        if (!workDate) return res.status(400).json({ success: false, error: "작업일자가 필요합니다." });
+
+        const pool = await getPool();
+        const client = await pool.connect();
+        try {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS daily_work_reports (
+                    work_date VARCHAR(20) PRIMARY KEY,
+                    report_text TEXT NOT NULL,
+                    report_data JSONB,
+                    saved_by VARCHAR(100),
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
+            const dbRes = await client.query(`
+                INSERT INTO daily_work_reports (work_date, report_text, report_data, saved_by, updated_at)
+                VALUES ($1, $2, $3, $4, NOW())
+                ON CONFLICT (work_date)
+                DO UPDATE SET
+                    report_text = EXCLUDED.report_text,
+                    report_data = EXCLUDED.report_data,
+                    saved_by = EXCLUDED.saved_by,
+                    updated_at = NOW()
+                RETURNING updated_at;
+            `, [workDate.trim(), reportText || '', JSON.stringify(reportData || []), savedBy || '관리자']);
+
+            const updatedAt = dbRes.rows[0]?.updated_at;
+            return res.json({
+                success: true,
+                message: `${workDate} 보고서가 성공적으로 DB에 저장되었습니다.`,
+                updatedAt: updatedAt ? new Date(updatedAt).toISOString() : new Date().toISOString(),
+                savedBy: savedBy || '관리자'
+            });
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error("POST /api/reports/save error:", err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// --- 저장된 보고서 불러오기 (Get Saved Daily Report) ---
+app.get('/api/reports/saved', async (req, res) => {
+    try {
+        const workDate = (req.query.workDate || '').trim();
+        if (!workDate) return res.status(400).json({ success: false, error: "작업일자가 필요합니다." });
+
+        const pool = await getPool();
+        const client = await pool.connect();
+        try {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS daily_work_reports (
+                    work_date VARCHAR(20) PRIMARY KEY,
+                    report_text TEXT NOT NULL,
+                    report_data JSONB,
+                    saved_by VARCHAR(100),
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
+            const dbRes = await client.query(`
+                SELECT work_date, report_text, report_data, saved_by, updated_at
+                FROM daily_work_reports
+                WHERE work_date = $1
+            `, [workDate]);
+
+            if (dbRes.rows.length === 0) {
+                return res.json({ success: false, message: `${workDate}에 저장된 보고서가 없습니다.` });
+            }
+
+            const row = dbRes.rows[0];
+            let parsedData = [];
+            try {
+                parsedData = typeof row.report_data === 'string' ? JSON.parse(row.report_data) : (row.report_data || []);
+            } catch (e) {
+                parsedData = [];
+            }
+
+            return res.json({
+                success: true,
+                workDate: row.work_date,
+                reportText: row.report_text,
+                reportData: parsedData,
+                savedBy: row.saved_by,
+                updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : undefined
+            });
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error("GET /api/reports/saved error:", err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// --- 작업취소 / 작업제외 상태 토글 및 저장 ---
+app.post('/api/reports/toggle-cancel', async (req, res) => {
+    try {
+        const { cntrNo, workDate, mode, cancelType } = req.body;
+        if (!cntrNo) return res.status(400).json({ success: false, error: "컨테이너 번호가 필요합니다." });
+
+        const pool = await getPool();
+        const client = await pool.connect();
+        try {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS container_comments (
+                    cntr_no VARCHAR(50) NOT NULL,
+                    work_date VARCHAR(20) DEFAULT '',
+                    admin_comment TEXT,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (cntr_no, work_date)
+                );
+            `);
+
+            const cleanCntrNo = cntrNo.trim();
+            const targetDate = (workDate || '').trim();
+
+            const sel = await client.query(`
+                SELECT admin_comment FROM container_comments WHERE cntr_no = $1 AND (work_date = $2 OR work_date = '' OR work_date IS NULL)
+            `, [cleanCntrNo, targetDate]);
+
+            let currentComment = sel.rows[0]?.admin_comment || '';
+            let newComment = currentComment;
+
+            if (cancelType) {
+                // 직접 특정 타입 지정 (cancel / exclude)
+                const tag = cancelType === 'exclude' ? '[작업제외]' : '[작업취소]';
+                const clean = currentComment.replace(/\[작업취소\]/g, '').replace(/\[작업제외\]/g, '').replace(/\[취소\]/g, '').trim();
+                newComment = clean ? `${clean} ${tag}`.trim() : tag;
+            } else {
+                // 토글 처리
+                const isCurrentlyCancelled = currentComment.includes('[작업취소]') || currentComment.includes('[작업제외]') || currentComment.includes('[취소]');
+                if (isCurrentlyCancelled) {
+                    newComment = currentComment.replace(/\[작업취소\]/g, '').replace(/\[작업제외\]/g, '').replace(/\[취소\]/g, '').trim();
+                } else {
+                    const tag = mode === 'exclude' ? '[작업제외]' : '[작업취소]';
+                    const clean = currentComment.replace(/\[작업취소\]/g, '').replace(/\[작업제외\]/g, '').replace(/\[취소\]/g, '').trim();
+                    newComment = clean ? `${clean} ${tag}`.trim() : tag;
+                }
+            }
+
+            await client.query(`
+                INSERT INTO container_comments (cntr_no, work_date, admin_comment)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (cntr_no, work_date)
+                DO UPDATE SET admin_comment = EXCLUDED.admin_comment;
+            `, [cleanCntrNo, targetDate, newComment]);
+
+            return res.json({
+                success: true,
+                cntrNo: cleanCntrNo,
+                adminComment: newComment,
+                isCancelled: newComment.includes('[작업취소]') || newComment.includes('[취소]'),
+                isExcluded: newComment.includes('[작업제외]')
+            });
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error("POST /api/reports/toggle-cancel error:", err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// --- 수동 항목 추가 및 수정 (Manual Report Entry CRUD) ---
+app.post('/api/reports/manual-entry', async (req, res) => {
+    try {
+        const { id, workDate, teamName, cntrNo, category, transporter, durationMinutes, remark, products, emptyBoxes, firstUploadedAt } = req.body;
+        if (!cntrNo) return res.status(400).json({ success: false, error: "컨테이너 번호가 필요합니다." });
+
+        const pool = await getPool();
+        const client = await pool.connect();
+        try {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS manual_report_entries (
+                    id SERIAL PRIMARY KEY,
+                    work_date VARCHAR(20) NOT NULL,
+                    team_name VARCHAR(50) NOT NULL,
+                    cntr_no VARCHAR(50) NOT NULL,
+                    category VARCHAR(100),
+                    transporter VARCHAR(50),
+                    duration_minutes INT DEFAULT 45,
+                    remark TEXT,
+                    products JSONB,
+                    empty_boxes JSONB,
+                    first_uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
+            if (id) {
+                // 수정
+                await client.query(`
+                    UPDATE manual_report_entries
+                    SET work_date = $1, team_name = $2, cntr_no = $3, category = $4, transporter = $5,
+                        duration_minutes = $6, remark = $7, products = $8::jsonb, empty_boxes = $9::jsonb,
+                        first_uploaded_at = COALESCE($10, first_uploaded_at)
+                    WHERE id = $11
+                `, [
+                    workDate, teamName, cntrNo.trim().toUpperCase(), category || '', transporter || '',
+                    durationMinutes || 45, remark || '', JSON.stringify(products || []), JSON.stringify(emptyBoxes || []),
+                    firstUploadedAt || null, id
+                ]);
+                return res.json({ success: true, message: "수동 항목이 수정되었습니다." });
+            } else {
+                // 신규 추가
+                const insRes = await client.query(`
+                    INSERT INTO manual_report_entries (work_date, team_name, cntr_no, category, transporter, duration_minutes, remark, products, empty_boxes, first_uploaded_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10)
+                    RETURNING id;
+                `, [
+                    workDate, teamName, cntrNo.trim().toUpperCase(), category || '', transporter || '',
+                    durationMinutes || 45, remark || '', JSON.stringify(products || []), JSON.stringify(emptyBoxes || []),
+                    firstUploadedAt || new Date().toISOString()
+                ]);
+                return res.json({ success: true, message: "수동 항목이 추가되었습니다.", id: insRes.rows[0]?.id });
+            }
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error("POST /api/reports/manual-entry error:", err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// --- 수동 항목 삭제 ---
+app.delete('/api/reports/manual-entry', async (req, res) => {
+    try {
+        const id = req.query.id || req.body.id;
+        if (!id) return res.status(400).json({ success: false, error: "삭제할 항목 ID가 필요합니다." });
+
+        const pool = await getPool();
+        const client = await pool.connect();
+        try {
+            await client.query('DELETE FROM manual_report_entries WHERE id = $1', [id]);
+            return res.json({ success: true, message: "항목이 삭제되었습니다." });
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error("DELETE /api/reports/manual-entry error:", err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// --- 기존 컨테이너 보고서 상세 정보(소요시간/지연사유/운송사/카테고리) 수정 ---
+app.post('/api/reports/update-container', async (req, res) => {
+    try {
+        const { cntrNo, workDate, durationMinutes, remark, category, transporter, emptyBoxes } = req.body;
+        if (!cntrNo) return res.status(400).json({ success: false, error: "컨테이너 번호가 필요합니다." });
+
+        const pool = await getPool();
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            const cleanCntrNo = cntrNo.trim().toUpperCase();
+
+            // 1. container_photos duration & remark
+            await client.query(`
+                UPDATE container_photos 
+                SET work_duration_minutes = $1,
+                    remark = $2
+                WHERE UPPER(TRIM(cntr_no)) = $3
+                  AND (is_deleted IS NOT TRUE)
+            `, [durationMinutes || 45, remark || '', cleanCntrNo]);
+
+            // 2. container_results transporter
+            if (transporter !== undefined) {
+                await client.query(`
+                    UPDATE container_results 
+                    SET transporter = $1
+                    WHERE UPPER(TRIM(cntr_no)) = $2
+                `, [transporter, cleanCntrNo]);
+            }
+
+            // 3. container_comments category
+            if (category !== undefined) {
+                await client.query(`
+                    INSERT INTO container_comments (cntr_no, work_date, admin_comment)
+                    VALUES ($1, $2, $3)
+                    ON CONFLICT (cntr_no, work_date)
+                    DO UPDATE SET admin_comment = EXCLUDED.admin_comment;
+                `, [cleanCntrNo, (workDate || '').trim(), category]);
+            }
+
+            await client.query('COMMIT');
+            return res.json({ success: true, message: "컨테이너 정보가 업데이트되었습니다." });
+        } catch (innerErr) {
+            await client.query('ROLLBACK');
+            throw innerErr;
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error("POST /api/reports/update-container error:", err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Static file serving (re-enabled to allow browser access)
 app.use(express.static(__dirname));
 

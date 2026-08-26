@@ -9,7 +9,7 @@
     <link href="css/libs/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/libs/fontawesome.min.css">
     <link rel="stylesheet" href="css/libs/animate.min.css">
-    <link rel="stylesheet" href="style.css?v=20260827-filterbaralign">
+    <link rel="stylesheet" href="style.css?v=20260827-ctnrreportfull">
     <!-- Local JS Libraries -->
     <script src="js/libs/exceljs.min.js"></script>
     <script src="js/libs/FileSaver.min.js"></script>
@@ -2891,12 +2891,12 @@
         </button>
     </div>
 
-    <!-- ========================================== -->
-    <!-- 작업 완료 보고서 모달 (CTNR 호환 ReportModal) -->
-    <!-- ========================================== -->
+    <!-- ==================================================== -->
+    <!-- 작업 완료 보고서 모달 (CTNR 100% 동일 ReportModal) -->
+    <!-- ==================================================== -->
     <div id="reportModal" class="ctnr-gallery-modal" style="display: none;">
         <div class="ctnr-gallery-container report-modal-container">
-            <!-- 1단 상단 헤더 (제목, 날짜 제어, 닫기) -->
+            <!-- 1단 상단 헤더 (제목, 통계, 우측 툴바) -->
             <header class="report-header">
                 <div class="report-header-left">
                     <div class="report-title-badge">
@@ -2904,63 +2904,64 @@
                     </div>
                     <div>
                         <h2 class="report-title">작업 완료 보고서</h2>
-                        <p class="report-subtitle">일자별 컨테이너 적재 실적, 품목/수량 및 작업 타임라인 현황</p>
+                        <p class="report-subtitle">WORK COMPLETION OFFICIAL REPORT</p>
                     </div>
                 </div>
 
-                <!-- 중앙 날짜 제어기 -->
-                <div class="report-date-control">
-                    <button type="button" class="report-date-btn" onclick="window.navigateReportDate(-1)" title="이전 날짜 (←)">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <div class="report-date-input-wrap">
-                        <i class="far fa-calendar-alt"></i>
-                        <input type="date" id="reportTargetDate" onchange="window.loadReportData()">
-                    </div>
-                    <button type="button" class="report-date-btn" onclick="window.navigateReportDate(1)" title="다음 날짜 (→)">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                    <button type="button" class="report-refresh-btn" onclick="window.loadReportData()" title="보고서 새로고침">
-                        <i class="fas fa-sync-alt"></i> 새로고침
-                    </button>
-                </div>
-
-                <!-- 우측 닫기 버튼 -->
                 <div class="report-header-right">
+                    <button type="button" class="report-top-icon-btn" onclick="window.openPhotoGalleryModal()" title="사진 보관함 열기">
+                        <i class="fas fa-camera"></i>
+                    </button>
                     <button type="button" class="ctnr-btn-close" onclick="window.closeReportModal()" title="닫기 (ESC)">
-                        <i class="fas fa-times"></i> 닫기
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
             </header>
 
-            <!-- 2단 원클릭 보고서 복사 & 내보내기 툴바 -->
-            <div class="report-actions-toolbar">
-                <div class="report-preset-buttons">
-                    <span class="report-toolbar-label"><i class="fas fa-paste"></i> 메신저 복사:</span>
-                    <button type="button" class="report-action-btn btn-preset-full" onclick="window.copyReportPreset('full')">
-                        <i class="fas fa-copy"></i> 📋 기본 보고서 복사
+            <!-- 2단 필터 및 조작 툴바 (CTNR 회색 컨트롤 바) -->
+            <div class="report-control-panel">
+                <div class="report-control-left">
+                    <span class="report-control-label">조회 일자:</span>
+                    <div class="report-date-box">
+                        <button type="button" class="report-date-nav-btn" onclick="window.navigateReportDate(-1)" title="이전날 (어제)로 이동">
+                            <i class="fas fa-chevron-left"></i> <span>이전날</span>
+                        </button>
+                        <input type="date" id="reportTargetDate" onchange="window.loadReportData()">
+                        <button type="button" class="report-date-nav-btn" onclick="window.navigateReportDate(1)" title="다음날 (내일)로 이동">
+                            <span>다음날</span> <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+
+                    <button type="button" class="btn-ctnr-refresh" onclick="window.loadReportData()" title="보고서 새로고침">
+                        <i class="fas fa-sync-alt"></i> <span>조회</span>
                     </button>
-                    <button type="button" class="report-action-btn btn-preset-summary" onclick="window.copyReportPreset('summary')">
-                        <i class="fas fa-align-left"></i> 📝 콤팩트 요약 복사
+                    <button type="button" class="btn-ctnr-load" onclick="window.handleLoadSavedReport()" title="선택된 날짜의 DB 저장된 보고서 불러오기">
+                        <i class="fas fa-folder-open"></i> <span>불러오기</span>
                     </button>
-                    <button type="button" class="report-action-btn btn-preset-anomaly" onclick="window.copyReportPreset('anomaly')">
-                        <i class="fas fa-exclamation-triangle"></i> 🚨 특이사항/지연 복사
+                    <button type="button" class="btn-ctnr-cancel" onclick="window.openCancelManageModal()" title="조별 작업취소 및 작업제외 관리">
+                        <i class="fas fa-ban"></i> <span>작업취소</span>
                     </button>
                 </div>
 
-                <div class="report-export-buttons">
-                    <button type="button" class="report-action-btn btn-image-copy" onclick="window.copyReportImage()" title="보고서 화면을 고해상도 이미지로 클립보드에 복사">
-                        <i class="far fa-image"></i> 🖼️ 이미지 복사
-                    </button>
-                    <button type="button" class="report-action-btn btn-image-download" onclick="window.downloadReportImage()" title="보고서 화면을 PNG 파일로 다운로드">
-                        <i class="fas fa-download"></i> 💾 PNG 다운로드
+                <div class="report-control-right">
+                    <div class="report-view-toggle">
+                        <button type="button" id="btnReportViewFull" class="report-toggle-btn active" onclick="window.setReportViewMode('full')">
+                            📋 상세보기
+                        </button>
+                        <button type="button" id="btnReportViewCompact" class="report-toggle-btn" onclick="window.setReportViewMode('compact')">
+                            ⚡ 요약보기
+                        </button>
+                    </div>
+                    <button type="button" class="btn-ctnr-add" onclick="window.openAddManualModal()" title="보고서 전용 수동 항목 추가">
+                        <i class="fas fa-plus"></i> <span>항목 추가</span>
                     </button>
                 </div>
             </div>
 
-            <!-- 3단 요약 배너 -->
+            <!-- 3단 요약 배너 카드 -->
             <div id="reportSummaryBanner" class="report-summary-banner">
                 <div class="report-summary-text">
+                    <i class="far fa-calendar-check" style="color: #0284c7; margin-right: 6px;"></i>
                     <span id="reportSummaryTitle">📅 데이터 조회 중...</span>
                 </div>
                 <div id="reportCarrierCounts" class="report-carrier-tags"></div>
@@ -2976,6 +2977,206 @@
                     <div id="reportContentArea"></div>
                 </div>
             </div>
+
+            <!-- 5단 하단 고정 푸터 액션바 -->
+            <footer class="report-footer">
+                <div id="reportSavedStatusBadge" class="report-saved-badge" style="display: none;">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="reportSavedStatusText">DB 저장 완료</span>
+                </div>
+
+                <div class="report-footer-actions">
+                    <button type="button" class="btn-footer-save" onclick="window.handleSaveReport()" title="현재 화면의 데이터를 DB에 영구 저장">
+                        <i class="fas fa-save"></i> <span>보고서 저장</span>
+                    </button>
+
+                    <div class="report-preset-group">
+                        <button type="button" class="btn-footer-copy" onclick="window.copyReportPreset('full')" title="기본 상세 형식으로 텍스트 복사">
+                            <i class="fas fa-copy"></i> <span>📋 상세 복사</span>
+                        </button>
+                        <button type="button" class="btn-footer-copy" onclick="window.copyReportPreset('summary')" title="컨테이너 번호와 수량만 간략 요약 복사">
+                            <i class="fas fa-bolt"></i> <span>⚡ 요약 복사</span>
+                        </button>
+                        <button type="button" class="btn-footer-copy text-rose" onclick="window.copyReportPreset('anomaly')" title="취소, 제외, 지연사유 특이사항 복사">
+                            <i class="fas fa-exclamation-triangle"></i> <span>🚨 특이사항 복사</span>
+                        </button>
+                    </div>
+
+                    <button type="button" class="btn-footer-img-copy" onclick="window.copyReportImage()" title="고해상도 이미지를 클립보드에 복사">
+                        <i class="far fa-image"></i> <span>이미지 복사</span>
+                    </button>
+                    <button type="button" class="btn-footer-img-download" onclick="window.downloadReportImage()" title="고해상도 이미지 파일로 다운로드">
+                        <i class="fas fa-download"></i> <span>이미지 저장</span>
+                    </button>
+
+                    <button type="button" class="btn-footer-close" onclick="window.closeReportModal()">
+                        닫기
+                    </button>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- ==================================================== -->
+    <!-- 작업취소 및 작업제외 관리 모달 (CancelManageModal) -->
+    <!-- ==================================================== -->
+    <div id="cancelManageModal" class="ctnr-submodal-backdrop" style="display: none;">
+        <div class="ctnr-submodal-container">
+            <div class="ctnr-submodal-header">
+                <div class="ctnr-submodal-title">
+                    <i class="fas fa-ban" style="color: #e11d48;"></i>
+                    <span>조별 작업취소 및 작업제외 관리</span>
+                </div>
+                <button type="button" class="ctnr-submodal-close" onclick="window.closeCancelManageModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- 표기 선택 툴바 -->
+            <div class="cancel-mode-toolbar">
+                <span class="cancel-mode-label">체크 시 기본 지정 표기:</span>
+                <div class="cancel-mode-buttons">
+                    <button type="button" id="btnCancelModeCancel" class="btn-mode-pill active" onclick="window.setCancelMode('cancel')">
+                        🚫 작업취소
+                    </button>
+                    <button type="button" id="btnCancelModeExclude" class="btn-mode-pill" onclick="window.setCancelMode('exclude')">
+                        ⚠️ 작업제외
+                    </button>
+                </div>
+            </div>
+            <p class="cancel-modal-tip">
+                💡 체크한 컨테이너는 <strong id="cancelModeTipText" style="color:#e11d48;">[작업취소]</strong>로 지정되며, 수량 합계에서 자동 제외됩니다.
+            </p>
+
+            <!-- 조별 컨테이너 체크박스 리스트 -->
+            <div id="cancelManageListArea" class="cancel-manage-list-area"></div>
+
+            <div class="ctnr-submodal-footer">
+                <button type="button" class="btn-modal-primary" onclick="window.closeCancelManageModal()">
+                    확인 및 닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================================================== -->
+    <!-- 보고서 전용 수동 항목 추가 및 수정 모달 (AddManualModal) -->
+    <!-- ==================================================== -->
+    <div id="addManualReportModal" class="ctnr-submodal-backdrop" style="display: none;">
+        <div class="ctnr-submodal-container" style="max-width: 600px;">
+            <div class="ctnr-submodal-header">
+                <div class="ctnr-submodal-title">
+                    <i class="fas fa-plus-circle" style="color: #0284c7;"></i>
+                    <span id="addManualModalTitle">보고서 전용 수동 항목 추가</span>
+                </div>
+                <button type="button" class="ctnr-submodal-close" onclick="window.closeAddManualModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="addManualForm" onsubmit="window.submitManualReportItem(event)" class="manual-modal-form">
+                <input type="hidden" id="manualEditId" value="">
+
+                <!-- 담당 조 (팀) 선택 -->
+                <div class="form-group">
+                    <label class="form-label">담당 조 (팀) *</label>
+                    <div class="manual-team-tabs">
+                        <button type="button" class="btn-team-tab active" data-team="1조(BNI)" onclick="window.selectManualTeam('1조(BNI)')">1조(BNI)</button>
+                        <button type="button" class="btn-team-tab" data-team="2조(천마)" onclick="window.selectManualTeam('2조(천마)')">2조(천마)</button>
+                        <button type="button" class="btn-team-tab" data-team="3조(천마)" onclick="window.selectManualTeam('3조(천마)')">3조(천마)</button>
+                    </div>
+                </div>
+
+                <!-- 3분할: 컨테이너 번호, 운송사, 품목 종류 -->
+                <div class="form-grid-3">
+                    <div class="form-group">
+                        <label class="form-label">컨테이너 번호 *</label>
+                        <input type="text" id="manualCntrNo" class="form-input text-uppercase font-black" placeholder="예: TGBU5278535" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">운송사</label>
+                        <select id="manualTransporter" class="form-select font-bold">
+                            <option value="천마">천마 (빨강)</option>
+                            <option value="BNI">BNI (파랑)</option>
+                            <option value="재작업">재작업 (주황)</option>
+                            <option value="기타">기타 (회색)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">품목 종류 (비고)</label>
+                        <input type="text" id="manualCategory" class="form-input" placeholder="예: 세탁기, SK오븐">
+                    </div>
+                </div>
+
+                <!-- 2분할: 작업 위치 (순서), 소요시간 -->
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label class="form-label">작업 위치 (순서) *</label>
+                        <select id="manualInsertIndex" class="form-select font-bold">
+                            <option value="end">맨 마지막 (자동 계산)</option>
+                            <option value="0">1번째 작업 (맨 처음)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">소요시간 (분)</label>
+                        <input type="number" id="manualDuration" class="form-input font-bold" value="45" min="5" max="600">
+                    </div>
+                </div>
+
+                <!-- 지연사유 / 비고 -->
+                <div class="form-group">
+                    <label class="form-label">지연사유 / 비고</label>
+                    <input type="text" id="manualRemark" class="form-input" placeholder="예: 포크 숙련도 부족으로 지연">
+                </div>
+
+                <!-- 작업취소 여부 -->
+                <div class="form-group-checkbox">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="manualIsCancelled">
+                        <span>이 항목을 <strong>[작업취소]</strong> 상태로 등록 (합계 수량 제외)</span>
+                    </label>
+                </div>
+
+                <!-- 제품 목록 & 엑셀 붙여넣기 지원 영역 -->
+                <div class="form-group" style="margin-top: 14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                        <label class="form-label" style="margin-bottom:0;">제품 목록 (구분 / 모델명 / 수량) *</label>
+                        <button type="button" class="btn-small-add" onclick="window.addManualProductRow()">
+                            <i class="fas fa-plus"></i> 행 추가
+                        </button>
+                    </div>
+
+                    <!-- 엑셀 붙여넣기 팁 박스 -->
+                    <div id="excelPasteDropZone" class="excel-paste-zone" tabindex="0" onpaste="window.handlePasteExcelToManual(event)">
+                        <div class="paste-zone-header">
+                            <i class="fas fa-file-excel" style="color: #10b981; font-size: 1.1rem;"></i>
+                            <span><strong>엑셀 복사-붙여넣기 지원:</strong> 엑셀에서 복사(Ctrl+C) 후 여기를 클릭하고 붙여넣기(Ctrl+V) 하세요!</span>
+                        </div>
+                    </div>
+
+                    <div id="manualProductRows" class="manual-product-rows-container"></div>
+                </div>
+
+                <!-- 공박스 목록 -->
+                <div class="form-group" style="margin-top: 10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                        <label class="form-label" style="margin-bottom:0;">공박스 목록 (선택사항)</label>
+                        <button type="button" class="btn-small-add" onclick="window.addManualEmptyBoxRow()">
+                            <i class="fas fa-plus"></i> 공박스 추가
+                        </button>
+                    </div>
+                    <div id="manualEmptyBoxRows" class="manual-product-rows-container"></div>
+                </div>
+
+                <div class="ctnr-submodal-footer" style="margin-top: 16px;">
+                    <button type="button" class="btn-modal-secondary" onclick="window.closeAddManualModal()">
+                        취소
+                    </button>
+                    <button type="submit" class="btn-modal-primary">
+                        <i class="fas fa-check"></i> <span id="addManualSubmitBtnText">항목 저장</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -2987,7 +3188,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260827-cleanreportui"></script>
+    <script src="app_main.js?v=20260827-ctnrreportfull"></script>
 </body>
 
 </html>

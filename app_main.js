@@ -13055,11 +13055,15 @@ window.lightboxDownload = function() {
         }
     };
 
-    // ==========================================
-    // [작업 완료 보고서 (ReportModal) 제어 로직]
-    // ==========================================
+    // ====================================================
+    // [작업 완료 보고서 (ReportModal) CTNR 동일 제어 로직]
+    // ====================================================
     window.currentReportData = null;
     window.currentReportText = '';
+    window.reportViewMode = 'full';
+    window.cancelMode = 'cancel';
+    window.selectedManualTeam = '1조(BNI)';
+    window.editingReportItem = null;
 
     function formatReportYMD(d) {
         if (!d) return '';
@@ -13106,6 +13110,17 @@ window.lightboxDownload = function() {
         window.loadReportData();
     };
 
+    window.setReportViewMode = function(mode) {
+        window.reportViewMode = mode;
+        const btnFull = document.getElementById('btnReportViewFull');
+        const btnCompact = document.getElementById('btnReportViewCompact');
+        if (btnFull) btnFull.classList.toggle('active', mode === 'full');
+        if (btnCompact) btnCompact.classList.toggle('active', mode === 'compact');
+        if (window.currentReportData) {
+            window.renderReportUI(window.currentReportData);
+        }
+    };
+
     window.loadReportData = async function() {
         const dateInput = document.getElementById('reportTargetDate');
         const targetDate = dateInput?.value || formatReportYMD(new Date());
@@ -13114,11 +13129,13 @@ window.lightboxDownload = function() {
         const contentEl = document.getElementById('reportContentArea');
         const summaryTitleEl = document.getElementById('reportSummaryTitle');
         const carrierCountsEl = document.getElementById('reportCarrierCounts');
+        const statusBadgeEl = document.getElementById('reportSavedStatusBadge');
 
         if (loadingEl) loadingEl.style.display = 'block';
         if (contentEl) contentEl.innerHTML = '';
         if (summaryTitleEl) summaryTitleEl.textContent = `📅 ${targetDate} 작업 분량 조회 중...`;
         if (carrierCountsEl) carrierCountsEl.innerHTML = '';
+        if (statusBadgeEl) statusBadgeEl.style.display = 'none';
 
         try {
             const res = await fetch(`/api/reports/generate?startDate=${encodeURIComponent(targetDate)}&endDate=${encodeURIComponent(targetDate)}`);
@@ -13135,7 +13152,7 @@ window.lightboxDownload = function() {
                         <div style="text-align: center; padding: 80px 20px; color: #94a3b8;">
                             <i class="fas fa-file-excel" style="font-size: 3rem; margin-bottom: 14px; opacity: 0.35;"></i>
                             <div style="font-size: 1.1rem; font-weight: 800; color: #64748b;">${targetDate} 작업 데이터가 없습니다.</div>
-                            <div style="font-size: 0.85rem; margin-top: 6px; color: #94a3b8;">작업 일자를 변경하거나 이전/다음 날짜를 조회해 보세요.</div>
+                            <div style="font-size: 0.85rem; margin-top: 6px; color: #94a3b8;">[+ 항목 추가] 버튼으로 작업을 수동 등록하거나 이전/다음 날짜를 조회해 보세요.</div>
                         </div>
                     `;
                 }
@@ -13146,6 +13163,9 @@ window.lightboxDownload = function() {
             window.currentReportText = data.reportText || '';
             window.renderReportUI(data.reportData);
 
+            // 저장된 보고서 상태 확인
+            checkSavedReportStatus(targetDate);
+
         } catch (err) {
             console.error("loadReportData error:", err);
             if (loadingEl) loadingEl.style.display = 'none';
@@ -13154,6 +13174,22 @@ window.lightboxDownload = function() {
             }
         }
     };
+
+    async function checkSavedReportStatus(targetDate) {
+        try {
+            const res = await fetch(`/api/reports/saved?workDate=${encodeURIComponent(targetDate)}`);
+            const data = await res.json();
+            const statusBadgeEl = document.getElementById('reportSavedStatusBadge');
+            const statusTextEl = document.getElementById('reportSavedStatusText');
+            if (data.success && statusBadgeEl && statusTextEl) {
+                const savedTimeStr = data.updatedAt ? new Date(data.updatedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '';
+                statusTextEl.textContent = `${data.workDate} ${savedTimeStr} DB 저장본 (${data.savedBy || '관리자'})`;
+                statusBadgeEl.style.display = 'flex';
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
 
     window.renderReportUI = function(reportData) {
         const contentEl = document.getElementById('reportContentArea');
@@ -13174,17 +13210,21 @@ window.lightboxDownload = function() {
 
             uploaders.forEach(u => {
                 (u.containers || []).forEach(c => {
-                    dateContainerCount++;
-                    totalContainers++;
-                    const cTrans = (c.transporter || '').trim();
-                    let cName = '기타';
-                    if (cTrans.includes('천마')) cName = '천마';
-                    else if (cTrans.includes('BNI') || cTrans.includes('비엔아이')) cName = 'BNI';
-                    else if (u.teamName.includes('천마')) cName = '천마';
-                    else if (u.teamName.includes('BNI') || u.teamName.includes('비엔아이')) cName = 'BNI';
+                    const isCancelled = c.isCancelled || (c.adminComment || '').includes('[작업취소]') || (c.adminComment || '').includes('[취소]');
+                    const isExcluded = (c.adminComment || '').includes('[작업제외]');
+                    if (!isCancelled && !isExcluded) {
+                        dateContainerCount++;
+                        totalContainers++;
+                        const cTrans = (c.transporter || '').trim();
+                        let cName = '기타';
+                        if (cTrans.includes('천마')) cName = '천마';
+                        else if (cTrans.includes('BNI') || cTrans.includes('비엔아이')) cName = 'BNI';
+                        else if (u.teamName.includes('천마')) cName = '천마';
+                        else if (u.teamName.includes('BNI') || u.teamName.includes('비엔아이')) cName = 'BNI';
 
-                    dateCarrierMap[cName] = (dateCarrierMap[cName] || 0) + 1;
-                    globalCarrierMap[cName] = (globalCarrierMap[cName] || 0) + 1;
+                        dateCarrierMap[cName] = (dateCarrierMap[cName] || 0) + 1;
+                        globalCarrierMap[cName] = (globalCarrierMap[cName] || 0) + 1;
+                    }
                 });
             });
 
@@ -13193,19 +13233,15 @@ window.lightboxDownload = function() {
 
             html += `
                 <div class="report-date-section">
-                    <div class="report-date-title-box">
-                        <span class="report-date-title-text">📅 ${dateStr} 작업 분량 - 총 ${dateContainerCount}개 작업완료${carrierSummaryText}</span>
-                        <span style="font-size:0.8rem; font-weight:800; color:#0284c7;">${uploaders.length}개 조</span>
-                    </div>
-
                     <div class="report-team-columns">
                         ${uploaders.map(team => {
                             const cntrs = team.containers || [];
+                            const activeCntrs = cntrs.filter(c => !c.isCancelled && !(c.adminComment || '').includes('[작업취소]') && !(c.adminComment || '').includes('[작업제외]'));
                             return `
                                 <div class="report-team-card">
                                     <div class="report-team-header">
                                         <span>● ${team.teamName}</span>
-                                        <span class="report-team-count-badge">합계 ${cntrs.length}개</span>
+                                        <span class="report-team-count-badge">합계 ${activeCntrs.length}개</span>
                                     </div>
                                     <div class="report-cntr-list">
                                         ${cntrs.map(c => {
@@ -13215,51 +13251,70 @@ window.lightboxDownload = function() {
                                             const carrierClass = isChunma ? 'chunma' : (isBni ? 'bni' : '');
                                             const carrierLabel = isChunma ? '천마' : (isBni ? 'BNI' : cTrans || '');
 
+                                            const isCancelled = c.isCancelled || (c.adminComment || '').includes('[작업취소]') || (c.adminComment || '').includes('[취소]');
+                                            const isExcluded = (c.adminComment || '').includes('[작업제외]');
+                                            const cardStateClass = isExcluded ? 'is-excluded' : (isCancelled ? 'is-cancelled' : '');
+
                                             const totalQty = (c.products || []).reduce((sum, p) => sum + (p.qty || 0), 0);
                                             const modelCount = (c.products || []).length;
-                                            const typeLabel = c.jobType ? `<span style="color:#dc2626; font-weight:800;"> ( ${c.jobType} )</span>` : '';
-                                            const commentNote = c.adminComment ? ` (${c.adminComment})` : '';
+                                            const cleanAdminComment = (c.adminComment || '').replace(/\[작업취소\]/g, '').replace(/\[작업제외\]/g, '').replace(/\[취소\]/g, '').trim();
+                                            const typeLabel = c.jobType ? ` ( ${c.jobType} )` : (cleanAdminComment ? ` ( ${cleanAdminComment} )` : '');
+
+                                            const statusTag = isExcluded 
+                                                ? '<span style="background:#d97706; color:#fff; font-size:0.65rem; padding:1px 4px; border-radius:4px; margin-left:4px; font-weight:900;">작업제외</span>'
+                                                : isCancelled 
+                                                ? '<span style="background:#e11d48; color:#fff; font-size:0.65rem; padding:1px 4px; border-radius:4px; margin-left:4px; font-weight:900;">작업취소</span>'
+                                                : '';
 
                                             return `
-                                                <div class="report-cntr-card">
+                                                <div class="report-cntr-card ${cardStateClass}">
                                                     <div class="report-cntr-top">
-                                                        <div>
+                                                        <div class="report-cntr-title-group">
                                                             <strong class="report-cntr-no" style="${isChunma ? 'color:#dc2626;' : 'color:#0284c7;'}">${c.cntrNo}</strong>
                                                             ${carrierLabel ? `<span class="report-carrier-tag ${carrierClass}">[${carrierLabel}]</span>` : ''}
+                                                            ${statusTag}
+                                                            <button type="button" class="report-card-action-btn" onclick="window.handleEditReportItem('${c.cntrNo}', '${team.teamName}', '${dateStr}')" title="항목 수정">
+                                                                <i class="fas fa-pencil-alt"></i>
+                                                            </button>
+                                                            <button type="button" class="report-card-action-btn delete" onclick="window.handleDeleteReportItem('${c.cntrNo}', '${team.teamName}', '${dateStr}', ${c.manualEntryId || 'null'})" title="항목 취소 / 삭제">
+                                                                <i class="fas fa-trash-alt"></i>
+                                                            </button>
                                                         </div>
                                                         <span class="report-timeline-badge">${c.durationMinutes || 45}분 (${c.startTimeStr || '19:00'}~${c.endTimeStr || '19:45'})</span>
                                                     </div>
 
                                                     <div class="report-cntr-summary-line">
-                                                        ${modelCount}모델, ${totalQty.toLocaleString()}개${typeLabel}${commentNote}
+                                                        ${modelCount}모델, ${totalQty.toLocaleString()}개<span style="color:#dc2626; font-weight:800;">${typeLabel}</span>
                                                     </div>
 
                                                     ${(c.remark || c.lastRemark) ? `
                                                         <div class="report-comment-box">
-                                                            <i class="far fa-comment-dots" style="margin-right:4px;"></i> 지연사유: ${(c.remark || c.lastRemark || '').trim()}
+                                                            <i class="far fa-comment-dots" style="margin-right:4px;"></i> 지연사유: ${(c.remark || c.lastRemark || '').replace(/^지연사유:\s*/, '').trim()}
                                                         </div>
                                                     ` : ''}
 
-                                                    ${(c.products && c.products.length > 0) ? `
-                                                        <div class="report-prod-list">
-                                                            ${c.products.map(p => `
-                                                                <div class="report-prod-item">
-                                                                    <span class="report-prod-name" title="${p.name}">- [${p.division || 'CVZ'}] ${p.name}</span>
-                                                                    <span class="report-prod-qty">${(p.qty || 0).toLocaleString()}개</span>
-                                                                </div>
-                                                            `).join('')}
-                                                        </div>
-                                                    ` : ''}
+                                                    ${window.reportViewMode === 'full' ? `
+                                                        ${(c.products && c.products.length > 0) ? `
+                                                            <div class="report-prod-list">
+                                                                ${c.products.map(p => `
+                                                                    <div class="report-prod-item">
+                                                                        <span class="report-prod-name" title="${p.name}">- [${p.division || 'CVZ'}] ${p.name}</span>
+                                                                        <span class="report-prod-qty">${(p.qty || 0).toLocaleString()}개</span>
+                                                                    </div>
+                                                                `).join('')}
+                                                            </div>
+                                                        ` : ''}
 
-                                                    ${(c.emptyBoxes && c.emptyBoxes.length > 0) ? `
-                                                        <div class="report-prod-list" style="margin-top:4px;">
-                                                            ${c.emptyBoxes.map(eb => `
-                                                                <div class="report-prod-item" style="color:#b45309;">
-                                                                    <span class="report-prod-name">- 📦 [공박스] ${eb.name}</span>
-                                                                    <span class="report-prod-qty" style="color:#b45309;">${(eb.qty || 0).toLocaleString()}개</span>
-                                                                </div>
-                                                            `).join('')}
-                                                        </div>
+                                                        ${(c.emptyBoxes && c.emptyBoxes.length > 0) ? `
+                                                            <div class="report-prod-list" style="margin-top:4px;">
+                                                                ${c.emptyBoxes.map(eb => `
+                                                                    <div class="report-prod-item" style="color:#b45309;">
+                                                                        <span class="report-prod-name">- 📦 [공박스] ${eb.name}</span>
+                                                                        <span class="report-prod-qty" style="color:#b45309;">${(eb.qty || 0).toLocaleString()}개</span>
+                                                                    </div>
+                                                                `).join('')}
+                                                            </div>
+                                                        ` : ''}
                                                     ` : ''}
                                                 </div>
                                             `;
@@ -13287,6 +13342,525 @@ window.lightboxDownload = function() {
         }
     };
 
+    // --- 보고서 저장 (Save Report) ---
+    window.handleSaveReport = async function() {
+        if (!window.currentReportData || window.currentReportData.length === 0) {
+            alert("저장할 보고서 데이터가 없습니다.");
+            return;
+        }
+
+        const dateInput = document.getElementById('reportTargetDate');
+        const targetDate = dateInput?.value || formatReportYMD(new Date());
+
+        try {
+            const res = await fetch('/api/reports/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    workDate: targetDate,
+                    reportText: window.currentReportText || '',
+                    reportData: window.currentReportData,
+                    savedBy: '관리자'
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                const statusBadgeEl = document.getElementById('reportSavedStatusBadge');
+                const statusTextEl = document.getElementById('reportSavedStatusText');
+                if (statusBadgeEl && statusTextEl) {
+                    const savedTimeStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                    statusTextEl.textContent = `${targetDate} ${savedTimeStr} DB 저장 완료 (${data.savedBy})`;
+                    statusBadgeEl.style.display = 'flex';
+                }
+                alert(`✅ ${data.message || '보고서가 성공적으로 DB에 저장되었습니다.'}`);
+            } else {
+                alert(`저장 실패: ${data.error || '알 수 없는 오류'}`);
+            }
+        } catch (err) {
+            console.error("handleSaveReport error:", err);
+            alert(`보고서 저장 중 오류가 발생했습니다: ${err.message}`);
+        }
+    };
+
+    // --- 저장된 보고서 불러오기 (Load Saved Report) ---
+    window.handleLoadSavedReport = async function() {
+        const dateInput = document.getElementById('reportTargetDate');
+        const targetDate = dateInput?.value || formatReportYMD(new Date());
+
+        try {
+            const res = await fetch(`/api/reports/saved?workDate=${encodeURIComponent(targetDate)}`);
+            const data = await res.json();
+
+            if (!data.success || !data.reportData || data.reportData.length === 0) {
+                alert(data.message || `${targetDate}에 DB 저장된 보고서가 없습니다.`);
+                return;
+            }
+
+            window.currentReportData = data.reportData;
+            window.currentReportText = data.reportText || '';
+            window.renderReportUI(data.reportData);
+
+            const statusBadgeEl = document.getElementById('reportSavedStatusBadge');
+            const statusTextEl = document.getElementById('reportSavedStatusText');
+            if (statusBadgeEl && statusTextEl) {
+                const savedTimeStr = data.updatedAt ? new Date(data.updatedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '';
+                statusTextEl.textContent = `${data.workDate} ${savedTimeStr} DB 저장본 (${data.savedBy || '관리자'})`;
+                statusBadgeEl.style.display = 'flex';
+            }
+
+            alert(`📂 ${targetDate} DB 저장본을 성공적으로 불러왔습니다!`);
+        } catch (err) {
+            console.error("handleLoadSavedReport error:", err);
+            alert(`저장된 보고서 불러오기 중 오류: ${err.message}`);
+        }
+    };
+
+    // --- 작업취소 / 작업제외 관리 모달 (CancelManageModal) ---
+    window.openCancelManageModal = function() {
+        const modal = document.getElementById('cancelManageModal');
+        if (!modal) return;
+        window.renderCancelManageList();
+        modal.style.display = 'flex';
+    };
+
+    window.closeCancelManageModal = function() {
+        const modal = document.getElementById('cancelManageModal');
+        if (modal) modal.style.display = 'none';
+        window.loadReportData();
+    };
+
+    window.setCancelMode = function(mode) {
+        window.cancelMode = mode;
+        const btnCancel = document.getElementById('btnCancelModeCancel');
+        const btnExclude = document.getElementById('btnCancelModeExclude');
+        const tipEl = document.getElementById('cancelModeTipText');
+
+        if (btnCancel) btnCancel.classList.toggle('active', mode === 'cancel');
+        if (btnExclude) btnExclude.classList.toggle('active', mode === 'exclude');
+        if (tipEl) {
+            tipEl.textContent = mode === 'cancel' ? '[작업취소]' : '[작업제외]';
+            tipEl.style.color = mode === 'cancel' ? '#e11d48' : '#d97706';
+        }
+    };
+
+    window.renderCancelManageList = function() {
+        const area = document.getElementById('cancelManageListArea');
+        if (!area || !window.currentReportData || window.currentReportData.length === 0) {
+            if (area) area.innerHTML = '<div style="text-align:center; padding:30px; color:#94a3b8;">관리할 컨테이너 데이터가 없습니다.</div>';
+            return;
+        }
+
+        let html = '';
+        window.currentReportData.forEach(dg => {
+            (dg.uploaders || []).forEach(team => {
+                const cntrs = team.containers || [];
+                html += `
+                    <div class="cancel-team-group">
+                        <div class="cancel-team-header">
+                            <span>● ${team.teamName}</span>
+                            <span style="font-size:0.75rem; color:#64748b;">총 ${cntrs.length}개 항목</span>
+                        </div>
+                        <div class="cancel-cntr-grid">
+                            ${cntrs.map(c => {
+                                const isExcluded = (c.adminComment || '').includes('[작업제외]');
+                                const isCancelled = !isExcluded && (c.isCancelled || (c.adminComment || '').includes('[작업취소]') || (c.adminComment || '').includes('[취소]'));
+                                const isChecked = isCancelled || isExcluded;
+                                const itemClass = isExcluded ? 'is-excluded' : (isCancelled ? 'is-cancelled' : '');
+
+                                return `
+                                    <div class="cancel-cntr-item ${itemClass}">
+                                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; flex:1; min-width:0;">
+                                            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.handleToggleCancelCntr('${c.cntrNo}')" style="cursor:pointer;">
+                                            <div style="min-width:0; flex:1;">
+                                                <div style="font-weight:900; font-size:0.82rem; color:#0f172a; display:flex; align-items:center; gap:4px;">
+                                                    <span>${c.cntrNo}</span>
+                                                    ${isExcluded ? '<span style="background:#d97706; color:#fff; font-size:0.65rem; padding:1px 4px; border-radius:4px;">작업제외</span>' : (isCancelled ? '<span style="background:#e11d48; color:#fff; font-size:0.65rem; padding:1px 4px; border-radius:4px;">작업취소</span>' : '')}
+                                                </div>
+                                                <div style="font-size:0.7rem; color:#64748b; margin-top:2px;">${(c.products || []).length}모델 · ${c.jobType || ''}</div>
+                                            </div>
+                                        </label>
+                                        ${isChecked ? `
+                                            <div style="display:flex; gap:3px;">
+                                                <button type="button" class="btn-toggle-cancel-type" style="${isCancelled ? 'background:#e11d48; color:#fff;' : ''}" onclick="window.handleSetCancelType('${c.cntrNo}', 'cancel')">취소</button>
+                                                <button type="button" class="btn-toggle-cancel-type" style="${isExcluded ? 'background:#d97706; color:#fff;' : ''}" onclick="window.handleSetCancelType('${c.cntrNo}', 'exclude')">제외</button>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+        });
+
+        area.innerHTML = html;
+    };
+
+    window.handleToggleCancelCntr = async function(cntrNo) {
+        const dateInput = document.getElementById('reportTargetDate');
+        const targetDate = dateInput?.value || formatReportYMD(new Date());
+
+        try {
+            await fetch('/api/reports/toggle-cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cntrNo, workDate: targetDate, mode: window.cancelMode })
+            });
+            await window.loadReportData();
+            window.renderCancelManageList();
+        } catch (e) {
+            console.error("handleToggleCancelCntr error:", e);
+        }
+    };
+
+    window.handleSetCancelType = async function(cntrNo, cancelType) {
+        const dateInput = document.getElementById('reportTargetDate');
+        const targetDate = dateInput?.value || formatReportYMD(new Date());
+
+        try {
+            await fetch('/api/reports/toggle-cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cntrNo, workDate: targetDate, cancelType })
+            });
+            await window.loadReportData();
+            window.renderCancelManageList();
+        } catch (e) {
+            console.error("handleSetCancelType error:", e);
+        }
+    };
+
+    // --- 수동 항목 추가 및 수정 모달 (AddManualModal) ---
+    window.openAddManualModal = function(itemToEdit = null) {
+        const modal = document.getElementById('addManualReportModal');
+        if (!modal) return;
+
+        window.editingReportItem = itemToEdit;
+        const titleEl = document.getElementById('addManualModalTitle');
+        const submitBtnTextEl = document.getElementById('addManualSubmitBtnText');
+        const editIdEl = document.getElementById('manualEditId');
+        const cntrNoEl = document.getElementById('manualCntrNo');
+        const transpEl = document.getElementById('manualTransporter');
+        const catEl = document.getElementById('manualCategory');
+        const durEl = document.getElementById('manualDuration');
+        const remarkEl = document.getElementById('manualRemark');
+        const isCancelEl = document.getElementById('manualIsCancelled');
+
+        if (itemToEdit) {
+            if (titleEl) titleEl.textContent = '보고서 항목 수정';
+            if (submitBtnTextEl) submitBtnTextEl.textContent = '수정 완료';
+            if (editIdEl) editIdEl.value = itemToEdit.manualEntryId || '';
+            if (cntrNoEl) cntrNoEl.value = itemToEdit.cntrNo || '';
+            if (transpEl) transpEl.value = itemToEdit.transporter || '천마';
+            if (catEl) catEl.value = itemToEdit.category || itemToEdit.adminComment || '';
+            if (durEl) durEl.value = itemToEdit.durationMinutes || 45;
+            if (remarkEl) remarkEl.value = (itemToEdit.remark || itemToEdit.lastRemark || '').replace(/^지연사유:\s*/, '');
+            if (isCancelEl) isCancelEl.checked = itemToEdit.isCancelled || false;
+            window.selectManualTeam(itemToEdit.teamName || '1조(BNI)');
+
+            // populate product rows
+            const prodRowsEl = document.getElementById('manualProductRows');
+            if (prodRowsEl) prodRowsEl.innerHTML = '';
+            (itemToEdit.products || []).forEach(p => {
+                window.addManualProductRow(p.division || 'CVZ', p.name || '', p.qty || 0);
+            });
+            if (!itemToEdit.products || itemToEdit.products.length === 0) {
+                window.addManualProductRow('CVZ', '', 0);
+            }
+
+            // populate empty box rows
+            const ebRowsEl = document.getElementById('manualEmptyBoxRows');
+            if (ebRowsEl) ebRowsEl.innerHTML = '';
+            (itemToEdit.emptyBoxes || []).forEach(eb => {
+                window.addManualEmptyBoxRow(eb.name || '', eb.qty || 0);
+            });
+
+        } else {
+            if (titleEl) titleEl.textContent = '보고서 전용 수동 항목 추가';
+            if (submitBtnTextEl) submitBtnTextEl.textContent = '항목 저장';
+            if (editIdEl) editIdEl.value = '';
+            if (cntrNoEl) cntrNoEl.value = '';
+            if (transpEl) transpEl.value = '천마';
+            if (catEl) catEl.value = '';
+            if (durEl) durEl.value = 45;
+            if (remarkEl) remarkEl.value = '';
+            if (isCancelEl) isCancelEl.checked = false;
+            window.selectManualTeam('1조(BNI)');
+
+            const prodRowsEl = document.getElementById('manualProductRows');
+            if (prodRowsEl) {
+                prodRowsEl.innerHTML = '';
+                window.addManualProductRow('CVZ', '', 0);
+            }
+            const ebRowsEl = document.getElementById('manualEmptyBoxRows');
+            if (ebRowsEl) ebRowsEl.innerHTML = '';
+        }
+
+        window.updateManualInsertIndexOptions();
+        modal.style.display = 'flex';
+    };
+
+    window.closeAddManualModal = function() {
+        const modal = document.getElementById('addManualReportModal');
+        if (modal) modal.style.display = 'none';
+        window.editingReportItem = null;
+    };
+
+    window.selectManualTeam = function(teamName) {
+        window.selectedManualTeam = teamName;
+        document.querySelectorAll('.btn-team-tab').forEach(b => {
+            b.classList.toggle('active', b.dataset.team === teamName);
+        });
+        const transpEl = document.getElementById('manualTransporter');
+        if (transpEl && !window.editingReportItem) {
+            transpEl.value = teamName.includes('BNI') || teamName.includes('비엔아이') ? 'BNI' : '천마';
+        }
+        window.updateManualInsertIndexOptions();
+    };
+
+    window.updateManualInsertIndexOptions = function() {
+        const select = document.getElementById('manualInsertIndex');
+        if (!select) return;
+
+        let cntrsInTeam = [];
+        if (window.currentReportData && window.currentReportData[0]) {
+            const teamObj = window.currentReportData[0].uploaders?.find(u => u.teamName === window.selectedManualTeam);
+            cntrsInTeam = teamObj?.containers || [];
+        }
+
+        let html = '<option value="end">맨 마지막 (자동 계산)</option>';
+        if (cntrsInTeam.length > 0) {
+            html += '<option value="0">1번째 작업 (맨 처음)</option>';
+            for (let i = 1; i < cntrsInTeam.length; i++) {
+                html += `<option value="${i}">${i + 1}번째 작업 (${cntrsInTeam[i - 1].cntrNo} 다음)</option>`;
+            }
+        }
+        select.innerHTML = html;
+    };
+
+    window.addManualProductRow = function(division = 'CVZ', name = '', qty = 0) {
+        const container = document.getElementById('manualProductRows');
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'manual-product-row';
+        row.innerHTML = `
+            <input type="text" class="form-input prod-div font-bold" style="width: 80px;" placeholder="구분" value="${division}">
+            <input type="text" class="form-input prod-name font-bold" style="flex: 1;" placeholder="모델명 (예: LPGU6319Y)" value="${name}">
+            <input type="number" class="form-input prod-qty font-bold" style="width: 80px;" placeholder="수량" value="${qty || ''}">
+            <button type="button" class="report-card-action-btn delete" onclick="window.removeManualProductRow(this)" title="행 삭제">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        `;
+        container.appendChild(row);
+    };
+
+    window.removeManualProductRow = function(btn) {
+        const row = btn.closest('.manual-product-row');
+        if (row) row.remove();
+    };
+
+    window.addManualEmptyBoxRow = function(name = '', qty = 0) {
+        const container = document.getElementById('manualEmptyBoxRows');
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'manual-product-row';
+        row.innerHTML = `
+            <input type="text" class="form-input eb-name font-bold" style="flex: 1;" placeholder="공박스명 (예: 대형박스)" value="${name}">
+            <input type="number" class="form-input eb-qty font-bold" style="width: 90px;" placeholder="수량" value="${qty || ''}">
+            <button type="button" class="report-card-action-btn delete" onclick="window.removeManualEmptyBoxRow(this)" title="행 삭제">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        `;
+        container.appendChild(row);
+    };
+
+    window.removeManualEmptyBoxRow = function(btn) {
+        const row = btn.closest('.manual-product-row');
+        if (row) row.remove();
+    };
+
+    window.handlePasteExcelToManual = function(e) {
+        const text = e.clipboardData.getData('Text');
+        if (!text) return;
+
+        const rows = text.split(/\r?\n/).filter(r => r.trim() !== '');
+        const parsedProducts = [];
+
+        for (const r of rows) {
+            const cols = r.split('\t').map(c => c.trim());
+            if (cols.length >= 3) {
+                const qty = parseInt(cols[2].replace(/,/g, ''), 10) || 0;
+                parsedProducts.push({ division: cols[0] || 'CVZ', name: cols[1], qty });
+            } else if (cols.length === 2) {
+                const qty = parseInt(cols[1].replace(/,/g, ''), 10) || 0;
+                parsedProducts.push({ division: 'CVZ', name: cols[0], qty });
+            }
+        }
+
+        if (parsedProducts.length > 0) {
+            e.preventDefault();
+            const container = document.getElementById('manualProductRows');
+            if (container) {
+                const existingRows = container.querySelectorAll('.manual-product-row');
+                if (existingRows.length === 1) {
+                    const firstInput = existingRows[0].querySelector('.prod-name');
+                    if (!firstInput?.value.trim()) {
+                        container.innerHTML = '';
+                    }
+                }
+                parsedProducts.forEach(p => {
+                    window.addManualProductRow(p.division, p.name, p.qty);
+                });
+            }
+            alert(`📋 엑셀에서 ${parsedProducts.length}개 품목이 자동 입력되었습니다!`);
+        }
+    };
+
+    window.submitManualReportItem = async function(event) {
+        if (event) event.preventDefault();
+
+        const editId = document.getElementById('manualEditId')?.value;
+        const cntrNo = document.getElementById('manualCntrNo')?.value.trim().toUpperCase();
+        const transporter = document.getElementById('manualTransporter')?.value;
+        const category = document.getElementById('manualCategory')?.value.trim();
+        const durationMinutes = parseInt(document.getElementById('manualDuration')?.value, 10) || 45;
+        const remark = document.getElementById('manualRemark')?.value.trim();
+        const isCancelled = document.getElementById('manualIsCancelled')?.checked;
+        const insertIndex = document.getElementById('manualInsertIndex')?.value;
+
+        if (!cntrNo) {
+            alert("컨테이너 번호를 입력해주세요.");
+            return;
+        }
+
+        const prodRows = document.querySelectorAll('#manualProductRows .manual-product-row');
+        const products = [];
+        prodRows.forEach(r => {
+            const div = r.querySelector('.prod-div')?.value.trim() || 'CVZ';
+            const name = r.querySelector('.prod-name')?.value.trim().toUpperCase();
+            const qty = parseInt(r.querySelector('.prod-qty')?.value, 10) || 0;
+            if (name && qty > 0) {
+                products.push({ division: div, name, qty });
+            }
+        });
+
+        if (products.length === 0) {
+            alert("최소 1개 이상의 유효한 제품 모델명과 수량을 입력해주세요.");
+            return;
+        }
+
+        const ebRows = document.querySelectorAll('#manualEmptyBoxRows .manual-product-row');
+        const emptyBoxes = [];
+        ebRows.forEach(r => {
+            const name = r.querySelector('.eb-name')?.value.trim().toUpperCase();
+            const qty = parseInt(r.querySelector('.eb-qty')?.value, 10) || 0;
+            if (name && qty > 0) {
+                emptyBoxes.push({ name, qty });
+            }
+        });
+
+        const dateInput = document.getElementById('reportTargetDate');
+        const targetDate = dateInput?.value || formatReportYMD(new Date());
+
+        const finalCategory = isCancelled 
+            ? (category ? `${category} [작업취소]` : '[작업취소]')
+            : category;
+
+        try {
+            if (editId || !window.editingReportItem) {
+                // 신규 수동 추가 또는 수동 항목 수정
+                const res = await fetch('/api/reports/manual-entry', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: editId ? parseInt(editId, 10) : undefined,
+                        workDate: targetDate,
+                        teamName: window.selectedManualTeam,
+                        cntrNo,
+                        category: finalCategory,
+                        transporter,
+                        durationMinutes,
+                        remark,
+                        products,
+                        emptyBoxes
+                    })
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    alert(`저장 실패: ${data.error || data.message}`);
+                    return;
+                }
+            } else {
+                // 기존 DB 컨테이너 수정
+                await fetch('/api/reports/update-container', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cntrNo,
+                        workDate: targetDate,
+                        durationMinutes,
+                        remark,
+                        category: finalCategory,
+                        transporter,
+                        emptyBoxes
+                    })
+                });
+            }
+
+            window.closeAddManualModal();
+            await window.loadReportData();
+            alert("✅ 보고서 항목이 성공적으로 저장되었습니다!");
+
+        } catch (err) {
+            console.error("submitManualReportItem error:", err);
+            alert(`항목 저장 중 오류: ${err.message}`);
+        }
+    };
+
+    window.handleEditReportItem = function(cntrNo, teamName, dateStr) {
+        if (!window.currentReportData) return;
+        let foundCntr = null;
+        window.currentReportData.forEach(dg => {
+            dg.uploaders?.forEach(u => {
+                const c = u.containers?.find(x => x.cntrNo === cntrNo);
+                if (c) foundCntr = { ...c, teamName: u.teamName };
+            });
+        });
+
+        if (foundCntr) {
+            window.openAddManualModal(foundCntr);
+        }
+    };
+
+    window.handleDeleteReportItem = async function(cntrNo, teamName, dateStr, manualEntryId) {
+        if (!confirm(`'${cntrNo}' 컨테이너 항목을 삭제 또는 [작업취소] 처리하시겠습니까?`)) {
+            return;
+        }
+
+        try {
+            if (manualEntryId) {
+                // 수동 항목 영구 삭제
+                await fetch(`/api/reports/manual-entry?id=${manualEntryId}`, { method: 'DELETE' });
+            } else {
+                // 기존 컨테이너 [작업취소] 토글
+                await fetch('/api/reports/toggle-cancel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cntrNo, workDate: dateStr, cancelType: 'cancel' })
+                });
+            }
+            await window.loadReportData();
+            alert(`'${cntrNo}' 항목 처리가 완료되었습니다.`);
+        } catch (e) {
+            console.error("handleDeleteReportItem error:", e);
+            alert(`삭제 처리 중 오류: ${e.message}`);
+        }
+    };
+
     window.copyReportPreset = function(preset) {
         if (!window.currentReportData || window.currentReportData.length === 0) {
             alert("복사할 보고서 데이터가 없습니다.");
@@ -13301,7 +13875,7 @@ window.lightboxDownload = function() {
 
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(text).then(() => {
-                const presetName = preset === 'summary' ? '콤팩트 요약' : (preset === 'anomaly' ? '특이사항/지연' : '기본');
+                const presetName = preset === 'summary' ? '콤팩트 요약' : (preset === 'anomaly' ? '특이사항/지연' : '기본 상세');
                 alert(`✅ [${presetName} 보고서] 텍스트가 클립보드에 복사되었습니다!\n메신저(카카오톡 등)에 바로 붙여넣기(Ctrl+V) 하세요.`);
             }).catch(err => {
                 copyTextFallback(text);
@@ -13328,11 +13902,15 @@ window.lightboxDownload = function() {
             const activeCarrierCounts = {};
             dateGroup.uploaders?.forEach((u) => {
                 u.containers?.forEach((c) => {
-                    const cTrans = (c.transporter || '').trim();
-                    let cName = '기타';
-                    if (cTrans.includes('천마') || u.teamName.includes('천마')) cName = '천마';
-                    else if (cTrans.includes('BNI') || cTrans.includes('비엔아이')) cName = 'BNI';
-                    activeCarrierCounts[cName] = (activeCarrierCounts[cName] || 0) + 1;
+                    const isCancelled = c.isCancelled || (c.adminComment || '').includes('[작업취소]') || (c.adminComment || '').includes('[취소]');
+                    const isExcluded = (c.adminComment || '').includes('[작업제외]');
+                    if (!isCancelled && !isExcluded) {
+                        const cTrans = (c.transporter || '').trim();
+                        let cName = '기타';
+                        if (cTrans.includes('천마') || u.teamName.includes('천마')) cName = '천마';
+                        else if (cTrans.includes('BNI') || cTrans.includes('비엔아이') || u.teamName.includes('BNI')) cName = 'BNI';
+                        activeCarrierCounts[cName] = (activeCarrierCounts[cName] || 0) + 1;
+                    }
                 });
             });
             const displayTotal = Object.values(activeCarrierCounts).reduce((a, b) => a + b, 0);
@@ -13354,10 +13932,10 @@ window.lightboxDownload = function() {
                         teamAnomalies.forEach((cntr) => {
                             anomalyCount++;
                             const adminCommentNote = cntr.adminComment ? ` (코멘트: ${cntr.adminComment})` : '';
-                            const remarkNote = (cntr.lastRemark || cntr.remark || '').trim();
+                            const remarkNote = (cntr.lastRemark || cntr.remark || '').replace(/^지연사유:\s*/, '').trim();
                             lines.push(`- ${cntr.cntrNo}${adminCommentNote}`);
                             if (remarkNote) {
-                                lines.push(`  💬 비고/지연: ${remarkNote}`);
+                                lines.push(`  💬 지연사유: ${remarkNote}`);
                             }
                         });
                         lines.push(``);
@@ -13371,26 +13949,32 @@ window.lightboxDownload = function() {
             }
 
             dateGroup.uploaders?.forEach((team) => {
-                lines.push(`■ ${team.teamName} (합계 ${team.containers.length}개)`);
+                const activeCntrs = (team.containers || []).filter(c => !c.isCancelled && !(c.adminComment || '').includes('[작업취소]') && !(c.adminComment || '').includes('[작업제외]'));
+                lines.push(`■ ${team.teamName} (합계 ${activeCntrs.length}개)`);
+
                 team.containers?.forEach((cntr) => {
+                    const isCancelled = cntr.isCancelled || (cntr.adminComment || '').includes('[작업취소]') || (cntr.adminComment || '').includes('[취소]');
+                    const isExcluded = (cntr.adminComment || '').includes('[작업제외]');
+                    const cancelTag = isExcluded ? ' [작업제외]' : (isCancelled ? ' [작업취소]' : '');
+
                     const adminCommentNote = cntr.adminComment ? ` (${cntr.adminComment})` : '';
                     const totalQty = cntr.totalQty ? cntr.totalQty.toLocaleString() : (cntr.products || []).reduce((s, p) => s + (p.qty || 0), 0).toLocaleString();
                     const modelCount = cntr.modelCount || (cntr.products || []).length;
                     
                     if (preset === 'summary') {
-                        lines.push(`- ${cntr.cntrNo} (${modelCount}모델, ${totalQty}개${adminCommentNote}) ${cntr.workTimeStr ? `[${cntr.workTimeStr}]` : ''}`);
+                        lines.push(`- ${cntr.cntrNo} (${modelCount}모델, ${totalQty}개${adminCommentNote}${cancelTag}) ${cntr.startTimeStr ? `[${cntr.durationMinutes || 45}분 (${cntr.startTimeStr}~${cntr.endTimeStr})]` : ''}`);
                         if (cntr.lastRemark && cntr.lastRemark.trim()) {
                             lines.push(`  💬 ${cntr.lastRemark.trim()}`);
                         }
                     } else {
-                        lines.push(`${cntr.cntrNo} (${modelCount}모델, ${totalQty}개${adminCommentNote}) [${cntr.workTimeStr || ''}]`);
+                        lines.push(`${cntr.cntrNo} (${modelCount}모델, ${totalQty}개${adminCommentNote}${cancelTag}) [${cntr.durationMinutes || 45}분 (${cntr.startTimeStr || '19:00'}~${cntr.endTimeStr || '19:45'})]`);
 
                         if (cntr.lastRemark && cntr.lastRemark.trim()) {
                             lines.push(`- 💬 ${cntr.lastRemark.trim()}`);
                         }
                         if (cntr.products) {
                             for (const p of cntr.products) {
-                                lines.push(`- [${p.division || 'DFZ'}] ${p.name} ${(p.qty || 0).toLocaleString()}개`);
+                                lines.push(`- [${p.division || 'CVZ'}] ${p.name} ${(p.qty || 0).toLocaleString()}개`);
                             }
                         }
                         if (cntr.emptyBoxes && cntr.emptyBoxes.length > 0) {
