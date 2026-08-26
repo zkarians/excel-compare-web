@@ -13204,7 +13204,7 @@ window.lightboxDownload = function() {
                             return `
                                 <div class="report-team-card">
                                     <div class="report-team-header">
-                                        <span>■ ${team.teamName}</span>
+                                        <span>● ${team.teamName}</span>
                                         <span class="report-team-count-badge">합계 ${cntrs.length}개</span>
                                     </div>
                                     <div class="report-cntr-list">
@@ -13217,28 +13217,34 @@ window.lightboxDownload = function() {
 
                                             const totalQty = (c.products || []).reduce((sum, p) => sum + (p.qty || 0), 0);
                                             const modelCount = (c.products || []).length;
-                                            const breakTag = c.hasBreak ? '<span style="color:#e11d48; margin-left:3px; font-weight:800;">*휴식포함*</span>' : '';
+                                            const typeLabel = c.jobType ? `<span style="color:#dc2626; font-weight:800;"> ( ${c.jobType} )</span>` : '';
                                             const commentNote = c.adminComment ? ` (${c.adminComment})` : '';
 
                                             return `
                                                 <div class="report-cntr-card">
                                                     <div class="report-cntr-top">
                                                         <div>
-                                                            <strong class="report-cntr-no">${c.cntrNo}</strong>
+                                                            <strong class="report-cntr-no" style="${isChunma ? 'color:#dc2626;' : 'color:#0284c7;'}">${c.cntrNo}</strong>
                                                             ${carrierLabel ? `<span class="report-carrier-tag ${carrierClass}">[${carrierLabel}]</span>` : ''}
                                                         </div>
-                                                        <span class="report-timeline-badge">${c.durationMinutes || 45}분: ${c.startTimeStr || '19:00'}~${c.endTimeStr || '19:45'}${breakTag}</span>
+                                                        <span class="report-timeline-badge">${c.durationMinutes || 45}분 (${c.startTimeStr || '19:00'}~${c.endTimeStr || '19:45'})</span>
                                                     </div>
 
                                                     <div class="report-cntr-summary-line">
-                                                        📊 ${modelCount}모델 · 총 ${totalQty.toLocaleString()}개${commentNote}
+                                                        ${modelCount}모델, ${totalQty.toLocaleString()}개${typeLabel}${commentNote}
                                                     </div>
+
+                                                    ${(c.remark || c.lastRemark) ? `
+                                                        <div class="report-comment-box">
+                                                            <i class="far fa-comment-dots" style="margin-right:4px;"></i> 지연사유: ${(c.remark || c.lastRemark || '').trim()}
+                                                        </div>
+                                                    ` : ''}
 
                                                     ${(c.products && c.products.length > 0) ? `
                                                         <div class="report-prod-list">
                                                             ${c.products.map(p => `
                                                                 <div class="report-prod-item">
-                                                                    <span class="report-prod-name" title="${p.name}">[${p.division || '일반'}] ${p.name}</span>
+                                                                    <span class="report-prod-name" title="${p.name}">- [${p.division || 'CVZ'}] ${p.name}</span>
                                                                     <span class="report-prod-qty">${(p.qty || 0).toLocaleString()}개</span>
                                                                 </div>
                                                             `).join('')}
@@ -13249,16 +13255,10 @@ window.lightboxDownload = function() {
                                                         <div class="report-prod-list" style="margin-top:4px;">
                                                             ${c.emptyBoxes.map(eb => `
                                                                 <div class="report-prod-item" style="color:#b45309;">
-                                                                    <span class="report-prod-name">📦 [공박스] ${eb.name}</span>
+                                                                    <span class="report-prod-name">- 📦 [공박스] ${eb.name}</span>
                                                                     <span class="report-prod-qty" style="color:#b45309;">${(eb.qty || 0).toLocaleString()}개</span>
                                                                 </div>
                                                             `).join('')}
-                                                        </div>
-                                                    ` : ''}
-
-                                                    ${(c.remark || c.lastRemark) ? `
-                                                        <div class="report-comment-box">
-                                                            <i class="fas fa-comment-dots"></i> 💬 지연/비고: ${(c.remark || c.lastRemark || '').trim()}
                                                         </div>
                                                     ` : ''}
                                                 </div>
