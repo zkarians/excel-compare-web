@@ -11517,8 +11517,13 @@ window.openAvailabilityInExcel = async function() {
     }
 };
 
-// ==================== 컨테이너 사진 갤러리 및 업로드 매니저 ====================
+// ==================== 컨테이너 사진 갤러리 (CTNR 앱 동일 구조) ====================
 window.containerPhotoCounts = {};
+window.galleryViewMode = 'LARGE'; // 'LARGE' (스크린샷 1 크게) or 'GRID' (스크린샷 2 바둑판)
+window.gallerySortBy = 'NAME_ASC';
+window.selectedPhotoIds = new Set();
+window.currentGalleryPhotos = [];
+window.currentGalleryTargetCntr = '';
 
 window.fetchContainerPhotoCounts = async function() {
     try {
@@ -11540,7 +11545,6 @@ window.renderContainerPhotoBtn = function(cntrNo) {
     return `<button class="btn-cntr-photo has-photos" onclick="window.openContainerPhotoModal('${cleanCntr.replace(/'/g, "\\'")}', event)" title="컨테이너 사진 ${count}장 등록됨 (클릭하여 보기)"><i class="fas fa-camera"></i> <span style="font-size:0.65rem; font-weight:800; margin-left:1px;">${count}</span></button>`;
 };
 
-let currentGalleryPhotos = [];
 let lightboxPhotos = [];
 let currentLightboxIndex = 0;
 let lightboxScale = 1;
@@ -11548,7 +11552,87 @@ let lightboxRotation = 0;
 let lightboxPan = { x: 0, y: 0 };
 let isLightboxDragging = false;
 let lightboxDragStart = { x: 0, y: 0 };
-let uploadSelectedFiles = [];
+
+// 뷰 모드 전환 (바둑판 / 크게)
+window.setGalleryViewMode = function(mode) {
+    window.galleryViewMode = mode;
+    const btnGrid = document.getElementById('btnViewGrid');
+    const btnLarge = document.getElementById('btnViewLarge');
+    if (btnGrid) btnGrid.classList.toggle('active', mode === 'GRID');
+    if (btnLarge) btnLarge.classList.toggle('active', mode === 'LARGE');
+    window.renderGalleryPhotos();
+};
+
+// 정렬 변경
+window.setGallerySort = function(sortBy) {
+    window.gallerySortBy = sortBy;
+    window.renderGalleryPhotos();
+};
+
+// 전체 선택
+window.toggleSelectAllPhotos = function(checked) {
+    if (checked) {
+        window.currentGalleryPhotos.forEach(p => window.selectedPhotoIds.add(String(p.id)));
+    } else {
+        window.selectedPhotoIds.clear();
+    }
+    document.querySelectorAll('.ctnr-photo-chk').forEach(chk => { chk.checked = checked; });
+};
+
+// 개별 사진 선택
+window.togglePhotoSelect = function(id, e) {
+    if (e) e.stopPropagation();
+    const strId = String(id);
+    if (window.selectedPhotoIds.has(strId)) {
+        window.selectedPhotoIds.delete(strId);
+    } else {
+        window.selectedPhotoIds.add(strId);
+    }
+    const selectAllChk = document.getElementById('gallerySelectAllChk');
+    if (selectAllChk) {
+        selectAllChk.checked = window.currentGalleryPhotos.length > 0 && window.selectedPhotoIds.size === window.currentGalleryPhotos.length;
+    }
+};
+
+// 상세에서 폴더 목록으로 뒤로가기
+window.goBackToFolderList = function() {
+    window.currentGalleryTargetCntr = '';
+    const searchEl = document.getElementById('photoGallerySearchCntr');
+    if (searchEl) searchEl.value = '';
+    window.loadPhotoGallery('');
+};
+
+// 필터 초기화
+window.resetGalleryFilters = function() {
+    const formatYMD = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    const startDateEl = document.getElementById('photoGalleryStartDate');
+    const endDateEl = document.getElementById('photoGalleryEndDate');
+    const searchEl = document.getElementById('photoGallerySearchCntr');
+    const typeEl = document.getElementById('photoGalleryTypeFilter');
+
+    if (startDateEl) startDateEl.value = formatYMD(yesterday);
+    if (endDateEl) endDateEl.value = formatYMD(today);
+    if (searchEl) searchEl.value = '';
+    if (typeEl) typeEl.value = 'all';
+
+    window.currentGalleryTargetCntr = '';
+    window.loadPhotoGallery('');
+};
+
+// 모달 닫기
+window.closePhotoGalleryModal = function() {
+    const modal = document.getElementById('photoGalleryModal');
+    if (modal) modal.style.display = 'none';
+};
 
 // 1. 사진 보관함 모달 오픈 (상단 버튼 또는 컨테이너 클릭)
 window.openPhotoGalleryModal = function(initialCntrNo = '') {
@@ -11557,7 +11641,6 @@ window.openPhotoGalleryModal = function(initialCntrNo = '') {
 
     modal.style.display = 'flex';
 
-    // 로컬 기준 YYYY-MM-DD 생성 헬퍼
     const formatYMD = (d) => {
         const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -11573,12 +11656,12 @@ window.openPhotoGalleryModal = function(initialCntrNo = '') {
     const endDateEl = document.getElementById('photoGalleryEndDate');
     const searchEl = document.getElementById('photoGallerySearchCntr');
 
-    // 상위메뉴 [사진함] 클릭 시 기본값은 [어제 ~ 오늘]
-    if (startDateEl) startDateEl.value = formatYMD(yesterday);
-    if (endDateEl) endDateEl.value = formatYMD(today);
+    if (startDateEl && !startDateEl.value) startDateEl.value = formatYMD(yesterday);
+    if (endDateEl && !endDateEl.value) endDateEl.value = formatYMD(today);
     if (searchEl) searchEl.value = initialCntrNo || '';
 
-    window.loadPhotoGallery(initialCntrNo);
+    window.currentGalleryTargetCntr = (initialCntrNo || '').trim().toUpperCase();
+    window.loadPhotoGallery(window.currentGalleryTargetCntr);
 };
 
 // 특정 컨테이너 전용 사진 퀵 오픈 (카메라 버튼 클릭 시)
@@ -11596,6 +11679,8 @@ window.loadPhotoGallery = async function(targetCntr = '') {
     const searchInputEl = document.getElementById('photoGallerySearchCntr');
 
     const searchCntr = (targetCntr !== undefined && targetCntr !== null && targetCntr !== '' ? targetCntr : (searchInputEl?.value || '')).trim().toUpperCase();
+    window.currentGalleryTargetCntr = searchCntr;
+
     if (searchInputEl && searchCntr) {
         searchInputEl.value = searchCntr;
     }
@@ -11610,12 +11695,11 @@ window.loadPhotoGallery = async function(targetCntr = '') {
     try {
         let url = `${API_BASE}/api/photos?`;
         const queryParams = [];
-        
-        // [사용자 요구사항] 컨테이너 번호로 조회할 때는 날짜 조건에 구애받지 않고 모든 일자의 사진 로드
+
+        // 컨테이너 번호 검색 시 날짜 제약 없이 모든 일자의 사진 로드
         if (searchCntr) {
             queryParams.push(`cntrNo=${encodeURIComponent(searchCntr)}`);
         } else {
-            // 상위메뉴 사진함 전체 조회 시 설정된 날짜 범위(어제~오늘) 적용
             if (startDate) queryParams.push(`startDate=${encodeURIComponent(startDate)}`);
             if (endDate) queryParams.push(`endDate=${encodeURIComponent(endDate)}`);
         }
@@ -11629,65 +11713,152 @@ window.loadPhotoGallery = async function(targetCntr = '') {
         if (loadingEl) loadingEl.style.display = 'none';
 
         if (!data.success || !data.photos || data.photos.length === 0) {
-            currentGalleryPhotos = [];
+            window.currentGalleryPhotos = [];
+            window.selectedPhotoIds.clear();
             if (listEl) {
                 listEl.innerHTML = `
-                    <div style="text-align: center; padding: 60px 20px; color: #64748b;">
-                        <i class="fas fa-camera-retro" style="font-size: 3rem; margin-bottom: 12px; opacity: 0.5;"></i>
-                        <div style="font-size: 1rem; font-weight: 700; color: #94a3b8;">등록된 컨테이너 사진이 없습니다.</div>
-                        <div style="font-size: 0.8rem; margin-top: 6px;">현장 CTNR 앱에서 사진이 등록되면 실시간으로 표시됩니다.</div>
+                    <div style="text-align: center; padding: 100px 20px; color: #64748b;">
+                        <i class="fas fa-camera-retro" style="font-size: 3.5rem; margin-bottom: 16px; opacity: 0.4;"></i>
+                        <div style="font-size: 1.1rem; font-weight: 800; color: #94a3b8;">등록된 컨테이너 사진이 없습니다.</div>
+                        <div style="font-size: 0.85rem; margin-top: 8px; color: #64748b;">현장 CTNR 앱에서 사진이 등록되면 실시간으로 조회할 수 있습니다.</div>
                     </div>
                 `;
             }
             if (summaryEl) summaryEl.textContent = '조회된 사진: 0장 (0개 컨테이너)';
+            const badgeBox = document.getElementById('galleryCntrBadgeBox');
+            if (badgeBox) badgeBox.style.display = 'none';
+            const btnBack = document.getElementById('btnGalleryBack');
+            if (btnBack) btnBack.style.display = 'none';
             return;
         }
 
-        currentGalleryPhotos = data.photos;
+        window.currentGalleryPhotos = data.photos;
+        window.selectedPhotoIds.clear();
+        window.renderGalleryPhotos();
 
-        // 컨테이너별 그룹핑
+    } catch (err) {
+        console.error("loadPhotoGallery error:", err);
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (listEl) listEl.innerHTML = `<div style="text-align:center; color:#ef4444; padding:50px; font-weight:700;">사진 목록을 가져오는 중 오류가 발생했습니다: ${err.message}</div>`;
+    }
+};
+
+// 3. 사진 렌더링 (CTNR [크게] 및 [바둑판] 모드)
+window.renderGalleryPhotos = function() {
+    const listEl = document.getElementById('photoGalleryList');
+    const summaryEl = document.getElementById('photoGallerySummary');
+    const badgeBox = document.getElementById('galleryCntrBadgeBox');
+    const badgeCntrText = document.getElementById('galleryCurrentCntrText');
+    const badgeCount = document.getElementById('galleryCurrentCountBadge');
+    const btnBack = document.getElementById('btnGalleryBack');
+
+    if (!listEl) return;
+
+    // 정렬 수행
+    const photos = [...window.currentGalleryPhotos].sort((a, b) => {
+        if (window.gallerySortBy === 'NAME_ASC') {
+            return (a.photo_path || '').localeCompare(b.photo_path || '');
+        } else if (window.gallerySortBy === 'NAME_DESC') {
+            return (b.photo_path || '').localeCompare(a.photo_path || '');
+        } else if (window.gallerySortBy === 'UPLOAD_DESC') {
+            return new Date(b.uploaded_at || 0).getTime() - new Date(a.uploaded_at || 0).getTime();
+        } else if (window.gallerySortBy === 'UPLOAD_ASC') {
+            return new Date(a.uploaded_at || 0).getTime() - new Date(b.uploaded_at || 0).getTime();
+        }
+        return 0;
+    });
+
+    // 고유 컨테이너 수 계산
+    const uniqueCntrs = new Set(photos.map(p => (p.cntr_no || '').toUpperCase()));
+    if (summaryEl) {
+        summaryEl.textContent = `조회된 사진: ${photos.length}장 (${uniqueCntrs.size}개 컨테이너)`;
+    }
+
+    // 상단 컨테이너 배지 및 뒤로가기 버튼 제어
+    if (window.currentGalleryTargetCntr && uniqueCntrs.size <= 1) {
+        if (badgeBox) badgeBox.style.display = 'inline-flex';
+        if (badgeCntrText) badgeCntrText.textContent = window.currentGalleryTargetCntr;
+        if (badgeCount) badgeCount.textContent = `${photos.length}장`;
+        if (btnBack) btnBack.style.display = 'inline-flex';
+    } else {
+        if (badgeBox) badgeBox.style.display = 'none';
+        if (btnBack) btnBack.style.display = 'none';
+    }
+
+    if (window.galleryViewMode === 'LARGE') {
+        // [크게] 뷰 모드 (CTNR 스크린샷 1과 동일)
+        let html = '<div class="ctnr-grid-large">';
+        photos.forEach((p, idx) => {
+            const isSeal = p.photo_type === 'seal';
+            const photoUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(p.photo_path)}`;
+            const fileName = (p.photo_path || '').split('/').pop() || '';
+            const uploader = p.uploader_name || '작업자';
+            const uploadTimeStr = p.uploaded_at ? new Date(p.uploaded_at).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+            const isChecked = window.selectedPhotoIds.has(String(p.id));
+
+            html += `
+                <div class="ctnr-card-large" onclick="window.openPhotoLightboxFromSorted(${idx})">
+                    <div class="ctnr-card-header-overlay" onclick="event.stopPropagation()">
+                        <div class="ctnr-card-header-top">
+                            <div class="ctnr-card-title-red">${p.cntr_no || '-'}</div>
+                            <input type="checkbox" class="ctnr-photo-chk" ${isChecked ? 'checked' : ''} onchange="window.togglePhotoSelect('${p.id}', event)" style="width:16px; height:16px; cursor:pointer;">
+                        </div>
+                        <div class="ctnr-card-filename" title="${fileName}">${fileName}</div>
+                        <div class="ctnr-card-footer-info">
+                            <span><i class="fas fa-user" style="margin-right:3px;"></i>${uploader}</span>
+                            <span>${uploadTimeStr}</span>
+                        </div>
+                    </div>
+                    <div class="ctnr-card-img-wrapper">
+                        <img src="${photoUrl}" alt="${p.cntr_no}" loading="lazy" onerror="this.src='https://placehold.co/400x500/111827/94a3b8?text=Image+Load+Fail'">
+                        ${isSeal ? `<span class="ctnr-card-seal-tag">🔴 씰(Seal)</span>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        listEl.innerHTML = html;
+
+    } else {
+        // [바둑판] 뷰 모드 (CTNR 스크린샷 2와 동일 - 컨테이너별 폴더 그룹핑)
         const grouped = {};
-        data.photos.forEach(p => {
-            const cntr = p.cntr_no || '기타';
+        photos.forEach(p => {
+            const cntr = (p.cntr_no || '기타').toUpperCase();
             if (!grouped[cntr]) grouped[cntr] = [];
             grouped[cntr].push(p);
         });
 
-        const cntrCount = Object.keys(grouped).length;
-        if (summaryEl) summaryEl.textContent = `조회된 사진: ${data.photos.length}장 (${cntrCount}개 컨테이너)`;
-
-        let html = '';
-        for (const [cntrNo, photos] of Object.entries(grouped)) {
-            const sealCount = photos.filter(p => p.photo_type === 'seal').length;
-            const latestUpload = photos[0]?.uploaded_at ? new Date(photos[0].uploaded_at).toLocaleString() : '';
-            const transporter = photos[0]?.transporter || '';
-            const uploader = photos[0]?.uploader_name || '';
+        let html = '<div class="ctnr-grid-compact">';
+        for (const [cntrNo, groupPhotos] of Object.entries(grouped)) {
+            const sealCount = groupPhotos.filter(p => p.photo_type === 'seal').length;
+            const transporter = groupPhotos[0]?.transporter || '';
+            const uploader = groupPhotos[0]?.uploader_name || '';
+            const latestUpload = groupPhotos[0]?.uploaded_at ? new Date(groupPhotos[0].uploaded_at).toLocaleString() : '';
 
             html += `
-                <div class="photo-cntr-card">
-                    <div class="photo-cntr-header">
-                        <div class="photo-cntr-title">
-                            <i class="fas fa-box" style="color: #0284c7;"></i>
+                <div class="ctnr-folder-card">
+                    <div class="ctnr-folder-header">
+                        <div class="ctnr-folder-title" onclick="window.openContainerPhotoModal('${cntrNo}')" title="클릭하여 '${cntrNo}' 상세 보기">
+                            <i class="fas fa-folder-open" style="color: #0284c7;"></i>
                             <span>${cntrNo}</span>
-                            ${transporter ? `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: #334155; color: #93c5fd; font-weight: 700;">${transporter}</span>` : ''}
-                            ${sealCount > 0 ? `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: #e11d48; color: white; font-weight: 800;">🔴 씰 사진 ${sealCount}장</span>` : ''}
-                            <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">총 ${photos.length}장</span>
+                            ${transporter ? `<span style="font-size:0.72rem; padding:2px 8px; border-radius:6px; background:#0f172a; color:#93c5fd; font-weight:700;">${transporter}</span>` : ''}
+                            ${sealCount > 0 ? `<span style="font-size:0.72rem; padding:2px 8px; border-radius:6px; background:#e11d48; color:white; font-weight:800;">🔴 씰 사진 ${sealCount}장</span>` : ''}
+                            <span style="font-size:0.75rem; color:#94a3b8; font-weight:600;">총 ${groupPhotos.length}장</span>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 0.75rem; color: #64748b;">최근 등록: ${latestUpload} (${uploader})</span>
-                        </div>
+                        <div style="font-size:0.75rem; color:#64748b;">최근 등록: ${latestUpload} (${uploader})</div>
                     </div>
-                    <div class="photo-grid-list">
-                        ${photos.map((p, idx) => {
+                    <div class="ctnr-folder-thumbs-grid">
+                        ${groupPhotos.map((p) => {
                             const isSeal = p.photo_type === 'seal';
                             const photoUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(p.photo_path)}`;
                             const timeStr = p.uploaded_at ? new Date(p.uploaded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                            const sortedIdx = photos.findIndex(item => item.id === p.id);
 
                             return `
-                                <div class="photo-thumb-box" onclick="window.openPhotoLightboxFromData('${cntrNo}', ${idx})">
+                                <div class="ctnr-thumb-box" onclick="window.openPhotoLightboxFromSorted(${sortedIdx})">
                                     <img src="${photoUrl}" alt="${cntrNo}" loading="lazy" onerror="this.src='https://placehold.co/130x98/1e293b/94a3b8?text=Image+Load+Fail'">
-                                    ${isSeal ? `<span class="photo-thumb-seal-badge">🔴 씰</span>` : ''}
-                                    <span class="photo-thumb-time-tag">${timeStr} · ${p.uploader_name || '작업자'}</span>
+                                    ${isSeal ? `<span style="position:absolute; top:4px; left:4px; background:#e11d48; color:white; font-size:0.6rem; font-weight:800; padding:1px 4px; border-radius:3px;">🔴 씰</span>` : ''}
+                                    <span class="ctnr-thumb-time-tag">${timeStr} · ${p.uploader_name || '작업자'}</span>
                                 </div>
                             `;
                         }).join('')}
@@ -11695,24 +11866,30 @@ window.loadPhotoGallery = async function(targetCntr = '') {
                 </div>
             `;
         }
-
-        if (listEl) listEl.innerHTML = html;
-
-    } catch (err) {
-        console.error("loadPhotoGallery error:", err);
-        if (loadingEl) loadingEl.style.display = 'none';
-        if (listEl) listEl.innerHTML = `<div style="text-align:center; color:#ef4444; padding:30px;">사진 목록을 가져오는 중 오류가 발생했습니다: ${err.message}</div>`;
+        html += '</div>';
+        listEl.innerHTML = html;
     }
 };
 
-// 갤러리 필터
 window.filterPhotoGallery = function() {
-    window.loadPhotoGallery();
+    window.loadPhotoGallery(document.getElementById('photoGallerySearchCntr')?.value || '');
 };
 
-// 3. 고기능 라이트박스 뷰어
-window.openPhotoLightboxFromData = function(cntrNo, idx) {
-    const photos = currentGalleryPhotos.filter(p => (p.cntr_no || '').toUpperCase() === cntrNo.toUpperCase());
+// 4. 고기능 라이트박스 뷰어
+window.openPhotoLightboxFromSorted = function(idx) {
+    const photos = [...window.currentGalleryPhotos].sort((a, b) => {
+        if (window.gallerySortBy === 'NAME_ASC') {
+            return (a.photo_path || '').localeCompare(b.photo_path || '');
+        } else if (window.gallerySortBy === 'NAME_DESC') {
+            return (b.photo_path || '').localeCompare(a.photo_path || '');
+        } else if (window.gallerySortBy === 'UPLOAD_DESC') {
+            return new Date(b.uploaded_at || 0).getTime() - new Date(a.uploaded_at || 0).getTime();
+        } else if (window.gallerySortBy === 'UPLOAD_ASC') {
+            return new Date(a.uploaded_at || 0).getTime() - new Date(b.uploaded_at || 0).getTime();
+        }
+        return 0;
+    });
+
     if (!photos || photos.length === 0) return;
     lightboxPhotos = photos;
     currentLightboxIndex = idx;
