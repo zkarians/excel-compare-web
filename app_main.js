@@ -11366,6 +11366,11 @@ window.toggleSelectAllPhotos = function(checked) {
             else card.classList.remove('selected');
             const chk = card.querySelector('.ctnr-photo-chk');
             if (chk) chk.checked = isSel;
+            const selectChk = card.querySelector('.ctnr-photo-select-chk');
+            if (selectChk) {
+                if (isSel) selectChk.classList.add('selected');
+                else selectChk.classList.remove('selected');
+            }
         }
     });
     window.updateGalleryActionBar();
@@ -11381,12 +11386,18 @@ window.togglePhotoSelect = function(id, e) {
         window.selectedPhotoIds.add(strId);
     }
     
+    const isSel = window.selectedPhotoIds.has(strId);
     const cards = document.querySelectorAll(`[data-photo-id="${strId}"]`);
     cards.forEach(card => {
-        if (window.selectedPhotoIds.has(strId)) card.classList.add('selected');
+        if (isSel) card.classList.add('selected');
         else card.classList.remove('selected');
         const chk = card.querySelector('.ctnr-photo-chk');
-        if (chk) chk.checked = window.selectedPhotoIds.has(strId);
+        if (chk) chk.checked = isSel;
+        const selectChk = card.querySelector('.ctnr-photo-select-chk');
+        if (selectChk) {
+            if (isSel) selectChk.classList.add('selected');
+            else selectChk.classList.remove('selected');
+        }
     });
 
     const selectAllChk = document.getElementById('gallerySelectAllChk');
@@ -11540,7 +11551,7 @@ window.clearAllGallerySelection = function() {
     const selectAllChk = document.getElementById('gallerySelectAllChk');
     if (selectAllChk) selectAllChk.checked = false;
 
-    document.querySelectorAll('.ctnr-photo-card.selected, .ctnr-card-large.selected, .ctnr-folder-item.selected').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('.ctnr-photo-card.selected, .ctnr-card-large.selected, .ctnr-folder-item.selected, .ctnr-photo-select-chk.selected').forEach(c => c.classList.remove('selected'));
     document.querySelectorAll('.ctnr-photo-chk, .ctnr-folder-chk').forEach(c => c.checked = false);
 
     window.refreshFolderHeaderSelectState();
