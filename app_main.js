@@ -12621,6 +12621,100 @@ window.executeActionAfterSealWarning = function() {
     }
 };
 
+// 8-1. 중복 사진 감지 및 일괄 정리 (CTNR 동일)
+window.currentDuplicatePhotoIds = [];
+window.isFetchingDuplicates = false;
+
+window.fetchFolderDuplicates = async function(cntrNo) {
+    if (!cntrNo) return;
+    const banner = document.getElementById('duplicatePhotoBanner');
+    const countText = document.getElementById('duplicateCountText');
+
+    try {
+        window.isFetchingDuplicates = true;
+        const res = await fetch(`${API_BASE}/api/photos/duplicates?cntrNo=${encodeURIComponent(cntrNo)}`);
+        const data = await res.json();
+
+        if (data.success && data.duplicatesCount > 0 && Array.isArray(data.duplicateGroups)) {
+            const dupIds = [];
+            data.duplicateGroups.forEach(g => {
+                if (Array.isArray(g.duplicatePhotoIds)) {
+                    dupIds.push(...g.duplicatePhotoIds.map(String));
+                }
+            });
+            window.currentDuplicatePhotoIds = dupIds;
+
+            if (banner && countText) {
+                countText.textContent = data.duplicatesCount;
+                banner.style.display = 'flex';
+            }
+
+            // 사진 카드 중복 배지 실시간 동기화
+            document.querySelectorAll('.ctnr-card-large').forEach(card => {
+                const pId = card.getAttribute('data-photo-id');
+                const imgWrapper = card.querySelector('.ctnr-card-img-wrapper');
+                if (imgWrapper && pId) {
+                    const existingTag = imgWrapper.querySelector('.ctnr-card-duplicate-tag');
+                    if (dupIds.includes(String(pId))) {
+                        if (!existingTag) {
+                            const tag = document.createElement('span');
+                            tag.className = 'ctnr-card-duplicate-tag';
+                            tag.title = '완전히 동일한 중복 사진 (정리 대상)';
+                            tag.textContent = '중복';
+                            imgWrapper.appendChild(tag);
+                        }
+                    } else if (existingTag) {
+                        existingTag.remove();
+                    }
+                }
+            });
+        } else {
+            window.currentDuplicatePhotoIds = [];
+            if (banner) banner.style.display = 'none';
+        }
+    } catch (err) {
+        console.warn("fetchFolderDuplicates error:", err);
+        window.currentDuplicatePhotoIds = [];
+        if (banner) banner.style.display = 'none';
+    } finally {
+        window.isFetchingDuplicates = false;
+    }
+};
+
+window.handleCleanupSingleFolderDuplicates = async function() {
+    const cntrNo = window.currentGalleryTargetCntr;
+    if (!cntrNo) {
+        alert("정리할 컨테이너 폴더가 선택되지 않았습니다.");
+        return;
+    }
+
+    if (!confirm(`'${cntrNo}' 컨테이너 폴더 내의 모든 중복 사진을 정리(휴지통 이동)하시겠습니까?`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos/duplicates?cntrNo=${encodeURIComponent(cntrNo)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cntrNo: cntrNo })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            alert(`성공적으로 중복 사진 ${data.cleanedCount}장을 정리(휴지통 이동)했습니다.`);
+            window.currentDuplicatePhotoIds = [];
+            const banner = document.getElementById('duplicatePhotoBanner');
+            if (banner) banner.style.display = 'none';
+            await window.loadPhotoGallery(cntrNo);
+        } else {
+            alert(data.error || "중복 사진 정리 중 오류가 발생했습니다.");
+        }
+    } catch (err) {
+        console.error("Error cleaning folder duplicates:", err);
+        alert("중복 사진 정리 중 통신 오류가 발생했습니다: " + err.message);
+    }
+};
+
 // 9. 사진 인플레이스(In-place) 회전 (-90, 180, 90) - CTNR 동일 0ms 즉시 회전 방식
 window.photoRotationOffsets = window.photoRotationOffsets || {};
 
@@ -13069,6 +13163,9 @@ window.renderGalleryPhotos = function() {
             return 0;
         });
 
+        // 단일 컨테이너 진입 시 중복 사진 자동 검사 트리거
+        window.fetchFolderDuplicates(targetCntrUpper);
+
         if (summaryEl) summaryEl.textContent = `조회된 사진: ${photos.length}장 (컨테이너 ${targetCntrUpper})`;
         if (badgeBox) badgeBox.style.display = 'inline-flex';
         if (badgeCntrText) badgeCntrText.textContent = targetCntrUpper;
@@ -13099,6 +13196,7 @@ window.renderGalleryPhotos = function() {
         let html = '<div class="ctnr-grid-large">';
         photos.forEach((p, idx) => {
             const isSeal = p.photo_type === 'seal';
+            const isDuplicate = (window.currentDuplicatePhotoIds || []).includes(String(p.id)) || (window.currentDuplicatePhotoIds || []).includes(Number(p.id));
             const rawPath = (p.photo_path || '').split('?')[0];
             const fileName = rawPath.split('/').pop() || '';
             const itemCache = p.cacheBuster || window.photoGalleryCacheBuster || '';
@@ -13118,6 +13216,7 @@ window.renderGalleryPhotos = function() {
                             <i class="fas fa-check"></i>
                         </div>
                         ${(p.gdrive_file_id || p.gdrive_url) ? `<span class="ctnr-card-cloud-tag" title="구글드라이브 안전 보관 사진 (PC 용량 정리 완료)">☁️</span>` : ''}
+                        ${isDuplicate ? `<span class="ctnr-card-duplicate-tag" title="완전히 동일한 중복 사진 (정리 대상)">중복</span>` : ''}
                         ${isSeal ? `<span class="ctnr-card-seal-tag"><i class="fas fa-camera"></i> 씰</span>` : ''}
                         <img src="${photoUrl}" alt="${p.cntr_no}" style="${rotateStyle}" loading="lazy" onerror="this.src='https://placehold.co/600x800/11111a/94a3b8?text=Image+Load+Fail'">
                         <div class="ctnr-card-gradient-overlay"></div>
@@ -13140,6 +13239,10 @@ window.renderGalleryPhotos = function() {
     }
 
     // 2. 특정 컨테이너가 지정되지 않은 메인 사진함 화면 -> 날짜별/조별 폴더 계층 목록 렌더링
+    const dupBanner = document.getElementById('duplicatePhotoBanner');
+    if (dupBanner) dupBanner.style.display = 'none';
+    window.currentDuplicatePhotoIds = [];
+
     if (badgeBox) badgeBox.style.display = 'none';
     if (btnBack) btnBack.style.display = 'none';
     const selAllBtn = document.getElementById('btnGallerySelectAllInView');

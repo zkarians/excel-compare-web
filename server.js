@@ -3727,11 +3727,86 @@ app.patch('/api/photos/rename', async (req, res) => {
     }
 });
 
-// 중복 사진 정리 API (CTNR 동일 기능)
+// 중복 사진 조회 GET API (CTNR 동일 기능)
+app.get('/api/photos/duplicates', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const cntrNo = req.query.cntrNo;
+        const workDate = req.query.workDate;
+        if (!cntrNo) {
+            return res.status(400).json({ success: false, error: '컨테이너 번호(cntrNo)가 누락되었습니다.' });
+        }
+
+        const dbRes = await pool.query(
+            `SELECT p.id, p.photo_path, p.uploaded_at, p.cntr_no, p.remark, p.gdrive_file_id
+             FROM container_photos p
+             WHERE UPPER(TRIM(p.cntr_no)) = UPPER(TRIM($1)) AND (p.is_deleted IS NOT TRUE)
+             ORDER BY p.uploaded_at ASC, p.id ASC`,
+            [cntrNo]
+        );
+
+        const crypto = require('crypto');
+        const getFileMd5 = (filePath) => {
+            try {
+                if (!fs.existsSync(filePath)) return null;
+                const buf = fs.readFileSync(filePath);
+                return crypto.createHash('md5').update(buf).digest('hex');
+            } catch (e) {
+                return null;
+            }
+        };
+
+        const photos = dbRes.rows.filter(photo => {
+            if (!workDate) return true;
+            return getWorkDateString(new Date(photo.uploaded_at)) === workDate;
+        });
+
+        const hashMap = {};
+        for (const photo of photos) {
+            const fullPath = path.resolve(CTNR_UPLOADS_DIR, photo.photo_path);
+            const hash = getFileMd5(fullPath);
+            if (hash) {
+                if (!hashMap[hash]) hashMap[hash] = [];
+                hashMap[hash].push(photo);
+            }
+        }
+
+        const duplicateGroups = [];
+        let duplicatesCount = 0;
+
+        for (const [hash, list] of Object.entries(hashMap)) {
+            if (list.length > 1) {
+                const original = list[0];
+                const duplicates = list.slice(1);
+                duplicatesCount += duplicates.length;
+
+                duplicateGroups.push({
+                    hash,
+                    originalId: original.id,
+                    originalPath: original.photo_path,
+                    duplicatePhotoIds: duplicates.map(d => d.id),
+                    duplicates
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            duplicatesCount,
+            duplicateGroups
+        });
+    } catch (err) {
+        console.error("GET /api/photos/duplicates error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 중복 사진 정리 POST API (CTNR 동일 기능)
 app.post('/api/photos/duplicates', async (req, res) => {
     try {
         const pool = await getPool();
-        const { cntrNo, folders, cntrNos } = req.body;
+        const singleCntrNo = req.query.cntrNo || (req.body && req.body.cntrNo);
+        const { folders, cntrNos } = req.body || {};
         const targetCntrs = [];
 
         if (Array.isArray(cntrNos) && cntrNos.length > 0) {
@@ -3741,8 +3816,8 @@ app.post('/api/photos/duplicates', async (req, res) => {
                 const c = (typeof f === 'string' ? f.split('|')[0] : f.cntrNo);
                 if (c) targetCntrs.push(String(c).toUpperCase().trim());
             });
-        } else if (cntrNo) {
-            targetCntrs.push(String(cntrNo).toUpperCase().trim());
+        } else if (singleCntrNo) {
+            targetCntrs.push(String(singleCntrNo).toUpperCase().trim());
         }
 
         if (targetCntrs.length === 0) {
@@ -3752,7 +3827,7 @@ app.post('/api/photos/duplicates', async (req, res) => {
         const pRes = await pool.query(
             `SELECT id, photo_path, cntr_no, uploaded_at 
              FROM container_photos 
-             WHERE cntr_no = ANY($1) AND (is_deleted IS NOT TRUE)
+             WHERE UPPER(TRIM(cntr_no)) = ANY($1) AND (is_deleted IS NOT TRUE)
              ORDER BY uploaded_at ASC, id ASC`,
             [targetCntrs]
         );
@@ -3787,7 +3862,7 @@ app.post('/api/photos/duplicates', async (req, res) => {
         let cleanedCount = 0;
         if (duplicateIds.length > 0) {
             await pool.query(
-                `UPDATE container_photos SET is_deleted = true WHERE id = ANY($1)`,
+                `UPDATE container_photos SET is_deleted = true, deleted_at = NOW() WHERE id = ANY($1)`,
                 [duplicateIds]
             );
             cleanedCount = duplicateIds.length;
