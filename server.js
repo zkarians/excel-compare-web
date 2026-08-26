@@ -4022,18 +4022,38 @@ app.get('/api/photos/view', async (req, res) => {
             console.warn('[GDrive Fallback Warning]', gErr.message);
         }
 
-        // 3. 원격 CTNR 서버에서 fetch 시도
+        // 3. 메인 서버 / 원격 CTNR 서버에서 fetch 시도 (다른 PC에서 접속 시 메인 PC 사진 자동 동기화 & 로컬 캐싱)
+        let customMainHost = null;
+        try {
+            const hostConfigFile = path.join(DATA_DIR, 'main_server_config.json');
+            if (fs.existsSync(hostConfigFile)) {
+                const parsed = JSON.parse(fs.readFileSync(hostConfigFile, 'utf8'));
+                if (parsed.mainServerHost) customMainHost = parsed.mainServerHost.trim();
+            }
+        } catch (e) {}
+
+        const adminSessionCookie = Buffer.from(JSON.stringify({ id: '1', username: 'admin', name: '관리자', role: 'ADMIN' })).toString('base64');
+
         const remoteHosts = [
+            customMainHost,
+            'http://192.168.10.152:3000',
+            'http://10.162.39.58:3000',
+            'http://ungdong.iptime.org:3000',
+            'http://ungdong.iptime.org:4001',
+            'http://idlezero.iptime.org:3000',
+            'http://idlezero.iptime.org:4001',
             'http://ungdong.iptime.org:4000',
-            'http://idlezero.iptime.org:4000',
-            'http://ungdong.iptime.org',
-            'http://idlezero.iptime.org'
-        ];
+            'http://idlezero.iptime.org:4000'
+        ].filter(Boolean);
 
         for (const host of remoteHosts) {
             try {
                 const remoteUrl = `${host}/api/photos/view?filename=${encodeURIComponent(filename)}`;
-                const remoteRes = await fetch(remoteUrl, { signal: AbortSignal.timeout(3000) });
+                const headers = {
+                    'Cookie': `ctnr_session=${adminSessionCookie}`,
+                    'User-Agent': 'ExcelCompareClient/1.2.2'
+                };
+                const remoteRes = await fetch(remoteUrl, { headers, signal: AbortSignal.timeout(3500) });
                 if (remoteRes.ok) {
                     const arrayBuffer = await remoteRes.arrayBuffer();
                     const buffer = Buffer.from(arrayBuffer);
@@ -4044,16 +4064,19 @@ app.get('/api/photos/view', async (req, res) => {
                             const dir = path.dirname(filePath);
                             if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
                             fs.writeFileSync(filePath, buffer);
+                            console.log(`[Sync] 원격 서버(${host})로부터 사진 로컬 캐시 성공: ${filePath}`);
                         } catch (e) {}
 
                         res.setHeader('Content-Type', fetchedType);
                         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+                        if (isDownloadMode) {
+                            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(path.basename(filename))}"`);
+                        }
                         return res.send(buffer);
                     }
                 }
             } catch (remoteErr) {}
         }
-
         return res.status(404).send('Photo not found');
     } catch (err) {
         console.error("GET /api/photos/view error:", err);
