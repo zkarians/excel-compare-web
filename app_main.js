@@ -4643,6 +4643,7 @@ btnCompare.addEventListener('click', async () => {
         const chkFilterChunma = document.getElementById('chkFilterChunma');
         const chkFilterBni = document.getElementById('chkFilterBni');
         const chkFilterOtherTrans = document.getElementById('chkFilterOtherTrans');
+        const chkFilterHasPhoto = document.getElementById('chkFilterHasPhoto');
         
         if (searchInput) searchInput.value = "";
         if (prodSearchInput) prodSearchInput.value = "";
@@ -4653,6 +4654,7 @@ btnCompare.addEventListener('click', async () => {
         if (chkFilterChunma) chkFilterChunma.checked = false;
         if (chkFilterBni) chkFilterBni.checked = false;
         if (chkFilterOtherTrans) chkFilterOtherTrans.checked = false;
+        if (chkFilterHasPhoto) chkFilterHasPhoto.checked = false;
 
         // 2. 체크박스 선택 항목 초기화 (승인 건과 보류 건은 예외로 유지)
         const keepKeys = [];
@@ -5497,9 +5499,11 @@ function displayResults(results, isDbMode = false) {
                 let chunmaCount = 0;
                 let bniCount = 0;
                 let otherCount = 0;
+                let hasPhotoCount = 0;
 
                 const containerStatusMap = {};
                 const containerTransMap = {};
+                const containerHasPhotoMap = {};
 
                 for (const cntrNo in successContainers) {
                     const rows = successContainers[cntrNo];
@@ -5536,6 +5540,15 @@ function displayResults(results, isDbMode = false) {
                         otherCount++;
                     }
                     containerTransMap[cntrNo] = trans;
+
+                    // 사진 등록 여부 판별
+                    const cleanNo = cntrNo.trim().toUpperCase();
+                    const pInfo = window.containerPhotoCounts ? window.containerPhotoCounts[cleanNo] : null;
+                    const hasPhoto = pInfo ? ((typeof pInfo === 'number' && pInfo > 0) || (typeof pInfo === 'object' && (pInfo.total || 0) > 0)) : false;
+                    containerHasPhotoMap[cntrNo] = hasPhoto;
+                    if (hasPhoto) {
+                        hasPhotoCount++;
+                    }
                 }
 
                 // UI 카운터 업데이트
@@ -5545,6 +5558,7 @@ function displayResults(results, isDbMode = false) {
                 const elChunma = document.getElementById('cntChunma');
                 const elBni = document.getElementById('cntBni');
                 const elOtherTrans = document.getElementById('cntOtherTrans');
+                const elHasPhoto = document.getElementById('cntHasPhoto');
 
                 if (elCompleted) elCompleted.textContent = completedCount;
                 if (elProgress) elProgress.textContent = progressCount;
@@ -5552,6 +5566,7 @@ function displayResults(results, isDbMode = false) {
                 if (elChunma) elChunma.textContent = chunmaCount;
                 if (elBni) elBni.textContent = bniCount;
                 if (elOtherTrans) elOtherTrans.textContent = otherCount;
+                if (elHasPhoto) elHasPhoto.textContent = hasPhotoCount;
 
                 // 2. 체크박스 필터링 적용
                 const chkFilterCompleted = document.getElementById('chkFilterCompleted');
@@ -5560,6 +5575,7 @@ function displayResults(results, isDbMode = false) {
                 const chkFilterChunma = document.getElementById('chkFilterChunma');
                 const chkFilterBni = document.getElementById('chkFilterBni');
                 const chkFilterOtherTrans = document.getElementById('chkFilterOtherTrans');
+                const chkFilterHasPhoto = document.getElementById('chkFilterHasPhoto');
 
                 const showCompleted = chkFilterCompleted ? chkFilterCompleted.checked : false;
                 const showProgress = chkFilterProgress ? chkFilterProgress.checked : false;
@@ -5567,11 +5583,17 @@ function displayResults(results, isDbMode = false) {
                 const showChunma = chkFilterChunma ? chkFilterChunma.checked : false;
                 const showBni = chkFilterBni ? chkFilterBni.checked : false;
                 const showOther = chkFilterOtherTrans ? chkFilterOtherTrans.checked : false;
+                const showHasPhoto = chkFilterHasPhoto ? chkFilterHasPhoto.checked : false;
 
                 const anyStatusChecked = showCompleted || showProgress || showPending;
                 const anyTransChecked = showChunma || showBni || showOther;
 
                 displayData = successRows.filter(r => {
+                    // 사진 필터 체크
+                    if (showHasPhoto && !containerHasPhotoMap[r.cntrNo]) {
+                        return false;
+                    }
+
                     // 상태 필터 체크
                     let passStatus = true;
                     if (anyStatusChecked) {
@@ -6583,7 +6605,7 @@ if (tabDbSearchObj) {
     tabDbSearchObj.addEventListener('click', () => setActiveTab('dbSearch'));
 }
 
-['chkFilterCompleted', 'chkFilterProgress', 'chkFilterPending', 'chkFilterChunma', 'chkFilterBni', 'chkFilterOtherTrans', 'chkFilterMissingExtra', 'chkFilterMissingMissing'].forEach(id => {
+['chkFilterCompleted', 'chkFilterProgress', 'chkFilterPending', 'chkFilterChunma', 'chkFilterBni', 'chkFilterOtherTrans', 'chkFilterHasPhoto', 'chkFilterMissingExtra', 'chkFilterMissingMissing'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
         el.addEventListener('change', () => {
@@ -6595,7 +6617,7 @@ if (tabDbSearchObj) {
 const btnResetSuccessFilters = document.getElementById('btnResetSuccessFilters');
 if (btnResetSuccessFilters) {
     btnResetSuccessFilters.addEventListener('click', () => {
-        ['chkFilterCompleted', 'chkFilterProgress', 'chkFilterPending', 'chkFilterChunma', 'chkFilterBni', 'chkFilterOtherTrans'].forEach(id => {
+        ['chkFilterCompleted', 'chkFilterProgress', 'chkFilterPending', 'chkFilterChunma', 'chkFilterBni', 'chkFilterOtherTrans', 'chkFilterHasPhoto'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.checked = false;
         });

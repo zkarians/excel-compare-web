@@ -1767,6 +1767,11 @@
                         <input type="checkbox" id="chkFilterOtherTrans" style="width: 16px; height: 16px; cursor: pointer;">
                         기타: <span id="cntOtherTrans" style="color: #64748b; font-weight: bold;">0</span>대
                     </label>
+                    <span style="color: #cbd5e1; margin: 0 4px;">|</span>
+                    <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="chkFilterHasPhoto" style="width: 16px; height: 16px; cursor: pointer; accent-color: #0284c7;">
+                        <i class="fas fa-camera" style="color: #0284c7; font-size: 0.85rem;"></i> 사진: <span id="cntHasPhoto" style="color: #0284c7; font-weight: bold;">0</span>대
+                    </label>
                     <button id="btnResetSuccessFilters" style="margin-left: auto; background-color: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 12px; color: #475569; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s;">
                         <i class="fas fa-undo"></i> 필터 초기화
                     </button>
@@ -2711,7 +2716,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260826-fixeddirDown"></script>
+    <script src="app_main.js?v=20260826-photofilterbar"></script>
 </body>
 
 </html>
