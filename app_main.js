@@ -11352,7 +11352,17 @@ window.toggleSelectAllPhotos = function(checked) {
     } else {
         window.selectedPhotoIds.clear();
     }
-    document.querySelectorAll('.ctnr-photo-chk').forEach(chk => { chk.checked = checked; });
+    document.querySelectorAll('.ctnr-photo-card, .ctnr-card-large').forEach(card => {
+        const id = card.getAttribute('data-photo-id');
+        if (id) {
+            const isSel = window.selectedPhotoIds.has(id);
+            if (isSel) card.classList.add('selected');
+            else card.classList.remove('selected');
+            const chk = card.querySelector('.ctnr-photo-chk');
+            if (chk) chk.checked = isSel;
+        }
+    });
+    window.updateGalleryActionBar();
 };
 
 // 개별 사진 선택
@@ -11364,9 +11374,383 @@ window.togglePhotoSelect = function(id, e) {
     } else {
         window.selectedPhotoIds.add(strId);
     }
+    
+    // UI 클래스 및 체크박스 반영
+    const cards = document.querySelectorAll(`[data-photo-id="${strId}"]`);
+    cards.forEach(card => {
+        if (window.selectedPhotoIds.has(strId)) card.classList.add('selected');
+        else card.classList.remove('selected');
+        const chk = card.querySelector('.ctnr-photo-chk');
+        if (chk) chk.checked = window.selectedPhotoIds.has(strId);
+    });
+
     const selectAllChk = document.getElementById('gallerySelectAllChk');
     if (selectAllChk) {
         selectAllChk.checked = window.currentGalleryPhotos.length > 0 && window.selectedPhotoIds.size === window.currentGalleryPhotos.length;
+    }
+
+    window.updateGalleryActionBar();
+};
+
+// 카드 클릭 시 (선택 모드면 토글, 아니면 뷰어 오픈)
+window.handleCardClick = function(photoId, event) {
+    if (window.selectedPhotoIds.size > 0) {
+        window.togglePhotoSelect(photoId, event);
+    } else {
+        window.openPhotoLightboxById(photoId);
+    }
+};
+
+// 선택 취소
+window.clearGalleryPhotoSelection = function() {
+    window.selectedPhotoIds.clear();
+    const selectAllChk = document.getElementById('gallerySelectAllChk');
+    if (selectAllChk) selectAllChk.checked = false;
+    document.querySelectorAll('.ctnr-photo-card.selected, .ctnr-card-large.selected').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('.ctnr-photo-chk').forEach(c => c.checked = false);
+    window.updateGalleryActionBar();
+};
+
+// 하단 플로팅 액션바 상태 업데이트
+window.updateGalleryActionBar = function() {
+    const bar = document.getElementById('photoGalleryActionBar');
+    const countBadge = document.getElementById('actionSelectedCount');
+    const sealText = document.getElementById('btnActionSealText');
+    const count = window.selectedPhotoIds.size;
+
+    if (!bar) return;
+
+    if (count === 0) {
+        bar.style.display = 'none';
+        return;
+    }
+
+    bar.style.display = 'flex';
+    if (countBadge) countBadge.textContent = count;
+
+    // 선택된 사진들의 씰 상태 분석
+    const selectedPhotos = window.currentGalleryPhotos.filter(p => window.selectedPhotoIds.has(String(p.id)));
+    const hasNormal = selectedPhotos.some(p => p.photo_type !== 'seal');
+    if (sealText) {
+        sealText.textContent = hasNormal ? '씰 지정' : '씰 해제';
+    }
+};
+
+// 1. 선택한 사진 삭제 (휴지통 이동)
+window.handleDeleteSelectedPhotos = async function() {
+    const ids = Array.from(window.selectedPhotoIds);
+    if (ids.length === 0) {
+        alert("삭제할 사진을 선택해 주세요.");
+        return;
+    }
+    if (!confirm(`선택한 ${ids.length}장의 사진을 삭제(휴지통 이동)하시겠습니까?`)) {
+        return;
+    }
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'trash_photos',
+                ids: ids
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.clearGalleryPhotoSelection();
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+            if (window.fetchContainerPhotoCounts) window.fetchContainerPhotoCounts();
+        } else {
+            alert(`삭제 실패: ${data.error || data.message}`);
+        }
+    } catch (err) {
+        console.error("Delete photos error:", err);
+        alert("삭제 중 오류가 발생했습니다: " + err.message);
+    }
+};
+
+// 2. 씰 지정 / 씰 해제 일괄 토글
+window.handleBatchToggleSealPhoto = async function() {
+    const ids = Array.from(window.selectedPhotoIds);
+    if (ids.length === 0) {
+        alert("사진을 선택해 주세요.");
+        return;
+    }
+    const selectedPhotos = window.currentGalleryPhotos.filter(p => window.selectedPhotoIds.has(String(p.id)));
+    const hasNormal = selectedPhotos.some(p => p.photo_type !== 'seal');
+    const targetType = hasNormal ? 'seal' : 'normal';
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'update_photo_type',
+                ids: ids,
+                photoType: targetType
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+        } else {
+            alert(`씰 상태 변경 실패: ${data.error || data.message}`);
+        }
+    } catch (err) {
+        console.error("Toggle seal error:", err);
+        alert("오류가 발생했습니다: " + err.message);
+    }
+};
+
+// 3. 작업 조(팀) 변경 모달 & 실행
+window.selectedTargetTeamId = null;
+window.handleOpenChangeTeamModal = async function() {
+    const count = window.selectedPhotoIds.size;
+    if (count === 0) {
+        alert("작업 조를 변경할 사진을 선택해 주세요.");
+        return;
+    }
+    const countEl = document.getElementById('changeTeamPhotoCount');
+    if (countEl) countEl.textContent = count;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/teams`);
+        const data = await res.json();
+        const teams = data.teams || [];
+        const groupEl = document.getElementById('changeTeamListGroup');
+        if (groupEl) {
+            let html = `
+                <div class="ctnr-team-item selected" onclick="window.selectTargetTeam(null, this)">
+                    <span>미지정 조</span>
+                    <i class="fas fa-check" style="display:inline-block;"></i>
+                </div>
+            `;
+            window.selectedTargetTeamId = null;
+            teams.forEach(t => {
+                html += `
+                    <div class="ctnr-team-item" onclick="window.selectTargetTeam(${t.id}, this)">
+                        <span>${t.name}</span>
+                        <i class="fas fa-check" style="display:none;"></i>
+                    </div>
+                `;
+            });
+            groupEl.innerHTML = html;
+        }
+        document.getElementById('modalChangePhotoTeam').style.display = 'flex';
+    } catch (e) {
+        alert("조 목록을 불러오지 못했습니다: " + e.message);
+    }
+};
+
+window.selectTargetTeam = function(teamId, el) {
+    window.selectedTargetTeamId = teamId;
+    document.querySelectorAll('#changeTeamListGroup .ctnr-team-item').forEach(item => {
+        item.classList.remove('selected');
+        const icon = item.querySelector('.fa-check');
+        if (icon) icon.style.display = 'none';
+    });
+    if (el) {
+        el.classList.add('selected');
+        const icon = el.querySelector('.fa-check');
+        if (icon) icon.style.display = 'inline-block';
+    }
+};
+
+window.closeChangeTeamModal = function() {
+    const m = document.getElementById('modalChangePhotoTeam');
+    if (m) m.style.display = 'none';
+};
+
+window.executeChangeTeam = async function() {
+    const ids = Array.from(window.selectedPhotoIds);
+    if (ids.length === 0) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'change_team',
+                ids: ids,
+                teamId: window.selectedTargetTeamId
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.closeChangeTeamModal();
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+        } else {
+            alert(`조 변경 실패: ${data.error || data.message}`);
+        }
+    } catch (err) {
+        console.error("Change team error:", err);
+        alert("조 변경 중 오류가 발생했습니다: " + err.message);
+    }
+};
+
+// 4. 컨테이너 이동 모달 & 실행
+window.handleOpenMoveModal = function() {
+    const count = window.selectedPhotoIds.size;
+    if (count === 0) {
+        alert("이동할 사진을 선택해 주세요.");
+        return;
+    }
+    const countEl = document.getElementById('movePhotoCount');
+    if (countEl) countEl.textContent = count;
+    const inputEl = document.getElementById('inputTargetMoveCntr');
+    if (inputEl) {
+        inputEl.value = '';
+        setTimeout(() => inputEl.focus(), 100);
+    }
+    document.getElementById('modalMovePhotoContainer').style.display = 'flex';
+};
+
+window.closeMoveModal = function() {
+    const m = document.getElementById('modalMovePhotoContainer');
+    if (m) m.style.display = 'none';
+};
+
+window.executeMoveContainer = async function() {
+    const ids = Array.from(window.selectedPhotoIds);
+    const targetCntr = document.getElementById('inputTargetMoveCntr')?.value?.trim()?.toUpperCase();
+    if (!targetCntr) {
+        alert("이동할 대상 컨테이너 번호를 입력해 주세요.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'move_container',
+                ids: ids,
+                targetCntrNo: targetCntr
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.closeMoveModal();
+            window.clearGalleryPhotoSelection();
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+            if (window.fetchContainerPhotoCounts) window.fetchContainerPhotoCounts();
+        } else {
+            alert(`이동 실패: ${data.error || data.message}`);
+        }
+    } catch (err) {
+        console.error("Move container error:", err);
+        alert("이동 중 오류가 발생했습니다: " + err.message);
+    }
+};
+
+// 5. 사진 다운로드 (단일/일괄)
+window.handleDownloadSelectedPhotos = async function() {
+    const ids = Array.from(window.selectedPhotoIds);
+    if (ids.length === 0) {
+        alert("다운로드할 사진을 선택해 주세요.");
+        return;
+    }
+    const selectedPhotos = window.currentGalleryPhotos.filter(p => window.selectedPhotoIds.has(String(p.id)));
+
+    for (let i = 0; i < selectedPhotos.length; i++) {
+        const p = selectedPhotos[i];
+        const downloadUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(p.photo_path)}&download=1`;
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = p.photo_path.split('/').pop() || 'photo.jpg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        if (selectedPhotos.length > 1) {
+            await new Promise(r => setTimeout(r, 250));
+        }
+    }
+};
+
+// 6. 로컬 폴더 복사 모달 & 실행
+window.handleOpenLocalCopyModal = function() {
+    const count = window.selectedPhotoIds.size;
+    if (count === 0) {
+        alert("복사할 사진을 선택해 주세요.");
+        return;
+    }
+    const countEl = document.getElementById('localCopyPhotoCount');
+    if (countEl) countEl.textContent = count;
+    const inputEl = document.getElementById('inputLocalCopyPath');
+    if (inputEl) {
+        inputEl.value = localStorage.getItem('lastPhotoLocalCopyPath') || 'W:\\helpdesk\\사진보관';
+    }
+    document.getElementById('modalLocalCopyPhoto').style.display = 'flex';
+};
+
+window.closeLocalCopyModal = function() {
+    const m = document.getElementById('modalLocalCopyPhoto');
+    if (m) m.style.display = 'none';
+};
+
+window.executeLocalCopy = async function() {
+    const ids = Array.from(window.selectedPhotoIds);
+    const targetPath = document.getElementById('inputLocalCopyPath')?.value?.trim();
+    const conflictAction = document.querySelector('input[name="localCopyConflict"]:checked')?.value || 'overwrite';
+
+    if (!targetPath) {
+        alert("대상 로컬 폴더 경로를 입력해 주세요.");
+        return;
+    }
+    localStorage.setItem('lastPhotoLocalCopyPath', targetPath);
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos/local-copy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ids: ids,
+                targetPath: targetPath,
+                conflictAction: conflictAction
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.closeLocalCopyModal();
+            alert(data.message || `성공적으로 ${data.copiedCount}장의 사진을 복사했습니다.`);
+        } else {
+            alert(`로컬 복사 실패: ${data.error || data.message}`);
+        }
+    } catch (err) {
+        console.error("Local copy error:", err);
+        alert("로컬 복사 중 오류가 발생했습니다: " + err.message);
+    }
+};
+
+// 7. 사진 회전 (-90, 180, 90)
+window.photoGalleryCacheBuster = Date.now();
+window.handleRotatePhotos = async function(degrees) {
+    const ids = Array.from(window.selectedPhotoIds);
+    if (ids.length === 0) {
+        alert("회전할 사진을 1장 이상 선택해 주세요.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'rotate',
+                ids: ids,
+                degrees: degrees
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.photoGalleryCacheBuster = Date.now();
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+        } else {
+            alert(`회전 실패: ${data.error || data.message}`);
+        }
+    } catch (err) {
+        console.error("Rotate error:", err);
+        alert("사진 회전 중 오류가 발생했습니다: " + err.message);
     }
 };
 
@@ -11699,16 +12083,20 @@ window.renderGalleryPhotos = function() {
         let html = '<div class="ctnr-grid-large">';
         photos.forEach((p, idx) => {
             const isSeal = p.photo_type === 'seal';
-            const photoUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(p.photo_path)}`;
+            const cacheParam = window.photoGalleryCacheBuster ? `&cb=${window.photoGalleryCacheBuster}` : '';
+            const photoUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(p.photo_path)}${cacheParam}`;
             const fileName = (p.photo_path || '').split('/').pop() || '';
             const uploader = p.uploader_name || '작업자';
             const uploadTimeStr = p.uploaded_at ? new Date(p.uploaded_at).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
             const isChecked = window.selectedPhotoIds.has(String(p.id));
 
             html += `
-                <div class="ctnr-card-large" onclick="window.openPhotoLightboxById('${p.id}')">
+                <div class="ctnr-card-large ${isChecked ? 'selected' : ''}" data-photo-id="${p.id}" onclick="window.handleCardClick('${p.id}', event)">
                     <div class="ctnr-card-img-wrapper">
-                        <div class="ctnr-card-chk-box" onclick="event.stopPropagation()">
+                        <div class="ctnr-photo-select-chk ${isChecked ? 'selected' : ''}" onclick="window.togglePhotoSelect('${p.id}', event)" title="사진 선택">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="ctnr-card-chk-box" style="display:none;" onclick="event.stopPropagation()">
                             <input type="checkbox" class="ctnr-photo-chk" ${isChecked ? 'checked' : ''} onchange="window.togglePhotoSelect('${p.id}', event)">
                         </div>
                         ${isSeal ? `<span class="ctnr-card-seal-tag"><i class="fas fa-camera"></i> 씰</span>` : ''}
@@ -11728,6 +12116,7 @@ window.renderGalleryPhotos = function() {
         });
         html += '</div>';
         listEl.innerHTML = html;
+        window.updateGalleryActionBar();
         return;
     }
 

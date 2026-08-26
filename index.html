@@ -2671,6 +2671,136 @@
                 </div>
                 <div id="photoGalleryList" class="ctnr-gallery-list"></div>
             </div>
+
+            <!-- CTNR 동일 하단 플로팅 액션바 -->
+            <div id="photoGalleryActionBar" class="ctnr-floating-action-bar" style="display: none;">
+                <div class="ctnr-action-bar-pill">
+                    <!-- 선택 개수 표시 배지 -->
+                    <div class="ctnr-action-selected-badge">
+                        <span id="actionSelectedCount" class="badge-num">1</span>
+                        <span class="badge-text">사진 선택됨</span>
+                    </div>
+
+                    <div class="ctnr-action-buttons-group">
+                        <!-- 1. 삭제 (휴지통 이동) -->
+                        <button type="button" class="ctnr-act-btn btn-rose-light" onclick="window.handleDeleteSelectedPhotos()" title="선택한 사진 삭제 (휴지통 이동)">
+                            <i class="fas fa-trash-alt"></i> 삭제
+                        </button>
+
+                        <!-- 2. 씰 지정 / 씰 해제 (동적 토글) -->
+                        <button type="button" id="btnActionSealToggle" class="ctnr-act-btn btn-rose-seal" onclick="window.handleBatchToggleSealPhoto()" title="씰 지정 / 해제">
+                            <i class="fas fa-camera"></i> <span id="btnActionSealText">씰 해제</span>
+                        </button>
+
+                        <!-- 3. 조 변경 -->
+                        <button type="button" class="ctnr-act-btn btn-indigo" onclick="window.handleOpenChangeTeamModal()" title="선택한 사진들의 작업 조 변경">
+                            <i class="fas fa-users"></i> 조 변경
+                        </button>
+
+                        <!-- 4. 이동 -->
+                        <button type="button" class="ctnr-act-btn btn-indigo" onclick="window.handleOpenMoveModal()" title="다른 컨테이너로 이동">
+                            <i class="fas fa-folder"></i> 이동
+                        </button>
+
+                        <!-- 5. 다운로드 -->
+                        <button type="button" class="ctnr-act-btn btn-sky" onclick="window.handleDownloadSelectedPhotos()" title="선택한 사진 다운로드">
+                            <i class="fas fa-download"></i> 다운로드
+                        </button>
+
+                        <!-- 6. 로컬 복사 -->
+                        <button type="button" class="ctnr-act-btn btn-emerald" onclick="window.handleOpenLocalCopyModal()" title="선택한 사진들을 지정한 로컬 폴더로 직접 복사">
+                            <i class="fas fa-folder-plus"></i> 로컬 복사
+                        </button>
+
+                        <!-- 7. 좌회전 (-90도) -->
+                        <button type="button" class="ctnr-act-btn btn-slate" onclick="window.handleRotatePhotos(-90)" title="선택한 사진들을 반시계방향 90도 좌회전">
+                            <i class="fas fa-undo"></i> 좌회전
+                        </button>
+
+                        <!-- 8. 180도 회전 -->
+                        <button type="button" class="ctnr-act-btn btn-slate" onclick="window.handleRotatePhotos(180)" title="선택한 사진들을 180도 회전">
+                            <i class="fas fa-redo" style="color: #f59e0b;"></i> 180°
+                        </button>
+
+                        <!-- 9. 우회전 (+90도) -->
+                        <button type="button" class="ctnr-act-btn btn-slate" onclick="window.handleRotatePhotos(90)" title="선택한 사진들을 시계방향 90도 우회전">
+                            <i class="fas fa-redo"></i> 우회전
+                        </button>
+                    </div>
+
+                    <!-- 선택 해제 (X) -->
+                    <div class="ctnr-action-bar-divider"></div>
+                    <button type="button" class="ctnr-action-bar-close" onclick="window.clearGalleryPhotoSelection()" title="선택 취소">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 조(팀) 변경 Modal ==================== -->
+    <div id="modalChangePhotoTeam" class="modal-ctnr-custom" style="display: none;">
+        <div class="modal-ctnr-box">
+            <div class="modal-ctnr-header">
+                <h3><i class="fas fa-users" style="color: #4f46e5;"></i> 작업 조(팀) 일괄 변경</h3>
+                <button type="button" class="btn-box-close" onclick="window.closeChangeTeamModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-ctnr-body">
+                <p style="font-size: 0.85rem; color: #475569; margin-bottom: 12px;">선택한 <b id="changeTeamPhotoCount" style="color: #4f46e5;">0</b>장의 사진에 지정할 작업 조를 선택해주세요.</p>
+                <div id="changeTeamListGroup" class="ctnr-team-list-group">
+                    <!-- 동적 렌더링 -->
+                </div>
+            </div>
+            <div class="modal-ctnr-footer">
+                <button type="button" class="btn-cancel" onclick="window.closeChangeTeamModal()">취소</button>
+                <button type="button" class="btn-confirm-indigo" onclick="window.executeChangeTeam()">변경 적용</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 컨테이너 이동 Modal ==================== -->
+    <div id="modalMovePhotoContainer" class="modal-ctnr-custom" style="display: none;">
+        <div class="modal-ctnr-box">
+            <div class="modal-ctnr-header">
+                <h3><i class="fas fa-folder" style="color: #4f46e5;"></i> 사진 컨테이너 이동</h3>
+                <button type="button" class="btn-box-close" onclick="window.closeMoveModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-ctnr-body">
+                <p style="font-size: 0.85rem; color: #475569; margin-bottom: 10px;">선택한 <b id="movePhotoCount" style="color: #4f46e5;">0</b>장의 사진을 이동할 컨테이너 번호를 입력하세요.</p>
+                <input type="text" id="inputTargetMoveCntr" class="ctnr-input-field" placeholder="예: TEMU1234567" style="text-transform: uppercase;">
+            </div>
+            <div class="modal-ctnr-footer">
+                <button type="button" class="btn-cancel" onclick="window.closeMoveModal()">취소</button>
+                <button type="button" class="btn-confirm-indigo" onclick="window.executeMoveContainer()">이동 실행</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 로컬 복사 Modal ==================== -->
+    <div id="modalLocalCopyPhoto" class="modal-ctnr-custom" style="display: none;">
+        <div class="modal-ctnr-box">
+            <div class="modal-ctnr-header">
+                <h3><i class="fas fa-folder-plus" style="color: #10b981;"></i> 사진 로컬 폴더 복사</h3>
+                <button type="button" class="btn-box-close" onclick="window.closeLocalCopyModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-ctnr-body">
+                <p style="font-size: 0.85rem; color: #475569; margin-bottom: 10px;">선택한 <b id="localCopyPhotoCount" style="color: #10b981;">0</b>장의 사진을 복사할 로컬 폴더 경로를 입력하세요.</p>
+                <input type="text" id="inputLocalCopyPath" class="ctnr-input-field" placeholder="예: W:\helpdesk\사진보관" style="margin-bottom: 12px;">
+                <div style="font-size: 0.8rem; color: #64748b; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="radio" name="localCopyConflict" value="overwrite" checked>
+                        <span>기존 파일이 있으면 덮어쓰기</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; margin-top: 6px;">
+                        <input type="radio" name="localCopyConflict" value="skip">
+                        <span>기존 파일이 있으면 건너뛰기</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-ctnr-footer">
+                <button type="button" class="btn-cancel" onclick="window.closeLocalCopyModal()">취소</button>
+                <button type="button" class="btn-confirm-emerald" onclick="window.executeLocalCopy()">복사 시작</button>
+            </div>
         </div>
     </div>
 
@@ -2716,7 +2846,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260826-fixclipboardcopy"></script>
+    <script src="app_main.js?v=20260826-photoactionsbar"></script>
 </body>
 
 </html>

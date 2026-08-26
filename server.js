@@ -6,6 +6,17 @@ const os = require('os');
 const { exec } = require('child_process');
 const nodemailer = require('nodemailer');
 
+let sharp = null;
+try {
+    sharp = require('sharp');
+} catch (e) {
+    try {
+        sharp = require('C:/Program Files (x86)/CTNR/node_modules/sharp');
+    } catch (e2) {
+        console.warn('⚠️ [Server] Sharp 모듈을 로드하지 못했습니다:', e2.message);
+    }
+}
+
 // Electron Writable Data Path - Web Server friendly fallback
 const DATA_DIR = process.env.APP_DATA_PATH || path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -2883,12 +2894,195 @@ app.get('/api/photos', async (req, res) => {
     }
 });
 
-// 작업 완료 및 상태 변경 API
+// 조(팀) 목록 조회 API
+app.get('/api/teams', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const result = await pool.query('SELECT id, name FROM teams ORDER BY id ASC');
+        res.json({ success: true, teams: result.rows });
+    } catch (err) {
+        console.warn("GET /api/teams fallback default teams:", err.message);
+        res.json({
+            success: true,
+            teams: [
+                { id: 1, name: '1조' },
+                { id: 2, name: '2조' },
+                { id: 3, name: '3조' },
+                { id: 4, name: '주간조' },
+                { id: 5, name: '야간조' }
+            ]
+        });
+    }
+});
+
+// 작업 완료 및 상태 변경 API (CTNR 호환)
 app.patch('/api/photos', async (req, res) => {
     try {
         const pool = await getPool();
-        const { action, ids, cntrNo, isCompleted } = req.body;
+        const { action, ids, cntrNo, isCompleted, photoType, teamId, targetCntrNo, degrees } = req.body;
 
+        // 1. 선택한 사진 회전 (좌회전 -90, 180도, 우회전 90)
+        if (action === 'rotate') {
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ success: false, error: '회전할 사진 ID가 제공되지 않았습니다.' });
+            }
+            const deg = Number(degrees) || 90;
+            const pRes = await pool.query(
+                `SELECT id, photo_path FROM container_photos WHERE id = ANY($1)`,
+                [ids]
+            );
+            let rotatedCount = 0;
+            let skippedCount = 0;
+
+            for (const row of pRes.rows) {
+                const localPath = path.resolve(CTNR_UPLOADS_DIR, row.photo_path);
+                if (fs.existsSync(localPath)) {
+                    if (sharp) {
+                        try {
+                            const buffer = await sharp(localPath).rotate(deg).toBuffer();
+                            fs.writeFileSync(localPath, buffer);
+                            rotatedCount++;
+                        } catch (err) {
+                            console.error(`[Rotate Error] ${row.photo_path}:`, err);
+                            skippedCount++;
+                        }
+                    } else {
+                        skippedCount++;
+                    }
+                } else {
+                    skippedCount++;
+                }
+            }
+
+            return res.json({
+                success: true,
+                rotatedCount,
+                skippedCount,
+                message: `${rotatedCount}장의 사진을 ${deg}° 회전했습니다.` + (skippedCount > 0 ? ` (${skippedCount}장 건너뜀)` : '')
+            });
+        }
+
+        // 2. 씰 지정 / 씰 해제 토글
+        if (action === 'update_photo_type') {
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ success: false, error: '사진 ID가 제공되지 않았습니다.' });
+            }
+            const targetType = (photoType === 'seal' || photoType === 'SEAL') ? 'seal' : 'normal';
+            await pool.query(
+                `UPDATE container_photos SET photo_type = $1 WHERE id = ANY($2)`,
+                [targetType, ids]
+            );
+            return res.json({
+                success: true,
+                photo_type: targetType,
+                updated_ids: ids,
+                message: targetType === 'seal' 
+                    ? (ids.length > 1 ? `사진 ${ids.length}장이 씰(Seal) 사진으로 지정되었습니다.` : '씰(Seal) 사진으로 지정되었습니다.')
+                    : (ids.length > 1 ? `사진 ${ids.length}장의 씰 지정이 해제되었습니다.` : '일반 사진으로 변경(씰 해제)되었습니다.')
+            });
+        }
+
+        // 3. 작업 조(Team) 일괄 변경
+        if (action === 'change_team') {
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ success: false, error: '사진 ID가 제공되지 않았습니다.' });
+            }
+            const targetTeamId = (teamId !== undefined && teamId !== null && teamId !== '' && teamId !== 'null') 
+                ? parseInt(String(teamId), 10) 
+                : null;
+
+            await pool.query(
+                `UPDATE container_photos SET team_id = $1 WHERE id = ANY($2)`,
+                [targetTeamId, ids]
+            );
+
+            let teamName = '미지정 조';
+            if (targetTeamId) {
+                try {
+                    const tRes = await pool.query(`SELECT name FROM teams WHERE id = $1`, [targetTeamId]);
+                    if (tRes.rows.length > 0) teamName = tRes.rows[0].name;
+                } catch (e) {}
+            }
+
+            return res.json({
+                success: true,
+                updatedCount: ids.length,
+                teamId: targetTeamId,
+                teamName,
+                message: `사진 ${ids.length}장의 작업 조가 [${teamName}](으)로 변경되었습니다.`
+            });
+        }
+
+        // 4. 다른 컨테이너로 이동
+        if (action === 'move_container') {
+            const cleanTargetCntr = (targetCntrNo || '').trim().toUpperCase();
+            if (!cleanTargetCntr) {
+                return res.status(400).json({ success: false, error: '이동할 목표 컨테이너 번호를 입력해 주세요.' });
+            }
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ success: false, error: '이동할 사진이 선택되지 않았습니다.' });
+            }
+
+            const pRes = await pool.query(
+                `SELECT id, photo_path, cntr_no FROM container_photos WHERE id = ANY($1) AND (is_deleted IS NOT TRUE)`,
+                [ids]
+            );
+
+            const targetDir = path.resolve(CTNR_UPLOADS_DIR, cleanTargetCntr);
+            if (!fs.existsSync(targetDir)) {
+                fs.mkdirSync(targetDir, { recursive: true });
+            }
+
+            let movedCount = 0;
+            for (const photo of pRes.rows) {
+                const oldLocalPath = path.resolve(CTNR_UPLOADS_DIR, photo.photo_path);
+                const filename = path.basename(photo.photo_path);
+                const newRelativePath = `${cleanTargetCntr}/${filename}`;
+                const newLocalPath = path.resolve(CTNR_UPLOADS_DIR, newRelativePath);
+
+                if (fs.existsSync(oldLocalPath)) {
+                    try {
+                        fs.renameSync(oldLocalPath, newLocalPath);
+                    } catch (err) {
+                        try {
+                            fs.copyFileSync(oldLocalPath, newLocalPath);
+                            fs.unlinkSync(oldLocalPath);
+                        } catch (e) {}
+                    }
+                }
+
+                await pool.query(
+                    `UPDATE container_photos SET cntr_no = $1, photo_path = $2 WHERE id = $3`,
+                    [cleanTargetCntr, newRelativePath, photo.id]
+                );
+                movedCount++;
+            }
+
+            return res.json({
+                success: true,
+                movedCount,
+                targetCntrNo: cleanTargetCntr,
+                message: `사진 ${movedCount}장이 컨테이너 '${cleanTargetCntr}'(으)로 이동되었습니다.`
+            });
+        }
+
+        // 5. 선택한 사진 삭제 (휴지통 이동)
+        if (action === 'trash_photos' || action === 'delete_photos') {
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ success: false, error: '삭제할 사진이 선택되지 않았습니다.' });
+            }
+            await pool.query(
+                `UPDATE container_photos SET is_deleted = true WHERE id = ANY($1)`,
+                [ids]
+            );
+            return res.json({
+                success: true,
+                count: ids.length,
+                message: `선택한 사진 ${ids.length}장이 휴지통으로 이동되었습니다.`
+            });
+        }
+
+        // 6. 폴더 단위 완료 토글
         if (action === 'toggle_complete_folder' && cntrNo) {
             const targetCompleted = !!isCompleted;
             const completedAt = targetCompleted ? new Date() : null;
@@ -2901,6 +3095,7 @@ app.patch('/api/photos', async (req, res) => {
             return res.json({ success: true, message: `컨테이너 '${cntrNo}' 작업 상태가 변경되었습니다.` });
         }
 
+        // 7. 개별 사진 완료 토글
         if (action === 'toggle_complete_photos' && Array.isArray(ids) && ids.length > 0) {
             const targetCompleted = !!isCompleted;
             const completedAt = targetCompleted ? new Date() : null;
@@ -2913,6 +3108,7 @@ app.patch('/api/photos', async (req, res) => {
             return res.json({ success: true, message: `선택한 사진 ${ids.length}장 작업 상태가 변경되었습니다.` });
         }
 
+        // 8. 폴더 단위 삭제 / 복구
         if (action === 'trash_folder' && cntrNo) {
             await pool.query(
                 `UPDATE container_photos SET is_deleted = true WHERE cntr_no = $1`,
@@ -2932,6 +3128,70 @@ app.patch('/api/photos', async (req, res) => {
         res.status(400).json({ success: false, error: 'Unknown action' });
     } catch (err) {
         console.error("PATCH /api/photos error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 사진 로컬 복사 API (CTNR 호환)
+app.post('/api/photos/local-copy', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const { ids, targetPath, conflictAction = 'overwrite' } = req.body;
+
+        if (!Array.isArray(ids) || ids.length === 0 || !targetPath) {
+            return res.status(400).json({ success: false, error: '복사할 사진 ID와 대상 경로를 지정해 주세요.' });
+        }
+
+        const resolvedTargetDir = path.resolve(targetPath);
+        if (!fs.existsSync(resolvedTargetDir)) {
+            try {
+                fs.mkdirSync(resolvedTargetDir, { recursive: true });
+            } catch (e) {
+                return res.status(400).json({ success: false, error: `대상 폴더 생성 실패: ${e.message}` });
+            }
+        }
+
+        const pRes = await pool.query(
+            `SELECT cp.cntr_no, cp.photo_path FROM container_photos cp WHERE cp.id = ANY($1) AND (cp.is_deleted IS NOT TRUE)`,
+            [ids]
+        );
+
+        let copiedCount = 0;
+        let skippedCount = 0;
+
+        for (const photo of pRes.rows) {
+            const srcPath = path.resolve(CTNR_UPLOADS_DIR, photo.photo_path);
+            const filename = path.basename(photo.photo_path);
+            const cntrFolder = path.resolve(resolvedTargetDir, photo.cntr_no || '기타');
+            if (!fs.existsSync(cntrFolder)) fs.mkdirSync(cntrFolder, { recursive: true });
+            const destPath = path.resolve(cntrFolder, filename);
+
+            if (fs.existsSync(destPath) && conflictAction === 'skip') {
+                skippedCount++;
+                continue;
+            }
+
+            if (fs.existsSync(srcPath)) {
+                try {
+                    fs.copyFileSync(srcPath, destPath);
+                    copiedCount++;
+                } catch (e) {
+                    skippedCount++;
+                }
+            } else {
+                skippedCount++;
+            }
+        }
+
+        res.json({
+            success: true,
+            copiedCount,
+            skippedCount,
+            targetPath: resolvedTargetDir,
+            message: `총 ${copiedCount}장의 사진이 '${resolvedTargetDir}'(으)로 복사되었습니다.` + (skippedCount > 0 ? ` (${skippedCount}장 건너뜀)` : '')
+        });
+    } catch (err) {
+        console.error("POST /api/photos/local-copy error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
