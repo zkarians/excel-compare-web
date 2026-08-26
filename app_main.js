@@ -4072,10 +4072,16 @@ async function handleAutoLoad(type) {
             lastEl.textContent = `최근 사용: ${result.fileName}`;
             reloadBtn.style.display = 'inline-block';
 
-            if (result.fullPath && window.electronAPI) {
-                window.electronAPI.saveFilePath(type, result.fullPath);
-                localStorage.setItem(type === 'original' ? 'pathOrig' : 'pathDown', result.fullPath);
+            if (result.fullPath) {
+                if (window.electronAPI && typeof window.electronAPI.saveFilePath === 'function') {
+                    window.electronAPI.saveFilePath(type, result.fullPath);
+                }
+                const pathKey = type === 'original' ? 'pathOrig' : (type === 'download' ? 'pathDown' : (type === 'rework' ? 'pathRework' : 'pathWarehouse'));
+                localStorage.setItem(pathKey, result.fullPath);
                 localStorage.setItem(storageKey, dirPath);
+                if (inputEl) {
+                    inputEl.value = (type === 'download') ? dirPath : result.fullPath;
+                }
             }
 
             checkReadyStatus();
@@ -4293,13 +4299,13 @@ function evaluateMathString(currentVal, expr) {
     return currentVal;
 }
 
-// Electron 및 웹 브라우저 공용 탐색기 파일 피커 바인딩
+// Electron 및 웹 브라우저 공용 OS 네이티브 탐색기 파일 피커 바인딩 (마지막 폴더 기억)
 (function setupNativePickers() {
     const pickers = [
-        { btn: 'btnNativePickerOrig', fileInputId: 'fileOriginal', pathInputId: 'pathOriginal', type: 'original', storageKey: 'dirOrig' },
-        { btn: 'btnNativePickerRework', fileInputId: 'fileRework', pathInputId: 'pathRework', type: 'rework', storageKey: 'dirRework' },
-        { btn: 'btnNativePickerWarehouse', fileInputId: 'fileWarehouseStock', pathInputId: 'pathWarehouse', type: 'warehouse', storageKey: 'dirWarehouse' },
-        { btn: 'btnNativePickerDown', fileInputId: 'fileDownload', pathInputId: 'pathDownload', type: 'download', storageKey: 'dirDown' }
+        { btn: 'btnNativePickerOrig', fileInputId: 'fileOriginal', pathInputId: 'pathOriginal', type: 'original', storageKey: 'dirOrig', title: '1. 원본 파일 선택' },
+        { btn: 'btnNativePickerRework', fileInputId: 'fileRework', pathInputId: 'pathRework', type: 'rework', storageKey: 'dirRework', title: '1-2. 재작업 파일 선택' },
+        { btn: 'btnNativePickerWarehouse', fileInputId: 'fileWarehouseStock', pathInputId: 'pathWarehouse', type: 'warehouse', storageKey: 'dirWarehouse', title: '1-3. 창고재고 파일 선택' },
+        { btn: 'btnNativePickerDown', fileInputId: 'fileDownload', pathInputId: 'pathDownload', type: 'download', storageKey: 'dirDown', title: '2. 전산 다운로드 파일 선택' }
     ];
 
     pickers.forEach(p => {
@@ -4307,35 +4313,53 @@ function evaluateMathString(currentVal, expr) {
         if (!btn) return;
 
         btn.addEventListener('click', async () => {
-            // 1. Electron 데스크톱 앱 환경인 경우 -> 기존 OS 네이티브 탐색기 다이얼로그 호출 (100% 동일 보존)
+            let filePath = null;
+
+            // 1. Electron 데스크톱 앱 환경인 경우 -> Electron native dialog 호출
             if (window.electronAPI && typeof window.electronAPI.selectFile === 'function') {
                 const lastDir = localStorage.getItem(p.storageKey);
-                const filePath = await window.electronAPI.selectFile(p.type, lastDir);
-
-                if (filePath) {
-                    // 폴더 경로 업데이트
-                    const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
-                    const dirPath = lastSlash !== -1 ? filePath.substring(0, lastSlash) : filePath;
-                    localStorage.setItem(p.storageKey, dirPath);
-
-                    // 해당 UI 입력창에도 경로 표시
-                    if (p.type === 'original') pathOriginal.value = filePath;
-                    else if (p.type === 'rework') pathRework.value = filePath;
-                    else if (p.type === 'download') pathDownload.value = filePath;
-                    else if (p.type === 'warehouse') pathWarehouse.value = filePath;
-
-                    // 파일 로드 시도
-                    if (p.type === 'warehouse') {
-                        loadNativeWarehouseFile(filePath);
-                    } else {
-                        reloadNativeFileFromPath(p.type, filePath);
-                    }
-                }
+                filePath = await window.electronAPI.selectFile(p.type, lastDir);
             } else {
-                // 2. 웹 브라우저(localhost 등) 환경인 경우 -> 브라우저 표준 파일 탐색기 선택창 트리거
-                const fileInput = document.getElementById(p.fileInputId);
-                if (fileInput) {
-                    fileInput.click();
+                // 2. 웹 브라우저 (localhost) 환경인 경우 -> 백엔드 Windows Native OpenFileDialog 호출
+                try {
+                    const lastDir = localStorage.getItem(p.storageKey) || '';
+                    const res = await fetch(`${API_BASE}/api/pick-file`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ initialDir: lastDir, title: p.title })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.filePath) {
+                        filePath = data.filePath;
+                    } else if (data.canceled) {
+                        return; // 사용자가 취소함
+                    }
+                } catch (e) {
+                    console.warn("Backend pick-file failed, falling back to HTML input:", e);
+                    const fileInput = document.getElementById(p.fileInputId);
+                    if (fileInput) fileInput.click();
+                    return;
+                }
+            }
+
+            if (filePath) {
+                // 폴더 경로 업데이트 및 저장 (마지막 폴더 기억)
+                const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
+                const dirPath = lastSlash !== -1 ? filePath.substring(0, lastSlash) : filePath;
+                localStorage.setItem(p.storageKey, dirPath);
+
+                // 해당 UI 입력창에도 경로 표시
+                const pathEl = document.getElementById(p.pathInputId);
+                if (pathEl) {
+                    // 전산파일은 폴더 경로를 표시하여 '최신 파일 로드' 연동성 극대화, 그 외는 전체 파일 경로 표시
+                    pathEl.value = (p.type === 'download') ? dirPath : filePath;
+                }
+
+                // 파일 로드 시도
+                if (p.type === 'warehouse') {
+                    loadNativeWarehouseFile(filePath);
+                } else {
+                    reloadNativeFileFromPath(p.type, filePath);
                 }
             }
         });
