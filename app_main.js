@@ -12624,6 +12624,7 @@ window.renderGalleryPhotos = function() {
                         <div class="ctnr-card-chk-box" style="display:none;" onclick="event.stopPropagation()">
                             <input type="checkbox" class="ctnr-photo-chk" ${isChecked ? 'checked' : ''} onchange="window.togglePhotoSelect('${p.id}', event)">
                         </div>
+                        ${(p.gdrive_file_id || p.gdrive_url) ? `<span class="ctnr-card-cloud-tag" title="구글드라이브 안전 보관 사진 (PC 용량 정리 완료)">☁️</span>` : ''}
                         ${isSeal ? `<span class="ctnr-card-seal-tag"><i class="fas fa-camera"></i> 씰</span>` : ''}
                         <img src="${photoUrl}" alt="${p.cntr_no}" style="${rotateStyle}" loading="lazy" onerror="this.src='https://placehold.co/600x800/11111a/94a3b8?text=Image+Load+Fail'">
                         <div class="ctnr-card-gradient-overlay"></div>

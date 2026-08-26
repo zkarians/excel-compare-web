@@ -17,6 +17,69 @@ try {
     }
 }
 
+let google = null;
+try {
+    google = require('googleapis').google;
+} catch (e) {
+    try {
+        google = require('C:/Program Files (x86)/CTNR/node_modules/googleapis').google;
+    } catch (e2) {
+        console.warn('⚠️ [Server] googleapis 모듈을 로드하지 못했습니다:', e2.message);
+    }
+}
+
+// Google Drive OAuth 설정 (CTNR 앱 호환)
+const GDRIVE_OAUTH_PATH = 'C:\\Program Files (x86)\\CTNR\\gdrive-oauth-client.json';
+const GDRIVE_TOKEN_PATH = 'C:\\Program Files (x86)\\CTNR\\gdrive-token.json';
+const GDRIVE_FOLDER_ID = '171usj8jgkHcdSO5YKopw0tJ0yhlwQ86_';
+
+function getGoogleDriveClient() {
+    if (!google) return null;
+    if (!fs.existsSync(GDRIVE_OAUTH_PATH) || !fs.existsSync(GDRIVE_TOKEN_PATH)) return null;
+    try {
+        const rawOauth = fs.readFileSync(GDRIVE_OAUTH_PATH, 'utf8');
+        const credentials = JSON.parse(rawOauth);
+        const clientInfo = credentials.installed || credentials.web;
+        const oauth2Client = new google.auth.OAuth2(clientInfo.client_id, clientInfo.client_secret);
+        const rawToken = fs.readFileSync(GDRIVE_TOKEN_PATH, 'utf8');
+        oauth2Client.setCredentials(JSON.parse(rawToken));
+        return oauth2Client;
+    } catch (e) {
+        console.warn('⚠️ [GDrive] OAuth 클라이언트 초기화 실패:', e.message);
+        return null;
+    }
+}
+
+async function downloadFromGoogleDrive(fileId) {
+    const auth = getGoogleDriveClient();
+    if (!auth) throw new Error('Google Drive 인증 클라이언트를 생성할 수 없습니다.');
+    const token = await auth.getAccessToken();
+    if (!token || !token.token) throw new Error('Google Drive Access Token을 가져올 수 없습니다.');
+
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+        headers: { Authorization: `Bearer ${token.token}` }
+    });
+    if (!res.ok) throw new Error(`Google Drive 다운로드 실패 (${res.status} ${res.statusText})`);
+    const arrayBuffer = await res.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+}
+
+async function findGoogleDriveFileByName(fileName) {
+    const auth = getGoogleDriveClient();
+    if (!auth) return null;
+    try {
+        const drive = google.drive({ version: 'v3', auth });
+        const q = `'${GDRIVE_FOLDER_ID}' in parents and name = '${fileName}' and trashed = false`;
+        const res = await drive.files.list({ q, fields: 'files(id, name)', pageSize: 1 });
+        if (res.data.files && res.data.files.length > 0) {
+            return { fileId: res.data.files[0].id, gdriveUrl: `https://lh3.googleusercontent.com/d/${res.data.files[0].id}` };
+        }
+    } catch (e) {
+        console.warn(`[GDrive Search Warn] ${fileName}:`, e.message);
+    }
+    return null;
+}
+
 // Electron Writable Data Path - Web Server friendly fallback
 const DATA_DIR = process.env.APP_DATA_PATH || path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -3312,7 +3375,7 @@ app.post('/api/photos/local-copy', async (req, res) => {
     }
 });
 
-// 2. 사진 스트리밍 서빙 API
+// 2. 사진 스트리밍 서빙 API (CTNR 호환 + Google Drive 자동 다운로드 & 캐싱)
 app.get('/api/photos/view', async (req, res) => {
     try {
         const rawFilename = req.query.filename;
@@ -3331,6 +3394,7 @@ app.get('/api/photos/view', async (req, res) => {
             return res.status(403).send('Forbidden');
         }
 
+        // 1. 로컬 디스크에 파일이 존재하는 경우 즉시 전송
         if (fs.existsSync(filePath)) {
             let contentType = 'image/jpeg';
             if (filePath.toLowerCase().endsWith('.png')) contentType = 'image/png';
@@ -3345,28 +3409,82 @@ app.get('/api/photos/view', async (req, res) => {
             return res.sendFile(filePath);
         }
 
-        // 로컬에 파일이 없는 경우 remote CTNR 서버에서 fetch 시도
-        const remoteUrl = `http://ungdong.iptime.org:4000/api/photos/view?filename=${encodeURIComponent(filename)}`;
+        // 2. 로컬 디스크에 없는 경우: Google Drive에서 다운로드 시도 (완료된 작업 사진 백업)
         try {
-            const remoteRes = await fetch(remoteUrl, { signal: AbortSignal.timeout(4000) });
-            if (remoteRes.ok) {
-                const arrayBuffer = await remoteRes.arrayBuffer();
-                const buffer = Buffer.from(arrayBuffer);
-                const fetchedType = remoteRes.headers.get('content-type') || 'image/jpeg';
+            const pool = await getPool();
+            let gdriveFileId = null;
 
-                if (fetchedType.toLowerCase().includes('image') && buffer.length > 0) {
+            const gRes = await pool.query(
+                'SELECT gdrive_url, gdrive_file_id FROM container_photos WHERE photo_path = $1 AND (is_deleted IS NOT TRUE) LIMIT 1',
+                [filename]
+            );
+            if (gRes.rows.length > 0 && gRes.rows[0].gdrive_file_id) {
+                gdriveFileId = gRes.rows[0].gdrive_file_id;
+            }
+
+            // DB에 gdrive_file_id가 없으면 파일명으로 검색
+            if (!gdriveFileId) {
+                const baseName = path.basename(filename);
+                const found = await findGoogleDriveFileByName(baseName);
+                if (found) gdriveFileId = found.fileId;
+            }
+
+            if (gdriveFileId) {
+                const gdriveBuffer = await downloadFromGoogleDrive(gdriveFileId);
+                if (gdriveBuffer && gdriveBuffer.length > 0) {
+                    // 로컬 디스크에 캐싱하여 다음 요청부터 즉시 서빙
                     try {
                         const dir = path.dirname(filePath);
                         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-                        fs.writeFileSync(filePath, buffer);
-                    } catch (e) {}
+                        fs.writeFileSync(filePath, gdriveBuffer);
+                        console.log(`[Cache] Google Drive 사진 로컬 캐시 완료: ${filePath}`);
+                    } catch (cacheErr) {
+                        console.warn('[Cache Error]', cacheErr.message);
+                    }
 
-                    res.setHeader('Content-Type', fetchedType);
+                    res.setHeader('Content-Type', 'image/jpeg');
                     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-                    return res.send(buffer);
+                    if (isDownloadMode) {
+                        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(path.basename(filename))}"`);
+                    }
+                    return res.send(gdriveBuffer);
                 }
             }
-        } catch (remoteErr) {}
+        } catch (gErr) {
+            console.warn('[GDrive Fallback Warning]', gErr.message);
+        }
+
+        // 3. 원격 CTNR 서버에서 fetch 시도
+        const remoteHosts = [
+            'http://ungdong.iptime.org:4000',
+            'http://idlezero.iptime.org:4000',
+            'http://ungdong.iptime.org',
+            'http://idlezero.iptime.org'
+        ];
+
+        for (const host of remoteHosts) {
+            try {
+                const remoteUrl = `${host}/api/photos/view?filename=${encodeURIComponent(filename)}`;
+                const remoteRes = await fetch(remoteUrl, { signal: AbortSignal.timeout(3000) });
+                if (remoteRes.ok) {
+                    const arrayBuffer = await remoteRes.arrayBuffer();
+                    const buffer = Buffer.from(arrayBuffer);
+                    const fetchedType = remoteRes.headers.get('content-type') || 'image/jpeg';
+
+                    if (fetchedType.toLowerCase().includes('image') && buffer.length > 0) {
+                        try {
+                            const dir = path.dirname(filePath);
+                            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+                            fs.writeFileSync(filePath, buffer);
+                        } catch (e) {}
+
+                        res.setHeader('Content-Type', fetchedType);
+                        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+                        return res.send(buffer);
+                    }
+                }
+            } catch (remoteErr) {}
+        }
 
         return res.status(404).send('Photo not found');
     } catch (err) {

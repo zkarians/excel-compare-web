@@ -3499,6 +3499,25 @@ tr.border-group td {
     margin: 0;
 }
 
+.ctnr-card-cloud-tag {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(2, 132, 199, 0.95);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: white;
+    font-size: 0.78rem;
+    font-weight: 900;
+    padding: 2px 7px;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .ctnr-card-seal-tag {
     position: absolute;
     top: 10px;
@@ -3516,6 +3535,10 @@ tr.border-group td {
     display: flex;
     align-items: center;
     gap: 4px;
+}
+
+.ctnr-card-large:has(.ctnr-card-cloud-tag) .ctnr-card-seal-tag {
+    right: 48px;
 }
 
 .ctnr-card-bottom-info {
