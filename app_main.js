@@ -785,7 +785,8 @@ async function initializeApp() {
         loadProductMaster(),
         loadCustomFields(),
         loadHoldContainers(),
-        loadCautionModels()
+        loadCautionModels(),
+        window.fetchContainerPhotoCounts()
     ]);
 
     // Check Server & DB Status
@@ -5148,6 +5149,9 @@ function getStockShortageBadge(prodName, rowRemain) {
 }
 
 function displayResults(results, isDbMode = false) {
+    if (typeof window.fetchContainerPhotoCounts === 'function') {
+        window.fetchContainerPhotoCounts();
+    }
 
     // [사용자 요청] 전체 컨테이너에 대해 동일 제품별 잔여 필요수량(remain)을 합산하여 맵핑
     window.totalProductRemainMap = {};
@@ -5816,7 +5820,7 @@ function displayResults(results, isDbMode = false) {
                                     style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
                                     title="클릭하여 컨테이너 복사"
                                     class="copyable-item">${res.cntrNo}</strong>
-                            <button class="btn-cntr-photo" onclick="window.openContainerPhotoModal('${res.cntrNo.replace(/'/g, "\\'")}', event)" title="컨테이너 사진 보기"><i class="fas fa-camera"></i></button>
+                            ${typeof window.renderContainerPhotoBtn === 'function' ? window.renderContainerPhotoBtn(res.cntrNo) : ''}
                             ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; margin-left:3px; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
                             ${hasPop ? `<span style="display:inline-block;margin-left:3px;font-size:0.65rem;background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;border-radius:4px;padding:0px 4px;vertical-align:middle;">POP</span>` : ''}
                         </div>
@@ -5916,7 +5920,7 @@ function displayResults(results, isDbMode = false) {
                                     style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
                                     class="copyable-item"
                                     title="클릭하여 컨테이너 복사">${res.cntrNo}</strong>
-                            <button class="btn-cntr-photo" onclick="window.openContainerPhotoModal('${res.cntrNo.replace(/'/g, "\\'")}', event)" title="컨테이너 사진 보기"><i class="fas fa-camera"></i></button>
+                            ${typeof window.renderContainerPhotoBtn === 'function' ? window.renderContainerPhotoBtn(res.cntrNo) : ''}
                             ${isCaution ? `<span title="주의 비고: ${matchedCaution.remark || '사유 없음'}" style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#ef4444; color:#fff; border-radius:4px; padding:0px 4px; line-height:1.2; cursor:help; white-space:nowrap;">주의</span>` : ''}
                             ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; margin-left:4px; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
                         </div>
@@ -11152,7 +11156,7 @@ function renderAvailabilityTable() {
                     </td>
                     <td rowspan="${N}" class="merged-cell text-center" style="vertical-align: middle; background: inherit; text-align: center; color: ${cntrColor}; font-weight: ${group.cntrNo === '미지정' ? '500' : '800'};">
                         <strong onclick="window.copyToClipboard('${group.cntrNo}', '컨테이너')" style="cursor: pointer; color: ${cntrColor};" title="${transTitle}">${group.cntrNo}</strong>
-                        ${group.cntrNo !== '미지정' ? `<button class="btn-cntr-photo" onclick="window.openContainerPhotoModal('${group.cntrNo.replace(/'/g, "\\'")}', event)" title="컨테이너 사진 보기"><i class="fas fa-camera"></i></button>` : ''}
+                        ${typeof window.renderContainerPhotoBtn === 'function' ? window.renderContainerPhotoBtn(group.cntrNo) : ''}
                     </td>
                     <td rowspan="${N}" class="merged-cell text-center" style="vertical-align: middle; background: inherit; text-align: center; font-weight: 600;">${group.dest}</td>
                     <td rowspan="${N}" class="merged-cell text-center" style="vertical-align: middle; background: inherit; text-align: center;">${group.carrier}</td>
@@ -11500,6 +11504,28 @@ window.openAvailabilityInExcel = async function() {
 };
 
 // ==================== 컨테이너 사진 갤러리 및 업로드 매니저 ====================
+window.containerPhotoCounts = {};
+
+window.fetchContainerPhotoCounts = async function() {
+    try {
+        const res = await fetch(`${API_BASE}/api/photos/counts`);
+        const data = await res.json();
+        if (data.success && data.counts) {
+            window.containerPhotoCounts = data.counts;
+        }
+    } catch (e) {
+        console.warn("fetchContainerPhotoCounts warning:", e);
+    }
+};
+
+window.renderContainerPhotoBtn = function(cntrNo) {
+    if (!cntrNo) return '';
+    const cleanCntr = cntrNo.trim().toUpperCase();
+    const count = window.containerPhotoCounts ? (window.containerPhotoCounts[cleanCntr] || 0) : 0;
+    if (count <= 0) return '';
+    return `<button class="btn-cntr-photo has-photos" onclick="window.openContainerPhotoModal('${cleanCntr.replace(/'/g, "\\'")}', event)" title="컨테이너 사진 ${count}장 등록됨 (클릭하여 보기)"><i class="fas fa-camera"></i> <span style="font-size:0.65rem; font-weight:800; margin-left:1px;">${count}</span></button>`;
+};
+
 let currentGalleryPhotos = [];
 let lightboxPhotos = [];
 let currentLightboxIndex = 0;

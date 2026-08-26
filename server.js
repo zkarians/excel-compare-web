@@ -2700,6 +2700,28 @@ app.delete('/api/email/history/:id', async (req, res) => {
 // --- 컨테이너 사진 관련 API ---
 const CTNR_UPLOADS_DIR = process.env.CTNR_UPLOAD_DIR || 'C:\\Program Files (x86)\\CTNR\\uploads';
 
+// 0. 컨테이너별 등록된 사진 수 조회 API (카메라 아이콘 노출 여부 판단용)
+app.get('/api/photos/counts', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const sql = `
+            SELECT UPPER(TRIM(cntr_no)) as cntr_no, COUNT(*)::int as count 
+            FROM container_photos 
+            WHERE (is_deleted IS NULL OR is_deleted = false) 
+            GROUP BY UPPER(TRIM(cntr_no))
+        `;
+        const result = await pool.query(sql);
+        const counts = {};
+        result.rows.forEach(r => {
+            if (r.cntr_no) counts[r.cntr_no] = r.count;
+        });
+        res.json({ success: true, counts });
+    } catch (err) {
+        console.error("GET /api/photos/counts error:", err);
+        res.status(500).json({ success: false, error: err.message, counts: {} });
+    }
+});
+
 // 1. 사진 목록 조회 API
 app.get('/api/photos', async (req, res) => {
     try {
