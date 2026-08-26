@@ -11557,23 +11557,31 @@ window.openPhotoGalleryModal = function(initialCntrNo = '') {
 
     modal.style.display = 'flex';
 
-    // 기본 날짜 설정: 오늘 및 30일 전
+    // 로컬 기준 YYYY-MM-DD 생성 헬퍼
+    const formatYMD = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+
     const today = new Date();
-    const pastDate = new Date();
-    pastDate.setDate(today.getDate() - 30);
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
 
     const startDateEl = document.getElementById('photoGalleryStartDate');
     const endDateEl = document.getElementById('photoGalleryEndDate');
     const searchEl = document.getElementById('photoGallerySearchCntr');
 
-    if (startDateEl && !startDateEl.value) startDateEl.value = pastDate.toISOString().split('T')[0];
-    if (endDateEl && !endDateEl.value) endDateEl.value = today.toISOString().split('T')[0];
-    if (searchEl) searchEl.value = initialCntrNo;
+    // 상위메뉴 [사진함] 클릭 시 기본값은 [어제 ~ 오늘]
+    if (startDateEl) startDateEl.value = formatYMD(yesterday);
+    if (endDateEl) endDateEl.value = formatYMD(today);
+    if (searchEl) searchEl.value = initialCntrNo || '';
 
     window.loadPhotoGallery(initialCntrNo);
 };
 
-// 특정 컨테이너 전용 사진 퀵 오픈
+// 특정 컨테이너 전용 사진 퀵 오픈 (카메라 버튼 클릭 시)
 window.openContainerPhotoModal = function(cntrNo, event) {
     if (event) event.stopPropagation();
     if (!cntrNo) return;
@@ -11585,9 +11593,15 @@ window.loadPhotoGallery = async function(targetCntr = '') {
     const loadingEl = document.getElementById('photoGalleryLoading');
     const listEl = document.getElementById('photoGalleryList');
     const summaryEl = document.getElementById('photoGallerySummary');
+    const searchInputEl = document.getElementById('photoGallerySearchCntr');
+
+    const searchCntr = (targetCntr !== undefined && targetCntr !== null && targetCntr !== '' ? targetCntr : (searchInputEl?.value || '')).trim().toUpperCase();
+    if (searchInputEl && searchCntr) {
+        searchInputEl.value = searchCntr;
+    }
+
     const startDate = document.getElementById('photoGalleryStartDate')?.value || '';
     const endDate = document.getElementById('photoGalleryEndDate')?.value || '';
-    const searchCntr = (targetCntr || document.getElementById('photoGallerySearchCntr')?.value || '').trim();
     const typeFilter = document.getElementById('photoGalleryTypeFilter')?.value || 'all';
 
     if (loadingEl) loadingEl.style.display = 'flex';
@@ -11596,9 +11610,12 @@ window.loadPhotoGallery = async function(targetCntr = '') {
     try {
         let url = `${API_BASE}/api/photos?`;
         const queryParams = [];
+        
+        // [사용자 요구사항] 컨테이너 번호로 조회할 때는 날짜 조건에 구애받지 않고 모든 일자의 사진 로드
         if (searchCntr) {
             queryParams.push(`cntrNo=${encodeURIComponent(searchCntr)}`);
         } else {
+            // 상위메뉴 사진함 전체 조회 시 설정된 날짜 범위(어제~오늘) 적용
             if (startDate) queryParams.push(`startDate=${encodeURIComponent(startDate)}`);
             if (endDate) queryParams.push(`endDate=${encodeURIComponent(endDate)}`);
         }
@@ -11618,7 +11635,7 @@ window.loadPhotoGallery = async function(targetCntr = '') {
                     <div style="text-align: center; padding: 60px 20px; color: #64748b;">
                         <i class="fas fa-camera-retro" style="font-size: 3rem; margin-bottom: 12px; opacity: 0.5;"></i>
                         <div style="font-size: 1rem; font-weight: 700; color: #94a3b8;">등록된 컨테이너 사진이 없습니다.</div>
-                        <div style="font-size: 0.8rem; margin-top: 6px;">[사진 올리기] 버튼을 눌러 새 사진을 등록해 보세요.</div>
+                        <div style="font-size: 0.8rem; margin-top: 6px;">현장 CTNR 앱에서 사진이 등록되면 실시간으로 표시됩니다.</div>
                     </div>
                 `;
             }
