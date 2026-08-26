@@ -12387,52 +12387,86 @@ window.executeLocalCopy = async function() {
     }
 };
 
-// 7. 구글드라이브 백업 & 로컬 용량 정리 (NDJSON 스트리밍)
+// 7. 구글드라이브 백업 & 로컬 용량 정리 (CTNR 100% 동일 NDJSON 스트리밍)
 window.gdriveAbortController = null;
-window.handleUploadToGDriveAndCleanLocal = async function() {
+window.lastGDriveTargetIds = [];
+window.isGDriveUploading = false;
+
+window.handleUploadToGDriveAndCleanLocal = async function(isResumeAction = false) {
     const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
     let ids = [];
 
-    if (isFolderMode) {
+    if (isResumeAction && window.lastGDriveTargetIds.length > 0) {
+        ids = window.lastGDriveTargetIds;
+    } else if (isFolderMode) {
         const keys = Array.from(window.selectedFolderKeys);
         const cntrNos = new Set(keys.map(k => k.split('|')[0]));
         const photos = (window.currentGalleryPhotos || []).filter(p => cntrNos.has((p.cntr_no || '').toUpperCase().trim()));
         ids = photos.map(p => p.id);
+    } else if (window.selectedPhotoIds && window.selectedPhotoIds.size > 0) {
+        ids = Array.from(window.selectedPhotoIds);
     } else {
-        ids = Array.from(window.selectedPhotoIds || []);
+        // 선택된 것이 없으면 현재 탭 전체 사진 대상
+        ids = (window.currentGalleryPhotos || []).map(p => p.id);
     }
 
     if (ids.length === 0) {
-        alert("구글드라이브에 백업할 사진 또는 폴더를 선택해 주세요.");
+        alert("구글드라이브로 백업할 사진이 없습니다.");
         return;
     }
 
-    if (!confirm(`선택한 사진 ${ids.length}장을 구글드라이브에 안전 백업하고 로컬 디스크 용량을 확보(PC에서 원본 삭제)하시겠습니까?`)) {
-        return;
+    window.lastGDriveTargetIds = ids;
+
+    if (!isResumeAction) {
+        const countText = (window.selectedPhotoIds && window.selectedPhotoIds.size > 0)
+            ? `선택한 사진 ${ids.length}장` 
+            : (isFolderMode ? `선택한 컨테이너 폴더의 사진 ${ids.length}장` : `현재 탭의 전체 사진 ${ids.length}장`);
+
+        if (!confirm(`[☁️ 구글드라이브 백업 & 로컬 용량 정리]\n\n${countText}을(를) 구글드라이브로 안전 백업하고, 업로드 확인 후 로컬 PC의 디스크 공간을 정리하시겠습니까?\n(※ 이전에 이미 완료된 파일은 자동 스킵되며, 남은 파일만 이어서 진행됩니다.)`)) {
+            return;
+        }
     }
 
     const modal = document.getElementById('modalGDriveProgress');
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+        modal.style.setProperty('display', 'flex', 'important');
+    }
 
     const statusEl = document.getElementById('gdriveStatusText');
+    const statusSubEl = document.getElementById('gdriveStatusSub');
     const barEl = document.getElementById('gdriveProgressBar');
-    const pctEl = document.getElementById('gdriveProgressPercent');
     const countEl = document.getElementById('gdriveProgressCount');
+    const totalCountEl = document.getElementById('gdriveProgressTotalCount');
+    const alreadyDoneTag = document.getElementById('gdriveAlreadyDoneTag');
     const uploadedEl = document.getElementById('gdriveUploadedCount');
     const skippedEl = document.getElementById('gdriveSkippedCount');
     const cleanedEl = document.getElementById('gdriveCleanedCount');
     const freedEl = document.getElementById('gdriveFreedMB');
+    const btnStop = document.getElementById('btnStopGDrive');
+    const btnClose = document.getElementById('btnCloseGDrive');
+    const btnResume = document.getElementById('btnResumeGDrive');
+    const spinner = document.getElementById('gdriveSpinner');
 
-    if (statusEl) statusEl.textContent = '구글드라이브 업로드 연결 중...';
+    if (statusEl) statusEl.textContent = '작업 준비 중...';
+    if (statusSubEl) statusSubEl.textContent = '안전하게 업로드 및 디스크 정리 중...';
     if (barEl) barEl.style.width = '0%';
-    if (pctEl) pctEl.textContent = '0%';
-    if (countEl) countEl.textContent = `0 / ${ids.length}`;
-    if (uploadedEl) uploadedEl.textContent = '0';
-    if (skippedEl) skippedEl.textContent = '0';
-    if (cleanedEl) cleanedEl.textContent = '0';
+    if (countEl) countEl.textContent = '0';
+    if (totalCountEl) totalCountEl.textContent = `${ids.length} 장`;
+    if (alreadyDoneTag) alreadyDoneTag.style.display = 'none';
+    if (uploadedEl) uploadedEl.textContent = '0장';
+    if (skippedEl) skippedEl.textContent = '0장';
+    if (cleanedEl) cleanedEl.textContent = '0장';
     if (freedEl) freedEl.textContent = '0.0';
 
+    if (btnStop) btnStop.style.display = 'inline-flex';
+    if (btnClose) btnClose.style.display = 'none';
+    if (btnResume) btnResume.style.display = 'none';
+    if (spinner) spinner.className = 'fas fa-spinner fa-spin';
+
+    window.isGDriveUploading = true;
     window.gdriveAbortController = new AbortController();
+
+    let lastProgressEvent = null;
 
     try {
         const response = await fetch(`${API_BASE}/api/photos`, {
@@ -12444,6 +12478,11 @@ window.handleUploadToGDriveAndCleanLocal = async function() {
             }),
             signal: window.gdriveAbortController.signal
         });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errText.slice(0, 150)}`);
+        }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
@@ -12459,38 +12498,69 @@ window.handleUploadToGDriveAndCleanLocal = async function() {
             for (const line of lines) {
                 if (!line.trim()) continue;
                 try {
-                    const evt = JSON.parse(line);
+                    const evt = JSON.parse(line.trim());
+                    lastProgressEvent = evt;
+
                     if (evt.type === 'start') {
-                        if (statusEl) statusEl.textContent = `총 ${evt.total}장 처리 시작 (이미 백업됨: ${evt.alreadyDoneCount || 0}장)`;
+                        if (totalCountEl) totalCountEl.textContent = `${evt.total} 장`;
+                        if (alreadyDoneTag && evt.alreadyDoneCount > 0) {
+                            alreadyDoneTag.style.display = 'inline-block';
+                            alreadyDoneTag.textContent = `기존 완료 (총 ${evt.alreadyDoneCount}장 스킵)`;
+                        }
                     } else if (evt.type === 'progress') {
                         if (barEl) barEl.style.width = `${evt.percent}%`;
-                        if (pctEl) pctEl.textContent = `${evt.percent}%`;
-                        if (countEl) countEl.textContent = `${evt.current} / ${evt.total}`;
-                        if (statusEl) statusEl.textContent = `[${evt.status}] ${evt.currentFile || ''}`;
-                        if (uploadedEl && evt.uploadedCount !== undefined) uploadedEl.textContent = evt.uploadedCount;
-                        if (skippedEl && evt.skippedCount !== undefined) skippedEl.textContent = evt.skippedCount;
-                        if (cleanedEl && evt.cleanedCount !== undefined) cleanedEl.textContent = evt.cleanedCount;
+                        if (countEl) countEl.textContent = evt.current;
+                        if (totalCountEl) totalCountEl.textContent = `${evt.total} 장`;
+                        if (statusEl) statusEl.textContent = evt.currentFile || '';
+                        if (uploadedEl && evt.uploadedCount !== undefined) uploadedEl.textContent = `${evt.uploadedCount}장`;
+                        if (skippedEl && evt.skippedCount !== undefined) skippedEl.textContent = `${evt.skippedCount}장`;
+                        if (cleanedEl && evt.cleanedCount !== undefined) cleanedEl.textContent = `${evt.cleanedCount}장`;
                         if (freedEl && evt.freedMB !== undefined) freedEl.textContent = evt.freedMB;
                     } else if (evt.type === 'done') {
                         if (barEl) barEl.style.width = '100%';
-                        if (pctEl) pctEl.textContent = '100%';
-                        if (statusEl) statusEl.textContent = evt.message || '구글드라이브 백업 및 로컬 정리 완료!';
-                        if (uploadedEl && evt.uploadedCount !== undefined) uploadedEl.textContent = evt.uploadedCount;
-                        if (skippedEl && evt.skippedCount !== undefined) skippedEl.textContent = evt.skippedCount;
-                        if (cleanedEl && evt.cleanedCount !== undefined) cleanedEl.textContent = evt.cleanedCount;
+                        if (statusEl) statusEl.textContent = '모든 파일 백업 및 정리 완료';
+                        if (statusSubEl) statusSubEl.textContent = '작업 완료됨';
+                        if (uploadedEl && evt.uploadedCount !== undefined) uploadedEl.textContent = `${evt.uploadedCount}장`;
+                        if (skippedEl && evt.skippedCount !== undefined) skippedEl.textContent = `${evt.skippedCount}장`;
+                        if (cleanedEl && evt.cleanedCount !== undefined) cleanedEl.textContent = `${evt.cleanedCount}장`;
                         if (freedEl && evt.freedMB !== undefined) freedEl.textContent = evt.freedMB;
+
+                        if (btnStop) btnStop.style.display = 'none';
+                        if (btnClose) btnClose.style.display = 'inline-block';
+                        if (btnResume) btnResume.style.display = 'none';
+                        if (spinner) spinner.className = 'fas fa-check-circle text-emerald-400';
+
+                        setTimeout(() => {
+                            alert(evt.message || '🎉 구글드라이브 백업 및 로컬 용량 정리가 완료되었습니다!');
+                            window.clearAllGallerySelection();
+                            window.loadPhotoGallery(window.currentGalleryTargetCntr);
+                        }, 400);
+                    } else if (evt.type === 'error') {
+                        console.warn('[GDrive Upload Warning]', evt.filename, evt.error);
                     }
                 } catch (pe) {}
             }
         }
 
-        await window.loadPhotoGallery(window.currentGalleryTargetCntr);
     } catch (err) {
         if (err.name === 'AbortError') {
-            if (statusEl) statusEl.textContent = '사용자에 의해 작업이 중지되었습니다.';
+            if (statusEl) statusEl.textContent = '사용자에 의해 백업 작업이 중지되었습니다.';
+            if (statusSubEl) statusSubEl.textContent = '작업 중지됨';
+            if (btnResume) btnResume.style.display = 'inline-flex';
         } else {
+            console.error("GDrive upload error:", err);
             if (statusEl) statusEl.textContent = `오류 발생: ${err.message}`;
+            if (statusSubEl) statusSubEl.textContent = '오류 중단';
+            if (btnResume) btnResume.style.display = 'inline-flex';
+            alert(`구글드라이브 업로드 중 오류가 발생했습니다:\n${err.message}`);
         }
+    } finally {
+        window.isGDriveUploading = false;
+        window.gdriveAbortController = null;
+        if (btnStop) btnStop.style.display = 'none';
+        if (btnClose) btnClose.style.display = 'inline-block';
+        if (spinner) spinner.className = 'fas fa-cloud-upload-alt';
+        window.loadPhotoGallery(window.currentGalleryTargetCntr);
     }
 };
 
@@ -12501,7 +12571,15 @@ window.stopGDriveUpload = function() {
     }
 };
 
+window.handleResumeGDriveExport = function() {
+    window.handleUploadToGDriveAndCleanLocal(true);
+};
+
 window.closeGDriveProgressModal = function() {
+    if (window.isGDriveUploading) {
+        if (!confirm("백업이 아직 진행 중입니다. 정말 중단하고 닫으시겠습니까?")) return;
+        window.stopGDriveUpload();
+    }
     const modal = document.getElementById('modalGDriveProgress');
     if (modal) modal.style.display = 'none';
 };

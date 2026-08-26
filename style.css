@@ -4368,6 +4368,17 @@ tr.border-group td {
     color: #6b21a8;
 }
 
+.ctnr-act-btn.btn-gdrive {
+    background: #e0f2fe;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+}
+.ctnr-act-btn.btn-gdrive:hover {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+}
+
 /* 폴더 선택 스타일 */
 .ctnr-folder-card.selected {
     border-color: #0284c7 !important;

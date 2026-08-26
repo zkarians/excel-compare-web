@@ -20,5 +20,7 @@ masterrule/startup_error.log
 *.blockmap
 .env
 .DS_Store
+gdrive-*.json
+credentials*.json
 # package-lock.json (Keep in Git for consistent dependencies)
 # package-lock.json

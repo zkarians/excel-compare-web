@@ -4,6 +4,7 @@
     "electron-updater": "^6.8.9",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
+    "googleapis": "^176.0.0",
     "multer": "^2.0.2",
     "nodemailer": "^8.0.2",
     "pg": "^8.20.0",
