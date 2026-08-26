@@ -776,6 +776,32 @@ document.addEventListener('DOMContentLoaded', () => {
  *  INITIALIZATION
  * ========================================================================= */
 
+// 컨테이너 사진 버튼 렌더러 (테이블 내 사진 컬럼용)
+window.renderContainerPhotoBtn = function(cntrNo, options = {}) {
+    if (!cntrNo || cntrNo === '미지정' || cntrNo === '-') return '';
+    const cleanNo = cntrNo.trim().toUpperCase();
+    const map = window.containerPhotoCountsMap || window.containerPhotoCounts || {};
+    const info = map[cleanNo];
+    if (!info || info.total <= 0) {
+        return '';
+    }
+
+    const total = info.total || 0;
+    const hasSeal = info.seal > 0;
+    const badgeColor = hasSeal ? '#059669' : '#e11d48';
+    const iconClass = hasSeal ? 'fas fa-camera' : 'fas fa-camera camera-pulse';
+    const titleText = hasSeal 
+        ? `${cleanNo} 등록된 사진 ${total}장 보기 (씰 포함)` 
+        : `${cleanNo} 등록된 사진 ${total}장 (⚠️ 씰 사진 미등록)`;
+
+    return `
+        <button type="button" class="btn-table-photo-badge" onclick="window.openPhotoGalleryModal('${cleanNo}', event)" title="${titleText}" style="background: ${hasSeal ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)'}; border: 1px solid ${hasSeal ? '#6ee7b7' : '#fda4af'}; color: ${badgeColor}; padding: 2px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; transition: all 0.15s;">
+            <i class="${iconClass}" style="font-size: 0.75rem;"></i>
+            <span>${total}</span>
+        </button>
+    `;
+};
+
 // 컨테이너 사진 수치 캐싱 유틸리티
 window.fetchContainerPhotoCounts = async function() {
     try {
@@ -792,6 +818,15 @@ window.fetchContainerPhotoCounts = async function() {
                 window.containerPhotoCountsMap[cNo].total++;
                 if (p.photo_type === 'seal') window.containerPhotoCountsMap[cNo].seal++;
                 else window.containerPhotoCountsMap[cNo].normal++;
+            });
+            window.containerPhotoCounts = window.containerPhotoCountsMap;
+
+            // DOM 상에 이미 렌더링된 결과 테이블의 사진 셀 즉시 실시간 업데이트
+            document.querySelectorAll('[data-photo-cntr]').forEach(el => {
+                const cNo = el.getAttribute('data-photo-cntr');
+                if (cNo) {
+                    el.innerHTML = window.renderContainerPhotoBtn(cNo, { iconOnly: true });
+                }
             });
         }
     } catch (e) {
@@ -6043,7 +6078,7 @@ function displayResults(results, isDbMode = false) {
                             ${hasPop ? `<span style="display:inline-block;font-size:0.65rem;background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;border-radius:4px;padding:0px 4px;vertical-align:middle;">POP</span>` : ''}
                         </div>
                     </td>
-                    <td style="text-align: center; padding: 6px 2px; vertical-align: middle;">
+                    <td style="text-align: center; padding: 6px 2px; vertical-align: middle;" data-photo-cntr="${res.cntrNo}">
                         ${typeof window.renderContainerPhotoBtn === 'function' ? window.renderContainerPhotoBtn(res.cntrNo, { iconOnly: true }) : ''}
                     </td>
                     <td style="text-align: center; color: #3b82f6; font-weight: 500;">${res.sealNo || '-'}</td>
@@ -6145,7 +6180,7 @@ function displayResults(results, isDbMode = false) {
                             ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; margin-left:4px; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
                         </div>
                     </td>
-                    <td class="col-photo" style="text-align: center; vertical-align: middle; padding: 2px 4px;">
+                    <td class="col-photo" style="text-align: center; vertical-align: middle; padding: 2px 4px;" data-photo-cntr="${res.cntrNo}">
                         ${typeof window.renderContainerPhotoBtn === 'function' ? window.renderContainerPhotoBtn(res.cntrNo) : ''}
                     </td>
                     <td class="col-type" style="${(res.prodType || '').toUpperCase() === 'H' ? 'color: #7c3aed; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'Q' ? 'color: #0d9488; font-weight: 700;' : ''}">${res.prodType || '-'}</td>
