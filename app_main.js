@@ -6697,51 +6697,81 @@ if (btnResetSuccessFilters) {
 }
 
 /**
- * [추가] 결과 바로보기 버튼 리스너
- * 다운로드 창을 생략하고 엑셀 프로그램을 즉시 실행함
+ * [추가] 결과 바로보기 핸들러
+ * 다운로드 창을 생략하고 엑셀 프로그램을 즉시 실행하며, 웹 브라우저에서도 즉시 다운로드 제공
  */
+window.handleViewResultDirectly = async function() {
+    const targetData = (comparisonResult && comparisonResult.length > 0) 
+        ? comparisonResult 
+        : ((window.comparisonResult && window.comparisonResult.length > 0) 
+            ? window.comparisonResult 
+            : ((window.displayData && window.displayData.length > 0) ? window.displayData : []));
+
+    if (!targetData || targetData.length === 0) {
+        alert("조회 또는 비교된 데이터가 없습니다. 먼저 엑셀 파일을 업로드하거나 조회를 실행해 주세요.");
+        return;
+    }
+
+    const btn = document.getElementById('btnViewResult');
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 생성 중...';
+        btn.disabled = true;
+    }
+
+    try {
+        const wb = await generateComparisonWorkbook(targetData);
+        const buffer = await wb.xlsx.writeBuffer();
+        const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const fileName = (window.currentFilter === 'entry') 
+            ? `반입정보_${timestamp}.xlsx` 
+            : ((window.currentFilter === 'entry_unclassified') ? `반입정보_미분류_${timestamp}.xlsx` : `비교결과_${timestamp}.xlsx`);
+
+        // 1. Electron 환경인 경우 직접 OS 임시 파일로 열기
+        if (window.isElectron && window.electronAPI && typeof window.electronAPI.openTempExcel === 'function') {
+            const result = await window.electronAPI.openTempExcel(buffer, fileName);
+            if (!result.success) {
+                console.warn('Electron openTempExcel 실패:', result.error);
+            }
+        } else {
+            // 2. 백엔드 API 호출하여 로컬 PC에서 즉시 엑셀 프로그램 실행 시도
+            try {
+                const base64 = bufToBase64(buffer);
+                await fetch(`${API_BASE}/api/open-excel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ buffer: base64, fileName: fileName })
+                });
+                console.log('✅ 엑셀 바로보기(로컬 실행 API) 요청 완료');
+            } catch (netErr) {
+                console.warn('로컬 엑셀 실행 API 통신 실패 (웹 브라우저 다운로드로 대체):', netErr);
+            }
+
+            // 3. 웹 브라우저 환경에서도 파일 즉시 다운로드 / 열기 제공
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            if (typeof saveAs === 'function') {
+                saveAs(blob, fileName);
+            }
+        }
+    } catch (err) {
+        console.error('❌ 바로보기 오류:', err);
+        alert(`엑셀을 생성/여는 중 오류가 발생했습니다: ${err.message}`);
+    } finally {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+};
+
 if (btnViewResult) {
-    btnViewResult.addEventListener('click', async () => {
-        if (!comparisonResult || comparisonResult.length === 0) {
-            alert("조회된 데이터가 없습니다.");
-            return;
-        }
-        // 버튼 상태 변경 (로딩 표시용)
-        const originalText = btnViewResult.innerHTML;
-        btnViewResult.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 생성 중...';
-        btnViewResult.disabled = true;
-
-        try {
-            const wb = await generateComparisonWorkbook(); // Workbook 생성 로직 분리 호출
-            const buffer = await wb.xlsx.writeBuffer();
-            const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-            const fileName = currentFilter === 'entry' ? `반입정보_${timestamp}.xlsx` : (currentFilter === 'entry_unclassified' ? `반입정보_미분류_${timestamp}.xlsx` : `비교결과_${timestamp}.xlsx`);
-
-            // 백엔드 API 호출하여 즉시 열기
-            const base64 = bufToBase64(buffer);
-            const response = await fetch(`${API_BASE}/api/open-excel`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ buffer: base64, fileName: fileName })
-            });
-
-            if (!response.ok) throw new Error('API 호출 실패');
-            console.log('✅ 엑셀 바로보기 요청 완료');
-        } catch (err) {
-            console.error('❌ 바로보기 오류:', err);
-            alert(`엑셀을 여는 중 오류가 발생했습니다: ${err.message}`);
-        } finally {
-            btnViewResult.innerHTML = originalText;
-            btnViewResult.disabled = false;
-        }
-    });
+    btnViewResult.addEventListener('click', window.handleViewResultDirectly);
 }
 
 /**
  * [분리] 비교 결과 Workbook 생성 로직 (Download/View 중복 제거)
- * 기존 btnDownloadResult 에 있던 로직을 함수화함
  */
-async function generateComparisonWorkbook() {
+async function generateComparisonWorkbook(sourceData = null) {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('비교 결과');
     let exportData = [];
@@ -6755,7 +6785,9 @@ async function generateComparisonWorkbook() {
     const prodSearchTerm = (prodSearchInput ? prodSearchInput.value : "").trim().toUpperCase();
     const prodTypeFilter = (prodTypeSelect ? prodTypeSelect.value : "").trim().toUpperCase();
 
-    let filteredResults = comparisonResult;
+    let rawList = sourceData || comparisonResult || window.comparisonResult || window.displayData || [];
+    let filteredResults = Array.isArray(rawList) ? rawList : [];
+
     if (searchTerm || prodSearchTerm || prodTypeFilter) {
         filteredResults = filteredResults.filter(r => {
             const cntr = (r.cntrNo || "").toUpperCase();
@@ -6769,7 +6801,9 @@ async function generateComparisonWorkbook() {
         });
     }
 
-    if (currentFilter === 'entry' || currentFilter === 'entry_unclassified') {
+    const curFilter = window.currentFilter || 'all';
+
+    if (curFilter === 'entry' || curFilter === 'entry_unclassified') {
         columns = [
             { header: '선사', key: 'carrier', width: 10 },
             { header: '규격', key: 'cntrType', width: 10 },
@@ -6785,7 +6819,7 @@ async function generateComparisonWorkbook() {
 
         const aggregated = new Map();
         filteredResults.forEach(item => {
-            if (holdContainerMap.has(item.cntrNo)) return;
+            if (window.holdContainerMap && window.holdContainerMap.has(item.cntrNo)) return;
 
             let isUnclassified = false;
             let cleanTrans = (item.transporter || "").toString().replace(/\(빨강\)|\(파랑\)|\(초록\)|\(주황\)/g, "").trim();
@@ -6794,23 +6828,31 @@ async function generateComparisonWorkbook() {
                 cleanTrans = "미분류";
             }
 
-            if (currentFilter === 'entry' && isUnclassified) return;
-            if (currentFilter === 'entry_unclassified' && !isUnclassified) return;
+            if (curFilter === 'entry' && isUnclassified) return;
+            if (curFilter === 'entry_unclassified' && !isUnclassified) return;
 
             const key = (item.cntrNo || "").trim().toUpperCase();
             if (!key || item.badgeClass === 'missing') return;
 
+            const carrierVal = (item.carrierName && item.carrierName.val !== undefined) ? item.carrierName.val : (item.carrierName || item.carrier || "");
+            const cntrTypeVal = (item.cntrType && item.cntrType.val !== undefined) ? item.cntrType.val : (item.cntrType || item.cntrSize || "");
+            const destVal = (item.destination && item.destination.val !== undefined) ? item.destination.val : (item.destination || item.dest || "");
+            const wMixedVal = (item.weights && item.weights.mixed !== undefined) ? (item.weights.mixed === null ? 0 : (parseFloat(item.weights.mixed) || 0)) : (parseFloat(item.mixedWeight || item.weight) || 0);
+            const wOrigVal = (item.weights && item.weights.orig !== undefined) ? (item.weights.orig === null ? 0 : (parseFloat(item.weights.orig) || 0)) : (parseFloat(item.origWeight) || 0);
+            const wDownVal = (item.weights && item.weights.down !== undefined) ? (item.weights.down === null ? 0 : (parseFloat(item.weights.down) || 0)) : (parseFloat(item.downWeight) || 0);
+            const isMismatchVal = item.weights ? !!item.weights.isMismatch : false;
+
             if (!aggregated.has(key)) {
                 aggregated.set(key, {
-                    carrier: item.carrierName.val,
-                    cntrType: item.cntrType.val,
-                    dest: item.destination.val,
+                    carrier: carrierVal,
+                    cntrType: cntrTypeVal,
+                    dest: destVal,
                     cntrNo: item.cntrNo,
                     sealNo: item.sealNo || "",
-                    mixedWeight: item.weights.mixed === null ? 0 : (parseFloat(item.weights.mixed) || 0),
-                    origWeight: item.weights.orig === null ? 0 : (parseFloat(item.weights.orig) || 0),
-                    downWeight: item.weights.down === null ? 0 : (parseFloat(item.weights.down) || 0),
-                    isMismatch: item.weights.isMismatch,
+                    mixedWeight: wMixedVal,
+                    origWeight: wOrigVal,
+                    downWeight: wDownVal,
+                    isMismatch: isMismatchVal,
                     issueModels: [],
                     origRemark: item.origRemark || "",
                     etd: item.etd || "",
@@ -6818,28 +6860,28 @@ async function generateComparisonWorkbook() {
                     transporter: cleanTrans
                 });
                 const entry = aggregated.get(key);
-                if (item.weights.mixed === null) {
+                if (item.weights && item.weights.mixed === null) {
                     entry.issueModels.push(`${item.prodName}: 제품정보없음`);
-                } else if (item.weights.isMismatch) {
-                    const diff = (parseFloat(item.weights.mixed) - parseFloat(item.weights.orig)).toFixed(2);
+                } else if (isMismatchVal) {
+                    const diff = (wMixedVal - wOrigVal).toFixed(2);
                     entry.issueModels.push(`${item.prodName}: 무게정보다름(차이값:${diff > 0 ? '+' : ''}${diff})`);
                 }
             } else {
                 const existing = aggregated.get(key);
-                existing.mixedWeight += (parseFloat(item.weights.mixed) || 0);
-                existing.origWeight += (parseFloat(item.weights.orig) || 0);
-                existing.downWeight += (parseFloat(item.weights.down) || 0);
+                existing.mixedWeight += wMixedVal;
+                existing.origWeight += wOrigVal;
+                existing.downWeight += wDownVal;
 
-                if (item.weights.mixed === null) existing.issueModels.push(`${item.prodName}: 제품정보없음`);
-                if (item.weights.isMismatch) {
+                if (item.weights && item.weights.mixed === null) existing.issueModels.push(`${item.prodName}: 제품정보없음`);
+                if (isMismatchVal) {
                     existing.isMismatch = true;
-                    const diff = (parseFloat(item.weights.mixed) - parseFloat(item.weights.orig)).toFixed(2);
+                    const diff = (wMixedVal - wOrigVal).toFixed(2);
                     existing.issueModels.push(`${item.prodName}: 무게정보다름(차이값:${diff > 0 ? '+' : ''}${diff})`);
                 }
             }
         });
         exportData = Array.from(aggregated.values());
-        exportData.sort((a, b) => a.transporter.localeCompare(b.transporter));
+        exportData.sort((a, b) => (a.transporter || '').localeCompare(b.transporter || ''));
     } else {
         columns = [
             { header: '작업구분', key: 'type', width: 15 },
@@ -6864,26 +6906,26 @@ async function generateComparisonWorkbook() {
         ];
 
         let filtered = filteredResults;
-        if (currentFilter === 'hold') {
-            filtered = filteredResults.filter(r => holdContainerMap.has(r.cntrNo));
+        if (curFilter === 'hold') {
+            filtered = filteredResults.filter(r => window.holdContainerMap && window.holdContainerMap.has(r.cntrNo));
         } else {
-            filtered = filteredResults.filter(r => !holdContainerMap.has(r.cntrNo));
-            if (currentFilter === 'error') {
-                filtered = filtered.filter(r => getContainerStatus(comparisonResult, r.cntrNo) === 'error');
-            } else if (currentFilter === 'missing') {
+            filtered = filteredResults.filter(r => !(window.holdContainerMap && window.holdContainerMap.has(r.cntrNo)));
+            if (curFilter === 'error') {
+                filtered = filtered.filter(r => typeof getContainerStatus === 'function' ? getContainerStatus(filteredResults, r.cntrNo) === 'error' : true);
+            } else if (curFilter === 'missing') {
                 const chkFilterMissingExtra = document.getElementById('chkFilterMissingExtra');
                 const chkFilterMissingMissing = document.getElementById('chkFilterMissingMissing');
                 const showMissingExtra = chkFilterMissingExtra ? chkFilterMissingExtra.checked : true;
                 const showMissingMissing = chkFilterMissingMissing ? chkFilterMissingMissing.checked : true;
 
                 filtered = filtered.filter(r => {
-                    const s = getContainerStatus(comparisonResult, r.cntrNo);
+                    const s = typeof getContainerStatus === 'function' ? getContainerStatus(filteredResults, r.cntrNo) : '';
                     if (s === 'extra') return showMissingExtra;
                     if (s === 'missing') return showMissingMissing;
                     return false;
                 });
-            } else if (currentFilter === 'success') {
-                filtered = filtered.filter(r => getContainerStatus(comparisonResult, r.cntrNo) === 'success');
+            } else if (curFilter === 'success') {
+                filtered = filtered.filter(r => typeof getContainerStatus === 'function' ? getContainerStatus(filteredResults, r.cntrNo) === 'success' : true);
             }
         }
 
@@ -6905,7 +6947,7 @@ async function generateComparisonWorkbook() {
         const anyStatusChecked = showCompleted || showProgress || showPending;
         const anyTransChecked = showChunma || showBni || showOther;
 
-        if (currentFilter === 'success' || currentFilter === 'all') {
+        if (curFilter === 'success' || curFilter === 'all') {
             const cntrGroup = {};
             filtered.forEach(r => {
                 if (!cntrGroup[r.cntrNo]) cntrGroup[r.cntrNo] = [];
@@ -6965,27 +7007,27 @@ async function generateComparisonWorkbook() {
             });
         }
         exportData = filtered.map(r => ({
-            type: r.type,
-            cntrNo: r.cntrNo,
-            division: r.division,
-            prodType: r.prodType,
-            prodName: r.prodName,
-            planQty: r.qtyInfo.plan,
-            loadQty: r.qtyInfo.load,
-            pendingQty: r.qtyInfo.pending,
-            remainQty: r.qtyInfo.remain,
-            cntrSize: r.cntrType.val,
-            dims: r.dims,
-            carrier: r.carrierName.val,
-            dest: r.destination.val,
-            mixedWeight: parseFloat(r.weights.mixed) || 0,
-            tags: r.tags.map(t => `[${t.text}]`).join(', '),
-            detail: r.detail.replace(/<[^>]*>/g, ''),
+            type: r.type || '',
+            cntrNo: r.cntrNo || '',
+            division: r.division || '',
+            prodType: r.prodType || '',
+            prodName: r.prodName || '',
+            planQty: (r.qtyInfo && r.qtyInfo.plan !== undefined) ? r.qtyInfo.plan : (r.planQty || 0),
+            loadQty: (r.qtyInfo && r.qtyInfo.load !== undefined) ? r.qtyInfo.load : (r.loadQty || 0),
+            pendingQty: (r.qtyInfo && r.qtyInfo.pending !== undefined) ? r.qtyInfo.pending : (r.pendingQty || 0),
+            remainQty: (r.qtyInfo && r.qtyInfo.remain !== undefined) ? r.qtyInfo.remain : (r.remainQty || 0),
+            cntrSize: (r.cntrType && r.cntrType.val !== undefined) ? r.cntrType.val : (r.cntrType || r.cntrSize || ''),
+            dims: r.dims || '',
+            carrier: (r.carrierName && r.carrierName.val !== undefined) ? r.carrierName.val : (r.carrierName || r.carrier || ''),
+            dest: (r.destination && r.destination.val !== undefined) ? r.destination.val : (r.destination || r.dest || ''),
+            mixedWeight: (r.weights && r.weights.mixed !== undefined) ? (parseFloat(r.weights.mixed) || 0) : (parseFloat(r.mixedWeight || r.weight) || 0),
+            tags: Array.isArray(r.tags) ? r.tags.map(t => typeof t === 'object' ? `[${t.text || t.val || ''}]` : `[${t}]`).join(', ') : (r.tags || ''),
+            detail: (r.detail || '').toString().replace(/<[^>]*>/g, ''),
             jobName: r.jobName || '',
             eta: r.eta || '',
             etd: r.etd || '',
             origRemark: r.origRemark || '',
-            transporter: r.transporter
+            transporter: r.transporter || ''
         }));
     }
 
@@ -7010,7 +7052,7 @@ async function generateComparisonWorkbook() {
     let lastTransporter = null;
 
     exportData.forEach((data, idx) => {
-        if (currentFilter === 'entry' || currentFilter === 'entry_unclassified') {
+        if (curFilter === 'entry' || curFilter === 'entry_unclassified') {
             if (lastTransporter !== null && lastTransporter !== data.transporter) {
                 const headerRow = ws.addRow({
                     carrier: '선사', cntrType: '규격', dest: 'F.DEST', cntrNo: 'CTNR NO', sealNo: 'SEAL',
@@ -7021,17 +7063,16 @@ async function generateComparisonWorkbook() {
             lastTransporter = data.transporter;
 
             const cntrKeyExcel = (data.cntrNo || '').trim().toUpperCase();
-            const popInfoExcel = popWeightMap[cntrKeyExcel];
+            const popInfoExcel = (window.popWeightMap && window.popWeightMap[cntrKeyExcel]) ? window.popWeightMap[cntrKeyExcel] : null;
             const popWeightExcel = popInfoExcel ? (parseFloat(popInfoExcel.weight) || 0) : 0;
             const hasPopExcel = popWeightExcel > 0;
 
             if (hasPopExcel) {
-                const d = Object.assign({}, data); // 원본 보존을 위해 복사본 사용 (필요시)
                 data.origRemark = `(POP : ${popWeightExcel.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}kg) ` + (data.origRemark || '');
                 data.transporter = `${data.transporter}\n(POP : ${popWeightExcel.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}kg 포함)`;
             }
 
-            const choiceExcel = userSelectedWeights[cntrKeyExcel];
+            const choiceExcel = (window.userSelectedWeights && window.userSelectedWeights[cntrKeyExcel]) ? window.userSelectedWeights[cntrKeyExcel] : null;
             if (!choiceExcel && (data.mixedWeight === null || (data.issueModels && data.issueModels.length > 0))) {
                 let mismatchText = (data.issueModels || []).join('\n');
                 if (hasPopExcel) mismatchText += `\n+POP: ${popWeightExcel.toFixed(2)}kg`;
@@ -7054,10 +7095,10 @@ async function generateComparisonWorkbook() {
         }
 
         const row = ws.addRow(data);
-        row.height = (currentFilter === 'entry' || currentFilter === 'entry_unclassified') ? 35 : 18;
+        row.height = (curFilter === 'entry' || curFilter === 'entry_unclassified') ? 35 : 18;
 
         row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-            const columnKey = columns[colNumber - 1].key;
+            const columnKey = columns[colNumber - 1] ? columns[colNumber - 1].key : '';
             cell.font = { name: 'LG Smart_Korean Regular', size: 10 };
             if (columnKey === 'cntrNo') {
                 const trans = (data.transporter || "").toString();
@@ -7068,22 +7109,28 @@ async function generateComparisonWorkbook() {
             cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
         });
 
-        if (currentFilter === 'entry' || currentFilter === 'entry_unclassified') {
-            row.getCell('grossWeightCombined').alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
+        if (curFilter === 'entry' || curFilter === 'entry_unclassified') {
+            const weightCell = row.getCell('grossWeightCombined');
+            if (weightCell) weightCell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
             const destCell = row.getCell('dest');
-            if (!/^(US|CA)/i.test(String(data.dest))) destCell.font = { name: 'LG Smart_Korean Regular', color: { argb: 'FFFF0000' }, bold: true, size: 10 };
+            if (destCell && !/^(US|CA)/i.test(String(data.dest))) destCell.font = { name: 'LG Smart_Korean Regular', color: { argb: 'FFFF0000' }, bold: true, size: 10 };
         } else {
             ['mixedWeight', 'planQty', 'loadQty'].forEach(key => {
                 const cell = row.getCell(key);
-                cell.alignment = { horizontal: 'right', vertical: 'middle' };
-                cell.numFmt = '#,##0.00';
+                if (cell) {
+                    cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                    cell.numFmt = '#,##0.00';
+                }
             });
-            row.getCell('detail').alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+            const detailCell = row.getCell('detail');
+            if (detailCell) detailCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
             const pt = (data.prodType || '').toUpperCase();
             if (pt === 'H' || pt === 'Q') {
                 const hqColor = pt === 'H' ? 'FF7C3AED' : 'FF0D9488';
-                row.getCell('prodType').font = { name: 'LG Smart_Korean Regular', size: 10, bold: true, color: { argb: hqColor } };
-                row.getCell('prodName').font = { name: 'LG Smart_Korean Regular', size: 10, bold: true, color: { argb: hqColor } };
+                const ptCell = row.getCell('prodType');
+                const pnCell = row.getCell('prodName');
+                if (ptCell) ptCell.font = { name: 'LG Smart_Korean Regular', size: 10, bold: true, color: { argb: hqColor } };
+                if (pnCell) pnCell.font = { name: 'LG Smart_Korean Regular', size: 10, bold: true, color: { argb: hqColor } };
             }
         }
     });
@@ -7092,14 +7139,18 @@ async function generateComparisonWorkbook() {
 }
 
 /**
- * [추가] ArrayBuffer를 Base64로 변환
+ * [추가] ArrayBuffer를 안전하고 빠르게 Base64로 변환
  */
 function bufToBase64(buffer) {
-    let binary = '';
+    if (typeof Buffer !== 'undefined') {
+        return Buffer.from(buffer).toString('base64');
+    }
     const bytes = new Uint8Array(buffer);
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, i + chunkSize);
+        binary += String.fromCharCode.apply(null, chunk);
     }
     return window.btoa(binary);
 }
