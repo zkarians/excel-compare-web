@@ -879,11 +879,20 @@ app.post('/api/open-excel', async (req, res) => {
             return res.status(400).json({ success: false, message: "파일 데이터가 없습니다." });
         }
 
-        const filePath = path.join(UPLOADS_DIR, `auto_open_${fileName}`);
+        const rawName = fileName || '비교결과.xlsx';
+        const ext = path.extname(rawName) || '.xlsx';
+        const baseName = path.basename(rawName, ext);
+
+        // 시간(밀리초) 및 난수 기반 고유 파일명 생성 -> 기존에 엑셀이 열려 있어도 잠금 충돌(EBUSY) 없이 즉시 새 창으로 열림
+        const now = new Date();
+        const timeTag = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}_${now.getMilliseconds()}`;
+        const uniqueFileName = `${baseName}_${timeTag}${ext}`;
+        const filePath = path.join(UPLOADS_DIR, uniqueFileName);
         const fileBuffer = Buffer.from(buffer, 'base64');
 
+        if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
         fs.writeFileSync(filePath, fileBuffer);
-        console.log(`📂[API] 자동 열기용 임시 파일 저장: ${filePath}`);
+        console.log(`📂 [API] 자동 열기용 고유 임시 파일 저장: ${filePath}`);
 
         // 시스템 기본 프로그램으로 파일 열기 (Windows: start, Mac: open, Linux: xdg-open)
         const command = process.platform === 'win32' ? `start "" "${filePath}"` :
@@ -893,14 +902,33 @@ app.post('/api/open-excel', async (req, res) => {
         exec(command, (err) => {
             if (err) {
                 console.error("❌ 파일 자동 열기 실패:", err);
-                // 파일 열기 실패는 사용자에게 큰 장애는 아니므로 성공 응답은 보냄
             }
         });
 
-        res.json({ success: true, message: "파일이 생성되었고 열기 명령을 전달했습니다." });
+        // 3시간 이상 지난 이전 임시 파일(auto_open_*.xlsx) 비동기 정리
+        setTimeout(() => {
+            try {
+                const cutoff = Date.now() - 3 * 3600 * 1000;
+                fs.readdir(UPLOADS_DIR, (rErr, files) => {
+                    if (rErr || !files) return;
+                    files.forEach(f => {
+                        if (f.startsWith('auto_open_') || f.includes('_2026')) {
+                            const p = path.join(UPLOADS_DIR, f);
+                            fs.stat(p, (sErr, st) => {
+                                if (!sErr && st && st.mtimeMs < cutoff) {
+                                    fs.unlink(p, () => {});
+                                }
+                            });
+                        }
+                    });
+                });
+            } catch (cleanErr) {}
+        }, 1000);
+
+        res.json({ success: true, message: "파일이 생성되었고 열기 명령을 전달했습니다.", filePath });
     } catch (err) {
         console.error("❌ 자동 열기 API 오류:", err);
-        res.status(500).json({ success: false, message: `파일 자동 열기 중 오류 발생: ${err.message} ` });
+        res.status(500).json({ success: false, message: `파일 자동 열기 중 오류 발생: ${err.message}` });
     }
 });
 
