@@ -2407,6 +2407,18 @@ function getProductLocationStockDetails(prodName, prodType = '') {
             isQType = true;
         }
     }
+    if (!isQType && processedAvailabilityData && Array.isArray(processedAvailabilityData)) {
+        const foundItem = processedAvailabilityData.find(it => (it.prodName || '').trim().toUpperCase() === nameUpper);
+        if (foundItem && (foundItem.prodType || '').trim().toUpperCase() === 'Q') {
+            isQType = true;
+        }
+    }
+    if (!isQType && productMaster && Array.isArray(productMaster)) {
+        const pmMatch = productMaster.find(p => (p.name || '').trim().toUpperCase() === nameUpper);
+        if (pmMatch && (pmMatch.prodType || pmMatch.type || '').trim().toUpperCase() === 'Q') {
+            isQType = true;
+        }
+    }
 
     if (isQType) {
         // 3-1. [유] 유사 모델 탐색
@@ -2418,6 +2430,16 @@ function getProductLocationStockDetails(prodName, prodType = '') {
             if (comparisonResult && Array.isArray(comparisonResult)) {
                 comparisonResult.forEach(item => {
                     if (item.prodName) candidates.add(item.prodName.toUpperCase().trim());
+                });
+            }
+            if (processedAvailabilityData && Array.isArray(processedAvailabilityData)) {
+                processedAvailabilityData.forEach(item => {
+                    if (item.prodName) candidates.add(item.prodName.toUpperCase().trim());
+                });
+            }
+            if (productMaster && Array.isArray(productMaster)) {
+                productMaster.forEach(item => {
+                    if (item.name) candidates.add(item.name.toUpperCase().trim());
                 });
             }
 
@@ -3209,6 +3231,18 @@ function getGlobalLevenshteinDistance(a, b) {
                 isQType = true;
             }
         }
+        if (!isQType && processedAvailabilityData && Array.isArray(processedAvailabilityData)) {
+            const foundItem = processedAvailabilityData.find(it => (it.prodName || '').trim().toUpperCase() === nameUpper);
+            if (foundItem && (foundItem.prodType || '').trim().toUpperCase() === 'Q') {
+                isQType = true;
+            }
+        }
+        if (!isQType && productMaster && Array.isArray(productMaster)) {
+            const pmMatch = productMaster.find(p => (p.name || '').trim().toUpperCase() === nameUpper);
+            if (pmMatch && (pmMatch.prodType || pmMatch.type || '').trim().toUpperCase() === 'Q') {
+                isQType = true;
+            }
+        }
 
         // 제품구분이 'Q'인 경우에 한해 [유] 유사모델 및 [동] 동일접두어 모델 수집
         if (isQType) {
@@ -3221,6 +3255,16 @@ function getGlobalLevenshteinDistance(a, b) {
                 if (comparisonResult && Array.isArray(comparisonResult)) {
                     comparisonResult.forEach(item => {
                         if (item.prodName) candidates.add(item.prodName.toUpperCase().trim());
+                    });
+                }
+                if (processedAvailabilityData && Array.isArray(processedAvailabilityData)) {
+                    processedAvailabilityData.forEach(item => {
+                        if (item.prodName) candidates.add(item.prodName.toUpperCase().trim());
+                    });
+                }
+                if (productMaster && Array.isArray(productMaster)) {
+                    productMaster.forEach(item => {
+                        if (item.name) candidates.add(item.name.toUpperCase().trim());
                     });
                 }
 
@@ -11346,64 +11390,5 @@ window.openAvailabilityInExcel = async function() {
         console.error("엑셀 바로보기 실패:", err);
         alert("엑셀 바로보기 실행 중 오류가 발생했습니다: " + err.message);
     }
-};
-
-// 제품 마우스 오버 시 로케이션별 재고 상세 툴팁 팝업 핸들러
-window.handleProductMouseEnter = function(prodName, targetEl, prodType) {
-    if (!prodName || !warehouseAllStockList || warehouseAllStockList.length === 0) return;
-
-    const cleanName = prodName.trim().toUpperCase();
-    const matches = warehouseAllStockList.filter(item => (item.modelName || '').trim().toUpperCase() === cleanName);
-    if (matches.length === 0) return;
-
-    // 기존 툴팁 제거
-    window.handleProductMouseLeave();
-
-    const tooltip = document.createElement('div');
-    tooltip.id = 'availStockLocTooltip';
-    tooltip.className = 'avail-stock-loc-tooltip';
-
-    let listHtml = matches.map(m => {
-        const isBlock = (m.blockQty || 0) > 0;
-        const isPending = (m.pendingQty || 0) > 0;
-        const statusBadge = isBlock ? `<span style="color:#ef4444; font-weight:800; font-size:0.68rem;">[블록]</span>` :
-                            isPending ? `<span style="color:#f59e0b; font-weight:800; font-size:0.68rem;">[팬딩]</span>` :
-                            `<span style="color:#10b981; font-weight:800; font-size:0.68rem;">[정상]</span>`;
-
-        return `
-            <div style="display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-bottom: 1px dashed #334155; font-size: 0.74rem;">
-                <span>${statusBadge} <strong style="color:#93c5fd;">${m.location || '미지정'}</strong></span>
-                <span style="color: #f8fafc; font-weight: 700;">${(m.physicalQty || 0).toLocaleString()} EA</span>
-            </div>
-        `;
-    }).join('');
-
-    tooltip.innerHTML = `
-        <div style="font-weight: 800; color: #38bdf8; font-size: 0.78rem; margin-bottom: 6px; border-bottom: 1px solid #475569; padding-bottom: 3px;">
-            <i class="fas fa-cubes" style="margin-right: 4px;"></i>${prodName} 재고 현황
-        </div>
-        <div style="max-height: 200px; overflow-y: auto;">
-            ${listHtml}
-        </div>
-    `;
-
-    document.body.appendChild(tooltip);
-
-    const rect = targetEl.getBoundingClientRect();
-    tooltip.style.position = 'fixed';
-    tooltip.style.left = `${rect.left}px`;
-    tooltip.style.top = `${rect.bottom + 4}px`;
-    tooltip.style.zIndex = '99999';
-    tooltip.style.backgroundColor = 'rgba(15, 23, 42, 0.95)';
-    tooltip.style.color = '#ffffff';
-    tooltip.style.padding = '8px 12px';
-    tooltip.style.borderRadius = '6px';
-    tooltip.style.boxShadow = '0 6px 18px rgba(0,0,0,0.35)';
-    tooltip.style.pointerEvents = 'none';
-};
-
-window.handleProductMouseLeave = function() {
-    const existing = document.getElementById('availStockLocTooltip');
-    if (existing) existing.remove();
 };
 
