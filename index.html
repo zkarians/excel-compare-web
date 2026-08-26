@@ -2558,9 +2558,6 @@
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <button class="btn btn-primary" id="btnGalleryUploadNew" onclick="window.openPhotoUploadModal()" style="padding: 6px 12px; font-size: 0.8rem; background: #10b981; border: none; border-radius: 6px; font-weight: 700; display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                        <i class="fas fa-cloud-upload-alt"></i> 사진 올리기
-                    </button>
                     <button class="btn btn-secondary" onclick="window.loadPhotoGallery()" style="padding: 6px 12px; font-size: 0.8rem; background: #334155; border: none; color: #f8fafc; border-radius: 6px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer;" title="새로고침">
                         <i class="fas fa-sync-alt"></i> 새로고침
                     </button>
@@ -2642,70 +2639,6 @@
         <button class="lightbox-nav-btn next" onclick="window.lightboxNext()" title="다음 사진 (→)">
             <i class="fas fa-chevron-right"></i>
         </button>
-    </div>
-
-    <!-- ==================== 사진 업로드 Modal ==================== -->
-    <div id="photoUploadModal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 550px; width: 90vw; background: #0f172a; color: white; border-radius: 16px; overflow: hidden; border: 1px solid #334155;">
-            <div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="width: 32px; height: 32px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                    </div>
-                    <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #f8fafc;">컨테이너 사진 업로드</h3>
-                </div>
-                <button onclick="document.getElementById('photoUploadModal').style.display='none'" style="background: none; border: none; color: #94a3b8; font-size: 1.3rem; cursor: pointer;">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
-                <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">컨테이너 번호 <span style="color: #ef4444;">*</span></label>
-                    <input type="text" id="uploadInputCntrNo" placeholder="예: OOLU0239688" 
-                           style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #38bdf8; font-weight: 800; font-size: 1rem; text-transform: uppercase;">
-                </div>
-                <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">사진 유형</label>
-                    <div style="display: flex; gap: 10px;">
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; background: #1e293b; padding: 8px 14px; border-radius: 8px; border: 1px solid #475569; font-size: 0.85rem;">
-                            <input type="radio" name="uploadPhotoTypeRadio" value="normal" checked style="cursor: pointer;">
-                            <span>📷 일반 적재 사진</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; background: #1e293b; padding: 8px 14px; border-radius: 8px; border: 1px solid #475569; font-size: 0.85rem;">
-                            <input type="radio" name="uploadPhotoTypeRadio" value="seal" style="cursor: pointer;">
-                            <span style="color: #fb7185; font-weight: 700;">🔴 씰(Seal) 사진</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- 드래그앤드롭 영역 -->
-                <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">사진 파일 선택 (여러 장 가능)</label>
-                    <div id="photoDropZone" onclick="document.getElementById('photoFileInput').click()"
-                         style="border: 2px dashed #475569; border-radius: 12px; padding: 25px; text-align: center; background: #1e293b; cursor: pointer; transition: all 0.2s;">
-                        <i class="fas fa-images" style="font-size: 2.2rem; color: #64748b; margin-bottom: 8px;"></i>
-                        <div style="font-size: 0.85rem; font-weight: 700; color: #f8fafc;">클릭하여 사진을 선택하거나 여기에 드래그하세요</div>
-                        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">JPG, PNG, HEIC 이미지 지원 (최대 30장)</div>
-                    </div>
-                    <input type="file" id="photoFileInput" multiple accept="image/*,.heic,.heif" style="display: none;" onchange="window.handlePhotoFileSelect(this.files)">
-                </div>
-
-                <!-- 선택된 파일 목록 프리뷰 -->
-                <div id="uploadFilePreviewList" style="display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto;"></div>
-
-                <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">비고 / 메모 (선택사항)</label>
-                    <input type="text" id="uploadInputRemark" placeholder="특이사항이나 메모를 입력하세요" 
-                           style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 0.85rem;">
-                </div>
-            </div>
-            <div class="modal-footer" style="padding: 14px 20px; background: #1e293b; border-top: 1px solid #334155; display: flex; justify-content: flex-end; gap: 10px;">
-                <button class="btn btn-secondary" onclick="document.getElementById('photoUploadModal').style.display='none'" style="padding: 8px 16px; border-radius: 8px; background: #334155; color: white; border: none; cursor: pointer;">취소</button>
-                <button class="btn btn-primary" id="btnSubmitPhotoUpload" onclick="window.executePhotoUpload()" style="padding: 8px 20px; border-radius: 8px; background: #10b981; color: white; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                    <i class="fas fa-check"></i> 업로드 시작
-                </button>
-            </div>
-        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
