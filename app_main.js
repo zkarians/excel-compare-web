@@ -926,15 +926,12 @@ async function initializeApp() {
         }
     }
 
-    if (savedPathDown) {
-        if (await isPathValid(savedPathDown)) {
-            pathDownload.value = savedPathDown;
-            statusDownload.innerHTML = `<i class="fas fa-folder-open" style="color:#0284c7; margin-right:4px;"></i>상태: 전산 경로 준비됨`;
-            statusDownload.style.color = '#0284c7';
-            if (window.electronAPI) window.electronAPI.saveFilePath('download', savedPathDown);
-        } else {
-            localStorage.removeItem('pathDown');
-        }
+    const savedDirDown = localStorage.getItem('dirDown') || savedPathDown;
+    if (savedDirDown) {
+        pathDownload.value = savedDirDown;
+        statusDownload.innerHTML = `<i class="fas fa-folder-open" style="color:#0284c7; margin-right:4px;"></i>상태: 전산 경로 준비됨`;
+        statusDownload.style.color = '#0284c7';
+        if (window.electronAPI) window.electronAPI.saveFilePath('download', savedDirDown);
     }
 
     if (savedPathWarehouse) {
@@ -1790,14 +1787,21 @@ pathDownload.addEventListener('input', () => {
     downloadData = []; // 캐시 초기화
     downloadFile = null; // 파일 객체 초기화
     if (val) {
+        let dir = val;
+        const lastSlash = Math.max(val.lastIndexOf('/'), val.lastIndexOf('\\'));
+        if (val.toLowerCase().endsWith('.xlsx') || val.toLowerCase().endsWith('.xls') || val.toLowerCase().endsWith('.xlsm')) {
+            dir = lastSlash !== -1 ? val.substring(0, lastSlash) : val;
+        }
+        localStorage.setItem('dirDown', dir);
         localStorage.setItem('pathDown', val);
         if (window.electronAPI) {
             window.electronAPI.saveFilePath('download', val);
         }
-        statusDownload.innerHTML = `<i class="fas fa-folder-open" style="color:#059669; margin-right:4px;"></i>상태: 경로 입력됨 (자동 로드)`;
+        statusDownload.innerHTML = `<i class="fas fa-folder-open" style="color:#059669; margin-right:4px;"></i>상태: 경로 입력됨 (${dir})`;
         statusDownload.style.color = '#059669';
     } else {
         localStorage.removeItem('pathDown');
+        localStorage.removeItem('dirDown');
         if (window.electronAPI) window.electronAPI.saveFilePath('download', null);
         statusDownload.textContent = "상태: 대기 중";
         statusDownload.style.color = '#64748b';

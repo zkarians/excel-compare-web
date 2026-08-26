@@ -809,9 +809,13 @@ app.get('/api/load-latest-from-dir', async (req, res) => {
     try {
         let dirPath = req.query.dirPath ? req.query.dirPath.trim() : '';
 
-        // 경로가 비어있거나 'undefined'/'null'인 경우 윈도우 기본 다운로드 폴더로 자동 폴백
+        // 경로가 비어있거나 'undefined'/'null'인 경우 마지막 로딩 폴더 폴백 (W:\helpdesk\Downloads 우선)
         if (!dirPath || dirPath === 'null' || dirPath === 'undefined' || dirPath.startsWith('선택된 파일:')) {
-            dirPath = path.join(os.homedir(), 'Downloads');
+            if (fs.existsSync('W:\\helpdesk\\Downloads')) {
+                dirPath = 'W:\\helpdesk\\Downloads';
+            } else {
+                dirPath = path.join(os.homedir(), 'Downloads');
+            }
         }
 
         if (!fs.existsSync(dirPath)) {
