@@ -14657,6 +14657,324 @@ window.lightboxDownload = function() {
         }
     };
 
+    // ====================================================
+    // 조별 작업수량 요약 모달 (CTNR 100% 동일 TeamSummaryModal)
+    // ====================================================
+    const SUMMARY_CATEGORIES = ['식기', '콤프', '오븐', '횡적', '세탁기', 'SK냉장고', '다모델 SK냉장고', '냉장고', '에어컨', '기타'];
+
+    function getTeamSummaryJobCategory(cntr) {
+        const jobTypeStr = (cntr.adminComment || '') + ' ' + (cntr.jobType || '');
+        if (jobTypeStr.includes('횡적')) return '횡적';
+
+        let hasOven = false;
+        let hasWasher = false;
+        let hasDishwasher = false;
+        let hasAircon = false;
+        let hasComp = false;
+        let hasFridge = false;
+        let hasSKFridge = false;
+
+        const uniqueModels = new Set();
+
+        for (const p of (cntr.products || [])) {
+            if (p.division === 'ZZZ') continue;
+            const name = (p.model_name || p.name || '').trim();
+            if (name) uniqueModels.add(name);
+
+            if (p.division === 'CVZ') hasOven = true;
+            if (p.division === 'DFZ') hasWasher = true;
+            if (p.division === 'CDZ') hasDishwasher = true;
+            if (p.division === 'DMZ') hasAircon = true;
+            if (p.division === 'DHZ') hasComp = true;
+            if (p.division === 'CNZ') {
+                hasFridge = true;
+                const nameUpper = name.toUpperCase();
+                if (nameUpper.startsWith('SK')) {
+                    hasSKFridge = true;
+                }
+            }
+        }
+
+        if (hasOven) return '오븐';
+        if (hasWasher) return '세탁기';
+        if (hasDishwasher) return '식기';
+        if (hasAircon) return '에어컨';
+        if (hasComp) return '콤프';
+        if (hasSKFridge) {
+            const modelCount = uniqueModels.size || cntr.modelCount || (cntr.products ? cntr.products.length : 1);
+            if (modelCount >= 7) {
+                return '다모델 SK냉장고';
+            }
+            return 'SK냉장고';
+        }
+        if (hasFridge) return '냉장고';
+
+        return '기타';
+    }
+
+    window.openTeamSummaryModal = function() {
+        const modal = document.getElementById('teamSummaryModal');
+        if (!modal) return;
+
+        const dateInput = document.getElementById('reportTargetDate');
+        const targetDate = dateInput?.value || (window.currentReportData?.[0]?.dateStr || formatReportYMD(new Date()));
+        
+        const dayShiftInput = document.getElementById('teamSummaryDayShiftInput');
+        if (dayShiftInput) {
+            const savedCount = localStorage.getItem(`dayShiftCount_${targetDate}`);
+            dayShiftInput.value = savedCount !== null && savedCount.trim() !== '' ? savedCount : '';
+        }
+
+        window.renderTeamSummaryModal();
+        modal.style.display = 'flex';
+    };
+
+    window.closeTeamSummaryModal = function() {
+        const modal = document.getElementById('teamSummaryModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    window.renderTeamSummaryModal = function() {
+        const reportData = window.currentReportData || [];
+        const tbody = document.getElementById('teamSummaryTableBody');
+        const tfoot = document.getElementById('teamSummaryTableFoot');
+        const emptyTbody = document.getElementById('emptyBoxSummaryTableBody');
+        const emptyTfoot = document.getElementById('emptyBoxSummaryTableFoot');
+
+        // 1. 조별 통계 집계
+        const teamMap = new Map();
+        const carrierSummary = { '천마': 0, 'BNI': 0, '재작업': 0, '기타': 0 };
+        const emptyBoxMap = new Map();
+
+        reportData.forEach((dateGroup) => {
+            (dateGroup.uploaders || []).forEach((team) => {
+                if (!teamMap.has(team.teamName)) {
+                    const initCounts = {};
+                    SUMMARY_CATEGORIES.forEach(cat => initCounts[cat] = 0);
+                    initCounts['total'] = 0;
+                    teamMap.set(team.teamName, initCounts);
+                }
+
+                const counts = teamMap.get(team.teamName);
+
+                (team.containers || []).forEach((cntr) => {
+                    const isExcluded = (cntr.adminComment || '').includes('[작업제외]');
+                    const isCancelled = !isExcluded && (cntr.isCancelled || (cntr.adminComment || '').includes('[취소]') || (cntr.adminComment || '').includes('[작업취소]'));
+
+                    if (!isExcluded && !isCancelled) {
+                        const cat = getTeamSummaryJobCategory(cntr);
+                        if (counts[cat] !== undefined) counts[cat]++;
+                        else counts['기타']++;
+                        counts['total']++;
+
+                        // Carrier summary
+                        let carrier = '기타';
+                        const cTrans = (cntr.transporter || '').trim();
+                        if (cTrans.includes('천마') || team.teamName.includes('천마')) carrier = '천마';
+                        else if (cTrans.includes('BNI') || cTrans.includes('비엔아이') || team.teamName.includes('BNI') || team.teamName.includes('비엔아이')) carrier = 'BNI';
+                        else if (cTrans.includes('재작업')) carrier = '재작업';
+                        carrierSummary[carrier] = (carrierSummary[carrier] || 0) + 1;
+
+                        // Empty box summary
+                        (cntr.emptyBoxes || []).forEach(box => {
+                            if (box.name && box.name.toUpperCase().startsWith('MAY')) {
+                                const qty = parseInt(box.qty, 10) || 0;
+                                if (qty > 0) {
+                                    emptyBoxMap.set(box.name, (emptyBoxMap.get(box.name) || 0) + qty);
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+        });
+
+        const teams = Array.from(teamMap.keys()).sort((a, b) => a.localeCompare(b));
+        const colTotals = {};
+        SUMMARY_CATEGORIES.forEach(cat => colTotals[cat] = 0);
+        colTotals['total'] = 0;
+
+        teams.forEach(team => {
+            const counts = teamMap.get(team);
+            SUMMARY_CATEGORIES.forEach(cat => colTotals[cat] += counts[cat]);
+            colTotals['total'] += counts['total'];
+        });
+
+        // 렌더링 1: 조별 작업수량 표
+        if (tbody) {
+            if (teams.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${SUMMARY_CATEGORIES.length + 2}" style="padding: 30px; text-align: center; color: #94a3b8;">데이터가 없습니다.</td></tr>`;
+            } else {
+                tbody.innerHTML = teams.map(team => {
+                    const counts = teamMap.get(team);
+                    return `
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 8px 12px; text-align: left; font-weight: 800; color: #1e293b; border-right: 1px solid #f1f5f9;">${team}</td>
+                            ${SUMMARY_CATEGORIES.map(cat => `
+                                <td style="padding: 8px 6px; text-align: center; ${counts[cat] > 0 ? 'font-weight: 800; color: #334155;' : 'color: #cbd5e1;'}">
+                                    ${counts[cat]}
+                                </td>
+                            `).join('')}
+                            <td style="padding: 8px 12px; text-align: center; font-weight: 900; color: #4f46e5; background: #eef2ff; border-left: 1px solid #f1f5f9;">
+                                ${counts['total']}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        if (tfoot) {
+            if (teams.length > 0) {
+                tfoot.innerHTML = `
+                    <tr style="background: #f8fafc; font-weight: 900; border-top: 2px solid #e2e8f0;">
+                        <td style="padding: 10px 12px; text-align: left; color: #1e293b; border-right: 1px solid #e2e8f0;">전체 합계</td>
+                        ${SUMMARY_CATEGORIES.map(cat => `
+                            <td style="padding: 10px 6px; text-align: center; color: #1e293b;">${colTotals[cat]}</td>
+                        `).join('')}
+                        <td style="padding: 10px 12px; text-align: center; color: #4338ca; background: #e0e7ff; border-left: 1px solid #e2e8f0;">
+                            ${colTotals['total']}
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tfoot.innerHTML = '';
+            }
+        }
+
+        // 렌더링 2: 공박스 표
+        const emptyBoxEntries = Array.from(emptyBoxMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+        const totalEmptyBoxes = emptyBoxEntries.reduce((sum, [_, qty]) => sum + qty, 0);
+
+        if (emptyTbody) {
+            if (emptyBoxEntries.length === 0) {
+                emptyTbody.innerHTML = `<tr><td colspan="2" style="padding: 24px; text-align: center; color: #94a3b8;">당일 사용된 공박스 내역이 없습니다.</td></tr>`;
+            } else {
+                emptyTbody.innerHTML = emptyBoxEntries.map(([name, qty]) => `
+                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                        <td style="padding: 8px 14px; font-weight: 700; color: #334155; border-right: 1px solid #f1f5f9;">${name}</td>
+                        <td style="padding: 8px 14px; text-align: center; font-weight: 700; color: #334155;">${qty.toLocaleString()}개</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        if (emptyTfoot) {
+            if (emptyBoxEntries.length > 0) {
+                emptyTfoot.innerHTML = `
+                    <tr style="background: #f8fafc; font-weight: 900; border-top: 2px solid #e2e8f0;">
+                        <td style="padding: 10px 14px; color: #1e293b; border-right: 1px solid #e2e8f0;">전체 합계</td>
+                        <td style="padding: 10px 14px; text-align: center; color: #0284c7;">${totalEmptyBoxes.toLocaleString()}개</td>
+                    </tr>
+                `;
+            } else {
+                emptyTfoot.innerHTML = '';
+            }
+        }
+
+        // 저장 변수 및 카톡 텍스트 갱신
+        window.currentTeamSummaryData = {
+            colTotals,
+            carrierSummary,
+            emptyBoxEntries,
+            totalEmptyBoxes
+        };
+
+        window.updateTeamSummaryKakaoText();
+    };
+
+    window.updateTeamSummaryKakaoText = function() {
+        const textarea = document.getElementById('teamSummaryKakaoText');
+        const dayShiftInput = document.getElementById('teamSummaryDayShiftInput');
+        if (!textarea) return;
+
+        const data = window.currentTeamSummaryData || {};
+        const colTotals = data.colTotals || {};
+        const carrierSummary = data.carrierSummary || {};
+        const emptyBoxEntries = data.emptyBoxEntries || [];
+        const totalEmptyBoxes = data.totalEmptyBoxes || 0;
+
+        const dateInput = document.getElementById('reportTargetDate');
+        const targetDate = dateInput?.value || (window.currentReportData?.[0]?.dateStr || formatReportYMD(new Date()));
+
+        const dayVal = dayShiftInput ? dayShiftInput.value.trim() : '';
+        if (targetDate) {
+            if (dayVal === '') {
+                localStorage.removeItem(`dayShiftCount_${targetDate}`);
+            } else {
+                localStorage.setItem(`dayShiftCount_${targetDate}`, dayVal);
+            }
+        }
+
+        let carrierStr = '';
+        ['천마', 'BNI', '재작업', '기타'].forEach(c => {
+            if (carrierSummary[c] > 0) carrierStr += `${c}${carrierSummary[c]} `;
+        });
+        carrierStr = carrierStr.trim();
+
+        let categoryStr = '';
+        const REPORT_CATEGORIES = ['식기', '콤프', '오븐', '횡적', '세탁기', 'SK냉장고', '냉장고', '에어컨', '기타'];
+        REPORT_CATEGORIES.forEach(cat => {
+            let count = colTotals[cat] || 0;
+            if (cat === 'SK냉장고') {
+                count += (colTotals['다모델 SK냉장고'] || 0);
+            }
+            if (count > 0) {
+                const displayLabel = cat === 'SK냉장고' ? 'SK' : cat;
+                categoryStr += `${displayLabel}${count} `;
+            }
+        });
+        categoryStr = categoryStr.trim();
+
+        const nightTotal = colTotals['total'] || 0;
+        const dayTotalStr = dayVal === '' ? '(미입력)' : dayVal;
+
+        let emptyBoxSuffix = '';
+        if (emptyBoxEntries.length > 0) {
+            const emptyBoxLines = ['공박스'];
+            emptyBoxEntries.forEach(([name, qty]) => {
+                emptyBoxLines.push(`${name} ${qty.toLocaleString()}개`);
+            });
+            emptyBoxLines.push(`합계 ${totalEmptyBoxes.toLocaleString()}개 장입`);
+            emptyBoxSuffix = `\n\n${emptyBoxLines.join('\n')}`;
+        }
+
+        const generatedText = `웅동 야간출하\n\n${carrierStr}\n${categoryStr}\n주간${dayTotalStr} 야간${nightTotal} 장입 이상무${emptyBoxSuffix}`;
+        textarea.value = generatedText;
+    };
+
+    window.copyTeamSummaryKakaoText = async function() {
+        const dayShiftInput = document.getElementById('teamSummaryDayShiftInput');
+        const dayVal = dayShiftInput ? dayShiftInput.value.trim() : '';
+        if (dayVal === '') {
+            alert('주간 작업수량을 입력해주세요. (0대인 경우 0 입력)');
+            dayShiftInput?.focus();
+            return;
+        }
+
+        const textarea = document.getElementById('teamSummaryKakaoText');
+        if (!textarea) return;
+
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(textarea.value);
+            } else {
+                textarea.select();
+                document.execCommand('copy');
+            }
+
+            const btnText = document.getElementById('teamSummaryCopyBtnText');
+            if (btnText) {
+                btnText.textContent = '복사됨!';
+                setTimeout(() => { btnText.textContent = '복사하기'; }, 2000);
+            }
+            alert("📋 카톡 보고서 텍스트가 클립보드에 복사되었습니다!");
+        } catch (err) {
+            console.error("Failed to copy team summary text:", err);
+            alert("복사 중 오류가 발생했습니다. 텍스트를 직접 드래그하여 복사해주세요.");
+        }
+    };
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', attachEvents);
     } else {

@@ -2984,6 +2984,9 @@
                 </div>
 
                 <div class="report-header-right">
+                    <button type="button" class="report-top-icon-btn" onclick="window.openTeamSummaryModal()" title="조별 작업수량 요약 (차트/통계)">
+                        <i class="fas fa-chart-bar"></i>
+                    </button>
                     <button type="button" class="report-top-icon-btn" onclick="window.openPhotoGalleryModal()" title="사진 보관함 열기">
                         <i class="fas fa-camera"></i>
                     </button>
@@ -3255,6 +3258,98 @@
         </div>
     </div>
 
+    <!-- ==================================================== -->
+    <!-- 조별 작업수량 요약 모달 (CTNR 100% 동일 TeamSummaryModal) -->
+    <!-- ==================================================== -->
+    <div id="teamSummaryModal" class="ctnr-gallery-modal" style="display: none; z-index: 100020;">
+        <div class="ctnr-submodal-container" style="max-width: 980px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden;">
+            <div class="ctnr-submodal-header" style="flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="padding: 6px 10px; background: #e0e7ff; color: #4f46e5; border-radius: 8px; font-size: 1.1rem;">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3 style="margin: 0; font-size: 1.1rem; font-weight: 900; color: #1e293b;">조별 작업수량 요약</h3>
+                </div>
+                <button type="button" class="ctnr-btn-close" onclick="window.closeTeamSummaryModal()" title="닫기">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                <!-- 1. 조별 작업수량 요약 표 -->
+                <div class="summary-table-wrap" style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                    <table id="teamSummaryTable" style="width: 100%; border-collapse: collapse; text-align: center; font-size: 0.82rem; white-space: nowrap;">
+                        <thead>
+                            <tr style="background: #f8fafc; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                                <th style="padding: 10px 12px; text-align: left; font-weight: 800; border-right: 1px solid #e2e8f0;">작업 조</th>
+                                <th style="padding: 10px 8px; font-weight: 800;">식기</th>
+                                <th style="padding: 10px 8px; font-weight: 800;">콤프</th>
+                                <th style="padding: 10px 8px; font-weight: 800;">오븐</th>
+                                <th style="padding: 10px 8px; font-weight: 800;">횡적</th>
+                                <th style="padding: 10px 8px; font-weight: 800;">세탁기</th>
+                                <th style="padding: 10px 8px; font-weight: 800;">SK냉장고</th>
+                                <th style="padding: 10px 8px; font-weight: 800;">다모델 SK냉장고</th>
+                                <th style="padding: 10px 8px; font-weight: 800;">냉장고</th>
+                                <th style="padding: 10px 8px; font-weight: 800;">에어컨</th>
+                                <th style="padding: 10px 8px; font-weight: 800;">기타</th>
+                                <th style="padding: 10px 12px; font-weight: 900; color: #4338ca; background: #eef2ff; border-left: 1px solid #e2e8f0;">총계</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teamSummaryTableBody"></tbody>
+                        <tfoot id="teamSummaryTableFoot"></tfoot>
+                    </table>
+                </div>
+
+                <!-- 2. 공박스 소모량 총계 표 -->
+                <div style="margin-top: 24px;">
+                    <h4 style="font-size: 0.95rem; font-weight: 900; color: #1e293b; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                        <span style="width: 4px; height: 16px; background: #0284c7; border-radius: 4px;"></span>
+                        공박스 소모량 총계
+                    </h4>
+                    <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.82rem; white-space: nowrap;">
+                            <thead>
+                                <tr style="background: #f8fafc; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                                    <th style="padding: 10px 14px; font-weight: 800; border-right: 1px solid #e2e8f0;">공박스 모델명</th>
+                                    <th style="padding: 10px 14px; font-weight: 800; text-align: center;">합계 수량</th>
+                                </tr>
+                            </thead>
+                            <tbody id="emptyBoxSummaryTableBody"></tbody>
+                            <tfoot id="emptyBoxSummaryTableFoot"></tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 3. 카톡 보고서 텍스트 생성 영역 -->
+                <div style="margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                        <h4 style="font-size: 0.95rem; font-weight: 900; color: #1e293b; margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span style="width: 4px; height: 16px; background: #4f46e5; border-radius: 4px;"></span>
+                            카톡 보고서 텍스트
+                        </h4>
+                        <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 4px 10px; border-radius: 8px;">
+                            <label style="font-size: 0.8rem; font-weight: 800; color: #475569;">주간 작업수량:</label>
+                            <input type="number" id="teamSummaryDayShiftInput" min="0" placeholder="미입력" style="width: 65px; padding: 3px 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 800; text-align: right;" oninput="window.updateTeamSummaryKakaoText()">
+                            <span style="font-size: 0.8rem; font-weight: 800; color: #475569;">대</span>
+                        </div>
+                    </div>
+
+                    <div style="position: relative;">
+                        <textarea id="teamSummaryKakaoText" readonly style="width: 100%; height: 180px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 0.85rem; font-weight: 700; color: #1e293b; line-height: 1.6; resize: none;"></textarea>
+                        <button type="button" class="btn-confirm-sky" style="position: absolute; bottom: 12px; right: 12px; padding: 6px 14px; font-size: 0.78rem; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);" onclick="window.copyTeamSummaryKakaoText()">
+                            <i class="fas fa-copy"></i> <span id="teamSummaryCopyBtnText">복사하기</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 16px; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.75rem; color: #64748b; line-height: 1.5;">
+                    <strong>* 분류 우선순위:</strong> 오븐 &gt; 세탁기 &gt; 식기 &gt; 에어컨 &gt; 횡적 &gt; 콤프 &gt; SK냉장고(다모델) &gt; 냉장고<br>
+                    <span style="color: #94a3b8;">작업취소 및 작업제외 처리된 컨테이너는 수량에서 제외되었습니다.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="js/modules/excelParser.js?v=20260611"></script>
     <script src="js/modules/mappingManager.js?v=20260528-fixed"></script>
@@ -3263,7 +3358,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260827-reportparity"></script>
+    <script src="app_main.js?v=20260827-teamsummary"></script>
 </body>
 
 </html>
