@@ -11423,11 +11423,27 @@ window.openPhotoGalleryModal = function(initialCntrNo = '') {
     window.loadPhotoGallery(window.currentGalleryTargetCntr);
 };
 
-// 특정 컨테이너 전용 사진 퀵 오픈 (카메라 버튼 클릭 시)
+// 특정 컨테이너 전용 사진 퀵 오픈 (카메라 버튼 클릭 시 + 클립보드에 컨테이너번호 자동 복사)
 window.openContainerPhotoModal = function(cntrNo, event) {
     if (event) event.stopPropagation();
     if (!cntrNo) return;
-    window.openPhotoGalleryModal(cntrNo.trim().toUpperCase());
+    const cleanNo = cntrNo.trim().toUpperCase();
+
+    // 클립보드 복사
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(cleanNo).catch(() => {});
+    } else {
+        try {
+            const tempInput = document.createElement('input');
+            tempInput.value = cleanNo;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+        } catch (e) {}
+    }
+
+    window.openPhotoGalleryModal(cleanNo);
 };
 
 // 2. 사진 목록 로드 (서버 API 호출)
