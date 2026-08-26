@@ -13488,11 +13488,10 @@ window.renderGalleryPhotos = function() {
                                                     <i class="fas fa-folder" style="color:#38bdf8; font-size:1rem;"></i>
                                                     <strong class="ctnr-folder-name ${carrierInfo.colorClass}">${f.cntrNo}</strong>
                                                     ${carrierInfo.name ? `<span class="ctnr-folder-carrier-tag ${carrierInfo.colorClass}">[${carrierInfo.name}]</span>` : ''}
-                                                    ${!hasSeal ? `<span title="씰(Seal) 사진이 업로드되지 않았습니다." class="camera-pulse" style="margin-left:4px;"><i class="fas fa-camera"></i></span>` : ''}
                                                 </div>
                                                 <div style="display:flex; align-items:center; gap:5px;">
                                                     ${isAllGDrive ? `<span style="font-size:0.75rem;" title="모든 사진이 구글드라이브에 안전 보관 중입니다 (로컬 용량 정리됨).">☁️</span>` : ''}
-                                                    ${!hasSeal ? `<span title="씰 사진 미등록" class="camera-pulse"><i class="fas fa-camera"></i></span>` : ''}
+                                                    ${!hasSeal ? `<span title="씰(Seal) 사진이 등록되지 않았습니다." class="camera-pulse"><i class="fas fa-camera"></i></span>` : ''}
                                                     <span class="ctnr-folder-count-badge">${f.photos.length}장</span>
                                                 </div>
                                             </div>
