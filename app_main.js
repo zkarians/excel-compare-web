@@ -776,10 +776,33 @@ document.addEventListener('DOMContentLoaded', () => {
  *  INITIALIZATION
  * ========================================================================= */
 
+// 컨테이너 사진 수치 캐싱 유틸리티
+window.fetchContainerPhotoCounts = async function() {
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`);
+        const data = await res.json();
+        if (data.success && data.photos) {
+            window.containerPhotoCountsMap = {};
+            data.photos.forEach(p => {
+                if (!p.cntr_no) return;
+                const cNo = p.cntr_no.toUpperCase().trim();
+                if (!window.containerPhotoCountsMap[cNo]) {
+                    window.containerPhotoCountsMap[cNo] = { total: 0, seal: 0, normal: 0 };
+                }
+                window.containerPhotoCountsMap[cNo].total++;
+                if (p.photo_type === 'seal') window.containerPhotoCountsMap[cNo].seal++;
+                else window.containerPhotoCountsMap[cNo].normal++;
+            });
+        }
+    } catch (e) {
+        console.warn('fetchContainerPhotoCounts error:', e.message);
+    }
+};
+
 // 초기화: 이전 저장 데이터 및 서버 상태 확인
 async function initializeApp() {
-    // 마스터 데이터 일괄 로드
-    await Promise.all([
+    // 마스터 데이터 일괄 로드 (어느 하나가 실패해도 앱 초기화가 중단되지 않도록 Promise.allSettled 사용)
+    await Promise.allSettled([
         loadCarrierMap(),
         loadDynamicRules(),
         loadProductMaster(),
@@ -827,19 +850,16 @@ async function initializeApp() {
                 tabDbSearch.title = 'DB 데이터 조회';
             }
         }
-        // 로컬 전용 기능 노출 제어 (Electron 혹은 localhost일 때만 표시)
-        const isLocal = window.isElectron || window.location.hostname === 'localhost';
-        if (isLocal) {
-            document.querySelectorAll('.local-only-feature').forEach(el => {
-                if (el.tagName === 'DIV' && el.style.alignItems === 'center') {
-                    el.style.display = 'flex';
-                } else {
-                    el.style.display = 'block';
-                }
-            });
-            // Electron 전용 네이티브 피커 노출
-            document.querySelectorAll('.electron-only-picker').forEach(el => el.style.display = 'inline-block');
-        }
+        // 로컬 전용 기능 노출 제어 (Electron, localhost, 브라우저 모두 지원)
+        document.querySelectorAll('.local-only-feature').forEach(el => {
+            if (el.tagName === 'DIV' && (el.style.alignItems === 'center' || el.style.gap)) {
+                el.style.display = 'flex';
+            } else {
+                el.style.display = 'block';
+            }
+        });
+        // 네이티브 탐색기 피커 버튼 노출
+        document.querySelectorAll('.electron-only-picker').forEach(el => el.style.display = 'inline-flex');
     } catch (err) {
         console.error('Critical initialization error:', err);
         alert(`🚧 경고: ${err.message}\n프로그램의 일부 기능(DB, 마스터 로드 등)이 작동하지 않을 수 있습니다.`);
