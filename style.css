@@ -3257,23 +3257,24 @@ tr.border-group td {
     border-color: #ef4444;
 }
 
-/* 2단 필터바 */
+/* 2단 필터바 (CTNR 스타일 깔끔 정렬) */
 .ctnr-gallery-header-row2 {
     background: #ffffff;
-    padding: 8px 24px;
+    padding: 10px 24px;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-end;
     flex-wrap: wrap;
     gap: 12px;
     z-index: 9;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .ctnr-filter-group-left {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    align-items: flex-end;
+    gap: 10px;
     flex-wrap: wrap;
 }
 
@@ -3281,22 +3282,30 @@ tr.border-group td {
     display: flex;
     align-items: center;
     gap: 10px;
+    height: 34px;
 }
 
 .ctnr-input-wrapper {
     display: inline-flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
 }
 
 .ctnr-input-wrapper label {
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 700;
     color: #64748b;
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .ctnr-input-wrapper input, .ctnr-input-wrapper select {
-    padding: 5px 8px;
+    height: 34px;
+    padding: 0 10px;
     font-size: 0.8rem;
     font-weight: 600;
     border: 1px solid #cbd5e1;
@@ -3304,15 +3313,21 @@ tr.border-group td {
     background: #f8fafc;
     color: #1e293b;
     outline: none;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    transition: all 0.15s ease;
 }
 
 .ctnr-input-wrapper input:focus, .ctnr-input-wrapper select:focus {
     border-color: #0284c7;
     background: white;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
 }
 
 .ctnr-btn-secondary {
-    padding: 6px 12px;
+    height: 34px;
+    padding: 0 12px;
     font-size: 0.78rem;
     font-weight: 700;
     background: #f1f5f9;
@@ -3320,16 +3335,23 @@ tr.border-group td {
     border: 1px solid #cbd5e1;
     border-radius: 8px;
     cursor: pointer;
-    align-self: flex-end;
-    margin-bottom: 1px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    box-sizing: border-box;
+    margin: 0;
+    transition: all 0.15s ease;
 }
 
 .ctnr-btn-secondary:hover {
     background: #e2e8f0;
+    color: #0f172a;
 }
 
 .ctnr-btn-back {
-    padding: 6px 14px;
+    height: 34px;
+    padding: 0 14px;
     font-size: 0.8rem;
     font-weight: 800;
     background: #f0f9ff;
@@ -3337,9 +3359,12 @@ tr.border-group td {
     border: 1px solid #bae6fd;
     border-radius: 8px;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
 }
 
 .ctnr-btn-back:hover {
@@ -3348,7 +3373,8 @@ tr.border-group td {
 }
 
 .ctnr-btn-refresh {
-    padding: 6px 14px;
+    height: 34px;
+    padding: 0 14px;
     font-size: 0.8rem;
     font-weight: 800;
     background: #059669;
@@ -3356,14 +3382,17 @@ tr.border-group td {
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    transition: all 0.15s;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
 }
 
 .ctnr-btn-refresh:hover {
     background: #047857;
+    box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
 }
 
 /* 메인 갤러리 영역 */
@@ -3893,48 +3922,55 @@ tr.border-group td {
     display: inline-flex;
     align-items: center;
     background: #f1f5f9;
-    padding: 3px;
-    border-radius: 10px;
+    padding: 2px;
+    border-radius: 8px;
     border: 1px solid #cbd5e1;
-    gap: 3px;
+    gap: 2px;
+    height: 34px;
+    box-sizing: border-box;
+    margin: 0;
 }
 
 .ctnr-tab-btn {
-    padding: 5px 12px;
+    height: 28px;
+    padding: 0 11px;
     font-size: 0.78rem;
     font-weight: 800;
-    color: #475569;
+    color: #64748b;
     border: none;
-    border-radius: 7px;
+    border-radius: 6px;
     background: transparent;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 5px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.15s ease;
+    box-sizing: border-box;
+    white-space: nowrap;
 }
 
 .ctnr-tab-btn:hover {
     color: #0f172a;
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.7);
 }
 
 .ctnr-tab-btn.active#tabBtnActive {
     background: #0284c7;
     color: #ffffff;
-    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
 }
 
 .ctnr-tab-btn.active#tabBtnCompleted {
     background: #059669;
     color: #ffffff;
-    box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
+    box-shadow: 0 1px 3px rgba(5, 150, 105, 0.3);
 }
 
 .ctnr-tab-btn.active#tabBtnTrash {
-    background: #475569;
+    background: #e11d48;
     color: #ffffff;
-    box-shadow: 0 2px 6px rgba(71, 85, 105, 0.3);
+    box-shadow: 0 1px 3px rgba(225, 29, 72, 0.3);
 }
 
 /* 폴더 액션 버튼 (완료 / 원복 / 삭제 / 복구) */
