@@ -5943,7 +5943,47 @@ function displayResults(results, isDbMode = false) {
                     <td class="col-dims">${res.dims || '-'}</td>
                     <td class="col-carrier">${renderMismatch(res.carrierName.orig, res.carrierName.val, res.carrierName.isMismatch)}</td>
                     <td class="col-dest">${typeof renderDestinationHtml === 'function' ? renderDestinationHtml(res.destination.orig, res.destination.val, res.destination.isMismatch) : (res.destination.orig === null ? `<span>${res.destination.val}</span>` : renderMismatch(res.destination.orig, res.destination.val, res.destination.isMismatch))}</td>
-                    <td class="col-gw" style="text-align: right; vertical-align: middle; padding: 4px 6px;">
+                    <td class="col-gw" ${(() => {
+                        const cleanProdName = (res.prodName || '').trim().toUpperCase();
+                        let dbUnitW = res.unitWeight;
+                        if ((dbUnitW === undefined || isNaN(dbUnitW)) && productMaster && Array.isArray(productMaster)) {
+                            const pm = productMaster.find(p => (p.name || '').trim().toUpperCase() === cleanProdName);
+                            if (pm && pm.weight) dbUnitW = parseFloat(pm.weight);
+                        }
+                        const planQty = res.qtyInfo ? (res.qtyInfo.plan || res.qtyInfo.origPlan || res.qtyInfo.load || 0) : 0;
+                        const dRaw = parseFloat(res.weights.down) || 0;
+                        const oRaw = parseFloat(res.weights.orig) || 0;
+                        let curUnitW = res.currentUnitWeight;
+                        if ((curUnitW === undefined || isNaN(curUnitW)) && planQty > 0) {
+                            if (dRaw > 0) curUnitW = dRaw / planQty;
+                            else if (oRaw > 0) curUnitW = oRaw / planQty;
+                        }
+
+                        const lines = [];
+                        if (dbUnitW !== undefined && !isNaN(dbUnitW) && dbUnitW > 0) {
+                            lines.push(`• DB 마스터 개별중량: ${dbUnitW.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg/EA`);
+                        }
+                        if (curUnitW !== undefined && !isNaN(curUnitW) && curUnitW > 0) {
+                            if (dbUnitW && Math.abs(curUnitW - dbUnitW) > 0.05) {
+                                lines.push(`• 전산 실측 개별중량: ${curUnitW.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg/EA`);
+                            } else if (!dbUnitW) {
+                                lines.push(`• 개별중량: ${curUnitW.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg/EA`);
+                            }
+                        }
+                        if (planQty > 0) {
+                            lines.push(`• 작업 수량: ${planQty.toLocaleString()} EA`);
+                        }
+                        const totalW = dRaw > 0 ? dRaw : oRaw;
+                        if (totalW > 0) {
+                            lines.push(`• 총 중량: ${totalW.toLocaleString()} kg`);
+                        }
+
+                        if (lines.length > 0) {
+                            const tooltipContent = `[개별중량 정보]\n` + lines.join('\n');
+                            return `title="${tooltipContent.replace(/"/g, '&quot;')}" style="text-align: right; vertical-align: middle; padding: 4px 6px; cursor: help;"`;
+                        }
+                        return `style="text-align: right; vertical-align: middle; padding: 4px 6px;"`;
+                    })()}>
                         ${(() => {
                         if (res.badgeClass === 'noproduct') {
                             return `<div style="text-align: center; color: #ef4444; font-weight: 800; font-size: 0.78rem;">정보없음</div>`;
