@@ -1614,6 +1614,8 @@ fileOriginal.addEventListener('change', async (e) => {
                 pathOriginal.value = filePath;
                 console.log('✅ 원본 파일 경로 저장:', filePath);
             }
+        } else {
+            pathOriginal.value = file.name;
         }
     }
     checkReadyStatus();
@@ -1650,6 +1652,8 @@ fileDownload.addEventListener('change', async (e) => {
                 pathDownload.value = dirPath;
                 console.log('✅ 전산 파일 폴더 경로 저장:', dirPath);
             }
+        } else {
+            pathDownload.value = file.name;
         }
     }
     checkReadyStatus();
@@ -1675,6 +1679,8 @@ fileRework.addEventListener('change', async (e) => {
                 pathRework.value = filePath;
                 console.log('✅ 재작업 파일 경로 저장:', filePath);
             }
+        } else {
+            pathRework.value = file.name;
         }
     } else {
         if (!pathRework.value.trim() && btnClearRework) {
@@ -1913,6 +1919,8 @@ if (btnClearDown) {
                 statusWarehouseStock.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a; margin-right:4px;"></i>상태: 업로드 완료 (${result.fileName})`;
                 statusWarehouseStock.style.color = '#16a34a';
                 lastWarehouseStock.textContent = `고유제품 ${result.totalProducts}개 분석 완료`;
+                const pathWarehouseEl = document.getElementById('pathWarehouse');
+                if (pathWarehouseEl && !window.electronAPI) pathWarehouseEl.value = file.name;
                 if (btnClearWarehouseStock) btnClearWarehouseStock.style.display = 'inline-block';
 
                 // (동) 배지 업데이트
@@ -4285,15 +4293,13 @@ function evaluateMathString(currentVal, expr) {
     return currentVal;
 }
 
-// Electron 네이티브 파일 피커 바인딩
+// Electron 및 웹 브라우저 공용 탐색기 파일 피커 바인딩
 (function setupNativePickers() {
-    if (!window.electronAPI) return;
-
     const pickers = [
-        { btn: 'btnNativePickerOrig', type: 'original', storageKey: 'dirOrig' },
-        { btn: 'btnNativePickerRework', type: 'rework', storageKey: 'dirRework' },
-        { btn: 'btnNativePickerWarehouse', type: 'warehouse', storageKey: 'dirWarehouse' },
-        { btn: 'btnNativePickerDown', type: 'download', storageKey: 'dirDown' }
+        { btn: 'btnNativePickerOrig', fileInputId: 'fileOriginal', pathInputId: 'pathOriginal', type: 'original', storageKey: 'dirOrig' },
+        { btn: 'btnNativePickerRework', fileInputId: 'fileRework', pathInputId: 'pathRework', type: 'rework', storageKey: 'dirRework' },
+        { btn: 'btnNativePickerWarehouse', fileInputId: 'fileWarehouseStock', pathInputId: 'pathWarehouse', type: 'warehouse', storageKey: 'dirWarehouse' },
+        { btn: 'btnNativePickerDown', fileInputId: 'fileDownload', pathInputId: 'pathDownload', type: 'download', storageKey: 'dirDown' }
     ];
 
     pickers.forEach(p => {
@@ -4301,27 +4307,35 @@ function evaluateMathString(currentVal, expr) {
         if (!btn) return;
 
         btn.addEventListener('click', async () => {
-            const lastDir = localStorage.getItem(p.storageKey);
-            const filePath = await window.electronAPI.selectFile(p.type, lastDir);
+            // 1. Electron 데스크톱 앱 환경인 경우 -> 기존 OS 네이티브 탐색기 다이얼로그 호출 (100% 동일 보존)
+            if (window.electronAPI && typeof window.electronAPI.selectFile === 'function') {
+                const lastDir = localStorage.getItem(p.storageKey);
+                const filePath = await window.electronAPI.selectFile(p.type, lastDir);
 
-            if (filePath) {
-                // 폴더 경로 업데이트
-                const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
-                const dirPath = lastSlash !== -1 ? filePath.substring(0, lastSlash) : filePath;
-                localStorage.setItem(p.storageKey, dirPath);
+                if (filePath) {
+                    // 폴더 경로 업데이트
+                    const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
+                    const dirPath = lastSlash !== -1 ? filePath.substring(0, lastSlash) : filePath;
+                    localStorage.setItem(p.storageKey, dirPath);
 
-                // 해당 UI 입력창에도 경로 표시
-                if (p.type === 'original') pathOriginal.value = filePath;
-                else if (p.type === 'rework') pathRework.value = filePath;
-                else if (p.type === 'download') pathDownload.value = filePath;
-                else if (p.type === 'warehouse') pathWarehouse.value = filePath;
+                    // 해당 UI 입력창에도 경로 표시
+                    if (p.type === 'original') pathOriginal.value = filePath;
+                    else if (p.type === 'rework') pathRework.value = filePath;
+                    else if (p.type === 'download') pathDownload.value = filePath;
+                    else if (p.type === 'warehouse') pathWarehouse.value = filePath;
 
-                // 파일 로드 시도
-                if (p.type === 'warehouse') {
-                    // 창고재고는 별도 로직 (서버 사이드 파싱)
-                    loadNativeWarehouseFile(filePath);
-                } else {
-                    reloadNativeFileFromPath(p.type, filePath);
+                    // 파일 로드 시도
+                    if (p.type === 'warehouse') {
+                        loadNativeWarehouseFile(filePath);
+                    } else {
+                        reloadNativeFileFromPath(p.type, filePath);
+                    }
+                }
+            } else {
+                // 2. 웹 브라우저(localhost 등) 환경인 경우 -> 브라우저 표준 파일 탐색기 선택창 트리거
+                const fileInput = document.getElementById(p.fileInputId);
+                if (fileInput) {
+                    fileInput.click();
                 }
             }
         });
