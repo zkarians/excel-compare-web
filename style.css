@@ -4544,6 +4544,77 @@ tr.border-group td {
     background: #059669;
 }
 
+.btn-confirm-rose {
+    padding: 8px 18px;
+    background: #e11d48;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(225, 29, 72, 0.25);
+}
+.btn-confirm-rose:hover {
+    background: #be123c;
+}
+
+.btn-confirm-sky {
+    padding: 8px 18px;
+    background: #0284c7;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
+}
+.btn-confirm-sky:hover {
+    background: #0369a1;
+}
+
+.camera-pulse {
+    animation: ctnrCameraPulse 1.2s infinite ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #e11d48;
+}
+
+@keyframes ctnrCameraPulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.35;
+        transform: scale(1.18);
+    }
+}
+
+.btn-date-report {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    background: #f0f9ff;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-date-report:hover {
+    background: #0284c7;
+    color: white;
+    border-color: #0284c7;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+    transform: translateY(-1px);
+}
+
 .ctnr-team-list-group {
     display: flex;
     flex-direction: column;

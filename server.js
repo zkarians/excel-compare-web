@@ -28,6 +28,17 @@ try {
     }
 }
 
+let JSZip = null;
+try {
+    JSZip = require('jszip');
+} catch (e) {
+    try {
+        JSZip = require('C:/Program Files (x86)/CTNR/node_modules/jszip');
+    } catch (e2) {
+        console.warn('⚠️ [Server] JSZip 모듈을 로드하지 못했습니다:', e2.message);
+    }
+}
+
 // Google Drive OAuth 설정 (CTNR 앱 호환)
 const GDRIVE_OAUTH_PATH = 'C:\\Program Files (x86)\\CTNR\\gdrive-oauth-client.json';
 const GDRIVE_TOKEN_PATH = 'C:\\Program Files (x86)\\CTNR\\gdrive-token.json';
@@ -47,6 +58,49 @@ function getGoogleDriveClient() {
     } catch (e) {
         console.warn('⚠️ [GDrive] OAuth 클라이언트 초기화 실패:', e.message);
         return null;
+    }
+}
+
+async function uploadToGoogleDrive(localFilePath, fileName, mimeType = 'image/jpeg', parentFolderId = GDRIVE_FOLDER_ID) {
+    const auth = getGoogleDriveClient();
+    if (!auth) throw new Error('Google Drive 인증 클라이언트를 생성할 수 없습니다.');
+    const drive = google.drive({ version: 'v3', auth });
+    const fileMetadata = {
+        name: fileName,
+        parents: [parentFolderId]
+    };
+    const media = {
+        mimeType: mimeType,
+        body: fs.createReadStream(localFilePath)
+    };
+    const response = await drive.files.create({
+        requestBody: fileMetadata,
+        media: media,
+        fields: 'id, name, webViewLink, webContentLink'
+    });
+    const fileId = response.data.id;
+    const gdriveUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
+    return {
+        fileId,
+        webViewLink: response.data.webViewLink,
+        webContentLink: response.data.webContentLink,
+        gdriveUrl
+    };
+}
+
+async function renameGoogleDriveFile(fileId, newFileName) {
+    const auth = getGoogleDriveClient();
+    if (!auth) return false;
+    try {
+        const drive = google.drive({ version: 'v3', auth });
+        await drive.files.update({
+            fileId: fileId,
+            requestBody: { name: newFileName }
+        });
+        return true;
+    } catch (e) {
+        console.warn(`[GDrive Rename Error] ${fileId}:`, e.message);
+        return false;
     }
 }
 
@@ -3227,9 +3281,448 @@ app.patch('/api/photos', async (req, res) => {
             }
         }
 
+        // 10. 사진 복구 (휴지통 -> 활성)
+        if (action === 'restore' || action === 'restore_photos' || (!action && req.query.ids)) {
+            const targetIds = Array.isArray(ids) ? ids : (req.query.ids ? req.query.ids.split(',').map(s => s.trim()).filter(Boolean) : []);
+            if (targetIds.length === 0) {
+                return res.status(400).json({ success: false, error: '복구할 사진 ID가 제공되지 않았습니다.' });
+            }
+            await pool.query(
+                `UPDATE container_photos SET is_deleted = false WHERE id = ANY($1)`,
+                [targetIds]
+            );
+            return res.json({
+                success: true,
+                count: targetIds.length,
+                message: `선택한 사진 ${targetIds.length}장이 복구되었습니다.`
+            });
+        }
+
+        // 11. 구글 드라이브 백업 & 로컬 용량 정리 (NDJSON 스트리밍 프로그레스)
+        if (action === 'upload_gdrive') {
+            const targetIds = Array.isArray(ids) ? ids : [];
+            if (targetIds.length === 0) {
+                return res.status(400).json({ success: false, error: '백업할 사진 ID가 제공되지 않았습니다.' });
+            }
+
+            res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-cache, no-transform');
+            res.setHeader('Connection', 'keep-alive');
+            res.flushHeaders?.();
+
+            const sendEvent = (evt) => {
+                try {
+                    res.write(JSON.stringify(evt) + '\n');
+                } catch (e) {}
+            };
+
+            const pRes = await pool.query(
+                `SELECT id, photo_path, cntr_no, gdrive_file_id, gdrive_url 
+                 FROM container_photos 
+                 WHERE id = ANY($1) AND (is_deleted IS NOT TRUE)`,
+                [targetIds]
+            );
+
+            const total = pRes.rows.length;
+            let uploadedCount = 0;
+            let skippedCount = 0;
+            let cleanedCount = 0;
+            let totalFreedBytes = 0;
+
+            const alreadyDone = pRes.rows.filter(r => !!r.gdrive_file_id).length;
+            sendEvent({ type: 'start', total, alreadyDoneCount: alreadyDone });
+
+            let currentIdx = 0;
+            for (const photo of pRes.rows) {
+                currentIdx++;
+                const filename = path.basename(photo.photo_path);
+                const localPath = path.resolve(CTNR_UPLOADS_DIR, photo.photo_path);
+
+                try {
+                    // 이미 업로드 완료된 경우
+                    if (photo.gdrive_file_id) {
+                        skippedCount++;
+                        // 로컬 파일이 아직 남아있으면 용량 정리
+                        if (fs.existsSync(localPath)) {
+                            try {
+                                const stats = fs.statSync(localPath);
+                                totalFreedBytes += stats.size;
+                                fs.unlinkSync(localPath);
+                                cleanedCount++;
+                            } catch (e) {}
+                        }
+                        const freedMB = (totalFreedBytes / (1024 * 1024)).toFixed(1);
+                        sendEvent({
+                            type: 'progress',
+                            current: currentIdx,
+                            total,
+                            percent: Math.round((currentIdx / total) * 100),
+                            currentFile: filename,
+                            status: 'SKIPPED',
+                            uploadedCount,
+                            skippedCount,
+                            cleanedCount,
+                            freedMB
+                        });
+                        continue;
+                    }
+
+                    // 로컬 파일이 없는 경우
+                    if (!fs.existsSync(localPath)) {
+                        skippedCount++;
+                        sendEvent({
+                            type: 'progress',
+                            current: currentIdx,
+                            total,
+                            percent: Math.round((currentIdx / total) * 100),
+                            currentFile: filename,
+                            status: 'NOT_FOUND',
+                            uploadedCount,
+                            skippedCount,
+                            cleanedCount
+                        });
+                        continue;
+                    }
+
+                    // Google Drive 업로드 실행
+                    let mimeType = 'image/jpeg';
+                    if (filename.toLowerCase().endsWith('.png')) mimeType = 'image/png';
+                    else if (filename.toLowerCase().endsWith('.webp')) mimeType = 'image/webp';
+
+                    const driveResult = await uploadToGoogleDrive(localPath, filename, mimeType);
+                    uploadedCount++;
+
+                    // DB 업데이트
+                    await pool.query(
+                        `UPDATE container_photos 
+                         SET gdrive_file_id = $1, gdrive_url = $2 
+                         WHERE id = $3`,
+                        [driveResult.fileId, driveResult.gdriveUrl, photo.id]
+                    );
+
+                    // 로컬 파일 삭제 (용량 확보)
+                    try {
+                        const stats = fs.statSync(localPath);
+                        totalFreedBytes += stats.size;
+                        fs.unlinkSync(localPath);
+                        cleanedCount++;
+                    } catch (e) {}
+
+                    const freedMB = (totalFreedBytes / (1024 * 1024)).toFixed(1);
+                    sendEvent({
+                        type: 'progress',
+                        current: currentIdx,
+                        total,
+                        percent: Math.round((currentIdx / total) * 100),
+                        currentFile: filename,
+                        status: 'UPLOADED',
+                        uploadedCount,
+                        skippedCount,
+                        cleanedCount,
+                        freedMB
+                    });
+
+                } catch (err) {
+                    console.error(`[GDrive Upload Error] ${filename}:`, err);
+                    sendEvent({
+                        type: 'error',
+                        filename,
+                        error: err.message
+                    });
+                }
+            }
+
+            const finalFreedMB = (totalFreedBytes / (1024 * 1024)).toFixed(1);
+            sendEvent({
+                type: 'done',
+                uploadedCount,
+                skippedCount,
+                cleanedCount,
+                freedMB: finalFreedMB,
+                message: `🎉 구글드라이브 백업 완료! (업로드: ${uploadedCount}장, 스킵: ${skippedCount}장, 정리된 로컬 용량: ${finalFreedMB} MB)`
+            });
+
+            return res.end();
+        }
+
+        // 12. 사진 복구 (단순 ids 배열 전달 시)
+        if (Array.isArray(ids) && ids.length > 0 && !action) {
+            await pool.query(
+                `UPDATE container_photos SET is_deleted = false WHERE id = ANY($1)`,
+                [ids]
+            );
+            return res.json({ success: true, message: `선택한 사진 ${ids.length}장이 복구되었습니다.` });
+        }
+
         res.status(400).json({ success: false, error: 'Unknown action' });
     } catch (err) {
         console.error("PATCH /api/photos error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 사진 삭제 API (휴지통 이동 및 영구 삭제 지원)
+app.delete('/api/photos', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const idsParam = req.query.ids || (req.body && req.body.ids);
+        const cntrNosParam = req.query.cntrNos || (req.body && req.body.cntrNos);
+        const isPermanent = req.query.permanent === 'true';
+
+        let targetIds = [];
+        if (idsParam) {
+            targetIds = Array.isArray(idsParam) ? idsParam : String(idsParam).split(',').map(s => s.trim()).filter(Boolean);
+        } else if (cntrNosParam) {
+            const cntrList = Array.isArray(cntrNosParam) ? cntrNosParam : String(cntrNosParam).split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+            const pRes = await pool.query(`SELECT id FROM container_photos WHERE cntr_no = ANY($1)`, [cntrList]);
+            targetIds = pRes.rows.map(r => r.id);
+        }
+
+        if (targetIds.length === 0) {
+            return res.status(400).json({ success: false, error: '삭제할 사진이 지정되지 않았습니다.' });
+        }
+
+        if (isPermanent) {
+            // 영구 삭제: 로컬 파일 삭제 + DB 레코드 완전 제거
+            const pRes = await pool.query(
+                `SELECT id, photo_path FROM container_photos WHERE id = ANY($1)`,
+                [targetIds]
+            );
+
+            for (const row of pRes.rows) {
+                const localPath = path.resolve(CTNR_UPLOADS_DIR, row.photo_path);
+                if (fs.existsSync(localPath)) {
+                    try { fs.unlinkSync(localPath); } catch (e) {}
+                }
+            }
+
+            await pool.query(`DELETE FROM container_photos WHERE id = ANY($1)`, [targetIds]);
+            return res.json({
+                success: true,
+                count: targetIds.length,
+                message: `사진 ${targetIds.length}장이 영구 삭제되었습니다.`
+            });
+        } else {
+            // 휴지통 이동 (Soft Delete)
+            await pool.query(
+                `UPDATE container_photos SET is_deleted = true WHERE id = ANY($1)`,
+                [targetIds]
+            );
+            return res.json({
+                success: true,
+                count: targetIds.length,
+                message: `선택한 사진 ${targetIds.length}장이 휴지통으로 이동되었습니다.`
+            });
+        }
+    } catch (err) {
+        console.error("DELETE /api/photos error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 사진 일괄 ZIP 압축 다운로드 API (JSZip 기반)
+app.get('/api/photos/download', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const { ids, cntrNos, startDate, endDate } = req.query;
+
+        if (!ids && !cntrNos) {
+            return res.status(400).send('No containers or photo IDs specified');
+        }
+
+        let photos = [];
+        if (ids) {
+            const idList = String(ids).split(',').map(s => s.trim()).filter(Boolean);
+            const pRes = await pool.query(
+                `SELECT cntr_no, photo_path, gdrive_file_id 
+                 FROM container_photos 
+                 WHERE id = ANY($1) AND (is_deleted IS NOT TRUE)`,
+                [idList]
+            );
+            photos = pRes.rows;
+        } else if (cntrNos) {
+            const cntrList = String(cntrNos).split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+            let query = `
+                SELECT cntr_no, photo_path, gdrive_file_id 
+                FROM container_photos 
+                WHERE cntr_no = ANY($1) AND (is_deleted IS NOT TRUE)
+            `;
+            const params = [cntrList];
+            let pIdx = 2;
+
+            if (startDate) {
+                query += ` AND uploaded_at AT TIME ZONE 'Asia/Seoul' >= $${pIdx++}::timestamp`;
+                params.push(`${startDate} 00:00:00`);
+            }
+            if (endDate) {
+                query += ` AND uploaded_at AT TIME ZONE 'Asia/Seoul' <= ($${pIdx++}::date + INTERVAL '1 day')`;
+                params.push(endDate);
+            }
+
+            const pRes = await pool.query(query, params);
+            photos = pRes.rows;
+        }
+
+        if (photos.length === 0) {
+            return res.status(404).send('다운로드할 사진을 찾을 수 없습니다.');
+        }
+
+        if (!JSZip) {
+            return res.status(500).send('JSZip 라이브러리를 로드할 수 없습니다.');
+        }
+
+        const zip = new JSZip();
+
+        await Promise.all(photos.map(async (photo) => {
+            const localPath = path.resolve(CTNR_UPLOADS_DIR, photo.photo_path);
+            const folderName = photo.cntr_no || '기타';
+            const fileName = path.basename(photo.photo_path);
+            const zipEntryPath = `${folderName}/${fileName}`;
+
+            if (fs.existsSync(localPath)) {
+                const buffer = fs.readFileSync(localPath);
+                zip.file(zipEntryPath, buffer);
+            } else if (photo.gdrive_file_id) {
+                try {
+                    const gBuffer = await downloadFromGoogleDrive(photo.gdrive_file_id);
+                    if (gBuffer && gBuffer.length > 0) {
+                        zip.file(zipEntryPath, gBuffer);
+                    }
+                } catch (e) {
+                    console.warn(`[ZIP GDrive Warn] ${fileName}:`, e.message);
+                }
+            }
+        }));
+
+        const zipBuffer = await zip.generateAsync({
+            type: 'nodebuffer',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 6 }
+        });
+
+        const zipName = `container_photos_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.zip`;
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
+        res.setHeader('Content-Length', zipBuffer.length);
+        return res.send(zipBuffer);
+
+    } catch (err) {
+        console.error("GET /api/photos/download error:", err);
+        res.status(500).send(`ZIP 생성 중 오류: ${err.message}`);
+    }
+});
+
+// 윈도우 로컬 폴더 선택기 API (PowerShell FolderBrowserDialog)
+app.get('/api/photos/select-local-folder', async (req, res) => {
+    try {
+        const scratchDir = path.join(DATA_DIR, 'scratch');
+        if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
+
+        const scriptPath = path.join(scratchDir, 'select_folder.ps1');
+        const scriptContent = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+Add-Type -AssemblyName System.Windows.Forms
+$FolderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
+$FolderBrowser.Description = "사진을 복사할 대상 로컬 폴더를 선택해 주세요."
+$FolderBrowser.ShowNewFolderButton = $true
+$Result = $FolderBrowser.ShowDialog()
+if ($Result -eq [System.Windows.Forms.DialogResult]::OK) {
+    Write-Output $FolderBrowser.SelectedPath
+} else {
+    Write-Output "CANCELLED"
+}`;
+        fs.writeFileSync(scriptPath, scriptContent, 'utf8');
+
+        const cmd = `chcp 65001 >nul && powershell -ExecutionPolicy Bypass -File "${scriptPath}"`;
+        exec(cmd, { encoding: 'buffer' }, (error, stdoutBuf) => {
+            if (error) {
+                console.error('PowerShell folder dialog error:', error);
+                return res.json({ success: false, error: error.message });
+            }
+            const result = stdoutBuf.toString('utf8').trim();
+            if (result === 'CANCELLED' || !result) {
+                return res.json({ success: true, cancelled: true });
+            } else {
+                return res.json({ success: true, path: result });
+            }
+        });
+    } catch (err) {
+        console.error("GET /api/photos/select-local-folder error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 사진 파일명 수정 API (DB + 파일시스템 + Google Drive 이름 변경)
+app.patch('/api/photos/rename', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const { photoId, newFilename } = req.body;
+
+        if (!photoId || !newFilename) {
+            return res.status(400).json({ success: false, error: '사진 ID와 새 파일명이 필요합니다.' });
+        }
+
+        const sanitizedName = newFilename.replace(/[^a-zA-Z0-9_\-\.가-힣ㄱ-ㅎㅏ-ㅣ\s]/g, '_').trim();
+        if (!sanitizedName) {
+            return res.status(400).json({ success: false, error: '유효하지 않은 파일 이름입니다.' });
+        }
+
+        const pRes = await pool.query(
+            `SELECT id, photo_path, cntr_no, gdrive_file_id FROM container_photos WHERE id = $1`,
+            [photoId]
+        );
+
+        if (pRes.rows.length === 0) {
+            return res.status(404).json({ success: false, error: '해당 사진을 찾을 수 없습니다.' });
+        }
+
+        const photo = pRes.rows[0];
+        const oldPath = photo.photo_path;
+        const oldExt = path.extname(oldPath);
+        const folderPath = path.dirname(oldPath);
+
+        const finalFilename = sanitizedName.toLowerCase().endsWith(oldExt.toLowerCase())
+            ? sanitizedName
+            : `${sanitizedName}${oldExt}`;
+
+        const newPhotoPath = path.posix.join(folderPath, finalFilename);
+
+        if (oldPath === newPhotoPath) {
+            return res.json({ success: true, photoPath: oldPath });
+        }
+
+        // 파일시스템 이름 변경
+        const oldLocalPath = path.resolve(CTNR_UPLOADS_DIR, oldPath);
+        const newLocalPath = path.resolve(CTNR_UPLOADS_DIR, newPhotoPath);
+
+        if (fs.existsSync(oldLocalPath)) {
+            try {
+                fs.renameSync(oldLocalPath, newLocalPath);
+            } catch (err) {
+                fs.copyFileSync(oldLocalPath, newLocalPath);
+                fs.unlinkSync(oldLocalPath);
+            }
+        }
+
+        // Google Drive 파일명 변경
+        if (photo.gdrive_file_id) {
+            renameGoogleDriveFile(photo.gdrive_file_id, finalFilename).catch(() => {});
+        }
+
+        // DB 업데이트
+        await pool.query(
+            `UPDATE container_photos SET photo_path = $1 WHERE id = $2`,
+            [newPhotoPath, photoId]
+        );
+
+        res.json({
+            success: true,
+            photoPath: newPhotoPath,
+            message: `파일명이 '${finalFilename}'(으)로 성공적으로 변경되었습니다.`
+        });
+
+    } catch (err) {
+        console.error("PATCH /api/photos/rename error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });

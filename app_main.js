@@ -10989,322 +10989,483 @@ window.toggleSelectAvailRow = function(rowId, event) {
 };
 
 // 시트 필터 전환
-window.filterAvailBySheet = function(sheet) {
-    currentAvailSheetFilter = sheet;
-    const tabs = document.querySelectorAll('.avail-sheet-tab');
-    tabs.forEach(t => {
-        if (t.dataset.sheet === sheet) t.classList.add('active');
-        else t.classList.remove('active');
-    });
-    renderAvailabilityTable();
+window.filter// [폴더 액션 6] 선택한 폴더 사진 ZIP 일괄 다운로드
+window.handleDownloadSelectedFolders = function() {
+    const keys = Array.from(window.selectedFolderKeys);
+    if (keys.length === 0) return;
+    const cntrNos = Array.from(new Set(keys.map(k => k.split('|')[0])));
+    const startDate = document.getElementById('photoGalleryStartDate')?.value || '';
+    const endDate = document.getElementById('photoGalleryEndDate')?.value || '';
+
+    let url = `${API_BASE}/api/photos/download?cntrNos=${encodeURIComponent(cntrNos.join(','))}`;
+    if (startDate) url += `&startDate=${encodeURIComponent(startDate)}`;
+    if (endDate) url += `&endDate=${encodeURIComponent(endDate)}`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `container_folders_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 };
 
-// 상태 필터 전환
-window.filterAvailByStatus = function(status) {
-    currentAvailStatusFilter = status;
-    const btns = document.querySelectorAll('.avail-status-btn');
-    btns.forEach(b => {
-        if (b.dataset.status === status) b.classList.add('active');
-        else b.classList.remove('active');
-    });
-    renderAvailabilityTable();
-};
-
-// 텍스트 검색
-window.searchAvailability = function() {
-    const searchInput = document.getElementById('availSearchInput');
-    const searchSelect = document.getElementById('availSearchField');
-    if (searchInput) currentAvailSearchQuery = searchInput.value;
-    if (searchSelect) currentAvailSearchField = searchSelect.value;
-    renderAvailabilityTable();
-};
-
-// 검색 및 필터 초기화
-window.resetAvailFilters = function() {
-    currentAvailSheetFilter = 'all';
-    currentAvailStatusFilter = 'all';
-    currentAvailSearchQuery = '';
-    currentAvailSearchField = 'all';
-
-    const tabs = document.querySelectorAll('.avail-sheet-tab');
-    tabs.forEach(t => {
-        if (t.dataset.sheet === 'all') t.classList.add('active');
-        else t.classList.remove('active');
-    });
-
-    const btns = document.querySelectorAll('.avail-status-btn');
-    btns.forEach(b => {
-        if (b.dataset.status === 'all') b.classList.add('active');
-        else b.classList.remove('active');
-    });
-
-    const searchInput = document.getElementById('availSearchInput');
-    if (searchInput) searchInput.value = '';
-
-    const searchSelect = document.getElementById('availSearchField');
-    if (searchSelect) searchSelect.value = 'all';
-
-    renderAvailabilityTable();
-};
-
-// 엑셀 내보내기 (ExcelJS 기반)
-window.exportAvailabilityToExcel = async function() {
-    if (!processedAvailabilityData || processedAvailabilityData.length === 0) {
-        alert("내보낼 작업 가용성 분석 데이터가 없습니다.");
+// 1. 선택한 사진 삭제 (휴지통 이동)
+window.handleDeleteSelectedPhotos = async function() {
+    const ids = Array.from(window.selectedPhotoIds);
+    if (ids.length === 0) {
+        alert("삭제할 사진을 선택해 주세요.");
         return;
     }
-
-    try {
-        const workbook = new ExcelJS.Workbook();
-        workbook.creator = 'ExcelCompare';
-        workbook.created = new Date();
-
-        const worksheet = workbook.addWorksheet('작업가용성_상세내역');
-
-        worksheet.columns = [
-            { header: '시트구분', key: 'sheetName', width: 12 },
-            { header: '작업명', key: 'jobName', width: 22 },
-            { header: '컨테이너번호', key: 'cntrNo', width: 18 },
-            { header: '도착지', key: 'dest', width: 10 },
-            { header: '선사', key: 'carrier', width: 10 },
-            { header: '규격', key: 'cntrType', width: 10 },
-            { header: '제품구분', key: 'prodType', width: 10 },
-            { header: '사업부', key: 'division', width: 12 },
-            { header: '제품모델명', key: 'prodName', width: 30 },
-            { header: '계획수량', key: 'qty', width: 12 },
-            { header: '가용재고(양품)', key: 'good', width: 14 },
-            { header: 'OQC홀드', key: 'oqc', width: 12 },
-            { header: '롱텀홀드', key: 'longTerm', width: 12 },
-            { header: 'BIN블록', key: 'bin', width: 12 },
-            { header: '팬딩재고', key: 'pending', width: 12 },
-            { header: '부족수량', key: 'shortage', width: 12 },
-            { header: '판정상태', key: 'statusLabel', width: 16 },
-            { header: '구분1', key: 'adj1', width: 20 },
-            { header: '구분2', key: 'adj2', width: 20 },
-            { header: '블록 로케이션 및 비고', key: 'blockLocs', width: 35 }
-        ];
-
-        // 헤더 스타일링
-        const headerRow = worksheet.getRow(1);
-        headerRow.height = 26;
-        headerRow.eachCell(cell => {
-            cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: '1E293B' }
-            };
-            cell.font = { color: { argb: 'FFFFFF' }, bold: true, size: 10 };
-            cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        });
-
-        // 데이터 행 추가
-        processedAvailabilityData.forEach(d => {
-            const row = worksheet.addRow({
-                sheetName: d.sheetName,
-                jobName: d.jobName,
-                cntrNo: d.cntrNo,
-                dest: d.dest,
-                carrier: d.carrier,
-                cntrType: d.cntrType,
-                prodType: d.prodType || '-',
-                division: d.division || '-',
-                prodName: d.prodName,
-                qty: d.qty,
-                good: d.good,
-                oqc: d.oqc,
-                longTerm: d.longTerm,
-                bin: d.bin,
-                pending: d.pending,
-                shortage: d.shortage > 0 ? d.shortage : 0,
-                statusLabel: d.statusLabel,
-                adj1: d.adj1 && d.adj1 !== '-' ? d.adj1 : '',
-                adj2: d.adj2 && d.adj2 !== '-' ? d.adj2 : '',
-                blockLocs: d.blockLocs && d.blockLocs.length > 0 ? d.blockLocs.join(' | ') : (d.remark !== '-' ? d.remark : '')
-            });
-
-            // 상태별 색상 강조
-            if (d.status === 'SHORTAGE') {
-                row.eachCell(cell => {
-                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FEE2E2' } };
-                });
-            } else if (d.status === 'BLOCK_WARN') {
-                row.eachCell(cell => {
-                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FAF5FF' } };
-                });
-            }
-        });
-
-        const buffer = await workbook.xlsx.writeBuffer();
-        const dateStr = new Date().toISOString().split('T')[0];
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        saveAs(blob, `작업가용성_분석내역_${dateStr}.xlsx`);
-    } catch (err) {
-        console.error("엑셀 내보내기 실패:", err);
-        alert("엑셀 내보내기 중 오류가 발생했습니다: " + err.message);
-    }
-};
-
-// 엑셀 바로보기
-window.openAvailabilityInExcel = async function() {
-    if (!processedAvailabilityData || processedAvailabilityData.length === 0) {
-        alert("열람할 작업 가용성 분석 데이터가 없습니다.");
+    if (!confirm(`선택한 ${ids.length}장의 사진을 삭제(휴지통 이동)하시겠습니까?`)) {
         return;
     }
-
     try {
-        const workbook = new ExcelJS.Workbook();
-        workbook.creator = 'ExcelCompare';
-        workbook.created = new Date();
-
-        const worksheet = workbook.addWorksheet('작업가용성_상세내역');
-
-        worksheet.columns = [
-            { header: '시트구분', key: 'sheetName', width: 12 },
-            { header: '작업명', key: 'jobName', width: 22 },
-            { header: '컨테이너번호', key: 'cntrNo', width: 18 },
-            { header: '도착지', key: 'dest', width: 10 },
-            { header: '선사', key: 'carrier', width: 10 },
-            { header: '규격', key: 'cntrType', width: 10 },
-            { header: '제품구분', key: 'prodType', width: 10 },
-            { header: '사업부', key: 'division', width: 12 },
-            { header: '제품모델명', key: 'prodName', width: 30 },
-            { header: '계획수량', key: 'qty', width: 12 },
-            { header: '가용재고(양품)', key: 'good', width: 14 },
-            { header: 'OQC홀드', key: 'oqc', width: 12 },
-            { header: '롱텀홀드', key: 'longTerm', width: 12 },
-            { header: 'BIN블록', key: 'bin', width: 12 },
-            { header: '팬딩재고', key: 'pending', width: 12 },
-            { header: '부족수량', key: 'shortage', width: 12 },
-            { header: '판정상태', key: 'statusLabel', width: 16 },
-            { header: '구분1', key: 'adj1', width: 20 },
-            { header: '구분2', key: 'adj2', width: 20 },
-            { header: '블록 로케이션 및 비고', key: 'blockLocs', width: 35 }
-        ];
-
-        const headerRow = worksheet.getRow(1);
-        headerRow.height = 26;
-        headerRow.eachCell(cell => {
-            cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: '1E293B' }
-            };
-            cell.font = { color: { argb: 'FFFFFF' }, bold: true, size: 10 };
-            cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        });
-
-        processedAvailabilityData.forEach(d => {
-            worksheet.addRow({
-                sheetName: d.sheetName,
-                jobName: d.jobName,
-                cntrNo: d.cntrNo,
-                dest: d.dest,
-                carrier: d.carrier,
-                cntrType: d.cntrType,
-                prodType: d.prodType || '-',
-                division: d.division || '-',
-                prodName: d.prodName,
-                qty: d.qty,
-                good: d.good,
-                oqc: d.oqc,
-                longTerm: d.longTerm,
-                bin: d.bin,
-                pending: d.pending,
-                shortage: d.shortage > 0 ? d.shortage : 0,
-                statusLabel: d.statusLabel,
-                adj1: d.adj1 && d.adj1 !== '-' ? d.adj1 : '',
-                adj2: d.adj2 && d.adj2 !== '-' ? d.adj2 : '',
-                blockLocs: d.blockLocs && d.blockLocs.length > 0 ? d.blockLocs.join(' | ') : (d.remark !== '-' ? d.remark : '')
-            });
-        });
-
-        const buffer = await workbook.xlsx.writeBuffer();
-        const dateStr = new Date().toISOString().split('T')[0];
-        const fileName = `작업가용성_분석내역_${dateStr}.xlsx`;
-        const base64 = bufToBase64(buffer);
-
-        await fetch(`${API_BASE}/api/open-excel`, {
-            method: 'POST',
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ buffer: base64, fileName: fileName })
+            body: JSON.stringify({
+                action: 'trash_photos',
+                ids: ids
+            })
         });
+        const data = await res.json();
+        if (data.success) {
+            window.clearGalleryPhotoSelection();
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+            if (window.fetchContainerPhotoCounts) window.fetchContainerPhotoCounts();
+        } else {
+            alert(`삭제 실패: ${data.error || data.message}`);
+        }
     } catch (err) {
-        console.error("엑셀 바로보기 실패:", err);
-        alert("엑셀 바로보기 실행 중 오류가 발생했습니다: " + err.message);
+        console.error("Delete photos error:", err);
+        alert("삭제 중 오류가 발생했습니다: " + err.message);
     }
 };
 
-// ==================== 컨테이너 사진 갤러리 (CTNR 앱 동일 구조) ====================
-window.containerPhotoCounts = {};
-window.galleryViewMode = 'LARGE'; // 'LARGE' (스크린샷 1 크게) or 'GRID' (스크린샷 2 바둑판)
-window.gallerySortBy = 'NAME_ASC';
-window.galleryTabState = 'ACTIVE'; // 'ACTIVE' (진행 중) | 'COMPLETED' (완료됨) | 'TRASH' (휴지통)
-window.selectedPhotoIds = new Set();
-window.currentGalleryPhotos = [];
-window.currentGalleryTargetCntr = '';
+// 2. 씰 지정 / 씰 해제 일괄 토글
+window.handleBatchToggleSealPhoto = async function() {
+    const ids = Array.from(window.selectedPhotoIds);
+    if (ids.length === 0) {
+        alert("사진을 선택해 주세요.");
+        return;
+    }
+    const selectedPhotos = window.currentGalleryPhotos.filter(p => window.selectedPhotoIds.has(String(p.id)));
+    const hasNormal = selectedPhotos.some(p => p.photo_type !== 'seal');
+    const targetType = hasNormal ? 'seal' : 'normal';
 
-window.fetchContainerPhotoCounts = async function() {
     try {
-        const res = await fetch(`${API_BASE}/api/photos/counts`);
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'update_photo_type',
+                ids: ids,
+                photoType: targetType
+            })
+        });
         const data = await res.json();
-        if (data.success && data.counts) {
-            window.containerPhotoCounts = data.counts;
+        if (data.success) {
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+        } else {
+            alert(`씰 상태 변경 실패: ${data.error || data.message}`);
+        }
+    } catch (err) {
+        console.error("Toggle seal error:", err);
+        alert("오류가 발생했습니다: " + err.message);
+    }
+};
+
+// 3. 작업 조(팀) 변경 모달 & 실행
+window.selectedTargetTeamId = null;
+window.handleOpenChangeTeamModal = async function() {
+    const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
+    const count = isFolderMode ? window.selectedFolderKeys.size : window.selectedPhotoIds.size;
+    if (count === 0) {
+        alert("작업 조를 변경할 폴더 또는 사진을 선택해 주세요.");
+        return;
+    }
+    const countEl = document.getElementById('changeTeamPhotoCount');
+    if (countEl) countEl.textContent = isFolderMode ? `${count}개 폴더` : `${count}장`;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/teams`);
+        const data = await res.json();
+        const teams = data.teams || [];
+        const groupEl = document.getElementById('changeTeamListGroup');
+        if (groupEl) {
+            let html = `
+                <div class="ctnr-team-item selected" onclick="window.selectTargetTeam(null, this)">
+                    <span>미지정 조</span>
+                    <i class="fas fa-check" style="display:inline-block;"></i>
+                </div>
+            `;
+            window.selectedTargetTeamId = null;
+            teams.forEach(t => {
+                html += `
+                    <div class="ctnr-team-item" onclick="window.selectTargetTeam(${t.id}, this)">
+                        <span>${t.name}</span>
+                        <i class="fas fa-check" style="display:none;"></i>
+                    </div>
+                `;
+            });
+            groupEl.innerHTML = html;
+        }
+        document.getElementById('modalChangePhotoTeam').style.display = 'flex';
+    } catch (e) {
+        alert("조 목록을 불러오지 못했습니다: " + e.message);
+    }
+};
+
+window.selectTargetTeam = function(teamId, el) {
+    window.selectedTargetTeamId = teamId;
+    document.querySelectorAll('#changeTeamListGroup .ctnr-team-item').forEach(item => {
+        item.classList.remove('selected');
+        const icon = item.querySelector('.fa-check');
+        if (icon) icon.style.display = 'none';
+    });
+    if (el) {
+        el.classList.add('selected');
+        const icon = el.querySelector('.fa-check');
+        if (icon) icon.style.display = 'inline-block';
+    }
+};
+
+window.closeChangeTeamModal = function() {
+    const m = document.getElementById('modalChangePhotoTeam');
+    if (m) m.style.display = 'none';
+};
+
+window.executeChangeTeam = async function() {
+    const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
+    
+    if (isFolderMode) {
+        const keys = Array.from(window.selectedFolderKeys);
+        const cntrNos = Array.from(new Set(keys.map(k => k.split('|')[0])));
+        try {
+            const res = await fetch(`${API_BASE}/api/photos`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'change_team_folder',
+                    cntrNos: cntrNos,
+                    teamId: window.selectedTargetTeamId
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.closeChangeTeamModal();
+                window.clearAllGallerySelection();
+                await window.loadPhotoGallery();
+            } else {
+                alert(`조 변경 실패: ${data.error || data.message}`);
+            }
+        } catch (e) {
+            alert("조 변경 중 오류: " + e.message);
+        }
+        return;
+    }
+
+    const ids = Array.from(window.selectedPhotoIds);
+    if (ids.length === 0) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'change_team',
+                ids: ids,
+                teamId: window.selectedTargetTeamId
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.closeChangeTeamModal();
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+        } else {
+            alert(`조 변경 실패: ${data.error || data.message}`);
+        }
+    } catch (err) {
+        console.error("Change team error:", err);
+        alert("조 변경 중 오류가 발생했습니다: " + err.message);
+    }
+};
+
+// 4. 컨테이너 이동 모달 & 실행
+window.handleOpenMoveModal = function() {
+    const count = window.selectedPhotoIds.size;
+    if (count === 0) {
+        alert("이동할 사진을 선택해 주세요.");
+        return;
+    }
+    const countEl = document.getElementById('movePhotoCount');
+    if (countEl) countEl.textContent = count;
+    const inputEl = document.getElementById('inputTargetMoveCntr');
+    if (inputEl) {
+        inputEl.value = '';
+        setTimeout(() => inputEl.focus(), 100);
+    }
+    document.getElementById('modalMovePhotoContainer').style.display = 'flex';
+};
+
+window.closeMoveModal = function() {
+    const m = document.getElementById('modalMovePhotoContainer');
+    if (m) m.style.display = 'none';
+};
+
+window.executeMoveContainer = async function() {
+    const ids = Array.from(window.selectedPhotoIds);
+    const targetCntr = document.getElementById('inputTargetMoveCntr')?.value?.trim()?.toUpperCase();
+    if (!targetCntr) {
+        alert("이동할 대상 컨테이너 번호를 입력해 주세요.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'move_container',
+                ids: ids,
+                targetCntrNo: targetCntr
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.closeMoveModal();
+            window.clearGalleryPhotoSelection();
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+            if (window.fetchContainerPhotoCounts) window.fetchContainerPhotoCounts();
+        } else {
+            alert(`이동 실패: ${data.error || data.message}`);
+        }
+    } catch (err) {
+        console.error("Move container error:", err);
+        alert("이동 중 오류가 발생했습니다: " + err.message);
+    }
+};
+
+// 5. 사진 ZIP 다운로드 (선택된 사진 일괄 ZIP 다운로드)
+window.handleDownloadSelectedPhotos = function() {
+    const ids = Array.from(window.selectedPhotoIds);
+    if (ids.length === 0) {
+        alert("다운로드할 사진을 선택해 주세요.");
+        return;
+    }
+    const downloadUrl = `${API_BASE}/api/photos/download?ids=${encodeURIComponent(ids.join(','))}`;
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = `container_photos_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+};
+
+// 6. 로컬 폴더 복사 모달 & 실행
+window.handleOpenLocalCopyModal = function() {
+    const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
+    const count = isFolderMode ? window.selectedFolderKeys.size : window.selectedPhotoIds.size;
+    if (count === 0) {
+        alert("복사할 폴더 또는 사진을 선택해 주세요.");
+        return;
+    }
+    const countEl = document.getElementById('localCopyPhotoCount');
+    if (countEl) countEl.textContent = isFolderMode ? `${count}개 폴더` : `${count}장`;
+    const inputEl = document.getElementById('inputLocalCopyPath');
+    if (inputEl) {
+        inputEl.value = localStorage.getItem('lastPhotoLocalCopyPath') || 'W:\\helpdesk\\사진보관';
+    }
+    document.getElementById('modalLocalCopyPhoto').style.display = 'flex';
+};
+
+window.handleBrowseLocalFolder = async function() {
+    try {
+        const res = await fetch(`${API_BASE}/api/photos/select-local-folder`);
+        const data = await res.json();
+        if (data.success && data.path && !data.cancelled) {
+            const inputEl = document.getElementById('inputLocalCopyPath');
+            if (inputEl) inputEl.value = data.path;
         }
     } catch (e) {
-        console.warn("fetchContainerPhotoCounts warning:", e);
+        console.warn("Folder dialog failed:", e);
     }
 };
 
-window.renderContainerPhotoBtn = function(cntrNo, options = {}) {
-    if (!cntrNo) return '';
-    const cleanCntr = cntrNo.trim().toUpperCase();
-    const info = window.containerPhotoCounts ? window.containerPhotoCounts[cleanCntr] : null;
-    if (!info) return '';
+window.closeLocalCopyModal = function() {
+    const m = document.getElementById('modalLocalCopyPhoto');
+    if (m) m.style.display = 'none';
+};
 
-    let total = 0;
-    let seal = 0;
-    let normal = 0;
+window.executeLocalCopy = async function() {
+    const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
+    let ids = [];
 
-    if (typeof info === 'number') {
-        total = info;
-    } else if (typeof info === 'object') {
-        total = info.total || 0;
-        seal = info.seal || 0;
-        normal = info.normal || 0;
-    }
-
-    if (total <= 0) return '';
-
-    let colorClass = 'badge-blue'; // 1. 씰사진 없음 (파란색)
-    let titleText = `사진 ${total}장 (씰사진 미등록)`;
-
-    if (seal > 0 && normal > 0) {
-        colorClass = 'badge-green'; // 3. 일반사진 + 씰사진 모두 있음 (녹색)
-        titleText = `사진 ${total}장 (일반 ${normal}장 + 씰 ${seal}장)`;
-    } else if (seal > 0 && normal === 0) {
-        colorClass = 'badge-red'; // 2. 씰사진만 있음 (빨간색)
-        titleText = `사진 ${total}장 (씰사진만 ${seal}장)`;
+    if (isFolderMode) {
+        const keys = Array.from(window.selectedFolderKeys);
+        const cntrNos = new Set(keys.map(k => k.split('|')[0]));
+        const photos = (window.currentGalleryPhotos || []).filter(p => cntrNos.has((p.cntr_no || '').toUpperCase().trim()));
+        ids = photos.map(p => p.id);
     } else {
-        colorClass = 'badge-blue'; // 1. 씰사진 없음 (파란색)
-        titleText = `사진 ${total}장 (일반 ${normal}장 / 씰사진 미등록)`;
+        ids = Array.from(window.selectedPhotoIds);
     }
 
-    if (options && options.iconOnly) {
-        return `<button class="btn-cntr-photo btn-cntr-photo-icon-only ${colorClass}" onclick="window.openContainerPhotoModal('${cleanCntr.replace(/'/g, "\\'")}', event)" title="${titleText}"><i class="fas fa-camera"></i></button>`;
-    }
+    const targetPath = document.getElementById('inputLocalCopyPath')?.value?.trim();
+    const conflictAction = document.querySelector('input[name="localCopyConflict"]:checked')?.value || 'overwrite';
 
-    return `<button class="btn-cntr-photo ${colorClass}" onclick="window.openContainerPhotoModal('${cleanCntr.replace(/'/g, "\\'")}', event)" title="${titleText}"><i class="fas fa-camera"></i> <span class="photo-badge-num">${total}</span></button>`;
+    if (!targetPath) {
+        alert("대상 로컬 폴더 경로를 입력해 주세요.");
+        return;
+    }
+    if (ids.length === 0) {
+        alert("복사할 대상 사진이 없습니다.");
+        return;
+    }
+    localStorage.setItem('lastPhotoLocalCopyPath', targetPath);
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos/local-copy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ids: ids,
+                targetPath: targetPath,
+                conflictAction: conflictAction
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.closeLocalCopyModal();
+            alert(data.message || `성공적으로 ${data.copiedCount}장의 사진을 복사했습니다.`);
+        } else {
+            alert(`로컬 복사 실패: ${data.error || data.message}`);
+        }
+    } catch (err) {
+        console.error("Local copy error:", err);
+        alert("로컬 복사 중 오류가 발생했습니다: " + err.message);
+    }
 };
 
-let lightboxPhotos = [];
-let currentLightboxIndex = 0;
-let lightboxScale = 1;
-let lightboxRotation = 0;
-let lightboxPan = { x: 0, y: 0 };
-let isLightboxDragging = false;
-let lightboxDragStart = { x: 0, y: 0 };
+// 7. 구글드라이브 백업 & 로컬 용량 정리 (NDJSON 스트리밍)
+window.gdriveAbortController = null;
+window.handleUploadToGDriveAndCleanLocal = async function() {
+    const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
+    let ids = [];
 
-// 3단 작업구분 탭 전환 (진행중 / 완료 / 휴지통)
+    if (isFolderMode) {
+        const keys = Array.from(window.selectedFolderKeys);
+        const cntrNos = new Set(keys.map(k => k.split('|')[0]));
+        const photos = (window.currentGalleryPhotos || []).filter(p => cntrNos.has((p.cntr_no || '').toUpperCase().trim()));
+        ids = photos.map(p => p.id);
+    } else {
+        ids = Array.from(window.selectedPhotoIds || []);
+    }
+
+    if (ids.length === 0) {
+        alert("구글드라이브에 백업할 사진 또는 폴더를 선택해 주세요.");
+        return;
+    }
+
+    if (!confirm(`선택한 사진 ${ids.length}장을 구글드라이브에 안전 백업하고 로컬 디스크 용량을 확보(PC에서 원본 삭제)하시겠습니까?`)) {
+        return;
+    }
+
+    const modal = document.getElementById('modalGDriveProgress');
+    if (modal) modal.style.display = 'flex';
+
+    const statusEl = document.getElementById('gdriveStatusText');
+    const barEl = document.getElementById('gdriveProgressBar');
+    const pctEl = document.getElementById('gdriveProgressPercent');
+    const countEl = document.getElementById('gdriveProgressCount');
+    const uploadedEl = document.getElementById('gdriveUploadedCount');
+    const skippedEl = document.getElementById('gdriveSkippedCount');
+    const cleanedEl = document.getElementById('gdriveCleanedCount');
+    const freedEl = document.getElementById('gdriveFreedMB');
+
+    if (statusEl) statusEl.textContent = '구글드라이브 업로드 연결 중...';
+    if (barEl) barEl.style.width = '0%';
+    if (pctEl) pctEl.textContent = '0%';
+    if (countEl) countEl.textContent = `0 / ${ids.length}`;
+    if (uploadedEl) uploadedEl.textContent = '0';
+    if (skippedEl) skippedEl.textContent = '0';
+    if (cleanedEl) cleanedEl.textContent = '0';
+    if (freedEl) freedEl.textContent = '0.0';
+
+    window.gdriveAbortController = new AbortController();
+
+    try {
+        const response = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'upload_gdrive',
+                ids: ids
+            }),
+            signal: window.gdriveAbortController.signal
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+
+            for (const line of lines) {
+                if (!line.trim()) continue;
+                try {
+                    const evt = JSON.parse(line);
+                    if (evt.type === 'start') {
+                        if (statusEl) statusEl.textContent = `총 ${evt.total}장 처리 시작 (이미 백업됨: ${evt.alreadyDoneCount || 0}장)`;
+                    } else if (evt.type === 'progress') {
+                        if (barEl) barEl.style.width = `${evt.percent}%`;
+                        if (pctEl) pctEl.textContent = `${evt.percent}%`;
+                        if (countEl) countEl.textContent = `${evt.current} / ${evt.total}`;
+                        if (statusEl) statusEl.textContent = `[${evt.status}] ${evt.currentFile || ''}`;
+                        if (uploadedEl && evt.uploadedCount !== undefined) uploadedEl.textContent = evt.uploadedCount;
+                        if (skippedEl && evt.skippedCount !== undefined) skippedEl.textContent = evt.skippedCount;
+                        if (cleanedEl && evt.cleanedCount !== undefined) cleanedEl.textContent = evt.cleanedCount;
+                        if (freedEl && evt.freedMB !== undefined) freedEl.textContent = evt.freedMB;
+                    } else if (evt.type === 'done') {
+                        if (barEl) barEl.style.width = '100%';
+                        if (pctEl) pctEl.textContent = '100%';
+                        if (statusEl) statusEl.textContent = evt.message || '구글드라이브 백업 및 로컬 정리 완료!';
+                        if (uploadedEl && evt.uploadedCount !== undefined) uploadedEl.textContent = evt.uploadedCount;
+                        if (skippedEl && evt.skippedCount !== undefined) skippedEl.textContent = evt.skippedCount;
+                        if (cleanedEl && evt.cleanedCount !== undefined) cleanedEl.textContent = evt.cleanedCount;
+                        if (freedEl && evt.freedMB !== undefined) freedEl.textContent = evt.freedMB;
+                    }
+                } catch (pe) {}
+            }
+        }
+
+        await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            if (statusEl) statusEl.textContent = '사용자에 의해 작업이 중지되었습니다.';
+        } else {
+            if (statusEl) statusEl.textContent = `오류 발생: ${err.message}`;
+        }
+    }
+};
+
+window.stopGDriveUpload = function() {
+    if (window.gdriveAbortController) {
+        window.gdriveAbortController.abort();
+        window.gdriveAbortController = null;
+    }
+};
+
+window.closeGDriveProgressModal = function() {
+    const modal = document.getElementById('modalGDriveProgress');
+    if (modal) modal.style.display = 'none';
+};
+
+// CTNR 작업 구분 3단 탭 전환 (진행 중 / 완료 / 휴지통)
 window.setGalleryTabState = function(tab) {
     window.galleryTabState = tab;
     const btnActive = document.getElementById('tabBtnActive');
@@ -11584,18 +11745,17 @@ window.clearGalleryPhotoSelection = window.clearAllGallerySelection;
 // 하단 플로팅 액션바 상태 및 모드 업데이트 (폴더 모드 vs 사진 모드)
 window.updateGalleryActionBar = function() {
     const bar = document.getElementById('photoGalleryActionBar');
+    if (!bar) return;
+
+    const folderCount = window.selectedFolderKeys ? window.selectedFolderKeys.size : 0;
+    const photoCount = window.selectedPhotoIds ? window.selectedPhotoIds.size : 0;
     const countBadge = document.getElementById('actionSelectedCount');
     const labelBadge = document.getElementById('actionSelectedLabel');
     const photoGroup = document.getElementById('photoActionButtonsGroup');
     const folderGroup = document.getElementById('folderActionButtonsGroup');
 
-    if (!bar) return;
-
-    const folderCount = window.selectedFolderKeys ? window.selectedFolderKeys.size : 0;
-    const photoCount = window.selectedPhotoIds ? window.selectedPhotoIds.size : 0;
-
     // 1. 폴더 선택 모드
-    if (folderCount > 0) {
+    if (folderCount > 0 && !window.currentGalleryTargetCntr) {
         bar.style.display = 'flex';
         if (countBadge) countBadge.textContent = folderCount;
         if (labelBadge) labelBadge.textContent = '폴더 선택됨';
@@ -11725,8 +11885,25 @@ window.handleToggleSelectedFoldersCompletion = async function() {
 
     const targetCompleted = !isCompleted;
     const actionName = targetCompleted ? '완료 처리' : '완료 취소(진행 중으로 되돌리기)';
-    if (!confirm(`선택한 ${cntrNos.length}개 컨테이너 작업을 ${actionName}하시겠습니까?`)) return;
 
+    // 완료 처리 시 씰 사진 누락 여부 사전 검사
+    if (targetCompleted) {
+        const folders = (window.currentGalleryFolders || []).filter(f => cntrNos.includes(f.cntrNo));
+        const missingCntrs = window.checkMissingSealPhotos(folders);
+        if (missingCntrs.length > 0) {
+            window.pendingSealWarningAction = async () => {
+                await window.executeFolderCompletionDirect(cntrNos, targetCompleted);
+            };
+            window.openMissingSealWarningModal(missingCntrs);
+            return;
+        }
+    }
+
+    if (!confirm(`선택한 ${cntrNos.length}개 컨테이너 작업을 ${actionName}하시겠습니까?`)) return;
+    await window.executeFolderCompletionDirect(cntrNos, targetCompleted);
+};
+
+window.executeFolderCompletionDirect = async function(cntrNos, targetCompleted) {
     try {
         const res = await fetch(`${API_BASE}/api/photos`, {
             method: 'PATCH',
@@ -11798,36 +11975,24 @@ window.handleOpenLocalCopyModalForFolders = function() {
     window.handleOpenLocalCopyModal();
 };
 
-// [폴더 액션 6] 선택한 폴더 사진 일괄 다운로드
-window.handleDownloadSelectedFolders = async function() {
+// [폴더 액션 6] 선택한 폴더 사진 ZIP 일괄 다운로드
+window.handleDownloadSelectedFolders = function() {
     const keys = Array.from(window.selectedFolderKeys);
     if (keys.length === 0) return;
-    const cntrNos = new Set(keys.map(k => k.split('|')[0]));
+    const cntrNos = Array.from(new Set(keys.map(k => k.split('|')[0])));
+    const startDate = document.getElementById('photoGalleryStartDate')?.value || '';
+    const endDate = document.getElementById('photoGalleryEndDate')?.value || '';
 
-    const targetPhotos = (window.currentGalleryPhotos || []).filter(p => cntrNos.has((p.cntr_no || '').toUpperCase().trim()));
-    if (targetPhotos.length === 0) {
-        alert("다운로드할 사진이 없습니다.");
-        return;
-    }
+    let url = `${API_BASE}/api/photos/download?cntrNos=${encodeURIComponent(cntrNos.join(','))}`;
+    if (startDate) url += `&startDate=${encodeURIComponent(startDate)}`;
+    if (endDate) url += `&endDate=${encodeURIComponent(endDate)}`;
 
-    if (!confirm(`선택한 ${cntrNos.size}개 컨테이너의 사진 총 ${targetPhotos.length}장을 다운로드하시겠습니까?`)) {
-        return;
-    }
-
-    for (let i = 0; i < targetPhotos.length; i++) {
-        const p = targetPhotos[i];
-        const rawPath = (p.photo_path || '').split('?')[0];
-        const downloadUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(rawPath)}&download=1`;
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = rawPath.split('/').pop() || 'photo.jpg';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        if (targetPhotos.length > 1) {
-            await new Promise(r => setTimeout(r, 200));
-        }
-    }
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `container_folders_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 };
 
 // 1. 선택한 사진 삭제 (휴지통 이동)
@@ -12067,29 +12232,20 @@ window.executeMoveContainer = async function() {
     }
 };
 
-// 5. 사진 다운로드 (단일/일괄)
-window.handleDownloadSelectedPhotos = async function() {
+// 5. 사진 ZIP 다운로드 (선택된 사진 일괄 ZIP 다운로드)
+window.handleDownloadSelectedPhotos = function() {
     const ids = Array.from(window.selectedPhotoIds);
     if (ids.length === 0) {
         alert("다운로드할 사진을 선택해 주세요.");
         return;
     }
-    const selectedPhotos = window.currentGalleryPhotos.filter(p => window.selectedPhotoIds.has(String(p.id)));
-
-    for (let i = 0; i < selectedPhotos.length; i++) {
-        const p = selectedPhotos[i];
-        const rawPath = (p.photo_path || '').split('?')[0];
-        const downloadUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(rawPath)}&download=1`;
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = rawPath.split('/').pop() || 'photo.jpg';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        if (selectedPhotos.length > 1) {
-            await new Promise(r => setTimeout(r, 250));
-        }
-    }
+    const downloadUrl = `${API_BASE}/api/photos/download?ids=${encodeURIComponent(ids.join(','))}`;
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = `container_photos_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 };
 
 // 6. 로컬 폴더 복사 모달 & 실행
@@ -12107,6 +12263,19 @@ window.handleOpenLocalCopyModal = function() {
         inputEl.value = localStorage.getItem('lastPhotoLocalCopyPath') || 'W:\\helpdesk\\사진보관';
     }
     document.getElementById('modalLocalCopyPhoto').style.display = 'flex';
+};
+
+window.handleBrowseLocalFolder = async function() {
+    try {
+        const res = await fetch(`${API_BASE}/api/photos/select-local-folder`);
+        const data = await res.json();
+        if (data.success && data.path && !data.cancelled) {
+            const inputEl = document.getElementById('inputLocalCopyPath');
+            if (inputEl) inputEl.value = data.path;
+        }
+    } catch (e) {
+        console.warn("Folder dialog failed:", e);
+    }
 };
 
 window.closeLocalCopyModal = function() {
@@ -12163,7 +12332,163 @@ window.executeLocalCopy = async function() {
     }
 };
 
-// 7. 사진 인플레이스(In-place) 회전 (-90, 180, 90) - CTNR 동일 0ms 즉시 회전 방식
+// 7. 구글드라이브 백업 & 로컬 용량 정리 (NDJSON 스트리밍)
+window.gdriveAbortController = null;
+window.handleUploadToGDriveAndCleanLocal = async function() {
+    const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
+    let ids = [];
+
+    if (isFolderMode) {
+        const keys = Array.from(window.selectedFolderKeys);
+        const cntrNos = new Set(keys.map(k => k.split('|')[0]));
+        const photos = (window.currentGalleryPhotos || []).filter(p => cntrNos.has((p.cntr_no || '').toUpperCase().trim()));
+        ids = photos.map(p => p.id);
+    } else {
+        ids = Array.from(window.selectedPhotoIds || []);
+    }
+
+    if (ids.length === 0) {
+        alert("구글드라이브에 백업할 사진 또는 폴더를 선택해 주세요.");
+        return;
+    }
+
+    if (!confirm(`선택한 사진 ${ids.length}장을 구글드라이브에 안전 백업하고 로컬 디스크 용량을 확보(PC에서 원본 삭제)하시겠습니까?`)) {
+        return;
+    }
+
+    const modal = document.getElementById('modalGDriveProgress');
+    if (modal) modal.style.display = 'flex';
+
+    const statusEl = document.getElementById('gdriveStatusText');
+    const barEl = document.getElementById('gdriveProgressBar');
+    const pctEl = document.getElementById('gdriveProgressPercent');
+    const countEl = document.getElementById('gdriveProgressCount');
+    const uploadedEl = document.getElementById('gdriveUploadedCount');
+    const skippedEl = document.getElementById('gdriveSkippedCount');
+    const cleanedEl = document.getElementById('gdriveCleanedCount');
+    const freedEl = document.getElementById('gdriveFreedMB');
+
+    if (statusEl) statusEl.textContent = '구글드라이브 업로드 연결 중...';
+    if (barEl) barEl.style.width = '0%';
+    if (pctEl) pctEl.textContent = '0%';
+    if (countEl) countEl.textContent = `0 / ${ids.length}`;
+    if (uploadedEl) uploadedEl.textContent = '0';
+    if (skippedEl) skippedEl.textContent = '0';
+    if (cleanedEl) cleanedEl.textContent = '0';
+    if (freedEl) freedEl.textContent = '0.0';
+
+    window.gdriveAbortController = new AbortController();
+
+    try {
+        const response = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'upload_gdrive',
+                ids: ids
+            }),
+            signal: window.gdriveAbortController.signal
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+
+            for (const line of lines) {
+                if (!line.trim()) continue;
+                try {
+                    const evt = JSON.parse(line);
+                    if (evt.type === 'start') {
+                        if (statusEl) statusEl.textContent = `총 ${evt.total}장 처리 시작 (이미 백업됨: ${evt.alreadyDoneCount || 0}장)`;
+                    } else if (evt.type === 'progress') {
+                        if (barEl) barEl.style.width = `${evt.percent}%`;
+                        if (pctEl) pctEl.textContent = `${evt.percent}%`;
+                        if (countEl) countEl.textContent = `${evt.current} / ${evt.total}`;
+                        if (statusEl) statusEl.textContent = `[${evt.status}] ${evt.currentFile || ''}`;
+                        if (uploadedEl && evt.uploadedCount !== undefined) uploadedEl.textContent = evt.uploadedCount;
+                        if (skippedEl && evt.skippedCount !== undefined) skippedEl.textContent = evt.skippedCount;
+                        if (cleanedEl && evt.cleanedCount !== undefined) cleanedEl.textContent = evt.cleanedCount;
+                        if (freedEl && evt.freedMB !== undefined) freedEl.textContent = evt.freedMB;
+                    } else if (evt.type === 'done') {
+                        if (barEl) barEl.style.width = '100%';
+                        if (pctEl) pctEl.textContent = '100%';
+                        if (statusEl) statusEl.textContent = evt.message || '구글드라이브 백업 및 로컬 정리 완료!';
+                        if (uploadedEl && evt.uploadedCount !== undefined) uploadedEl.textContent = evt.uploadedCount;
+                        if (skippedEl && evt.skippedCount !== undefined) skippedEl.textContent = evt.skippedCount;
+                        if (cleanedEl && evt.cleanedCount !== undefined) cleanedEl.textContent = evt.cleanedCount;
+                        if (freedEl && evt.freedMB !== undefined) freedEl.textContent = evt.freedMB;
+                    }
+                } catch (pe) {}
+            }
+        }
+
+        await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            if (statusEl) statusEl.textContent = '사용자에 의해 작업이 중지되었습니다.';
+        } else {
+            if (statusEl) statusEl.textContent = `오류 발생: ${err.message}`;
+        }
+    }
+};
+
+window.stopGDriveUpload = function() {
+    if (window.gdriveAbortController) {
+        window.gdriveAbortController.abort();
+        window.gdriveAbortController = null;
+    }
+};
+
+window.closeGDriveProgressModal = function() {
+    const modal = document.getElementById('modalGDriveProgress');
+    if (modal) modal.style.display = 'none';
+};
+
+// 8. 씰 사진 누락 판별 및 경고 모달
+window.pendingSealWarningAction = null;
+window.checkMissingSealPhotos = function(folders) {
+    const missingCntrs = [];
+    folders.forEach(f => {
+        const hasSeal = f.photos && f.photos.some(p => p.photo_type === 'seal');
+        if (!hasSeal && f.photos && f.photos.length > 0) {
+            missingCntrs.push(f.cntrNo);
+        }
+    });
+    return missingCntrs;
+};
+
+window.openMissingSealWarningModal = function(missingCntrs) {
+    const modal = document.getElementById('modalMissingSealWarning');
+    const listEl = document.getElementById('missingSealCntrList');
+    if (!modal || !listEl) return;
+
+    listEl.innerHTML = missingCntrs.map(c => `<div>• ${c}</div>`).join('');
+    modal.style.display = 'flex';
+};
+
+window.closeMissingSealWarningModal = function() {
+    const modal = document.getElementById('modalMissingSealWarning');
+    if (modal) modal.style.display = 'none';
+    window.pendingSealWarningAction = null;
+};
+
+window.executeActionAfterSealWarning = function() {
+    const modal = document.getElementById('modalMissingSealWarning');
+    if (modal) modal.style.display = 'none';
+    if (typeof window.pendingSealWarningAction === 'function') {
+        window.pendingSealWarningAction();
+        window.pendingSealWarningAction = null;
+    }
+};
+
+// 9. 사진 인플레이스(In-place) 회전 (-90, 180, 90) - CTNR 동일 0ms 즉시 회전 방식
 window.photoRotationOffsets = window.photoRotationOffsets || {};
 
 window.handleRotatePhotos = async function(degrees, singlePhotoId) {
@@ -12188,7 +12513,7 @@ window.handleRotatePhotos = async function(degrees, singlePhotoId) {
         });
     });
 
-    // 2. 백그라운드 비동기 서버 저장 (전체 페이지 로딩 스피너 X)
+    // 2. 백그라운드 비동기 서버 저장
     try {
         const res = await fetch(`${API_BASE}/api/photos`, {
             method: 'PATCH',
@@ -12202,7 +12527,6 @@ window.handleRotatePhotos = async function(degrees, singlePhotoId) {
         const data = await res.json();
         if (data.success) {
             const now = Date.now();
-            // 3. 서버 물리 회전 완료 후, 이미지 src 캐시만 조용히 갱신
             targetIds.forEach(id => {
                 const p = window.currentGalleryPhotos.find(item => String(item.id) === String(id));
                 if (p) p.cacheBuster = now;
@@ -12228,7 +12552,6 @@ window.handleRotatePhotos = async function(degrees, singlePhotoId) {
             });
         } else {
             console.error("Rotate failed on server:", data.error);
-            // 오류 시 회전 각도 롤백
             targetIds.forEach(id => {
                 const currentDeg = (window.photoRotationOffsets[id] || 0) - degrees;
                 window.photoRotationOffsets[id] = currentDeg;
@@ -12307,7 +12630,7 @@ window.closePhotoGalleryModal = function() {
     if (modal) modal.style.display = 'none';
 };
 
-// 1. 사진 보관함 모달 오픈 (상단 버튼 또는 컨테이너 클릭)
+// 1. 사진 보관함 모달 오픈
 window.openPhotoGalleryModal = function(initialCntrNo = '') {
     const modal = document.getElementById('photoGalleryModal');
     if (!modal) return;
@@ -12337,26 +12660,15 @@ window.openPhotoGalleryModal = function(initialCntrNo = '') {
     window.loadPhotoGallery(window.currentGalleryTargetCntr);
 };
 
-// 특정 컨테이너 전용 사진 퀵 오픈 (카메라 버튼 클릭 시 + 클립보드에 컨테이너번호 자동 복사)
+// 특정 컨테이너 전용 사진 퀵 오픈
 window.openContainerPhotoModal = function(cntrNo, event) {
     if (event) event.stopPropagation();
     if (!cntrNo) return;
     const cleanNo = cntrNo.trim().toUpperCase();
 
-    // 클립보드 복사
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(cleanNo).catch(() => {});
-    } else {
-        try {
-            const tempInput = document.createElement('input');
-            tempInput.value = cleanNo;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-        } catch (e) {}
     }
-
     window.openPhotoGalleryModal(cleanNo);
 };
 
@@ -12414,6 +12726,7 @@ window.loadPhotoGallery = async function(targetCntr = null) {
 
         if (!data.success || !data.photos || data.photos.length === 0) {
             window.currentGalleryPhotos = [];
+            window.currentGalleryFolders = [];
             window.selectedPhotoIds.clear();
             const tabName = window.galleryTabState === 'COMPLETED' ? '완료된' : (window.galleryTabState === 'TRASH' ? '휴지통' : '진행 중인');
             if (listEl) {
@@ -12485,11 +12798,31 @@ window.openContainerFolderPhotos = function(cntrNo, workDateStr) {
 // 컨테이너 완료 상태 변경 액션
 window.toggleCompleteFolder = async function(cntrNo, isCompleted, e) {
     if (e) e.stopPropagation();
+
+    // 완료 처리 시 씰 사진 누락 여부 사전 검사
+    if (isCompleted) {
+        const folder = (window.currentGalleryFolders || []).find(f => f.cntrNo === cntrNo);
+        if (folder) {
+            const missing = window.checkMissingSealPhotos([folder]);
+            if (missing.length > 0) {
+                window.pendingSealWarningAction = async () => {
+                    await window.executeSingleFolderCompletion(cntrNo, isCompleted);
+                };
+                window.openMissingSealWarningModal([cntrNo]);
+                return;
+            }
+        }
+    }
+
     const msg = isCompleted 
         ? `'${cntrNo}' 컨테이너 작업을 [완료] 상태로 변경하시겠습니까?`
         : `'${cntrNo}' 컨테이너 작업을 [진행 중] 상태로 되돌리시겠습니까?`;
     if (!confirm(msg)) return;
 
+    await window.executeSingleFolderCompletion(cntrNo, isCompleted);
+};
+
+window.executeSingleFolderCompletion = async function(cntrNo, isCompleted) {
     try {
         const res = await fetch(`${API_BASE}/api/photos`, {
             method: 'PATCH',
@@ -12578,7 +12911,7 @@ window.renderGalleryPhotos = function() {
 
     const allPhotos = [...window.currentGalleryPhotos];
 
-    // 1. 특정 컨테이너가 선택된 경우 -> 해당 컨테이너의 4열 대형 사진 그리드 렌더링 (Screenshot 1)
+    // 1. 특정 컨테이너가 선택된 경우 -> 해당 컨테이너의 4열 대형 사진 그리드 렌더링
     if (window.currentGalleryTargetCntr) {
         const targetCntrUpper = window.currentGalleryTargetCntr.toUpperCase().trim();
         const photos = allPhotos.filter(p => (p.cntr_no || '').toUpperCase().trim() === targetCntrUpper).sort((a, b) => {
@@ -12636,9 +12969,6 @@ window.renderGalleryPhotos = function() {
                         <div class="ctnr-photo-select-chk ${isChecked ? 'selected' : ''}" onclick="window.togglePhotoSelect('${p.id}', event)" title="사진 선택">
                             <i class="fas fa-check"></i>
                         </div>
-                        <div class="ctnr-card-chk-box" style="display:none;" onclick="event.stopPropagation()">
-                            <input type="checkbox" class="ctnr-photo-chk" ${isChecked ? 'checked' : ''} onchange="window.togglePhotoSelect('${p.id}', event)">
-                        </div>
                         ${(p.gdrive_file_id || p.gdrive_url) ? `<span class="ctnr-card-cloud-tag" title="구글드라이브 안전 보관 사진 (PC 용량 정리 완료)">☁️</span>` : ''}
                         ${isSeal ? `<span class="ctnr-card-seal-tag"><i class="fas fa-camera"></i> 씰</span>` : ''}
                         <img src="${photoUrl}" alt="${p.cntr_no}" style="${rotateStyle}" loading="lazy" onerror="this.src='https://placehold.co/600x800/11111a/94a3b8?text=Image+Load+Fail'">
@@ -12661,7 +12991,7 @@ window.renderGalleryPhotos = function() {
         return;
     }
 
-    // 2. 특정 컨테이너가 지정되지 않은 메인 사진함 화면 -> CTNR과 100% 동일한 날짜별/조별 폴더 계층 목록 렌더링 (Screenshot 2)
+    // 2. 특정 컨테이너가 지정되지 않은 메인 사진함 화면 -> 날짜별/조별 폴더 계층 목록 렌더링
     if (badgeBox) badgeBox.style.display = 'none';
     if (btnBack) btnBack.style.display = 'none';
     const selAllBtn = document.getElementById('btnGallerySelectAllInView');
@@ -12693,6 +13023,7 @@ window.renderGalleryPhotos = function() {
     });
 
     const folderList = Object.values(folderGroup);
+    window.currentGalleryFolders = folderList;
     const uniqueCntrs = new Set(folderList.map(f => f.cntrNo));
     if (summaryEl) {
         summaryEl.textContent = `총 ${folderList.length}개 폴더 (${uniqueCntrs.size}개 컨테이너 · ${allPhotos.length}장)`;
@@ -12745,7 +13076,7 @@ window.renderGalleryPhotos = function() {
                             <input type="checkbox" style="cursor:pointer; margin:0;" ${allDateSelected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="window.toggleDateGroupFolders('${dateStr}', event)">
                             <span>${dayNum}일 전체 선택 (${dateSelectedCount}/${dateFolders.length})</span>
                         </button>
-                        <button class="ctnr-date-btn-report" onclick="window.openReportModal('${dateStr}', event)" title="${dateStr} 작업 보고서 보기" style="background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.35); color: #0284c7; font-weight: 800; font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; height: 26px; transition: all 0.15s ease;">
+                        <button class="btn-date-report" onclick="window.openReportModal('${dateStr}', event)" title="${dateStr} 작업 보고서 보기">
                             <i class="fas fa-file-alt"></i> ${dayNum}일 보고서
                         </button>
                         <span class="ctnr-date-info-summary">
@@ -12819,11 +13150,11 @@ window.renderGalleryPhotos = function() {
                                                     <i class="fas fa-folder" style="color:#38bdf8; font-size:1rem;"></i>
                                                     <strong class="ctnr-folder-name-red">${f.cntrNo}</strong>
                                                     ${cleanCarrier ? `<span class="ctnr-folder-carrier-tag">[${cleanCarrier}]</span>` : ''}
-                                                    ${!hasSeal ? `<span title="씰(Seal) 사진이 업로드되지 않았습니다." class="ctnr-folder-missing-seal-badge" style="color:#ef4444; margin-left:4px; font-size:0.85rem; display:inline-flex; align-items:center;"><i class="fas fa-camera fa-beat" style="--fa-beat-scale: 1.15; color:#ef4444;" title="씰 사진 누락"></i></span>` : ''}
+                                                    ${!hasSeal ? `<span title="씰(Seal) 사진이 업로드되지 않았습니다." class="camera-pulse" style="margin-left:4px;"><i class="fas fa-camera"></i></span>` : ''}
                                                 </div>
                                                 <div style="display:flex; align-items:center; gap:5px;">
                                                     ${isAllGDrive ? `<span style="font-size:0.75rem;" title="모든 사진이 구글드라이브에 안전 보관 중입니다 (로컬 용량 정리됨).">☁️</span>` : ''}
-                                                    ${!hasSeal ? `<span title="씰 사진 미등록" style="color:#ef4444; font-size:0.85rem; display:inline-flex; align-items:center;"><i class="fas fa-camera" style="color:#ef4444;"></i></span>` : ''}
+                                                    ${!hasSeal ? `<span title="씰 사진 미등록" class="camera-pulse"><i class="fas fa-camera"></i></span>` : ''}
                                                     <span class="ctnr-folder-count-badge">${f.photos.length}장</span>
                                                 </div>
                                             </div>
@@ -12912,8 +13243,12 @@ window.renderLightboxPhoto = function() {
     const img = document.getElementById('lightboxImg');
     const cntrEl = document.getElementById('lightboxCntrNo');
     const sealEl = document.getElementById('lightboxSealBadge');
+    const filenameEl = document.getElementById('lightboxFilename');
     const idxEl = document.getElementById('lightboxIndexInfo');
-    const uploaderEl = document.getElementById('lightboxUploaderInfo');
+    const uploaderEl = document.getElementById('lightboxMetaUploader');
+    const timeEl = document.getElementById('lightboxMetaTime');
+    const teamEl = document.getElementById('lightboxMetaTeam');
+    const remarkEl = document.getElementById('lightboxMetaRemark');
 
     if (!modal || !img || !lightboxPhotos || lightboxPhotos.length === 0) return;
 
@@ -12931,12 +13266,24 @@ window.renderLightboxPhoto = function() {
     const photoUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(photo.photo_path)}`;
     img.src = photoUrl;
 
+    const fileName = (photo.photo_path || '').split('/').pop() || '';
+
     if (cntrEl) cntrEl.textContent = photo.cntr_no || '-';
     if (sealEl) sealEl.style.display = (photo.photo_type === 'seal') ? 'inline-block' : 'none';
+    if (filenameEl) {
+        filenameEl.textContent = fileName;
+        filenameEl.title = fileName;
+    }
     if (idxEl) idxEl.textContent = `(${currentLightboxIndex + 1} / ${lightboxPhotos.length})`;
-    if (uploaderEl) {
-        const upTime = photo.uploaded_at ? new Date(photo.uploaded_at).toLocaleString() : '';
-        uploaderEl.textContent = `등록: ${upTime} (${photo.uploader_name || '작업자'}) ${photo.remark ? `| 비고: ${photo.remark}` : ''}`;
+    
+    if (uploaderEl) uploaderEl.innerHTML = `<i class="fas fa-user"></i> ${photo.uploader_name || '작업자'}`;
+    if (timeEl) {
+        const upTime = photo.uploaded_at ? new Date(photo.uploaded_at).toLocaleString() : '-';
+        timeEl.innerHTML = `<i class="far fa-clock"></i> ${upTime}`;
+    }
+    if (teamEl) teamEl.innerHTML = `<i class="fas fa-users"></i> ${photo.team_name || '미지정 조'}`;
+    if (remarkEl) {
+        remarkEl.textContent = photo.remark ? `비고: ${photo.remark}` : '';
     }
 };
 
@@ -12959,8 +13306,95 @@ window.lightboxResetZoom = function() {
 };
 
 window.lightboxRotate = function(deg) {
+    const photo = lightboxPhotos[currentLightboxIndex];
+    if (photo) {
+        window.handleRotatePhotos(deg, photo.id);
+    }
     lightboxRotation = (lightboxRotation + deg) % 360;
     window.applyLightboxTransform();
+};
+
+window.lightboxRename = async function() {
+    const photo = lightboxPhotos[currentLightboxIndex];
+    if (!photo) return;
+    const oldName = (photo.photo_path || '').split('/').pop() || '';
+    const newName = prompt('수정할 새 파일명을 입력하세요:', oldName);
+    if (!newName || newName.trim() === oldName) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos/rename`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ photoId: photo.id, newFilename: newName.trim() })
+        });
+        const data = await res.json();
+        if (data.success) {
+            photo.photo_path = data.photoPath;
+            window.renderLightboxPhoto();
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+        } else {
+            alert(`파일명 변경 실패: ${data.error}`);
+        }
+    } catch (e) {
+        alert("파일명 변경 중 오류: " + e.message);
+    }
+};
+
+window.lightboxToggleSeal = async function() {
+    const photo = lightboxPhotos[currentLightboxIndex];
+    if (!photo) return;
+    const newType = (photo.photo_type === 'seal') ? 'normal' : 'seal';
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'update_photo_type', ids: [photo.id], photoType: newType })
+        });
+        const data = await res.json();
+        if (data.success) {
+            photo.photo_type = newType;
+            window.renderLightboxPhoto();
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+        }
+    } catch (e) {
+        alert("씰 상태 변경 실패: " + e.message);
+    }
+};
+
+window.lightboxMove = function() {
+    const photo = lightboxPhotos[currentLightboxIndex];
+    if (!photo) return;
+    window.selectedPhotoIds.clear();
+    window.selectedPhotoIds.add(String(photo.id));
+    window.handleOpenMoveModal();
+};
+
+window.lightboxDelete = async function() {
+    const photo = lightboxPhotos[currentLightboxIndex];
+    if (!photo) return;
+    if (!confirm(`현재 사진을 삭제(휴지통 이동)하시겠습니까?`)) return;
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'trash_photos', ids: [photo.id] })
+        });
+        const data = await res.json();
+        if (data.success) {
+            lightboxPhotos.splice(currentLightboxIndex, 1);
+            if (lightboxPhotos.length === 0) {
+                window.closePhotoLightbox();
+            } else {
+                if (currentLightboxIndex >= lightboxPhotos.length) {
+                    currentLightboxIndex = lightboxPhotos.length - 1;
+                }
+                window.renderLightboxPhoto();
+            }
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+        }
+    } catch (e) {
+        alert("삭제 중 오류: " + e.message);
+    }
 };
 
 window.lightboxPrev = function() {
@@ -13055,10 +13489,21 @@ window.lightboxDownload = function() {
         }
     };
 
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attachEvents);
+    } else {
+        attachEvents();
+    }
+})();
+
+
     // ====================================================
     // [작업 완료 보고서 (ReportModal) CTNR 동일 제어 로직]
     // ====================================================
-    window.currentReportData = null;
+    (function initReportEvents() {
+        const attachEvents = () => {
+        };
+        window.currentReportData = null;
     window.currentReportText = '';
     window.reportViewMode = 'full';
     window.cancelMode = 'cancel';

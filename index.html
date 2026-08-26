@@ -9,7 +9,7 @@
     <link href="css/libs/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/libs/fontawesome.min.css">
     <link rel="stylesheet" href="css/libs/animate.min.css">
-    <link rel="stylesheet" href="style.css?v=20260827-ctnrreportfull">
+    <link rel="stylesheet" href="style.css?v=20260827-ctnrphotofull">
     <!-- Local JS Libraries -->
     <script src="js/libs/exceljs.min.js"></script>
     <script src="js/libs/FileSaver.min.js"></script>
@@ -2837,8 +2837,13 @@
                 <button type="button" class="btn-box-close" onclick="window.closeLocalCopyModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-ctnr-body">
-                <p style="font-size: 0.85rem; color: #475569; margin-bottom: 10px;">선택한 <b id="localCopyPhotoCount" style="color: #10b981;">0</b>장의 사진을 복사할 로컬 폴더 경로를 입력하세요.</p>
-                <input type="text" id="inputLocalCopyPath" class="ctnr-input-field" placeholder="예: W:\helpdesk\사진보관" style="margin-bottom: 12px;">
+                <p style="font-size: 0.85rem; color: #475569; margin-bottom: 10px;">선택한 <b id="localCopyPhotoCount" style="color: #10b981;">0</b>장의 사진을 복사할 로컬 폴더 경로를 지정하세요.</p>
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <input type="text" id="inputLocalCopyPath" class="ctnr-input-field" placeholder="예: W:\helpdesk\사진보관" style="flex: 1;">
+                    <button type="button" class="ctnr-btn-secondary" onclick="window.handleBrowseLocalFolder()" style="height: 38px; padding: 0 12px; font-size: 0.8rem; font-weight: 800; white-space: nowrap;">
+                        <i class="fas fa-folder-open"></i> 폴더 선택...
+                    </button>
+                </div>
                 <div style="font-size: 0.8rem; color: #64748b; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
                         <input type="radio" name="localCopyConflict" value="overwrite" checked>
@@ -2857,29 +2862,99 @@
         </div>
     </div>
 
-    <!-- ==================== 고기능 사진 라이트박스 뷰어 Modal ==================== -->
-    <div id="photoLightboxModal" class="modal photo-lightbox-modal" style="display: none; background: rgba(0,0,0,0.92); z-index: 100000;">
-        <div style="position: absolute; top: 0; left: 0; right: 0; padding: 12px 20px; background: rgba(15,23,42,0.8); backdrop-filter: blur(8px); display: flex; justify-content: space-between; align-items: center; z-index: 10;">
-            <div style="color: white; display: flex; align-items: center; gap: 12px;">
-                <span id="lightboxCntrNo" style="font-weight: 800; font-size: 1.1rem; color: #38bdf8; letter-spacing: 0.5px;">-</span>
-                <span id="lightboxSealBadge" style="display: none; background: #e11d48; color: white; font-size: 0.72rem; font-weight: 800; padding: 2px 6px; border-radius: 4px;">🔴 씰(Seal)</span>
-                <span id="lightboxIndexInfo" style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;">(1 / 1)</span>
-                <span id="lightboxUploaderInfo" style="font-size: 0.78rem; color: #cbd5e1; margin-left: 8px;"></span>
+    <!-- ==================== 구글 드라이브 백업 & 용량 정리 프로그레스 Modal ==================== -->
+    <div id="modalGDriveProgress" class="modal-ctnr-custom" style="display: none;">
+        <div class="modal-ctnr-box" style="max-width: 500px;">
+            <div class="modal-ctnr-header">
+                <h3><i class="fas fa-cloud-upload-alt" style="color: #0284c7;"></i> 구글드라이브 백업 & 로컬 용량 정리</h3>
+                <button type="button" class="btn-box-close" onclick="window.closeGDriveProgressModal()"><i class="fas fa-times"></i></button>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <button class="lightbox-btn" onclick="window.lightboxZoom(1.2)" title="확대 (+)"><i class="fas fa-search-plus"></i></button>
+            <div class="modal-ctnr-body">
+                <div style="font-size: 0.85rem; color: #475569; margin-bottom: 12px;" id="gdriveStatusText">작업 준비 중...</div>
+                
+                <div style="background: #e2e8f0; border-radius: 9999px; height: 12px; overflow: hidden; margin-bottom: 12px;">
+                    <div id="gdriveProgressBar" style="background: linear-gradient(90deg, #38bdf8, #0284c7); height: 100%; width: 0%; transition: width 0.2s ease-in-out;"></div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; color: #64748b; margin-bottom: 12px;">
+                    <span id="gdriveProgressPercent">0%</span>
+                    <span id="gdriveProgressCount">0 / 0</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div>업로드 완료: <strong id="gdriveUploadedCount" style="color: #0284c7;">0</strong>장</div>
+                    <div>건너뜀(완료됨): <strong id="gdriveSkippedCount" style="color: #64748b;">0</strong>장</div>
+                    <div>로컬 용량 정리: <strong id="gdriveCleanedCount" style="color: #10b981;">0</strong>장</div>
+                    <div>확보된 용량: <strong id="gdriveFreedMB" style="color: #10b981;">0.0</strong> MB</div>
+                </div>
+            </div>
+            <div class="modal-ctnr-footer">
+                <button type="button" id="btnStopGDrive" class="btn-cancel" onclick="window.stopGDriveUpload()">작업 중지</button>
+                <button type="button" id="btnCloseGDrive" class="btn-confirm-sky" onclick="window.closeGDriveProgressModal()">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 씰 누락 경고 Modal ==================== -->
+    <div id="modalMissingSealWarning" class="modal-ctnr-custom" style="display: none;">
+        <div class="modal-ctnr-box" style="max-width: 480px;">
+            <div class="modal-ctnr-header" style="background: #fff1f2; border-bottom: 1px solid #ffe4e6;">
+                <h3 style="color: #e11d48;"><i class="fas fa-exclamation-triangle" style="color: #e11d48;"></i> ⚠️ 씰(Seal) 사진 누락 경고</h3>
+                <button type="button" class="btn-box-close" onclick="window.closeMissingSealWarningModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-ctnr-body">
+                <p style="font-size: 0.88rem; color: #1e293b; font-weight: 700; margin-bottom: 8px;">선택한 컨테이너 중 <span style="color: #e11d48;">씰 사진이 등록되지 않은 컨테이너</span>가 있습니다.</p>
+                <div id="missingSealCntrList" style="max-height: 120px; overflow-y: auto; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 8px 12px; font-weight: 800; color: #be123c; font-size: 0.85rem; margin-bottom: 12px;">
+                    <!-- 동적 렌더링 -->
+                </div>
+                <p style="font-size: 0.8rem; color: #64748b;">이대로 작업을 계속 진행하시겠습니까?</p>
+            </div>
+            <div class="modal-ctnr-footer">
+                <button type="button" class="btn-cancel" onclick="window.closeMissingSealWarningModal()">취소</button>
+                <button type="button" class="btn-confirm-rose" onclick="window.executeActionAfterSealWarning()">계속 진행</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 고기능 사진 라이트박스 뷰어 Modal ==================== -->
+    <div id="photoLightboxModal" class="modal photo-lightbox-modal" style="display: none; background: rgba(0,0,0,0.94); z-index: 100000;">
+        <!-- 상단 툴바 -->
+        <div style="position: absolute; top: 0; left: 0; right: 0; padding: 12px 20px; background: rgba(15,23,42,0.88); backdrop-filter: blur(12px); display: flex; justify-content: space-between; align-items: center; z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <div style="color: white; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span id="lightboxCntrNo" style="font-weight: 900; font-size: 1.15rem; color: #38bdf8; letter-spacing: 0.5px;">-</span>
+                <span id="lightboxSealBadge" style="display: none; background: #e11d48; color: white; font-size: 0.72rem; font-weight: 900; padding: 2px 8px; border-radius: 6px; box-shadow: 0 0 10px rgba(225,29,72,0.4);">🔴 씰(Seal)</span>
+                <span id="lightboxFilename" style="font-size: 0.85rem; color: #cbd5e1; font-weight: 700; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</span>
+                <button type="button" class="lightbox-btn" onclick="window.lightboxRename()" title="파일명 수정" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fas fa-pencil-alt"></i></button>
+                <span id="lightboxIndexInfo" style="font-size: 0.85rem; color: #94a3b8; font-weight: 700;">(1 / 1)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <button class="lightbox-btn" onclick="window.lightboxZoom(1.25)" title="확대 (+)"><i class="fas fa-search-plus"></i></button>
                 <button class="lightbox-btn" onclick="window.lightboxZoom(0.8)" title="축소 (-)"><i class="fas fa-search-minus"></i></button>
                 <button class="lightbox-btn" onclick="window.lightboxResetZoom()" title="기본 크기 (100%)"><i class="fas fa-compress-arrows-alt"></i></button>
                 <button class="lightbox-btn" onclick="window.lightboxRotate(-90)" title="왼쪽 90도 회전"><i class="fas fa-undo"></i></button>
+                <button class="lightbox-btn" onclick="window.lightboxRotate(180)" title="180도 회전"><i class="fas fa-sync-alt"></i> 180°</button>
                 <button class="lightbox-btn" onclick="window.lightboxRotate(90)" title="오른쪽 90도 회전"><i class="fas fa-redo"></i></button>
+                <button class="lightbox-btn" id="btnLightboxSealToggle" onclick="window.lightboxToggleSeal()" title="씰 사진 지정/해제"><i class="fas fa-camera"></i></button>
+                <button class="lightbox-btn" onclick="window.lightboxMove()" title="다른 컨테이너로 이동"><i class="fas fa-folder"></i></button>
                 <button class="lightbox-btn" onclick="window.lightboxDownload()" title="다운로드"><i class="fas fa-download"></i></button>
+                <button class="lightbox-btn" onclick="window.lightboxDelete()" title="사진 삭제" style="color: #fda4af;"><i class="fas fa-trash-alt"></i></button>
                 <button class="lightbox-btn close" onclick="window.closePhotoLightbox()" title="닫기 (ESC)"><i class="fas fa-times"></i></button>
             </div>
         </div>
 
         <!-- 뷰어 메인 캔버스 -->
         <div id="lightboxCanvas" style="width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: grab; user-select: none;">
-            <img id="lightboxImg" src="" alt="사진" style="max-width: 90vw; max-height: 85vh; object-fit: contain; transform-origin: center center; transition: transform 0.1s ease-out; box-shadow: 0 10px 40px rgba(0,0,0,0.8); border-radius: 6px;">
+            <img id="lightboxImg" src="" alt="사진" style="max-width: 90vw; max-height: 80vh; object-fit: contain; transform-origin: center center; transition: transform 0.1s ease-out; box-shadow: 0 10px 40px rgba(0,0,0,0.8); border-radius: 6px;">
+        </div>
+
+        <!-- 하단 메타정보 바 -->
+        <div id="lightboxMetaBar" style="position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 20px; background: rgba(15,23,42,0.85); backdrop-filter: blur(12px); display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #94a3b8; z-index: 10; border-top: 1px solid rgba(255,255,255,0.08);">
+            <div id="lightboxMetaLeft" style="display: flex; gap: 16px; align-items: center;">
+                <span id="lightboxMetaUploader"><i class="fas fa-user"></i> -</span>
+                <span id="lightboxMetaTime"><i class="far fa-clock"></i> -</span>
+                <span id="lightboxMetaTeam"><i class="fas fa-users"></i> -</span>
+            </div>
+            <div id="lightboxMetaRemark" style="color: #fbbf24; font-weight: 700;"></div>
         </div>
 
         <!-- 이전 / 다음 버튼 -->
@@ -3188,7 +3263,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260827-ctnrreportfull"></script>
+    <script src="app_main.js?v=20260827-ctnrphotofull"></script>
 </body>
 
 </html>

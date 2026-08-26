@@ -1,0 +1,3 @@
+provider: generic
+url: http://ungdong.iptime.org:4001/
+updaterCacheDirName: excelcompare-updater
