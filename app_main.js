@@ -13854,7 +13854,7 @@ window.lightboxDownload = function() {
 
                                                     <div class="report-cntr-summary-line">
                                                         <span>${modelCount}모델, ${totalQty.toLocaleString()}개</span>
-                                                        ${typeLabel ? `<span class="job-type-red">${typeLabel}</span>` : ''}
+                                                        ${typeLabel ? `<span class="job-type-black">${typeLabel}</span>` : ''}
                                                     </div>
 
                                                     ${displayRemark ? `

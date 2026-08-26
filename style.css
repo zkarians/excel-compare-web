@@ -5257,9 +5257,9 @@ tr.border-group td {
     margin-bottom: 6px;
 }
 
-.job-type-red {
-    color: #e11d48;
-    font-weight: 900;
+.job-type-red, .job-type-black {
+    color: #0f172a !important;
+    font-weight: 800;
 }
 
 .report-delay-box {
