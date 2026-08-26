@@ -855,69 +855,6 @@ app.get('/api/load-latest-from-dir', async (req, res) => {
     }
 });
 
-// Windows OS 네이티브 파일 선택 다이얼로그 (마지막 폴더 기억 및 웹 브라우저 연동)
-app.post('/api/pick-file', async (req, res) => {
-    try {
-        const { initialDir, title, filter } = req.body || {};
-        const safeTitle = (title || '파일 선택').replace(/'/g, "''");
-        const safeFilter = (filter || 'Excel Files (*.xlsx;*.xls;*.xlsm)|*.xlsx;*.xls;*.xlsm|All Files (*.*)|*.*').replace(/'/g, "''");
-        const safeInitDir = (initialDir || '').replace(/'/g, "''");
-
-        const psScript = `
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-[System.Windows.Forms.Application]::EnableVisualStyles()
-$dialog = New-Object System.Windows.Forms.OpenFileDialog
-$dialog.Title = '${safeTitle}'
-$dialog.Filter = '${safeFilter}'
-$initDir = '${safeInitDir}'
-if ($initDir -ne '' -and (Test-Path $initDir)) {
-    $dialog.InitialDirectory = $initDir
-} else {
-    $dialog.InitialDirectory = [Environment]::GetFolderPath('Desktop')
-}
-$dialog.RestoreDirectory = $true
-$dialog.CheckFileExists = $true
-
-$form = New-Object System.Windows.Forms.Form
-$form.TopMost = $true
-$form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
-$form.Size = New-Object System.Drawing.Size(1, 1)
-$form.Opacity = 0.01
-$form.ShowInTaskbar = $false
-$form.Show()
-$form.Activate()
-$form.BringToFront()
-
-$result = $dialog.ShowDialog($form)
-if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
-    [Console]::Out.Write($dialog.FileName)
-}
-$form.Close()
-$form.Dispose()
-$dialog.Dispose()
-`;
-
-        const encodedScript = Buffer.from(psScript, 'utf16le').toString('base64');
-        exec(`powershell -STA -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedScript}`, { windowsHide: false }, (err, stdout) => {
-            if (err) {
-                console.error("❌ pick-file PowerShell error:", err);
-                return res.json({ success: false, message: err.message });
-            }
-            const filePath = (stdout || '').trim();
-            if (filePath) {
-                console.log(`📂 [API] 네이티브 파일 선택 완료: ${filePath}`);
-                return res.json({ success: true, filePath });
-            } else {
-                return res.json({ success: false, canceled: true });
-            }
-        });
-    } catch (err) {
-        console.error("❌ /api/pick-file error:", err);
-        res.status(500).json({ success: false, message: err.message });
-    }
-});
-
 // 결과 엑셀 파일 임시 저장 후 자동으로 열기
 app.post('/api/open-excel', async (req, res) => {
     try {
