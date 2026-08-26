@@ -926,10 +926,14 @@ async function initializeApp() {
         }
     }
 
-    const savedDirDown = localStorage.getItem('dirDown') || savedPathDown;
+    let savedDirDown = localStorage.getItem('dirDown') || savedPathDown;
+    if (savedDirDown === 'C:\\Users\\Administrator\\Downloads') {
+        savedDirDown = 'W:\\helpdesk\\Downloads';
+        localStorage.setItem('dirDown', savedDirDown);
+    }
     if (savedDirDown) {
         pathDownload.value = savedDirDown;
-        statusDownload.innerHTML = `<i class="fas fa-folder-open" style="color:#0284c7; margin-right:4px;"></i>상태: 전산 경로 준비됨`;
+        statusDownload.innerHTML = `<i class="fas fa-folder-open" style="color:#0284c7; margin-right:4px;"></i>상태: 전산 경로 준비됨 (${savedDirDown})`;
         statusDownload.style.color = '#0284c7';
         if (window.electronAPI) window.electronAPI.saveFilePath('download', savedDirDown);
     }
