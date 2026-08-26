@@ -896,57 +896,54 @@ table {
     background-color: rgba(226, 232, 240, 0.5);
 }
 
-/* 반입정보 테이블 (반입정보 생성, 미분류, DB조회-일부) 컬럼 너비 재조정 */
+/* 반입정보 테이블 (반입정보 생성, 미분류, DB조회-일부) 컬럼 너비 재조정 (총 11개 열) */
 #resultTable.entry-table th:nth-child(1) {
     width: 75px;
 }
-
 /* 선사 */
 #resultTable.entry-table th:nth-child(2) {
     width: 75px;
 }
-
 /* 규격 */
 #resultTable.entry-table th:nth-child(3) {
     width: 95px;
 }
-
 /* F.DEST */
 #resultTable.entry-table th:nth-child(4) {
-    width: 150px;
+    width: 140px;
 }
-
 /* CTNR NO */
 #resultTable.entry-table th:nth-child(5) {
-    width: 130px;
+    width: 44px;
+    min-width: 44px;
+    max-width: 48px;
+    text-align: center;
 }
-
-/* SEAL */
+/* P (카메라) */
 #resultTable.entry-table th:nth-child(6) {
+    width: 120px;
+}
+/* SEAL */
+#resultTable.entry-table th:nth-child(7) {
     width: 115px;
 }
-
 /* G/W */
-#resultTable.entry-table th:nth-child(7) {
-    width: auto;
-    min-width: 400px;
-}
-
-/* 리마크 (나머지 가득 채움) */
 #resultTable.entry-table th:nth-child(8) {
-    width: 95px;
+    width: auto;
+    min-width: 380px;
 }
-
-/* 출항일 */
+/* 리마크 */
 #resultTable.entry-table th:nth-child(9) {
     width: 95px;
 }
-
-/* 작업일 */
+/* 출항일 */
 #resultTable.entry-table th:nth-child(10) {
     width: 95px;
 }
-
+/* 작업일 */
+#resultTable.entry-table th:nth-child(11) {
+    width: 95px;
+}
 /* 운송사 */
 
 /* 반입정보 탭 전체 글자 크기 축소 및 행간격 확대 (상하 패딩 증가) */
