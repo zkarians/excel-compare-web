@@ -61,6 +61,7 @@
       "services/",
       "masterrule/",
       "master_data/",
+      "lib/",
       "data/",
       "build/",
       "node_modules/**/*",
@@ -69,7 +70,7 @@
     ]
   },
   "name": "excelcompare",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "engines": {
     "node": ">=18"
   },
