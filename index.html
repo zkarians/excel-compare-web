@@ -9,7 +9,7 @@
     <link href="css/libs/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/libs/fontawesome.min.css">
     <link rel="stylesheet" href="css/libs/animate.min.css">
-    <link rel="stylesheet" href="style.css?v=20260826-gwfix">
+    <link rel="stylesheet" href="style.css?v=20260826-refreshphoto">
     <!-- Local JS Libraries -->
     <script src="js/libs/exceljs.min.js"></script>
     <script src="js/libs/FileSaver.min.js"></script>
@@ -1828,26 +1828,26 @@
                             style="font-size: 0.85rem; color: #6366f1; font-weight: 600; display: none;">0건 검색됨</span>
                     </div>
                 </div>
-                <div style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
                     <button class="btn btn-excel-download" id="btnDownloadResult"
-                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; color: white; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
-                        <i class="fas fa-file-excel" style="margin-right: 4px;"></i> 결과 엑셀 다운로드
+                        style="padding: 0.35rem 0.85rem; font-size: 0.8rem; border-radius: 6px; font-weight: 700; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: white; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25); display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <i class="fas fa-file-excel" style="font-size: 0.82rem;"></i> 결과 엑셀 다운로드
                     </button>
                     <button class="btn" id="btnViewResult"
-                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; background: white; border: 1px solid #6366f1; color: #4f46e5; cursor: pointer;">
-                        <i class="fas fa-search" style="margin-right: 4px;"></i> 결과 바로보기
+                        style="padding: 0.35rem 0.85rem; font-size: 0.8rem; border-radius: 6px; font-weight: 700; background: #f0f9ff; border: 1px solid #bae6fd; color: #0284c7; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <i class="fas fa-search" style="font-size: 0.82rem; color: #0284c7;"></i> 결과 바로보기
                     </button>
                     <button class="btn" id="btnOpenBlockWorkFromToolbar"
-                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; background: #faf5ff; border: 1px solid #c084fc; color: #7e22ce; cursor: pointer;">
-                        <i class="fas fa-lock" style="margin-right: 4px;"></i> 블록작업 공지
+                        style="padding: 0.35rem 0.85rem; font-size: 0.8rem; border-radius: 6px; font-weight: 700; background: #faf5ff; border: 1px solid #e9d5ff; color: #7e22ce; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <i class="fas fa-bullhorn" style="font-size: 0.82rem; color: #9333ea;"></i> 블록작업 공지
                     </button>
                     <button id="btnBulkHold" class="btn"
-                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600; background-color: #f8fafc; border: 1px solid #cbd5e1; color: #475569;">
-                        <i class="fas fa-pause-circle" style="margin-right: 4px;"></i> 선택항목 보류등록
+                        style="padding: 0.35rem 0.85rem; font-size: 0.8rem; border-radius: 6px; font-weight: 700; background: #fffbeb; border: 1px solid #fde68a; color: #b45309; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <i class="fas fa-pause-circle" style="font-size: 0.82rem; color: #d97706;"></i> 선택항목 보류등록
                     </button>
-                    <button id="btnSaveToDB" class="btn success"
-                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; border-radius: 6px; font-weight: 600;">
-                        <i class="fas fa-save" style="margin-right: 4px;"></i> 선택항목 DB 저장
+                    <button id="btnRefreshPhotos" class="btn" title="현장 사진 업로드 현황 즉시 새로고침"
+                        style="padding: 0.35rem 0.85rem; font-size: 0.8rem; border-radius: 6px; font-weight: 700; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: none; color: white; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25); display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <i class="fas fa-sync-alt" style="font-size: 0.82rem;"></i> 사진 새로고침
                     </button>
                 </div>
             </div>
@@ -2715,7 +2715,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260826-gwfix"></script>
+    <script src="app_main.js?v=20260826-refreshphoto"></script>
 </body>
 
 </html>

@@ -800,7 +800,6 @@ async function initializeApp() {
         const dbResp = await fetch(`${API_BASE}/api/db-status`);
         const data = await dbResp.json();
         const tabDbSearch = document.getElementById('tabDbSearch');
-        const btnSaveToDB = document.getElementById('btnSaveToDB');
 
         if (!data.success) {
             console.warn('DB Not Available:', data.message);
@@ -818,10 +817,6 @@ async function initializeApp() {
                 tabDbSearch.title = `DB 연결 실패: ${data.message}`;
                 tabDbSearch.style.opacity = '0.7';
             }
-            if (btnSaveToDB) {
-                btnSaveToDB.title = `DB 연결 실패: ${data.message}`;
-                btnSaveToDB.style.opacity = '0.7';
-            }
         } else {
             console.log('DB Available:', data.message);
             updateDbConfigUI(true);
@@ -830,11 +825,6 @@ async function initializeApp() {
                 tabDbSearch.style.display = '';
                 tabDbSearch.style.opacity = '1';
                 tabDbSearch.title = 'DB 데이터 조회';
-            }
-            if (btnSaveToDB) {
-                btnSaveToDB.style.display = '';
-                btnSaveToDB.style.opacity = '1';
-                btnSaveToDB.title = '선택항목을 DB에 저장';
             }
         }
         // 로컬 전용 기능 노출 제어 (Electron 혹은 localhost일 때만 표시)
@@ -8430,49 +8420,36 @@ async function autoSaveSuccessContainers(results) {
     }
 }
 
-const btnSaveToDB = document.getElementById('btnSaveToDB');
-if (btnSaveToDB) {
-    btnSaveToDB.onclick = async () => {
-        if (selectedItems.size === 0) {
-            alert('저장할 항목을 선택해주세요.');
-            return;
-        }
-
-        if (!confirm(`${selectedItems.size}개의 항목을 데이터베이스에 저장하시겠습니까?`)) return;
-
-        const itemsToSave = [];
-        displayData.forEach((res, i) => {
-            const key = `${res.cntrNo}_${res.prodName}_${i}`;
-            if (selectedItems.has(key)) itemsToSave.push(res);
-        });
+const btnRefreshPhotos = document.getElementById('btnRefreshPhotos');
+if (btnRefreshPhotos) {
+    btnRefreshPhotos.onclick = async () => {
+        const icon = btnRefreshPhotos.querySelector('i');
+        if (icon) icon.classList.add('fa-spin');
+        btnRefreshPhotos.disabled = true;
 
         try {
-            btnSaveToDB.disabled = true;
-            btnSaveToDB.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 저장 중...';
-
-            const enableRemoteSync = document.getElementById('chkRemoteSync')?.checked ?? true;
-            const resp = await fetch(`${API_BASE}/api/save-to-db`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items: itemsToSave, enableRemoteSync })
-            });
-            const resData = await resp.json();
-
-            if (resData.success) {
-                const msg = resData.message || `${resData.count}개의 항목이 성공적으로 저장되었습니다.`;
-                alert(`✅ ${msg}`);
-                selectedItems.clear();
-                updateSelectionUI();
+            if (window.fetchContainerPhotoCounts) {
+                await window.fetchContainerPhotoCounts();
+            }
+            if (typeof displayResults === 'function' && typeof comparisonResult !== 'undefined' && Array.isArray(comparisonResult)) {
                 displayResults(comparisonResult);
-                updateDbGlobalStats();
-            } else {
-                alert('저장 실패: ' + resData.message);
+            }
+            // 사진보관함 모달이 열려있다면 내부 목록도 새로고침
+            const modal = document.getElementById('photoGalleryModal');
+            if (modal && modal.style.display !== 'none' && typeof window.loadPhotoGallery === 'function') {
+                await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+            }
+            if (typeof showToast === 'function') {
+                showToast('📸 최신 사진 업로드 현황이 새로고침되었습니다.');
             }
         } catch (err) {
-            alert('서버 통신 오류: ' + err.message);
+            console.error("사진 현황 새로고침 오류:", err);
+            if (typeof showToast === 'function') {
+                showToast('⚠️ 새로고침 중 오류가 발생했습니다.');
+            }
         } finally {
-            btnSaveToDB.disabled = false;
-            btnSaveToDB.innerHTML = '<i class="fas fa-save" style="margin-right: 4px;"></i> 선택항목 DB 저장';
+            if (icon) icon.classList.remove('fa-spin');
+            btnRefreshPhotos.disabled = false;
         }
     };
 }
