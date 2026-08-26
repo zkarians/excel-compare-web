@@ -11596,9 +11596,12 @@ window.loadPhotoGallery = async function(targetCntr = '') {
     try {
         let url = `${API_BASE}/api/photos?`;
         const queryParams = [];
-        if (searchCntr) queryParams.push(`cntrNo=${encodeURIComponent(searchCntr)}`);
-        if (startDate) queryParams.push(`startDate=${encodeURIComponent(startDate)}`);
-        if (endDate) queryParams.push(`endDate=${encodeURIComponent(endDate)}`);
+        if (searchCntr) {
+            queryParams.push(`cntrNo=${encodeURIComponent(searchCntr)}`);
+        } else {
+            if (startDate) queryParams.push(`startDate=${encodeURIComponent(startDate)}`);
+            if (endDate) queryParams.push(`endDate=${encodeURIComponent(endDate)}`);
+        }
         if (typeFilter !== 'all') queryParams.push(`photoType=${encodeURIComponent(typeFilter)}`);
 
         url += queryParams.join('&');

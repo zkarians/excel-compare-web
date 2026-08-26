@@ -3031,6 +3031,20 @@ tr.border-group td {
 }
 
 /* ==================== 컨테이너 사진 관련 스타일 ==================== */
+#photoGalleryModal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.75) !important;
+    backdrop-filter: blur(4px);
+    z-index: 100000 !important;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
 .btn-cntr-photo {
     display: inline-flex;
     align-items: center;
