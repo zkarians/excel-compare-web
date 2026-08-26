@@ -3039,8 +3039,8 @@ const server = app.listen(port, '0.0.0.0', () => {
 
 server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-        console.error(`❌ [FATAL] 포트 ${port}가 이미 사용 중입니다. 백그라운드에 프로세스가 남아있거나 다른 프로그램이 사용 중입니다.`);
-        process.exit(1);
+        console.warn(`⚠️ [Server] 포트 ${port}가 이미 사용 중입니다. 기존에 동작 중인 백그라운드 서버를 공유하여 계속 실행합니다.`);
+        // Electron 환경이나 기존 프로세스가 있을 때 앱이 강제 종료되지 않도록 유지
     } else {
         console.error(`❌ [FATAL] 서버 오류 발생:`, err);
     }
