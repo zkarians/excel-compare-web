@@ -4299,7 +4299,7 @@ function evaluateMathString(currentVal, expr) {
     return currentVal;
 }
 
-// Electron 및 웹 브라우저 공용 OS 네이티브 탐색기 파일 피커 바인딩 (마지막 폴더 기억)
+// Electron 및 웹 브라우저 공용 OS 네이티브 탐색기 파일 피커 바인딩 (각 기능별 마지막 폴더 기억)
 (function setupNativePickers() {
     const pickers = [
         { btn: 'btnNativePickerOrig', fileInputId: 'fileOriginal', pathInputId: 'pathOriginal', type: 'original', storageKey: 'dirOrig', title: '1. 원본 파일 선택' },
@@ -4313,65 +4313,121 @@ function evaluateMathString(currentVal, expr) {
         if (!btn) return;
 
         btn.addEventListener('click', async () => {
-            let filePath = null;
-            const originalHtml = btn.innerHTML;
-
             // 1. Electron 데스크톱 앱 환경인 경우 -> Electron native dialog 호출
             if (window.electronAPI && typeof window.electronAPI.selectFile === 'function') {
                 const lastDir = localStorage.getItem(p.storageKey);
-                filePath = await window.electronAPI.selectFile(p.type, lastDir);
-            } else {
-                // 2. 웹 브라우저 (localhost) 환경인 경우 -> 백엔드 Windows Native OpenFileDialog 호출
-                btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 열기 중...`;
-                btn.disabled = true;
-
-                try {
-                    const lastDir = localStorage.getItem(p.storageKey) || '';
-                    const res = await fetch(`${API_BASE}/api/pick-file`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ initialDir: lastDir, title: p.title })
-                    });
-                    const data = await res.json();
-                    if (data.success && data.filePath) {
-                        filePath = data.filePath;
-                    } else if (data.canceled) {
-                        btn.innerHTML = originalHtml;
-                        btn.disabled = false;
-                        return; // 사용자가 취소함
-                    }
-                } catch (e) {
-                    console.warn("Backend pick-file failed, falling back to HTML input:", e);
-                    btn.innerHTML = originalHtml;
-                    btn.disabled = false;
-                    const fileInput = document.getElementById(p.fileInputId);
-                    if (fileInput) fileInput.click();
-                    return;
-                } finally {
-                    btn.innerHTML = originalHtml;
-                    btn.disabled = false;
+                const filePath = await window.electronAPI.selectFile(p.type, lastDir);
+                if (filePath) {
+                    const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
+                    const dirPath = lastSlash !== -1 ? filePath.substring(0, lastSlash) : filePath;
+                    localStorage.setItem(p.storageKey, dirPath);
+                    const pathEl = document.getElementById(p.pathInputId);
+                    if (pathEl) pathEl.value = (p.type === 'download') ? dirPath : filePath;
+                    if (p.type === 'warehouse') loadNativeWarehouseFile(filePath);
+                    else reloadNativeFileFromPath(p.type, filePath);
                 }
+                return;
             }
 
-            if (filePath) {
-                // 폴더 경로 업데이트 및 저장 (마지막 폴더 기억)
-                const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
-                const dirPath = lastSlash !== -1 ? filePath.substring(0, lastSlash) : filePath;
-                localStorage.setItem(p.storageKey, dirPath);
+            // 2. 웹 브라우저 (Chrome, Edge 등) 환경인 경우 -> W3C File System Access API (id별 마지막 폴더 자동 기억!)
+            if (window.showOpenFilePicker) {
+                try {
+                    const [fileHandle] = await window.showOpenFilePicker({
+                        id: p.storageKey, // 브라우저가 각 기능별(dirOrig, dirDown 등) 마지막 열었던 폴더를 자동 기억하여 바로 엽니다!
+                        types: [{
+                            description: 'Excel Files (*.xlsx, *.xls, *.xlsm)',
+                            accept: {
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx', '.xls', '.xlsm']
+                            }
+                        }],
+                        multiple: false
+                    });
 
-                // 해당 UI 입력창에도 경로 표시
-                const pathEl = document.getElementById(p.pathInputId);
-                if (pathEl) {
-                    // 전산파일은 폴더 경로를 표시하여 '최신 파일 로드' 연동성 극대화, 그 외는 전체 파일 경로 표시
-                    pathEl.value = (p.type === 'download') ? dirPath : filePath;
-                }
+                    if (!fileHandle) return;
+                    const file = await fileHandle.getFile();
+                    if (!file) return;
 
-                // 파일 로드 시도
-                if (p.type === 'warehouse') {
-                    loadNativeWarehouseFile(filePath);
-                } else {
-                    reloadNativeFileFromPath(p.type, filePath);
+                    // 파일 직접 파싱 및 로드
+                    if (p.type === 'warehouse') {
+                        const statusEl = document.getElementById('statusWarehouseStock');
+                        if (statusEl) statusEl.innerHTML = `<i class="fas fa-spinner fa-spin" style="color:#16a34a; margin-right:4px;"></i>상태: 분석 중...`;
+                        const formData = new FormData();
+                        formData.append('warehouseFile', file);
+                        const resp = await fetch(`${API_BASE}/api/parse-warehouse-stock`, { method: 'POST', body: formData });
+                        const result = await resp.json();
+                        if (result.success) {
+                            warehouseStockDongPrefixes = new Set(result.dongPrefixes.map(x => x.toUpperCase()));
+                            warehouseStockBlockProductsAll = new Set((result.blockProductNamesWith17 || []).map(x => x.toUpperCase()));
+                            warehouseStockBlockProductsNo17 = new Set((result.blockProductNames || []).map(x => x.toUpperCase()));
+                            warehouseStockQtyMapAll = result.stockMapWith17 || {};
+                            warehouseStockQtyMapNo17 = result.stockMap || {};
+                            warehouseHoldStockListAll = result.holdStockListWith17 || [];
+                            warehouseHoldStockListNo17 = result.holdStockList || [];
+                            warehouseAllStockListAll = result.allStockListWith17 || [];
+                            warehouseAllStockListNo17 = result.allStockList || [];
+                            warehouseStockLoaded = true;
+                            updateActiveWarehouseStock();
+                            if (statusEl) statusEl.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a; margin-right:4px;"></i>상태: 분석 완료 (${file.name})`;
+                            const lastWhEl = document.getElementById('lastWarehouseStock');
+                            if (lastWhEl) lastWhEl.textContent = `고유제품 ${result.totalProducts}개 분석 완료`;
+                            if (btnClearWarehouseStock) btnClearWarehouseStock.style.display = 'inline-block';
+                            if (btnReloadWarehouse) btnReloadWarehouse.style.display = 'inline-block';
+                        }
+                    } else {
+                        const parsed = await readExcelFile(file, p.type);
+                        if (p.type === 'original') {
+                            originalData = parsed.filter(item => (item.qty || 0) > 0);
+                            originalFile = { name: file.name, isLoaded: true };
+                            localStorage.setItem('lastOrigName', file.name);
+                            if (statusOriginal) {
+                                statusOriginal.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${file.name})`;
+                                statusOriginal.style.color = '#059669';
+                            }
+                            if (lastOrig) lastOrig.textContent = `최근 사용: ${file.name}`;
+                            if (btnClearOriginal) btnClearOriginal.style.display = 'inline-block';
+                            if (btnReloadOriginal) btnReloadOriginal.style.display = 'inline-block';
+                        } else if (p.type === 'download') {
+                            downloadData = parsed;
+                            downloadFile = { name: file.name, isLoaded: true };
+                            localStorage.setItem('lastDownName', file.name);
+                            if (statusDownload) {
+                                statusDownload.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${file.name})`;
+                                statusDownload.style.color = '#059669';
+                            }
+                            if (lastDown) lastDown.textContent = `최근 사용: ${file.name}`;
+                            if (btnClearDown) btnClearDown.style.display = 'inline-block';
+                            if (btnReloadDownload) btnReloadDownload.style.display = 'inline-block';
+                        } else if (p.type === 'rework') {
+                            reworkData = parsed.filter(item => (item.qty || 0) > 0);
+                            reworkFile = { name: file.name, isLoaded: true };
+                            localStorage.setItem('lastReworkName', file.name);
+                            if (statusRework) {
+                                statusRework.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${file.name})`;
+                                statusRework.style.color = '#059669';
+                            }
+                            if (lastRework) lastRework.textContent = `최근 사용: ${file.name}`;
+                            if (btnClearRework) btnClearRework.style.display = 'inline-block';
+                            if (btnReloadRework) btnReloadRework.style.display = 'inline-block';
+                        }
+                        checkReadyStatus();
+                    }
+
+                    // 파일 이름 표시
+                    const pathEl = document.getElementById(p.pathInputId);
+                    if (pathEl && !pathEl.value.trim()) {
+                        pathEl.placeholder = `선택된 파일: ${file.name}`;
+                    }
+
+                } catch (err) {
+                    if (err.name === 'AbortError') return; // 사용자가 창을 닫거나 취소한 경우
+                    console.warn("showOpenFilePicker failed, falling back to input:", err);
+                    const fileInput = document.getElementById(p.fileInputId);
+                    if (fileInput) fileInput.click();
                 }
+            } else {
+                // 3. Fallback: input.click()
+                const fileInput = document.getElementById(p.fileInputId);
+                if (fileInput) fileInput.click();
             }
         });
     });
