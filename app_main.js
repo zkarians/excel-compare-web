@@ -6025,10 +6025,12 @@ function displayResults(results, isDbMode = false) {
                                     style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
                                     class="copyable-item"
                                     title="클릭하여 컨테이너 복사">${res.cntrNo}</strong>
-                            ${typeof window.renderContainerPhotoBtn === 'function' ? window.renderContainerPhotoBtn(res.cntrNo) : ''}
                             ${isCaution ? `<span title="주의 비고: ${matchedCaution.remark || '사유 없음'}" style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#ef4444; color:#fff; border-radius:4px; padding:0px 4px; line-height:1.2; cursor:help; white-space:nowrap;">주의</span>` : ''}
                             ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; margin-left:4px; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
                         </div>
+                    </td>
+                    <td class="col-photo" style="text-align: center; vertical-align: middle; padding: 2px 4px;">
+                        ${typeof window.renderContainerPhotoBtn === 'function' ? window.renderContainerPhotoBtn(res.cntrNo) : ''}
                     </td>
                     <td class="col-type" style="${(res.prodType || '').toUpperCase() === 'H' ? 'color: #7c3aed; font-weight: 700;' : (res.prodType || '').toUpperCase() === 'Q' ? 'color: #0d9488; font-weight: 700;' : ''}">${res.prodType || '-'}</td>
                     <td class="col-div">${res.division || '-'}</td>
@@ -6390,6 +6392,7 @@ function updateTableHeaders(filterName) {
                 <th class="col-work">작업구분</th>
                 <th class="col-special">특이사항</th>
                 <th class="col-cntr">컨테이너번호</th>
+                <th class="col-photo">사진</th>
                 <th class="col-type">제품구분</th>
                 <th class="col-div">사업부</th>
                 <th class="col-model">제품모델명</th>
@@ -11633,7 +11636,7 @@ window.renderContainerPhotoBtn = function(cntrNo) {
     const cleanCntr = cntrNo.trim().toUpperCase();
     const count = window.containerPhotoCounts ? (window.containerPhotoCounts[cleanCntr] || 0) : 0;
     if (count <= 0) return '';
-    return `<button class="btn-cntr-photo has-photos" onclick="window.openContainerPhotoModal('${cleanCntr.replace(/'/g, "\\'")}', event)" title="컨테이너 사진 ${count}장 등록됨 (클릭하여 보기)"><i class="fas fa-camera"></i> <span style="font-size:0.65rem; font-weight:800; margin-left:1px;">${count}</span></button>`;
+    return `<button class="btn-cntr-photo has-photos" onclick="window.openContainerPhotoModal('${cleanCntr.replace(/'/g, "\\'")}', event)" title="사진 ${count}장 등록됨 (클릭하여 보기)"><i class="fas fa-camera"></i> <span class="photo-badge-num">${count}</span></button>`;
 };
 
 let lightboxPhotos = [];
