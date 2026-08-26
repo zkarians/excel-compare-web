@@ -11724,35 +11724,99 @@ window.executeLocalCopy = async function() {
     }
 };
 
-// 7. 사진 회전 (-90, 180, 90)
-window.photoGalleryCacheBuster = Date.now();
-window.handleRotatePhotos = async function(degrees) {
-    const ids = Array.from(window.selectedPhotoIds);
-    if (ids.length === 0) {
+// 7. 사진 인플레이스(In-place) 회전 (-90, 180, 90) - CTNR 동일 0ms 즉시 회전 방식
+window.photoRotationOffsets = window.photoRotationOffsets || {};
+
+window.handleRotatePhotos = async function(degrees, singlePhotoId) {
+    const targetIds = singlePhotoId ? [String(singlePhotoId)] : Array.from(window.selectedPhotoIds);
+    if (targetIds.length === 0) {
         alert("회전할 사진을 1장 이상 선택해 주세요.");
         return;
     }
 
+    // 1. [0ms 즉시 반응] 선택된 사진 카드 DOM의 img에 즉시 CSS rotate 적용
+    targetIds.forEach(id => {
+        const currentDeg = (window.photoRotationOffsets[id] || 0) + degrees;
+        window.photoRotationOffsets[id] = currentDeg;
+
+        const cards = document.querySelectorAll(`[data-photo-id="${id}"]`);
+        cards.forEach(card => {
+            const img = card.querySelector('img');
+            if (img) {
+                img.style.transition = 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+                img.style.transform = `rotate(${currentDeg}deg)`;
+            }
+        });
+    });
+
+    // 2. 백그라운드 비동기 서버 저장 (전체 페이지 로딩 스피너 X)
     try {
         const res = await fetch(`${API_BASE}/api/photos`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'rotate',
-                ids: ids,
+                ids: targetIds,
                 degrees: degrees
             })
         });
         const data = await res.json();
         if (data.success) {
-            window.photoGalleryCacheBuster = Date.now();
-            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+            const now = Date.now();
+            // 3. 서버 물리 회전 완료 후, 이미지 src 캐시만 조용히 갱신
+            targetIds.forEach(id => {
+                const p = window.currentGalleryPhotos.find(item => String(item.id) === String(id));
+                if (p) p.cacheBuster = now;
+
+                const cards = document.querySelectorAll(`[data-photo-id="${id}"]`);
+                cards.forEach(card => {
+                    const img = card.querySelector('img');
+                    if (img) {
+                        const rawSrc = img.src.split('&cb=')[0].split('?cb=')[0];
+                        const sep = rawSrc.includes('?') ? '&' : '?';
+                        const newSrc = `${rawSrc}${sep}cb=${now}`;
+
+                        const preload = new Image();
+                        preload.onload = () => {
+                            img.src = newSrc;
+                            delete window.photoRotationOffsets[id];
+                            img.style.transition = 'none';
+                            img.style.transform = 'none';
+                        };
+                        preload.src = newSrc;
+                    }
+                });
+            });
         } else {
-            alert(`회전 실패: ${data.error || data.message}`);
+            console.error("Rotate failed on server:", data.error);
+            // 오류 시 회전 각도 롤백
+            targetIds.forEach(id => {
+                const currentDeg = (window.photoRotationOffsets[id] || 0) - degrees;
+                window.photoRotationOffsets[id] = currentDeg;
+                const cards = document.querySelectorAll(`[data-photo-id="${id}"]`);
+                cards.forEach(card => {
+                    const img = card.querySelector('img');
+                    if (img) {
+                        img.style.transform = currentDeg ? `rotate(${currentDeg}deg)` : 'none';
+                    }
+                });
+            });
+            alert(`사진 회전 실패: ${data.error || data.message}`);
         }
     } catch (err) {
-        console.error("Rotate error:", err);
-        alert("사진 회전 중 오류가 발생했습니다: " + err.message);
+        console.error("Rotate network error:", err);
+        targetIds.forEach(id => {
+            const currentDeg = (window.photoRotationOffsets[id] || 0) - degrees;
+            window.photoRotationOffsets[id] = currentDeg;
+            const cards = document.querySelectorAll(`[data-photo-id="${id}"]`);
+            cards.forEach(card => {
+                const img = card.querySelector('img');
+                if (img) {
+                    img.style.transform = currentDeg ? `rotate(${currentDeg}deg)` : 'none';
+                }
+            });
+        });
+        alert("사진 회전 중 통신 오류가 발생했습니다: " + err.message);
     }
 };
 
@@ -12085,12 +12149,16 @@ window.renderGalleryPhotos = function() {
         let html = '<div class="ctnr-grid-large">';
         photos.forEach((p, idx) => {
             const isSeal = p.photo_type === 'seal';
-            const cacheParam = window.photoGalleryCacheBuster ? `&cb=${window.photoGalleryCacheBuster}` : '';
-            const photoUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(p.photo_path)}${cacheParam}`;
-            const fileName = (p.photo_path || '').split('/').pop() || '';
+            const rawPath = (p.photo_path || '').split('?')[0];
+            const fileName = rawPath.split('/').pop() || '';
+            const itemCache = p.cacheBuster || window.photoGalleryCacheBuster || '';
+            const cacheParam = itemCache ? `&cb=${itemCache}` : '';
+            const photoUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(rawPath)}${cacheParam}`;
             const uploader = p.uploader_name || '작업자';
             const uploadTimeStr = p.uploaded_at ? new Date(p.uploaded_at).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
             const isChecked = window.selectedPhotoIds.has(String(p.id));
+            const currentDeg = (window.photoRotationOffsets && window.photoRotationOffsets[String(p.id)]) ? window.photoRotationOffsets[String(p.id)] : 0;
+            const rotateStyle = currentDeg ? `transform: rotate(${currentDeg}deg);` : '';
 
             html += `
                 <div class="ctnr-card-large ${isChecked ? 'selected' : ''}" data-photo-id="${p.id}" onclick="window.handleCardClick('${p.id}', event)">
@@ -12102,7 +12170,7 @@ window.renderGalleryPhotos = function() {
                             <input type="checkbox" class="ctnr-photo-chk" ${isChecked ? 'checked' : ''} onchange="window.togglePhotoSelect('${p.id}', event)">
                         </div>
                         ${isSeal ? `<span class="ctnr-card-seal-tag"><i class="fas fa-camera"></i> 씰</span>` : ''}
-                        <img src="${photoUrl}" alt="${p.cntr_no}" loading="lazy" onerror="this.src='https://placehold.co/600x800/11111a/94a3b8?text=Image+Load+Fail'">
+                        <img src="${photoUrl}" alt="${p.cntr_no}" style="${rotateStyle}" loading="lazy" onerror="this.src='https://placehold.co/600x800/11111a/94a3b8?text=Image+Load+Fail'">
                         <div class="ctnr-card-gradient-overlay"></div>
                     </div>
                     <div class="ctnr-card-bottom-info">

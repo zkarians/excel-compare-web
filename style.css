@@ -3472,7 +3472,7 @@ tr.border-group td {
 }
 
 .ctnr-card-large:hover .ctnr-card-img-wrapper img {
-    transform: scale(1.03);
+    filter: contrast(1.06) saturate(1.1) brightness(1.06);
 }
 
 .ctnr-card-chk-box {
