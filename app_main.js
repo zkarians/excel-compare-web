@@ -1584,9 +1584,13 @@ document.getElementById('btnExecuteMasterUpsert').addEventListener('click', asyn
 
 
 // 파일 업로드 (Files 저장)
+window.savedRawFiles = window.savedRawFiles || {};
+window.savedNativeFileHandles = window.savedNativeFileHandles || {};
+
 fileOriginal.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (file) {
+        window.savedRawFiles['original'] = file;
         statusOriginal.textContent = `업로드됨: ${file.name}`;
         statusOriginal.style.color = '#1e293b';
         localStorage.setItem('lastOrigName', file.name);
@@ -1624,6 +1628,7 @@ fileOriginal.addEventListener('change', async (e) => {
 fileDownload.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (file) {
+        window.savedRawFiles['download'] = file;
         statusDownload.textContent = `업로드됨: ${file.name}`;
         statusDownload.style.color = '#1e293b';
         localStorage.setItem('lastDownName', file.name);
@@ -1663,6 +1668,7 @@ fileDownload.addEventListener('change', async (e) => {
 fileRework.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (file) {
+        window.savedRawFiles['rework'] = file;
         statusRework.textContent = `업로드됨: ${file.name}`;
         statusRework.style.color = '#1e293b';
         reworkFile = file;
@@ -3870,13 +3876,23 @@ async function reloadLatestFile(type) {
         statusEl.innerHTML = `<i class="fas fa-spinner fa-spin" style="color:#3b82f6; margin-right:4px;"></i>상태: ${type === 'warehouse' ? '창고' : (type === 'original' ? '원본' : '전산')} 데이터 불러오는 중...`;
         statusEl.style.color = '#3b82f6';
 
-        // 1. Electron IPC로 저장된 파일 경로 가져오기
+        let file = null;
+
+        // 1. 네이티브 FileHandle이 저장되어 있는 경우 (브라우저 디스크에서 최신 내용 직접 다시 읽기)
+        if (window.savedNativeFileHandles && window.savedNativeFileHandles[type]) {
+            try {
+                file = await window.savedNativeFileHandles[type].getFile();
+                console.log(`✅ [불러오기] 저장된 FileHandle을 통해 최신 '${file.name}' 재로드 성공`);
+            } catch (hErr) {
+                console.warn(`FileHandle getFile failed for ${type}:`, hErr);
+            }
+        }
+
+        // 2. Electron IPC 또는 서버 파일 경로가 존재하는 경우
         let filePath = null;
         if (window.electronAPI) {
             filePath = await window.electronAPI.getFilePath(type);
         }
-
-        // 2. IPC 경로가 없으면 입력창 경로 사용
         if (!filePath) {
             if (type === 'original') filePath = pathOriginal.value.trim();
             else if (type === 'download') filePath = pathDownload.value.trim();
@@ -3884,79 +3900,122 @@ async function reloadLatestFile(type) {
             else if (type === 'warehouse') filePath = pathWarehouse.value.trim();
         }
 
-        if (!filePath) {
-            throw new Error('저장된 파일 경로가 없습니다. 먼저 파일을 직접 선택해주세요.');
-        }
-
-        // 3. 서버에서 해당 경로의 최신 파일을 raw buffer(base64)로 받아오기
-        const response = await fetch(`${API_BASE}/api/load-file-raw?path=${encodeURIComponent(filePath)}&t=${Date.now()}`);
-
-        if (!response.ok) {
-            let errorMsg = `서버 오류 (${response.status})`;
-            const errText = await response.text();
+        // 경로가 절대 경로 (C:\ 또는 /)인 경우 서버 API로 로드
+        if (!file && filePath && (filePath.includes(':') || filePath.startsWith('/') || filePath.startsWith('\\\\'))) {
             try {
-                const errData = JSON.parse(errText);
-                errorMsg = errData.message || errorMsg;
-            } catch (e) {
-                if (errText.includes('<!DOCTYPE')) {
-                    errorMsg = "서버가 올바른 응답을 주지 않았습니다. (서버 재시작이 필요할 수 있습니다)";
-                } else {
-                    errorMsg = errText || errorMsg;
+                const response = await fetch(`${API_BASE}/api/load-file-raw?path=${encodeURIComponent(filePath)}&t=${Date.now()}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.base64) {
+                        const binaryStr = atob(result.base64);
+                        const bytes = new Uint8Array(binaryStr.length);
+                        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+                        const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                        const fileName = result.fileName || `${type}.xlsx`;
+                        file = new File([blob], fileName, { type: blob.type });
+                    }
                 }
+            } catch (netErr) {
+                console.warn("Server raw file fetch failed:", netErr);
             }
-            throw new Error(errorMsg);
         }
 
-        const result = await response.json();
+        // 3. 브라우저 메모리에 저장된 원본 File 객체가 있는 경우
+        if (!file && window.savedRawFiles && window.savedRawFiles[type]) {
+            file = window.savedRawFiles[type];
+            console.log(`✅ [불러오기] 메모리에 보관된 '${file.name}' 재분석 진행`);
+        }
 
-        if (result.success) {
-            // base64 -> ArrayBuffer -> Blob -> File로 변환
-            const binaryStr = atob(result.base64);
-            const bytes = new Uint8Array(binaryStr.length);
-            for (let i = 0; i < binaryStr.length; i++) {
-                bytes[i] = binaryStr.charCodeAt(i);
+        // 4. 저장된 핸들이나 파일이 없지만 브라우저 showOpenFilePicker가 지원되는 경우 (마지막 기억된 폴더로 피커 바로 열기)
+        if (!file && window.showOpenFilePicker) {
+            const storageKey = type === 'original' ? 'dirOrig' : (type === 'download' ? 'dirDown' : (type === 'warehouse' ? 'dirWarehouse' : 'dirRework'));
+            try {
+                const [newHandle] = await window.showOpenFilePicker({
+                    id: storageKey,
+                    types: [{
+                        description: 'Excel Files (*.xlsx, *.xls, *.xlsm)',
+                        accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx', '.xls', '.xlsm'] }
+                    }],
+                    multiple: false
+                });
+                if (newHandle) {
+                    window.savedNativeFileHandles = window.savedNativeFileHandles || {};
+                    window.savedNativeFileHandles[type] = newHandle;
+                    file = await newHandle.getFile();
+                }
+            } catch (userCancel) {
+                statusEl.innerHTML = originalText;
+                statusEl.style.color = '#64748b';
+                return;
             }
-            const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const fileName = result.fileName || (type === 'original' ? 'original.xlsx' : 'download.xlsx');
-            const file = new File([blob], fileName, { type: blob.type });
+        }
 
-            // 브라우저의 readExcelFile 함수로 파싱 (직접 선택과 100% 동일한 결과)
+        if (!file) {
+            throw new Error('불러올 파일이 없습니다. 탐색기 버튼을 눌러 파일을 먼저 선택해주세요.');
+        }
+
+        // 저장
+        window.savedRawFiles = window.savedRawFiles || {};
+        window.savedRawFiles[type] = file;
+
+        // 파일 파싱 및 처리
+        if (type === 'warehouse') {
+            const formData = new FormData();
+            formData.append('warehouseFile', file);
+            const resp = await fetch(`${API_BASE}/api/parse-warehouse-stock`, { method: 'POST', body: formData });
+            const result = await resp.json();
+            if (result.success) {
+                warehouseStockDongPrefixes = new Set(result.dongPrefixes.map(x => x.toUpperCase()));
+                warehouseStockBlockProductsAll = new Set((result.blockProductNamesWith17 || []).map(x => x.toUpperCase()));
+                warehouseStockBlockProductsNo17 = new Set((result.blockProductNames || []).map(x => x.toUpperCase()));
+                warehouseStockQtyMapAll = result.stockMapWith17 || {};
+                warehouseStockQtyMapNo17 = result.stockMap || {};
+                warehouseHoldStockListAll = result.holdStockListWith17 || [];
+                warehouseHoldStockListNo17 = result.holdStockList || [];
+                warehouseAllStockListAll = result.allStockListWith17 || [];
+                warehouseAllStockListNo17 = result.allStockList || [];
+                warehouseStockLoaded = true;
+                updateActiveWarehouseStock();
+                statusWarehouseStock.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a; margin-right:4px;"></i>상태: 분석 완료 (${file.name})`;
+                statusWarehouseStock.style.color = '#16a34a';
+                const lastWhEl = document.getElementById('lastWarehouseStock');
+                if (lastWhEl) lastWhEl.textContent = `고유제품 ${result.totalProducts}개 분석 완료`;
+                if (btnClearWarehouseStock) btnClearWarehouseStock.style.display = 'inline-block';
+                if (btnReloadWarehouse) btnReloadWarehouse.style.display = 'inline-block';
+            } else {
+                throw new Error(result.message || '창고 재고 파싱 실패');
+            }
+        } else {
             const parsedData = await readExcelFile(file, type);
-
             if (type === 'original') {
                 originalData = parsedData.filter(item => (item.qty || 0) > 0);
                 statusOriginal.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${originalData.length}건)`;
                 statusOriginal.style.color = '#059669';
-                originalFile = { name: localStorage.getItem('lastOrigName') || fileName, path: filePath, isReloaded: true };
-                // 경로 저장
-                localStorage.setItem('pathOrig', filePath);
-                if (window.electronAPI) window.electronAPI.saveFilePath('original', filePath);
+                originalFile = { name: file.name, isReloaded: true };
+                localStorage.setItem('lastOrigName', file.name);
+                if (lastOrig) lastOrig.textContent = `최근 사용: ${file.name}`;
+                if (btnClearOriginal) btnClearOriginal.style.display = 'inline-block';
+                if (btnReloadOriginal) btnReloadOriginal.style.display = 'inline-block';
             } else if (type === 'download') {
                 downloadData = parsedData;
                 statusDownload.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${downloadData.length}건)`;
                 statusDownload.style.color = '#059669';
-                downloadFile = { name: localStorage.getItem('lastDownName') || fileName, path: filePath, isReloaded: true };
-                // 경로 저장
-                localStorage.setItem('pathDown', filePath);
-                if (window.electronAPI) window.electronAPI.saveFilePath('download', filePath);
-            } else if (type === 'warehouse') {
-                warehouseData = parsedData;
-                statusWarehouseStock.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${warehouseData.length}건)`;
-                statusWarehouseStock.style.color = '#059669';
-                warehouseFile = { name: fileName, path: filePath, isReloaded: true };
-                localStorage.setItem('pathWarehouse', filePath);
-                if (window.electronAPI) window.electronAPI.saveFilePath('warehouse', filePath);
+                downloadFile = { name: file.name, isReloaded: true };
+                localStorage.setItem('lastDownName', file.name);
+                if (lastDown) lastDown.textContent = `최근 사용: ${file.name}`;
+                if (btnClearDown) btnClearDown.style.display = 'inline-block';
+                if (btnReloadDownload) btnReloadDownload.style.display = 'inline-block';
             } else if (type === 'rework') {
                 reworkData = parsedData.filter(item => (item.qty || 0) > 0);
                 statusRework.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${reworkData.length}건)`;
                 statusRework.style.color = '#059669';
-                reworkFile = { name: localStorage.getItem('lastReworkName') || fileName, path: filePath, isReloaded: true };
-                localStorage.setItem('pathRework', filePath);
-                if (window.electronAPI) window.electronAPI.saveFilePath('rework', filePath);
+                reworkFile = { name: file.name, isReloaded: true };
+                localStorage.setItem('lastReworkName', file.name);
+                if (lastRework) lastRework.textContent = `최근 사용: ${file.name}`;
+                if (btnClearRework) btnClearRework.style.display = 'inline-block';
+                if (btnReloadRework) btnReloadRework.style.display = 'inline-block';
             }
             checkReadyStatus();
-        } else {
-            throw new Error(result.message);
         }
     } catch (err) {
         console.error(`❌ ${type} 불러오기 실패:`, err);
@@ -4346,6 +4405,11 @@ function evaluateMathString(currentVal, expr) {
                     if (!fileHandle) return;
                     const file = await fileHandle.getFile();
                     if (!file) return;
+
+                    window.savedNativeFileHandles = window.savedNativeFileHandles || {};
+                    window.savedNativeFileHandles[p.type] = fileHandle;
+                    window.savedRawFiles = window.savedRawFiles || {};
+                    window.savedRawFiles[p.type] = file;
 
                     // 파일 직접 파싱 및 로드
                     if (p.type === 'warehouse') {
