@@ -302,6 +302,25 @@ app.on('ready', () => {
         return null;
     });
 
+    ipcMain.handle('select-folder', async (event, { defaultPath } = {}) => {
+        try {
+            const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+                title: '사진을 복사할 로컬 대상 폴더 선택',
+                defaultPath: defaultPath || 'W:\\helpdesk\\사진보관',
+                properties: ['openDirectory', 'createDirectory', 'promptToCreate']
+            });
+
+            if (!canceled && filePaths && filePaths.length > 0) {
+                console.log(`📂 [IPC] 폴더 선택 완료: ${filePaths[0]}`);
+                return { success: true, path: filePaths[0] };
+            }
+            return { success: true, cancelled: true };
+        } catch (err) {
+            console.error('폴더 선택 대화상자 오류:', err);
+            return { success: false, error: err.message };
+        }
+    });
+
     ipcMain.handle('check-file-exists', (event, targetPath) => {
         try {
             return fs.existsSync(targetPath);

@@ -11386,12 +11386,30 @@ window.handleOpenLocalCopyModal = function() {
 };
 
 window.handleBrowseLocalFolder = async function() {
+    const inputEl = document.getElementById('inputLocalCopyPath');
+    const currentVal = (inputEl ? inputEl.value.trim() : '') || 'W:\\helpdesk\\사진보관';
+
+    // 1. Electron 네이티브 폴더 선택 다이얼로그 (최우선)
+    if (window.isElectron && window.electronAPI && typeof window.electronAPI.selectFolder === 'function') {
+        try {
+            const res = await window.electronAPI.selectFolder(currentVal);
+            if (res && res.success && res.path && !res.cancelled) {
+                if (inputEl) inputEl.value = res.path;
+                localStorage.setItem('lastPhotoLocalCopyPath', res.path);
+            }
+            return;
+        } catch (ipcErr) {
+            console.warn("Electron selectFolder IPC error, fallback to API:", ipcErr);
+        }
+    }
+
+    // 2. 웹/서버 파워셸 다이얼로그 폴백
     try {
         const res = await fetch(`${API_BASE}/api/photos/select-local-folder`);
         const data = await res.json();
         if (data.success && data.path && !data.cancelled) {
-            const inputEl = document.getElementById('inputLocalCopyPath');
             if (inputEl) inputEl.value = data.path;
+            localStorage.setItem('lastPhotoLocalCopyPath', data.path);
         }
     } catch (e) {
         console.warn("Folder dialog failed:", e);
@@ -12372,12 +12390,30 @@ window.handleOpenLocalCopyModal = function() {
 };
 
 window.handleBrowseLocalFolder = async function() {
+    const inputEl = document.getElementById('inputLocalCopyPath');
+    const currentVal = (inputEl ? inputEl.value.trim() : '') || 'W:\\helpdesk\\사진보관';
+
+    // 1. Electron 네이티브 폴더 선택 다이얼로그 (최우선)
+    if (window.isElectron && window.electronAPI && typeof window.electronAPI.selectFolder === 'function') {
+        try {
+            const res = await window.electronAPI.selectFolder(currentVal);
+            if (res && res.success && res.path && !res.cancelled) {
+                if (inputEl) inputEl.value = res.path;
+                localStorage.setItem('lastPhotoLocalCopyPath', res.path);
+            }
+            return;
+        } catch (ipcErr) {
+            console.warn("Electron selectFolder IPC error, fallback to API:", ipcErr);
+        }
+    }
+
+    // 2. 웹/서버 파워셸 다이얼로그 폴백
     try {
         const res = await fetch(`${API_BASE}/api/photos/select-local-folder`);
         const data = await res.json();
         if (data.success && data.path && !data.cancelled) {
-            const inputEl = document.getElementById('inputLocalCopyPath');
             if (inputEl) inputEl.value = data.path;
+            localStorage.setItem('lastPhotoLocalCopyPath', data.path);
         }
     } catch (e) {
         console.warn("Folder dialog failed:", e);

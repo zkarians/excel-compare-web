@@ -3633,7 +3633,7 @@ if ($Result -eq [System.Windows.Forms.DialogResult]::OK) {
 }`;
         fs.writeFileSync(scriptPath, scriptContent, 'utf8');
 
-        const cmd = `chcp 65001 >nul && powershell -ExecutionPolicy Bypass -File "${scriptPath}"`;
+        const cmd = `chcp 65001 >nul && powershell -STA -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}"`;
         exec(cmd, { encoding: 'buffer' }, (error, stdoutBuf) => {
             if (error) {
                 console.error('PowerShell folder dialog error:', error);
