@@ -3740,7 +3740,7 @@ tr.border-group td {
 
 .ctnr-folders-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
     gap: 12px;
 }
 
@@ -3754,7 +3754,7 @@ tr.border-group td {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     user-select: none;
 }
 
@@ -3776,25 +3776,24 @@ tr.border-group td {
     align-items: center;
     gap: 6px;
     min-width: 0;
-    flex: 1;
 }
 
 .ctnr-folder-chk {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
     cursor: pointer;
     accent-color: #0284c7;
     margin: 0;
+    flex-shrink: 0;
 }
 
 .ctnr-folder-name-red {
-    font-size: 0.85rem;
+    font-size: 0.92rem;
     font-weight: 900;
     color: #ef4444;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.4px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex-shrink: 0;
 }
 
 .ctnr-folder-carrier-tag {
@@ -3802,6 +3801,7 @@ tr.border-group td {
     font-weight: 700;
     color: #64748b;
     margin-left: 2px;
+    white-space: nowrap;
 }
 
 .ctnr-folder-count-badge {
@@ -3812,6 +3812,7 @@ tr.border-group td {
     background: #e0f2fe;
     color: #0284c7;
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .ctnr-folder-bottom-row {
@@ -3821,8 +3822,14 @@ tr.border-group td {
     font-size: 0.72rem;
     color: #64748b;
     font-weight: 600;
-    padding-top: 6px;
+    padding-top: 8px;
     border-top: 1px solid #f1f5f9;
+}
+
+.ctnr-folder-bottom-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* CTNR 작업 구분 3단 탭 (진행중 / 완료 / 휴지통) */

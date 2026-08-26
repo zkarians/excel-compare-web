@@ -12288,18 +12288,18 @@ window.renderGalleryPhotos = function() {
                                             <div class="ctnr-folder-top-row">
                                                 <div class="ctnr-folder-left-info">
                                                     <input type="checkbox" class="ctnr-folder-chk" onclick="event.stopPropagation()">
-                                                    <i class="fas fa-folder" style="color:#38bdf8; font-size:0.9rem;"></i>
+                                                    <i class="fas fa-folder" style="color:#38bdf8; font-size:1rem;"></i>
                                                     <strong class="ctnr-folder-name-red">${f.cntrNo}</strong>
                                                     ${cleanCarrier ? `<span class="ctnr-folder-carrier-tag">[${cleanCarrier}]</span>` : ''}
                                                 </div>
-                                                <div style="display:flex; align-items:center; gap:6px;">
-                                                    <span class="ctnr-folder-count-badge">${f.photos.length}장</span>
-                                                    ${actionBtnsHtml}
-                                                </div>
+                                                <span class="ctnr-folder-count-badge">${f.photos.length}장</span>
                                             </div>
                                             <div class="ctnr-folder-bottom-row">
                                                 <span>조: ${f.teamName} (${f.uploaderName})</span>
-                                                <span>${timeStr}</span>
+                                                <div class="ctnr-folder-bottom-right">
+                                                    <span>${timeStr}</span>
+                                                    ${actionBtnsHtml}
+                                                </div>
                                             </div>
                                         </div>
                                     `;
