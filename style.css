@@ -3340,81 +3340,57 @@ tr.border-group td {
     color: #10b981;
 }
 
-/* [크게] 뷰 모드 그리드 (CTNR 스크린샷 1과 동일) */
+/* [크게] 뷰 모드 그리드 (CTNR 스크린샷과 100% 동일: 4열 그리드 및 대형 카드) */
 .ctnr-grid-large {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+    width: 100%;
+}
+
+@media (max-width: 1400px) {
+    .ctnr-grid-large {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+@media (max-width: 900px) {
+    .ctnr-grid-large {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (max-width: 600px) {
+    .ctnr-grid-large {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
 }
 
 .ctnr-card-large {
     position: relative;
-    background: #111827;
-    border: 1px solid #1f2937;
-    border-radius: 12px;
+    background: #11111a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-    transition: all 0.2s ease;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
 }
 
 .ctnr-card-large:hover {
-    border-color: #38bdf8;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(2, 132, 199, 0.25);
-}
-
-.ctnr-card-header-overlay {
-    background: rgba(17, 24, 39, 0.92);
-    backdrop-filter: blur(4px);
-    padding: 8px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.ctnr-card-header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.ctnr-card-title-red {
-    font-size: 0.95rem;
-    font-weight: 900;
-    color: #ef4444;
-    letter-spacing: 0.5px;
-}
-
-.ctnr-card-filename {
-    font-size: 0.72rem;
-    color: #94a3b8;
-    font-family: Consolas, monospace;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-top: 1px;
-}
-
-.ctnr-card-footer-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.7rem;
-    color: #64748b;
-    font-weight: 600;
-    margin-top: 2px;
+    border-color: rgba(56, 189, 248, 0.4);
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
 }
 
 .ctnr-card-img-wrapper {
     position: relative;
     width: 100%;
     aspect-ratio: 3/4;
-    background: #030712;
+    max-height: 520px;
+    background: #000000;
     overflow: hidden;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .ctnr-card-img-wrapper img {
@@ -3422,24 +3398,93 @@ tr.border-group td {
     height: 100%;
     object-fit: cover;
     display: block;
-    transition: transform 0.2s ease;
+    transition: transform 0.3s ease;
 }
 
 .ctnr-card-large:hover .ctnr-card-img-wrapper img {
-    transform: scale(1.02);
+    transform: scale(1.03);
+}
+
+.ctnr-card-chk-box {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 20;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ctnr-card-chk-box input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #0284c7;
+    margin: 0;
 }
 
 .ctnr-card-seal-tag {
     position: absolute;
-    bottom: 10px;
+    top: 10px;
     right: 10px;
-    background: #e11d48;
+    background: rgba(225, 29, 72, 0.95);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(251, 113, 133, 0.4);
     color: white;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 900;
     padding: 3px 8px;
     border-radius: 6px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ctnr-card-bottom-info {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: #11111a;
+}
+
+.ctnr-card-title-red {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: #ef4444;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.ctnr-card-filename-box {
+    background: #1a1a24;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-family: Consolas, monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.ctnr-card-footer-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-top: 2px;
 }
 
 /* [바둑판] 뷰 모드 그리드 (CTNR 스크린샷 2와 동일) */

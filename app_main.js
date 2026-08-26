@@ -11877,7 +11877,7 @@ window.renderGalleryPhotos = function() {
     }
 
     if (window.galleryViewMode === 'LARGE') {
-        // [크게] 뷰 모드 (CTNR 스크린샷 1과 동일)
+        // [크게] 뷰 모드 (CTNR 스크린샷과 100% 동일: 4열 대형 카드)
         let html = '<div class="ctnr-grid-large">';
         photos.forEach((p, idx) => {
             const isSeal = p.photo_type === 'seal';
@@ -11889,20 +11889,20 @@ window.renderGalleryPhotos = function() {
 
             html += `
                 <div class="ctnr-card-large" onclick="window.openPhotoLightboxFromSorted(${idx})">
-                    <div class="ctnr-card-header-overlay" onclick="event.stopPropagation()">
-                        <div class="ctnr-card-header-top">
-                            <div class="ctnr-card-title-red">${p.cntr_no || '-'}</div>
-                            <input type="checkbox" class="ctnr-photo-chk" ${isChecked ? 'checked' : ''} onchange="window.togglePhotoSelect('${p.id}', event)" style="width:16px; height:16px; cursor:pointer;">
+                    <div class="ctnr-card-img-wrapper">
+                        <div class="ctnr-card-chk-box" onclick="event.stopPropagation()">
+                            <input type="checkbox" class="ctnr-photo-chk" ${isChecked ? 'checked' : ''} onchange="window.togglePhotoSelect('${p.id}', event)">
                         </div>
-                        <div class="ctnr-card-filename" title="${fileName}">${fileName}</div>
+                        ${isSeal ? `<span class="ctnr-card-seal-tag"><i class="fas fa-camera"></i> 씰</span>` : ''}
+                        <img src="${photoUrl}" alt="${p.cntr_no}" loading="lazy" onerror="this.src='https://placehold.co/600x800/11111a/94a3b8?text=Image+Load+Fail'">
+                    </div>
+                    <div class="ctnr-card-bottom-info">
+                        <div class="ctnr-card-title-red">${p.cntr_no || '-'}</div>
+                        <div class="ctnr-card-filename-box" title="${fileName}">${fileName}</div>
                         <div class="ctnr-card-footer-info">
-                            <span><i class="fas fa-user" style="margin-right:3px;"></i>${uploader}</span>
+                            <span><i class="fas fa-user" style="margin-right:4px;"></i>${uploader}</span>
                             <span>${uploadTimeStr}</span>
                         </div>
-                    </div>
-                    <div class="ctnr-card-img-wrapper">
-                        <img src="${photoUrl}" alt="${p.cntr_no}" loading="lazy" onerror="this.src='https://placehold.co/400x500/111827/94a3b8?text=Image+Load+Fail'">
-                        ${isSeal ? `<span class="ctnr-card-seal-tag">🔴 씰(Seal)</span>` : ''}
                     </div>
                 </div>
             `;
