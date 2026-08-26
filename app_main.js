@@ -12282,11 +12282,13 @@ window.resetGalleryFilters = function() {
     const startDateEl = document.getElementById('photoGalleryStartDate');
     const endDateEl = document.getElementById('photoGalleryEndDate');
     const searchEl = document.getElementById('photoGallerySearchCntr');
+    const teamEl = document.getElementById('photoGalleryTeamFilter');
     const typeEl = document.getElementById('photoGalleryTypeFilter');
 
     if (startDateEl) startDateEl.value = formatYMD(yesterday);
     if (endDateEl) endDateEl.value = formatYMD(today);
     if (searchEl) searchEl.value = '';
+    if (teamEl) teamEl.value = 'all';
     if (typeEl) typeEl.value = 'all';
 
     window.galleryTabState = 'ACTIVE';
@@ -12431,7 +12433,13 @@ window.loadPhotoGallery = async function(targetCntr = null) {
             return;
         }
 
-        window.currentGalleryPhotos = data.photos;
+        let loadedPhotos = data.photos || [];
+        const teamFilter = document.getElementById('photoGalleryTeamFilter')?.value || 'all';
+        if (teamFilter && teamFilter !== 'all') {
+            loadedPhotos = loadedPhotos.filter(p => (p.team_name || '').includes(teamFilter));
+        }
+
+        window.currentGalleryPhotos = loadedPhotos;
         window.selectedPhotoIds.clear();
         window.renderGalleryPhotos();
 
@@ -12768,6 +12776,10 @@ window.renderGalleryPhotos = function() {
                                     const isFolderSelected = window.selectedFolderKeys && window.selectedFolderKeys.has(folderKey);
                                     const cleanCarrier = f.transporter ? (f.transporter.includes('천마') ? '천마' : (f.transporter.includes('BNI') || f.transporter.includes('비엔아이') ? 'BNI' : f.transporter.split('(')[0])) : '';
                                     const timeStr = f.lastUploadedAt ? new Date(f.lastUploadedAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+                                    
+                                    const hasSeal = f.photos && f.photos.some(p => p.photo_type === 'seal');
+                                    const gdriveCnt = f.photos ? f.photos.filter(p => !!p.gdrive_file_id).length : 0;
+                                    const isAllGDrive = f.photos && f.photos.length > 0 && gdriveCnt === f.photos.length;
 
                                     let actionBtnsHtml = '';
                                     if (isTrashTab) {
@@ -12804,8 +12816,13 @@ window.renderGalleryPhotos = function() {
                                                     <i class="fas fa-folder" style="color:#38bdf8; font-size:1rem;"></i>
                                                     <strong class="ctnr-folder-name-red">${f.cntrNo}</strong>
                                                     ${cleanCarrier ? `<span class="ctnr-folder-carrier-tag">[${cleanCarrier}]</span>` : ''}
+                                                    ${!hasSeal ? `<span title="씰(Seal) 사진이 업로드되지 않았습니다." class="ctnr-folder-missing-seal-badge" style="color:#ef4444; margin-left:4px; font-size:0.85rem; display:inline-flex; align-items:center;"><i class="fas fa-camera fa-beat" style="--fa-beat-scale: 1.15; color:#ef4444;" title="씰 사진 누락"></i></span>` : ''}
                                                 </div>
-                                                <span class="ctnr-folder-count-badge">${f.photos.length}장</span>
+                                                <div style="display:flex; align-items:center; gap:5px;">
+                                                    ${isAllGDrive ? `<span style="font-size:0.75rem;" title="모든 사진이 구글드라이브에 안전 보관 중입니다 (로컬 용량 정리됨).">☁️</span>` : ''}
+                                                    ${!hasSeal ? `<span title="씰 사진 미등록" style="color:#ef4444; font-size:0.85rem; display:inline-flex; align-items:center;"><i class="fas fa-camera" style="color:#ef4444;"></i></span>` : ''}
+                                                    <span class="ctnr-folder-count-badge">${f.photos.length}장</span>
+                                                </div>
                                             </div>
                                             <div class="ctnr-folder-bottom-row">
                                                 <span>조: ${f.teamName} (${f.uploaderName})</span>
