@@ -10771,6 +10771,7 @@ function renderAvailabilityTable() {
         return;
     }
 
+    const fragment = document.createDocumentFragment();
     groups.forEach((group, gIdx) => {
         const N = group.items.length;
         const totalPlanQty = group.items.reduce((acc, it) => acc + it.qty, 0);
