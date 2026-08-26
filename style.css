@@ -3030,9 +3030,197 @@ tr.border-group td {
     border-color: #cffafe;
 }
 
+/* ==================== 컨테이너 사진 관련 스타일 ==================== */
+.btn-cntr-photo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 5px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #0284c7;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    vertical-align: middle;
+    margin-left: 3px;
+}
 
+.btn-cntr-photo:hover {
+    background: #0284c7;
+    color: white;
+    border-color: #0284c7;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+}
 
+.btn-cntr-photo.has-photos {
+    color: #059669;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
 
+.btn-cntr-photo.has-photos:hover {
+    background: #059669;
+    color: white;
+    border-color: #059669;
+}
 
+/* 갤러리 컨테이너 카드 */
+.photo-cntr-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 14px 16px;
+    transition: all 0.2s ease;
+}
 
+.photo-cntr-card:hover {
+    border-color: #475569;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
 
+.photo-cntr-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #334155;
+}
+
+.photo-cntr-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #38bdf8;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.photo-grid-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+}
+
+.photo-thumb-box {
+    position: relative;
+    aspect-ratio: 4/3;
+    background: #0f172a;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid #334155;
+    transition: all 0.2s ease;
+}
+
+.photo-thumb-box:hover {
+    transform: scale(1.03);
+    border-color: #38bdf8;
+    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+}
+
+.photo-thumb-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.photo-thumb-seal-badge {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background: #e11d48;
+    color: white;
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.photo-thumb-time-tag {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(2px);
+    color: #cbd5e1;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 4px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 라이트박스 툴바 버튼 */
+.lightbox-btn {
+    background: rgba(51, 65, 85, 0.8);
+    border: 1px solid #475569;
+    color: white;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.15s ease;
+}
+
+.lightbox-btn:hover {
+    background: #38bdf8;
+    color: #0f172a;
+    border-color: #38bdf8;
+    transform: translateY(-1px);
+}
+
+.lightbox-btn.close:hover {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
+}
+
+/* 라이트박스 네비게이션 좌우 플로팅 버튼 */
+.lightbox-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    width: 48px;
+    height: 64px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.4rem;
+    transition: all 0.2s ease;
+    z-index: 20;
+    backdrop-filter: blur(4px);
+}
+
+.lightbox-nav-btn:hover {
+    background: rgba(56, 189, 248, 0.8);
+    color: #0f172a;
+    transform: translateY(-50%) scale(1.08);
+}
+
+.lightbox-nav-btn.prev {
+    left: 20px;
+}
+
+.lightbox-nav-btn.next {
+    right: 20px;
+}

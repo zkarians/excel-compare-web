@@ -5816,6 +5816,7 @@ function displayResults(results, isDbMode = false) {
                                     style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
                                     title="클릭하여 컨테이너 복사"
                                     class="copyable-item">${res.cntrNo}</strong>
+                            <button class="btn-cntr-photo" onclick="window.openContainerPhotoModal('${res.cntrNo.replace(/'/g, "\\'")}', event)" title="컨테이너 사진 보기"><i class="fas fa-camera"></i></button>
                             ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; margin-left:3px; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
                             ${hasPop ? `<span style="display:inline-block;margin-left:3px;font-size:0.65rem;background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;border-radius:4px;padding:0px 4px;vertical-align:middle;">POP</span>` : ''}
                         </div>
@@ -5915,6 +5916,7 @@ function displayResults(results, isDbMode = false) {
                                     style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
                                     class="copyable-item"
                                     title="클릭하여 컨테이너 복사">${res.cntrNo}</strong>
+                            <button class="btn-cntr-photo" onclick="window.openContainerPhotoModal('${res.cntrNo.replace(/'/g, "\\'")}', event)" title="컨테이너 사진 보기"><i class="fas fa-camera"></i></button>
                             ${isCaution ? `<span title="주의 비고: ${matchedCaution.remark || '사유 없음'}" style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#ef4444; color:#fff; border-radius:4px; padding:0px 4px; line-height:1.2; cursor:help; white-space:nowrap;">주의</span>` : ''}
                             ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; margin-left:4px; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
                         </div>
@@ -11150,6 +11152,7 @@ function renderAvailabilityTable() {
                     </td>
                     <td rowspan="${N}" class="merged-cell text-center" style="vertical-align: middle; background: inherit; text-align: center; color: ${cntrColor}; font-weight: ${group.cntrNo === '미지정' ? '500' : '800'};">
                         <strong onclick="window.copyToClipboard('${group.cntrNo}', '컨테이너')" style="cursor: pointer; color: ${cntrColor};" title="${transTitle}">${group.cntrNo}</strong>
+                        ${group.cntrNo !== '미지정' ? `<button class="btn-cntr-photo" onclick="window.openContainerPhotoModal('${group.cntrNo.replace(/'/g, "\\'")}', event)" title="컨테이너 사진 보기"><i class="fas fa-camera"></i></button>` : ''}
                     </td>
                     <td rowspan="${N}" class="merged-cell text-center" style="vertical-align: middle; background: inherit; text-align: center; font-weight: 600;">${group.dest}</td>
                     <td rowspan="${N}" class="merged-cell text-center" style="vertical-align: middle; background: inherit; text-align: center;">${group.carrier}</td>
@@ -11495,4 +11498,472 @@ window.openAvailabilityInExcel = async function() {
         alert("엑셀 바로보기 실행 중 오류가 발생했습니다: " + err.message);
     }
 };
+
+// ==================== 컨테이너 사진 갤러리 및 업로드 매니저 ====================
+let currentGalleryPhotos = [];
+let lightboxPhotos = [];
+let currentLightboxIndex = 0;
+let lightboxScale = 1;
+let lightboxRotation = 0;
+let lightboxPan = { x: 0, y: 0 };
+let isLightboxDragging = false;
+let lightboxDragStart = { x: 0, y: 0 };
+let uploadSelectedFiles = [];
+
+// 1. 사진 보관함 모달 오픈 (상단 버튼 또는 컨테이너 클릭)
+window.openPhotoGalleryModal = function(initialCntrNo = '') {
+    const modal = document.getElementById('photoGalleryModal');
+    if (!modal) return;
+
+    modal.style.display = 'flex';
+
+    // 기본 날짜 설정: 오늘 및 30일 전
+    const today = new Date();
+    const pastDate = new Date();
+    pastDate.setDate(today.getDate() - 30);
+
+    const startDateEl = document.getElementById('photoGalleryStartDate');
+    const endDateEl = document.getElementById('photoGalleryEndDate');
+    const searchEl = document.getElementById('photoGallerySearchCntr');
+
+    if (startDateEl && !startDateEl.value) startDateEl.value = pastDate.toISOString().split('T')[0];
+    if (endDateEl && !endDateEl.value) endDateEl.value = today.toISOString().split('T')[0];
+    if (searchEl) searchEl.value = initialCntrNo;
+
+    window.loadPhotoGallery(initialCntrNo);
+};
+
+// 특정 컨테이너 전용 사진 퀵 오픈
+window.openContainerPhotoModal = function(cntrNo, event) {
+    if (event) event.stopPropagation();
+    if (!cntrNo) return;
+    window.openPhotoGalleryModal(cntrNo.trim().toUpperCase());
+};
+
+// 2. 사진 목록 로드 (서버 API 호출)
+window.loadPhotoGallery = async function(targetCntr = '') {
+    const loadingEl = document.getElementById('photoGalleryLoading');
+    const listEl = document.getElementById('photoGalleryList');
+    const summaryEl = document.getElementById('photoGallerySummary');
+    const startDate = document.getElementById('photoGalleryStartDate')?.value || '';
+    const endDate = document.getElementById('photoGalleryEndDate')?.value || '';
+    const searchCntr = (targetCntr || document.getElementById('photoGallerySearchCntr')?.value || '').trim();
+    const typeFilter = document.getElementById('photoGalleryTypeFilter')?.value || 'all';
+
+    if (loadingEl) loadingEl.style.display = 'flex';
+    if (listEl) listEl.innerHTML = '';
+
+    try {
+        let url = `${API_BASE}/api/photos?`;
+        const queryParams = [];
+        if (searchCntr) queryParams.push(`cntrNo=${encodeURIComponent(searchCntr)}`);
+        if (startDate) queryParams.push(`startDate=${encodeURIComponent(startDate)}`);
+        if (endDate) queryParams.push(`endDate=${encodeURIComponent(endDate)}`);
+        if (typeFilter !== 'all') queryParams.push(`photoType=${encodeURIComponent(typeFilter)}`);
+
+        url += queryParams.join('&');
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (loadingEl) loadingEl.style.display = 'none';
+
+        if (!data.success || !data.photos || data.photos.length === 0) {
+            currentGalleryPhotos = [];
+            if (listEl) {
+                listEl.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: #64748b;">
+                        <i class="fas fa-camera-retro" style="font-size: 3rem; margin-bottom: 12px; opacity: 0.5;"></i>
+                        <div style="font-size: 1rem; font-weight: 700; color: #94a3b8;">등록된 컨테이너 사진이 없습니다.</div>
+                        <div style="font-size: 0.8rem; margin-top: 6px;">[사진 올리기] 버튼을 눌러 새 사진을 등록해 보세요.</div>
+                    </div>
+                `;
+            }
+            if (summaryEl) summaryEl.textContent = '조회된 사진: 0장 (0개 컨테이너)';
+            return;
+        }
+
+        currentGalleryPhotos = data.photos;
+
+        // 컨테이너별 그룹핑
+        const grouped = {};
+        data.photos.forEach(p => {
+            const cntr = p.cntr_no || '기타';
+            if (!grouped[cntr]) grouped[cntr] = [];
+            grouped[cntr].push(p);
+        });
+
+        const cntrCount = Object.keys(grouped).length;
+        if (summaryEl) summaryEl.textContent = `조회된 사진: ${data.photos.length}장 (${cntrCount}개 컨테이너)`;
+
+        let html = '';
+        for (const [cntrNo, photos] of Object.entries(grouped)) {
+            const sealCount = photos.filter(p => p.photo_type === 'seal').length;
+            const latestUpload = photos[0]?.uploaded_at ? new Date(photos[0].uploaded_at).toLocaleString() : '';
+            const transporter = photos[0]?.transporter || '';
+            const uploader = photos[0]?.uploader_name || '';
+
+            html += `
+                <div class="photo-cntr-card">
+                    <div class="photo-cntr-header">
+                        <div class="photo-cntr-title">
+                            <i class="fas fa-box" style="color: #0284c7;"></i>
+                            <span>${cntrNo}</span>
+                            ${transporter ? `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: #334155; color: #93c5fd; font-weight: 700;">${transporter}</span>` : ''}
+                            ${sealCount > 0 ? `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: #e11d48; color: white; font-weight: 800;">🔴 씰 사진 ${sealCount}장</span>` : ''}
+                            <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">총 ${photos.length}장</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 0.75rem; color: #64748b;">최근 등록: ${latestUpload} (${uploader})</span>
+                            <button class="btn btn-outline" onclick="window.openPhotoUploadModal('${cntrNo}')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; background: #0f172a; border: 1px solid #475569; color: #38bdf8; font-weight: 700; cursor: pointer;">
+                                <i class="fas fa-plus"></i> 추가등록
+                            </button>
+                        </div>
+                    </div>
+                    <div class="photo-grid-list">
+                        ${photos.map((p, idx) => {
+                            const isSeal = p.photo_type === 'seal';
+                            const photoUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(p.photo_path)}`;
+                            const timeStr = p.uploaded_at ? new Date(p.uploaded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+                            return `
+                                <div class="photo-thumb-box" onclick="window.openPhotoLightboxFromData('${cntrNo}', ${idx})">
+                                    <img src="${photoUrl}" alt="${cntrNo}" loading="lazy" onerror="this.src='https://placehold.co/130x98/1e293b/94a3b8?text=Image+Load+Fail'">
+                                    ${isSeal ? `<span class="photo-thumb-seal-badge">🔴 씰</span>` : ''}
+                                    <span class="photo-thumb-time-tag">${timeStr} · ${p.uploader_name || '작업자'}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        if (listEl) listEl.innerHTML = html;
+
+    } catch (err) {
+        console.error("loadPhotoGallery error:", err);
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (listEl) listEl.innerHTML = `<div style="text-align:center; color:#ef4444; padding:30px;">사진 목록을 가져오는 중 오류가 발생했습니다: ${err.message}</div>`;
+    }
+};
+
+// 갤러리 필터
+window.filterPhotoGallery = function() {
+    window.loadPhotoGallery();
+};
+
+// 3. 고기능 라이트박스 뷰어
+window.openPhotoLightboxFromData = function(cntrNo, idx) {
+    const photos = currentGalleryPhotos.filter(p => (p.cntr_no || '').toUpperCase() === cntrNo.toUpperCase());
+    if (!photos || photos.length === 0) return;
+    lightboxPhotos = photos;
+    currentLightboxIndex = idx;
+    window.renderLightboxPhoto();
+};
+
+window.renderLightboxPhoto = function() {
+    const modal = document.getElementById('photoLightboxModal');
+    const img = document.getElementById('lightboxImg');
+    const cntrEl = document.getElementById('lightboxCntrNo');
+    const sealEl = document.getElementById('lightboxSealBadge');
+    const idxEl = document.getElementById('lightboxIndexInfo');
+    const uploaderEl = document.getElementById('lightboxUploaderInfo');
+
+    if (!modal || !img || !lightboxPhotos || lightboxPhotos.length === 0) return;
+
+    const photo = lightboxPhotos[currentLightboxIndex];
+    if (!photo) return;
+
+    modal.style.display = 'flex';
+
+    // 줌 및 회전 초기화
+    lightboxScale = 1;
+    lightboxRotation = 0;
+    lightboxPan = { x: 0, y: 0 };
+    window.applyLightboxTransform();
+
+    const photoUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(photo.photo_path)}`;
+    img.src = photoUrl;
+
+    if (cntrEl) cntrEl.textContent = photo.cntr_no || '-';
+    if (sealEl) sealEl.style.display = (photo.photo_type === 'seal') ? 'inline-block' : 'none';
+    if (idxEl) idxEl.textContent = `(${currentLightboxIndex + 1} / ${lightboxPhotos.length})`;
+    if (uploaderEl) {
+        const upTime = photo.uploaded_at ? new Date(photo.uploaded_at).toLocaleString() : '';
+        uploaderEl.textContent = `등록: ${upTime} (${photo.uploader_name || '작업자'}) ${photo.remark ? `| 비고: ${photo.remark}` : ''}`;
+    }
+};
+
+window.applyLightboxTransform = function() {
+    const img = document.getElementById('lightboxImg');
+    if (!img) return;
+    img.style.transform = `translate(${lightboxPan.x}px, ${lightboxPan.y}px) scale(${lightboxScale}) rotate(${lightboxRotation}deg)`;
+};
+
+window.lightboxZoom = function(factor) {
+    lightboxScale = Math.max(0.2, Math.min(6, lightboxScale * factor));
+    window.applyLightboxTransform();
+};
+
+window.lightboxResetZoom = function() {
+    lightboxScale = 1;
+    lightboxRotation = 0;
+    lightboxPan = { x: 0, y: 0 };
+    window.applyLightboxTransform();
+};
+
+window.lightboxRotate = function(deg) {
+    lightboxRotation = (lightboxRotation + deg) % 360;
+    window.applyLightboxTransform();
+};
+
+window.lightboxPrev = function() {
+    if (!lightboxPhotos || lightboxPhotos.length <= 1) return;
+    currentLightboxIndex = (currentLightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
+    window.renderLightboxPhoto();
+};
+
+window.lightboxNext = function() {
+    if (!lightboxPhotos || lightboxPhotos.length <= 1) return;
+    currentLightboxIndex = (currentLightboxIndex + 1) % lightboxPhotos.length;
+    window.renderLightboxPhoto();
+};
+
+window.closePhotoLightbox = function() {
+    const modal = document.getElementById('photoLightboxModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.lightboxDownload = function() {
+    const photo = lightboxPhotos[currentLightboxIndex];
+    if (!photo) return;
+    const downloadUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(photo.photo_path)}&download=1`;
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = photo.photo_path.split('/').pop() || 'photo.jpg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+};
+
+// 라이트박스 드래그 & 마우스 휠 줌 & 키보드 단축키 초기화
+(function initLightboxEvents() {
+    const attachEvents = () => {
+        const canvas = document.getElementById('lightboxCanvas');
+        if (canvas && !canvas._bound) {
+            canvas._bound = true;
+            canvas.addEventListener('wheel', (e) => {
+                const modal = document.getElementById('photoLightboxModal');
+                if (modal && modal.style.display !== 'none') {
+                    e.preventDefault();
+                    if (e.deltaY < 0) window.lightboxZoom(1.15);
+                    else window.lightboxZoom(0.85);
+                }
+            }, { passive: false });
+
+            canvas.addEventListener('mousedown', (e) => {
+                if (e.button === 0) {
+                    isLightboxDragging = true;
+                    lightboxDragStart = { x: e.clientX - lightboxPan.x, y: e.clientY - lightboxPan.y };
+                    canvas.style.cursor = 'grabbing';
+                }
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isLightboxDragging) {
+                    lightboxPan.x = e.clientX - lightboxDragStart.x;
+                    lightboxPan.y = e.clientY - lightboxDragStart.y;
+                    window.applyLightboxTransform();
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (isLightboxDragging) {
+                    isLightboxDragging = false;
+                    if (canvas) canvas.style.cursor = 'grab';
+                }
+            });
+        }
+
+        window.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('photoLightboxModal');
+            if (modal && modal.style.display !== 'none') {
+                if (e.key === 'Escape') window.closePhotoLightbox();
+                else if (e.key === 'ArrowLeft') window.lightboxPrev();
+                else if (e.key === 'ArrowRight') window.lightboxNext();
+                else if (e.key === '+' || e.key === '=') window.lightboxZoom(1.2);
+                else if (e.key === '-') window.lightboxZoom(0.8);
+            }
+        });
+
+        const btnOpenPhotoGallery = document.getElementById('btnOpenPhotoGallery');
+        if (btnOpenPhotoGallery && !btnOpenPhotoGallery._bound) {
+            btnOpenPhotoGallery._bound = true;
+            btnOpenPhotoGallery.onclick = () => window.openPhotoGalleryModal();
+        }
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attachEvents);
+    } else {
+        attachEvents();
+    }
+})();
+
+// 4. 사진 업로드 모달 및 드래그앤드롭
+window.openPhotoUploadModal = function(prefillCntr = '') {
+    const modal = document.getElementById('photoUploadModal');
+    const cntrInput = document.getElementById('uploadInputCntrNo');
+    const remarkInput = document.getElementById('uploadInputRemark');
+    const previewList = document.getElementById('uploadFilePreviewList');
+    const fileInput = document.getElementById('photoFileInput');
+
+    if (!modal) return;
+
+    modal.style.display = 'flex';
+    if (cntrInput) cntrInput.value = prefillCntr ? prefillCntr.trim().toUpperCase() : '';
+    if (remarkInput) remarkInput.value = '';
+    if (previewList) previewList.innerHTML = '';
+    if (fileInput) fileInput.value = '';
+    uploadSelectedFiles = [];
+
+    const dropZone = document.getElementById('photoDropZone');
+    if (dropZone && !dropZone._bound) {
+        dropZone._bound = true;
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.style.borderColor = '#10b981';
+                dropZone.style.background = '#064e3b';
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.style.borderColor = '#475569';
+                dropZone.style.background = '#1e293b';
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0) {
+                window.handlePhotoFileSelect(dt.files);
+            }
+        }, false);
+    }
+};
+
+window.handlePhotoFileSelect = function(fileList) {
+    if (!fileList || fileList.length === 0) return;
+    const previewList = document.getElementById('uploadFilePreviewList');
+
+    for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        if (!uploadSelectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+            uploadSelectedFiles.push(file);
+        }
+    }
+
+    if (previewList) {
+        previewList.innerHTML = uploadSelectedFiles.map((file, idx) => `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 6px 10px; border-radius: 6px; border: 1px solid #334155; font-size: 0.78rem;">
+                <span style="color: #e2e8f0; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <i class="far fa-file-image" style="color: #38bdf8; margin-right: 6px;"></i>${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)
+                </span>
+                <button type="button" onclick="window.removeUploadFile(${idx})" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 0.85rem;">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+};
+
+window.removeUploadFile = function(idx) {
+    uploadSelectedFiles.splice(idx, 1);
+    const previewList = document.getElementById('uploadFilePreviewList');
+    if (previewList) {
+        previewList.innerHTML = uploadSelectedFiles.map((file, i) => `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 6px 10px; border-radius: 6px; border: 1px solid #334155; font-size: 0.78rem;">
+                <span style="color: #e2e8f0; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <i class="far fa-file-image" style="color: #38bdf8; margin-right: 6px;"></i>${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)
+                </span>
+                <button type="button" onclick="window.removeUploadFile(${i})" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 0.85rem;">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+};
+
+window.executePhotoUpload = async function() {
+    const cntrNo = (document.getElementById('uploadInputCntrNo')?.value || '').trim().toUpperCase();
+    const remark = document.getElementById('uploadInputRemark')?.value || '';
+    const photoTypeRadios = document.getElementsByName('uploadPhotoTypeRadio');
+    let photoType = 'normal';
+    for (const r of photoTypeRadios) {
+        if (r.checked) { photoType = r.value; break; }
+    }
+    const btnSubmit = document.getElementById('btnSubmitPhotoUpload');
+
+    if (!cntrNo) {
+        alert("컨테이너 번호를 입력해 주세요.");
+        document.getElementById('uploadInputCntrNo')?.focus();
+        return;
+    }
+
+    if (!uploadSelectedFiles || uploadSelectedFiles.length === 0) {
+        alert("업로드할 사진 파일을 최소 1장 이상 선택해 주세요.");
+        return;
+    }
+
+    if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('cntrNo', cntrNo);
+        formData.append('photoType', photoType);
+        formData.append('remark', remark);
+        formData.append('uploaderName', 'ExcelCompare App');
+
+        uploadSelectedFiles.forEach(file => {
+            formData.append('files', file);
+        });
+
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            alert(`✅ ${data.count}장의 사진이 성공적으로 업로드되었습니다!\n(ungdong.iptime.org:4000 및 본 앱 사진함에 실시간 반영됨)`);
+            document.getElementById('photoUploadModal').style.display = 'none';
+
+            // 갤러리가 열려있다면 새로고침
+            const galleryModal = document.getElementById('photoGalleryModal');
+            if (galleryModal && galleryModal.style.display !== 'none') {
+                window.loadPhotoGallery(cntrNo);
+            }
+        } else {
+            alert("❌ 업로드 실패: " + (data.error || '알 수 없는 오류'));
+        }
+    } catch (err) {
+        console.error("executePhotoUpload error:", err);
+        alert("❌ 업로드 통신 오류: " + err.message);
+    } finally {
+        if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = '<i class="fas fa-check"></i> 업로드 시작';
+        }
+    }
+};
+
 

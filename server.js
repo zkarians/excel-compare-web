@@ -2697,6 +2697,256 @@ app.delete('/api/email/history/:id', async (req, res) => {
     }
 });
 
+// --- 컨테이너 사진 관련 API ---
+const CTNR_UPLOADS_DIR = process.env.CTNR_UPLOAD_DIR || 'C:\\Program Files (x86)\\CTNR\\uploads';
+
+// 1. 사진 목록 조회 API
+app.get('/api/photos', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const { cntrNo, startDate, endDate, showTrash, photoType } = req.query;
+
+        const params = [];
+        let paramIdx = 1;
+        let whereConditions = [];
+
+        if (showTrash === 'true') {
+            whereConditions.push(`p.is_deleted = true`);
+        } else {
+            whereConditions.push(`(p.is_deleted IS NULL OR p.is_deleted = false)`);
+        }
+
+        if (cntrNo) {
+            whereConditions.push(`p.cntr_no ILIKE $${paramIdx++}`);
+            params.push(`%${cntrNo.trim()}%`);
+        }
+
+        if (photoType) {
+            whereConditions.push(`p.photo_type = $${paramIdx++}`);
+            params.push(photoType);
+        }
+
+        if (startDate) {
+            whereConditions.push(`p.uploaded_at AT TIME ZONE 'Asia/Seoul' >= $${paramIdx++}::timestamp`);
+            params.push(`${startDate} 00:00:00`);
+        }
+
+        if (endDate) {
+            whereConditions.push(`p.uploaded_at AT TIME ZONE 'Asia/Seoul' <= ($${paramIdx++}::date + INTERVAL '1 day')`);
+            params.push(endDate);
+        }
+
+        const whereSql = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+        const sql = `
+            SELECT 
+                p.id, 
+                p.job_id, 
+                p.cntr_no, 
+                p.photo_path, 
+                p.remark, 
+                p.uploaded_at, 
+                p.uploaded_by, 
+                p.team_id,
+                p.work_duration_minutes,
+                p.is_completed,
+                p.photo_type,
+                p.completed_at, 
+                p.gdrive_file_id, 
+                p.gdrive_url,
+                t.name as team_name,
+                COALESCE(NULLIF(p.uploader_name, ''), '작업자') as uploader_name, 
+                j.job_name,
+                (SELECT transporter FROM container_results WHERE cntr_no = p.cntr_no LIMIT 1) as transporter
+            FROM container_photos p
+            LEFT JOIN teams t ON p.team_id = t.id
+            LEFT JOIN container_jobs j ON p.job_id = j.id
+            ${whereSql}
+            ORDER BY p.uploaded_at DESC
+        `;
+
+        const result = await pool.query(sql, params);
+
+        // 파일 존재 여부 및 mtime 계산
+        const photosWithStats = result.rows.map(row => {
+            let photoPathWithCacheBuster = row.photo_path;
+            let fileExists = false;
+            try {
+                const filePath = path.join(CTNR_UPLOADS_DIR, row.photo_path);
+                if (fs.existsSync(filePath)) {
+                    fileExists = true;
+                    const stats = fs.statSync(filePath);
+                    if (stats.mtimeMs) {
+                        photoPathWithCacheBuster = `${row.photo_path}?t=${Math.floor(stats.mtimeMs)}`;
+                    }
+                }
+            } catch (e) {}
+
+            return {
+                ...row,
+                photo_path: photoPathWithCacheBuster,
+                file_exists: fileExists
+            };
+        });
+
+        res.json({ success: true, photos: photosWithStats });
+    } catch (err) {
+        console.error("GET /api/photos error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 2. 사진 스트리밍 서빙 API
+app.get('/api/photos/view', async (req, res) => {
+    try {
+        const rawFilename = req.query.filename;
+        const isDownloadMode = req.query.download === '1';
+
+        if (!rawFilename) {
+            return res.status(400).send('Filename is required');
+        }
+
+        const filename = rawFilename.split('?')[0];
+        const filePath = path.resolve(CTNR_UPLOADS_DIR, filename);
+
+        // Directory traversal 방지
+        const relPath = path.relative(CTNR_UPLOADS_DIR, filePath);
+        if (relPath.startsWith('..') || path.isAbsolute(relPath)) {
+            return res.status(403).send('Forbidden');
+        }
+
+        if (fs.existsSync(filePath)) {
+            let contentType = 'image/jpeg';
+            if (filePath.toLowerCase().endsWith('.png')) contentType = 'image/png';
+            else if (filePath.toLowerCase().endsWith('.webp')) contentType = 'image/webp';
+            else if (filePath.toLowerCase().endsWith('.gif')) contentType = 'image/gif';
+
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            if (isDownloadMode) {
+                res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(path.basename(filePath))}"`);
+            }
+            return res.sendFile(filePath);
+        }
+
+        // 로컬에 파일이 없는 경우 remote CTNR 서버에서 fetch 시도
+        const remoteUrl = `http://ungdong.iptime.org:4000/api/photos/view?filename=${encodeURIComponent(filename)}`;
+        try {
+            const remoteRes = await fetch(remoteUrl, { signal: AbortSignal.timeout(4000) });
+            if (remoteRes.ok) {
+                const arrayBuffer = await remoteRes.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+                const fetchedType = remoteRes.headers.get('content-type') || 'image/jpeg';
+
+                if (fetchedType.toLowerCase().includes('image') && buffer.length > 0) {
+                    try {
+                        const dir = path.dirname(filePath);
+                        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+                        fs.writeFileSync(filePath, buffer);
+                    } catch (e) {}
+
+                    res.setHeader('Content-Type', fetchedType);
+                    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+                    return res.send(buffer);
+                }
+            }
+        } catch (remoteErr) {}
+
+        return res.status(404).send('Photo not found');
+    } catch (err) {
+        console.error("GET /api/photos/view error:", err);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+// 3. 사진 업로드 API (Multer)
+const uploadStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const cntrNo = (req.body.cntrNo || 'UNKNOWN').replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
+        const containerDir = path.join(CTNR_UPLOADS_DIR, cntrNo);
+        if (!fs.existsSync(containerDir)) {
+            fs.mkdirSync(containerDir, { recursive: true });
+        }
+        cb(null, containerDir);
+    },
+    filename: function (req, file, cb) {
+        const dateStr = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+        const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+        cb(null, `${dateStr}_${rand}${ext}`);
+    }
+});
+const uploadMulter = multer({
+    storage: uploadStorage,
+    limits: { fileSize: 30 * 1024 * 1024 } // 30MB
+});
+
+app.post('/api/photos', uploadMulter.array('files', 30), async (req, res) => {
+    try {
+        const pool = await getPool();
+        const { cntrNo, remark, photoType, uploaderName } = req.body;
+        const files = req.files || [];
+
+        if (!cntrNo || files.length === 0) {
+            return res.status(400).json({ success: false, error: '컨테이너 번호 또는 파일이 누락되었습니다.' });
+        }
+
+        const cleanCntrNo = cntrNo.trim().toUpperCase();
+        const pType = photoType || 'normal';
+        const uploader = uploaderName || '관리자';
+
+        let jobId = null;
+        try {
+            const jobRes = await pool.query('SELECT id FROM container_jobs WHERE cntr_no = $1 ORDER BY id DESC LIMIT 1', [cleanCntrNo]);
+            if (jobRes.rows.length > 0) {
+                jobId = jobRes.rows[0].id;
+            } else {
+                const newJob = await pool.query(
+                    'INSERT INTO container_jobs (cntr_no, job_name, created_at) VALUES ($1, $2, NOW()) RETURNING id',
+                    [cleanCntrNo, cleanCntrNo]
+                );
+                jobId = newJob.rows[0].id;
+            }
+        } catch (jobErr) {
+            console.warn("Job lookup/create warning:", jobErr.message);
+        }
+
+        const insertedPhotos = [];
+        for (const file of files) {
+            const relativePath = `${cleanCntrNo.replace(/[^a-zA-Z0-9]/g, '_')}/${file.filename}`;
+            const insertSql = `
+                INSERT INTO container_photos (
+                    job_id, cntr_no, photo_path, remark, uploaded_at, uploader_name, photo_type, is_deleted
+                ) VALUES (
+                    $1, $2, $3, $4, NOW(), $5, $6, false
+                ) RETURNING *
+            `;
+            const insRes = await pool.query(insertSql, [
+                jobId, cleanCntrNo, relativePath, remark || null, uploader, pType
+            ]);
+            insertedPhotos.push(insRes.rows[0]);
+        }
+
+        res.json({ success: true, count: insertedPhotos.length, photos: insertedPhotos });
+    } catch (err) {
+        console.error("POST /api/photos error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 4. 사진 삭제(휴지통 이동) API
+app.delete('/api/photos/:id', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const { id } = req.params;
+        await pool.query('UPDATE container_photos SET is_deleted = true, deleted_at = NOW() WHERE id = $1', [id]);
+        res.json({ success: true, message: '사진이 삭제되었습니다.' });
+    } catch (err) {
+        console.error("DELETE /api/photos error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Static file serving (re-enabled to allow browser access)
 app.use(express.static(__dirname));
 
