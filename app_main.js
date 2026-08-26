@@ -12104,7 +12104,7 @@ window.renderGalleryPhotos = function() {
             const isChecked = window.selectedPhotoIds.has(String(p.id));
 
             html += `
-                <div class="ctnr-card-large" onclick="window.openPhotoLightboxFromSorted(${idx})">
+                <div class="ctnr-card-large" onclick="window.openPhotoLightboxById('${p.id}')">
                     <div class="ctnr-card-img-wrapper">
                         <div class="ctnr-card-chk-box" onclick="event.stopPropagation()">
                             <input type="checkbox" class="ctnr-photo-chk" ${isChecked ? 'checked' : ''} onchange="window.togglePhotoSelect('${p.id}', event)">
@@ -12297,8 +12297,41 @@ window.filterPhotoGallery = function() {
 };
 
 // 4. 고기능 라이트박스 뷰어
+window.openPhotoLightboxById = function(photoId) {
+    let photos = [...window.currentGalleryPhotos];
+    if (window.currentGalleryTargetCntr) {
+        const targetCntrUpper = window.currentGalleryTargetCntr.toUpperCase().trim();
+        photos = photos.filter(p => (p.cntr_no || '').toUpperCase().trim() === targetCntrUpper);
+    }
+    photos.sort((a, b) => {
+        if (window.gallerySortBy === 'NAME_ASC') {
+            return (a.photo_path || '').localeCompare(b.photo_path || '');
+        } else if (window.gallerySortBy === 'NAME_DESC') {
+            return (b.photo_path || '').localeCompare(a.photo_path || '');
+        } else if (window.gallerySortBy === 'UPLOAD_DESC') {
+            return new Date(b.uploaded_at || 0).getTime() - new Date(a.uploaded_at || 0).getTime();
+        } else if (window.gallerySortBy === 'UPLOAD_ASC') {
+            return new Date(a.uploaded_at || 0).getTime() - new Date(b.uploaded_at || 0).getTime();
+        }
+        return 0;
+    });
+
+    if (!photos || photos.length === 0) return;
+    const targetIdx = photos.findIndex(p => String(p.id) === String(photoId));
+    if (targetIdx === -1) return;
+
+    lightboxPhotos = photos;
+    currentLightboxIndex = targetIdx;
+    window.renderLightboxPhoto();
+};
+
 window.openPhotoLightboxFromSorted = function(idx) {
-    const photos = [...window.currentGalleryPhotos].sort((a, b) => {
+    let photos = [...window.currentGalleryPhotos];
+    if (window.currentGalleryTargetCntr) {
+        const targetCntrUpper = window.currentGalleryTargetCntr.toUpperCase().trim();
+        photos = photos.filter(p => (p.cntr_no || '').toUpperCase().trim() === targetCntrUpper);
+    }
+    photos.sort((a, b) => {
         if (window.gallerySortBy === 'NAME_ASC') {
             return (a.photo_path || '').localeCompare(b.photo_path || '');
         } else if (window.gallerySortBy === 'NAME_DESC') {
@@ -12313,7 +12346,7 @@ window.openPhotoLightboxFromSorted = function(idx) {
 
     if (!photos || photos.length === 0) return;
     lightboxPhotos = photos;
-    currentLightboxIndex = idx;
+    currentLightboxIndex = (idx >= 0 && idx < photos.length) ? idx : 0;
     window.renderLightboxPhoto();
 };
 
