@@ -2421,25 +2421,21 @@ function getProductLocationStockDetails(prodName, prodType = '') {
     }
 
     if (isQType) {
-        // 3-1. [유] 유사 모델 탐색
+        // 3-1. [유] 유사 모델 탐색 (창고에 실물/가용 재고가 존재하는 모델만 대상)
         if (targetPrefix.length >= 3) {
             const candidates = new Set();
-            (warehouseAllStockList || []).forEach(item => {
-                if (item.modelName) candidates.add(item.modelName.toUpperCase().trim());
-            });
-            if (comparisonResult && Array.isArray(comparisonResult)) {
-                comparisonResult.forEach(item => {
-                    if (item.prodName) candidates.add(item.prodName.toUpperCase().trim());
+            if (warehouseStockLoaded && warehouseStockQtyMap) {
+                Object.entries(warehouseStockQtyMap).forEach(([mName, sInfo]) => {
+                    const hasStock = (sInfo.physical || 0) > 0 || (sInfo.good || 0) > 0 || (sInfo.available || 0) > 0 || (sInfo.pending || 0) > 0;
+                    if (hasStock) candidates.add(mName.toUpperCase().trim());
                 });
             }
-            if (processedAvailabilityData && Array.isArray(processedAvailabilityData)) {
-                processedAvailabilityData.forEach(item => {
-                    if (item.prodName) candidates.add(item.prodName.toUpperCase().trim());
-                });
-            }
-            if (productMaster && Array.isArray(productMaster)) {
-                productMaster.forEach(item => {
-                    if (item.name) candidates.add(item.name.toUpperCase().trim());
+            if (warehouseAllStockList && Array.isArray(warehouseAllStockList)) {
+                warehouseAllStockList.forEach(item => {
+                    const qty = (item.goodQty !== undefined || item.pendingQty !== undefined)
+                        ? ((item.goodQty || 0) + (item.pendingQty || 0))
+                        : (item.physicalQty || 0);
+                    if (qty > 0 && item.modelName) candidates.add(item.modelName.toUpperCase().trim());
                 });
             }
 
@@ -2464,17 +2460,24 @@ function getProductLocationStockDetails(prodName, prodType = '') {
                 const matches = (warehouseAllStockList || []).filter(item => (item.modelName || '').trim().toUpperCase() === simName);
                 matches.forEach(item => {
                     const loc = (item.location || '미지정').trim();
-                    if (!simLocMap[loc]) {
-                        simLocMap[loc] = { location: loc, goodQty: 0, pendingQty: 0, workTotalQty: 0 };
+                    const gQty = item.goodQty !== undefined ? item.goodQty : 0;
+                    const pQty = item.pendingQty !== undefined ? item.pendingQty : 0;
+                    const wTotal = (gQty + pQty) > 0 ? (gQty + pQty) : (item.physicalQty || 0);
+                    if (wTotal > 0) {
+                        if (!simLocMap[loc]) {
+                            simLocMap[loc] = { location: loc, goodQty: 0, pendingQty: 0, workTotalQty: 0 };
+                        }
+                        simLocMap[loc].goodQty += gQty;
+                        simLocMap[loc].pendingQty += pQty;
+                        simLocMap[loc].workTotalQty += wTotal;
                     }
-                    simLocMap[loc].goodQty += (item.goodQty || 0);
-                    simLocMap[loc].pendingQty += (item.pendingQty || 0);
-                    simLocMap[loc].workTotalQty += ((item.goodQty || 0) + (item.pendingQty || 0));
                 });
                 const simLocations = Object.values(simLocMap).sort((a, b) => a.location.localeCompare(b.location));
                 const simGood = simLocations.reduce((s, l) => s + l.goodQty, 0);
                 const simPending = simLocations.reduce((s, l) => s + l.pendingQty, 0);
-                const simTotal = simGood + simPending;
+                const simTotal = simLocations.reduce((s, l) => s + l.workTotalQty, 0);
+
+                if (simTotal <= 0 || simLocations.length === 0) return; // 재고가 0인 유사 모델은 팝업 제외
 
                 relatedGroups.push({
                     type: 'similar',
@@ -2489,26 +2492,20 @@ function getProductLocationStockDetails(prodName, prodType = '') {
             });
         }
 
-        // 3-2. [동] 동일 접두어 모델 탐색
+        // 3-2. [동] 동일 접두어 모델 탐색 (창고에 실물/가용 재고가 존재하는 모델만 대상)
         if (targetPrefix.length >= 3 && nameUpper.includes('.')) {
             const prefix = targetPrefix;
             const dongCandidates = new Set();
 
             (warehouseAllStockList || []).forEach(item => {
                 const mUpper = (item.modelName || '').trim().toUpperCase();
-                if (mUpper !== nameUpper && mUpper.startsWith(prefix + '.')) {
+                const qty = (item.goodQty !== undefined || item.pendingQty !== undefined)
+                    ? ((item.goodQty || 0) + (item.pendingQty || 0))
+                    : (item.physicalQty || 0);
+                if (qty > 0 && mUpper !== nameUpper && mUpper.startsWith(prefix + '.')) {
                     dongCandidates.add(mUpper);
                 }
             });
-
-            if (comparisonResult && Array.isArray(comparisonResult)) {
-                comparisonResult.forEach(item => {
-                    const mUpper = (item.prodName || '').trim().toUpperCase();
-                    if (mUpper !== nameUpper && mUpper.startsWith(prefix + '.')) {
-                        dongCandidates.add(mUpper);
-                    }
-                });
-            }
 
             dongCandidates.forEach(dongName => {
                 if (relatedGroups.some(g => g.modelName === dongName)) return;
@@ -2517,17 +2514,24 @@ function getProductLocationStockDetails(prodName, prodType = '') {
                 const matches = (warehouseAllStockList || []).filter(item => (item.modelName || '').trim().toUpperCase() === dongName);
                 matches.forEach(item => {
                     const loc = (item.location || '미지정').trim();
-                    if (!dongLocMap[loc]) {
-                        dongLocMap[loc] = { location: loc, goodQty: 0, pendingQty: 0, workTotalQty: 0 };
+                    const gQty = item.goodQty !== undefined ? item.goodQty : 0;
+                    const pQty = item.pendingQty !== undefined ? item.pendingQty : 0;
+                    const wTotal = (gQty + pQty) > 0 ? (gQty + pQty) : (item.physicalQty || 0);
+                    if (wTotal > 0) {
+                        if (!dongLocMap[loc]) {
+                            dongLocMap[loc] = { location: loc, goodQty: 0, pendingQty: 0, workTotalQty: 0 };
+                        }
+                        dongLocMap[loc].goodQty += gQty;
+                        dongLocMap[loc].pendingQty += pQty;
+                        dongLocMap[loc].workTotalQty += wTotal;
                     }
-                    dongLocMap[loc].goodQty += (item.goodQty || 0);
-                    dongLocMap[loc].pendingQty += (item.pendingQty || 0);
-                    dongLocMap[loc].workTotalQty += ((item.goodQty || 0) + (item.pendingQty || 0));
                 });
                 const dongLocations = Object.values(dongLocMap).sort((a, b) => a.location.localeCompare(b.location));
                 const dongGood = dongLocations.reduce((s, l) => s + l.goodQty, 0);
                 const dongPending = dongLocations.reduce((s, l) => s + l.pendingQty, 0);
-                const dongTotal = dongGood + dongPending;
+                const dongTotal = dongLocations.reduce((s, l) => s + l.workTotalQty, 0);
+
+                if (dongTotal <= 0 || dongLocations.length === 0) return; // 재고가 0인 동일접두어 모델은 팝업 제외
 
                 relatedGroups.push({
                     type: 'dong',
@@ -3244,27 +3248,23 @@ function getGlobalLevenshteinDistance(a, b) {
             }
         }
 
-        // 제품구분이 'Q'인 경우에 한해 [유] 유사모델 및 [동] 동일접두어 모델 수집
+        // 제품구분이 'Q'인 경우에 한해 [유] 유사모델 및 [동] 동일접두어 모델 수집 (창고 재고 > 0인 모델만)
         if (isQType) {
             // 3-1. [유] 유사 모델 탐색
             if (targetPrefix.length >= 3) {
                 const candidates = new Set();
-                (warehouseAllStockList || []).forEach(item => {
-                    if (item.modelName) candidates.add(item.modelName.toUpperCase().trim());
-                });
-                if (comparisonResult && Array.isArray(comparisonResult)) {
-                    comparisonResult.forEach(item => {
-                        if (item.prodName) candidates.add(item.prodName.toUpperCase().trim());
+                if (warehouseStockLoaded && warehouseStockQtyMap) {
+                    Object.entries(warehouseStockQtyMap).forEach(([mName, sInfo]) => {
+                        const hasStock = (sInfo.physical || 0) > 0 || (sInfo.good || 0) > 0 || (sInfo.available || 0) > 0 || (sInfo.pending || 0) > 0;
+                        if (hasStock) candidates.add(mName.toUpperCase().trim());
                     });
                 }
-                if (processedAvailabilityData && Array.isArray(processedAvailabilityData)) {
-                    processedAvailabilityData.forEach(item => {
-                        if (item.prodName) candidates.add(item.prodName.toUpperCase().trim());
-                    });
-                }
-                if (productMaster && Array.isArray(productMaster)) {
-                    productMaster.forEach(item => {
-                        if (item.name) candidates.add(item.name.toUpperCase().trim());
+                if (warehouseAllStockList && Array.isArray(warehouseAllStockList)) {
+                    warehouseAllStockList.forEach(item => {
+                        const qty = (item.goodQty !== undefined || item.pendingQty !== undefined)
+                            ? ((item.goodQty || 0) + (item.pendingQty || 0))
+                            : (item.physicalQty || 0);
+                        if (qty > 0 && item.modelName) candidates.add(item.modelName.toUpperCase().trim());
                     });
                 }
 
@@ -3288,17 +3288,24 @@ function getGlobalLevenshteinDistance(a, b) {
                     const matches = (warehouseAllStockList || []).filter(item => (item.modelName || '').trim().toUpperCase() === sim.name);
                     matches.forEach(item => {
                         const loc = (item.location || '미지정').trim();
-                        if (!simLocMap[loc]) {
-                            simLocMap[loc] = { location: loc, goodQty: 0, pendingQty: 0, workTotalQty: 0 };
+                        const gQty = item.goodQty !== undefined ? item.goodQty : 0;
+                        const pQty = item.pendingQty !== undefined ? item.pendingQty : 0;
+                        const wTotal = (gQty + pQty) > 0 ? (gQty + pQty) : (item.physicalQty || 0);
+                        if (wTotal > 0) {
+                            if (!simLocMap[loc]) {
+                                simLocMap[loc] = { location: loc, goodQty: 0, pendingQty: 0, workTotalQty: 0 };
+                            }
+                            simLocMap[loc].goodQty += gQty;
+                            simLocMap[loc].pendingQty += pQty;
+                            simLocMap[loc].workTotalQty += wTotal;
                         }
-                        simLocMap[loc].goodQty += (item.goodQty || 0);
-                        simLocMap[loc].pendingQty += (item.pendingQty || 0);
-                        simLocMap[loc].workTotalQty += ((item.goodQty || 0) + (item.pendingQty || 0));
                     });
                     const simLocations = Object.values(simLocMap).sort((a, b) => a.location.localeCompare(b.location));
                     const simGood = simLocations.reduce((s, l) => s + l.goodQty, 0);
                     const simPending = simLocations.reduce((s, l) => s + l.pendingQty, 0);
-                    const simTotal = simGood + simPending;
+                    const simTotal = simLocations.reduce((s, l) => s + l.workTotalQty, 0);
+
+                    if (simTotal <= 0 || simLocations.length === 0) return; // 재고가 0인 유사 모델은 팝업 제외
 
                     relatedGroups.push({
                         type: 'yu',
@@ -3313,25 +3320,20 @@ function getGlobalLevenshteinDistance(a, b) {
                 });
             }
 
-            // 3-2. [동] 동일 접두어 모델 탐색
+            // 3-2. [동] 동일 접두어 모델 탐색 (창고 재고 > 0인 모델만)
             const dotIdx = nameUpper.lastIndexOf('.');
             if (dotIdx !== -1) {
                 const prefix = nameUpper.substring(0, dotIdx);
                 const dongCandidates = new Set();
                 (warehouseAllStockList || []).forEach(item => {
                     const mUpper = (item.modelName || '').trim().toUpperCase();
-                    if (mUpper !== nameUpper && mUpper.startsWith(prefix + '.')) {
+                    const qty = (item.goodQty !== undefined || item.pendingQty !== undefined)
+                        ? ((item.goodQty || 0) + (item.pendingQty || 0))
+                        : (item.physicalQty || 0);
+                    if (qty > 0 && mUpper !== nameUpper && mUpper.startsWith(prefix + '.')) {
                         dongCandidates.add(mUpper);
                     }
                 });
-                if (comparisonResult && Array.isArray(comparisonResult)) {
-                    comparisonResult.forEach(item => {
-                        const mUpper = (item.prodName || '').trim().toUpperCase();
-                        if (mUpper !== nameUpper && mUpper.startsWith(prefix + '.')) {
-                            dongCandidates.add(mUpper);
-                        }
-                    });
-                }
 
                 dongCandidates.forEach(dongName => {
                     if (relatedGroups.some(g => g.modelName === dongName)) return;
@@ -3340,17 +3342,24 @@ function getGlobalLevenshteinDistance(a, b) {
                     const matches = (warehouseAllStockList || []).filter(item => (item.modelName || '').trim().toUpperCase() === dongName);
                     matches.forEach(item => {
                         const loc = (item.location || '미지정').trim();
-                        if (!dongLocMap[loc]) {
-                            dongLocMap[loc] = { location: loc, goodQty: 0, pendingQty: 0, workTotalQty: 0 };
+                        const gQty = item.goodQty !== undefined ? item.goodQty : 0;
+                        const pQty = item.pendingQty !== undefined ? item.pendingQty : 0;
+                        const wTotal = (gQty + pQty) > 0 ? (gQty + pQty) : (item.physicalQty || 0);
+                        if (wTotal > 0) {
+                            if (!dongLocMap[loc]) {
+                                dongLocMap[loc] = { location: loc, goodQty: 0, pendingQty: 0, workTotalQty: 0 };
+                            }
+                            dongLocMap[loc].goodQty += gQty;
+                            dongLocMap[loc].pendingQty += pQty;
+                            dongLocMap[loc].workTotalQty += wTotal;
                         }
-                        dongLocMap[loc].goodQty += (item.goodQty || 0);
-                        dongLocMap[loc].pendingQty += (item.pendingQty || 0);
-                        dongLocMap[loc].workTotalQty += ((item.goodQty || 0) + (item.pendingQty || 0));
                     });
                     const dongLocations = Object.values(dongLocMap).sort((a, b) => a.location.localeCompare(b.location));
                     const dongGood = dongLocations.reduce((s, l) => s + l.goodQty, 0);
                     const dongPending = dongLocations.reduce((s, l) => s + l.pendingQty, 0);
-                    const dongTotal = dongGood + dongPending;
+                    const dongTotal = dongLocations.reduce((s, l) => s + l.workTotalQty, 0);
+
+                    if (dongTotal <= 0 || dongLocations.length === 0) return; // 재고가 0인 동일접두어 모델은 팝업 제외
 
                     relatedGroups.push({
                         type: 'dong',
@@ -4942,17 +4951,25 @@ function getDongTag(prodName, masterProdType) {
     if (warehouseStockDongPrefixes.has(prefix)) {
         let tooltipContent = '';
         if (warehouseAllStockList && warehouseAllStockList.length > 0) {
-            const relatedItems = warehouseAllStockList.filter(item => 
-                item.modelName !== nameUpper && item.modelName.startsWith(prefix + '.')
-            );
-            
-            const grouped = {};
-            relatedItems.forEach(item => {
-                if (!grouped[item.modelName]) grouped[item.modelName] = [];
+            const relatedItems = warehouseAllStockList.filter(item => {
+                const isMatch = (item.modelName || '').trim().toUpperCase() !== nameUpper && 
+                                (item.modelName || '').trim().toUpperCase().startsWith(prefix + '.');
                 const qty = (item.goodQty !== undefined || item.pendingQty !== undefined)
                     ? ((item.goodQty || 0) + (item.pendingQty || 0))
                     : (item.physicalQty || 0);
-                grouped[item.modelName].push(`[${item.location || '로케이션 없음'}] ${qty} EA`);
+                return isMatch && qty > 0;
+            });
+            
+            if (relatedItems.length === 0) return ''; // 실제 재고 > 0인 관련 모델이 없으면 태그 미표시!
+
+            const grouped = {};
+            relatedItems.forEach(item => {
+                const mName = (item.modelName || '').trim();
+                if (!grouped[mName]) grouped[mName] = [];
+                const qty = (item.goodQty !== undefined || item.pendingQty !== undefined)
+                    ? ((item.goodQty || 0) + (item.pendingQty || 0))
+                    : (item.physicalQty || 0);
+                grouped[mName].push(`[${item.location || '로케이션 없음'}] ${qty.toLocaleString()} EA`);
             });
             
             const tooltipLines = [];
@@ -4970,7 +4987,7 @@ function getDongTag(prodName, masterProdType) {
     return '';
 }
 
-// [유] 태그 헬퍼: 제품구분이 'Q'인 경우에 한해, 스펠링이 1~2개 차이나는 유사모델이 존재하면 표시
+// [유] 태그 헬퍼: 제품구분이 'Q'인 경우에 한해, 스펠링이 1~2개 차이나는 유사모델이 창고 재고에 존재하면 표시
 function getYuTag(prodName, masterProdType) {
     const pt = (masterProdType || '').toUpperCase().trim();
     if (pt !== 'Q') return ''; // 제품구분이 Q일 때만 적용
@@ -4981,15 +4998,25 @@ function getYuTag(prodName, masterProdType) {
     const targetPrefix = nameUpper.includes('.') ? nameUpper.substring(0, nameUpper.lastIndexOf('.')) : nameUpper;
     if (targetPrefix.length < 3) return '';
 
-    // 비교 대상 후보군 수집 (현재 비교 결과 및 창고 재고에 존재하는 모든 고유 제품명)
+    // 비교 대상 후보군 수집: 현재 창고에 실제 실물/가용 재고(재고 > 0)가 존재하는 모델만 수집!
     const candidates = new Set();
-    if (comparisonResult && Array.isArray(comparisonResult)) {
-        comparisonResult.forEach(item => {
-            if (item.prodName) candidates.add(item.prodName.toUpperCase().trim());
+    if (warehouseStockLoaded && warehouseStockQtyMap) {
+        Object.entries(warehouseStockQtyMap).forEach(([mName, sInfo]) => {
+            const hasStock = (sInfo.physical || 0) > 0 || (sInfo.good || 0) > 0 || (sInfo.available || 0) > 0 || (sInfo.pending || 0) > 0;
+            if (hasStock) {
+                candidates.add(mName.toUpperCase().trim());
+            }
         });
     }
-    if (warehouseStockLoaded && warehouseStockQtyMap) {
-        Object.keys(warehouseStockQtyMap).forEach(mName => candidates.add(mName.toUpperCase().trim()));
+    if (warehouseAllStockList && Array.isArray(warehouseAllStockList)) {
+        warehouseAllStockList.forEach(item => {
+            const qty = (item.goodQty !== undefined || item.pendingQty !== undefined)
+                ? ((item.goodQty || 0) + (item.pendingQty || 0))
+                : (item.physicalQty || 0);
+            if (qty > 0 && item.modelName) {
+                candidates.add(item.modelName.toUpperCase().trim());
+            }
+        });
     }
 
     const similarModels = [];
@@ -5023,11 +5050,10 @@ function getYuTag(prodName, masterProdType) {
             tooltipLines.push(`• ${item.modelName} (${item.diff}글자 차이)`);
         });
         if (similarModels.length > 8) {
-            tooltipLines.push(`• 외 ${similarModels.length - 8}건 더 있음`);
+            tooltipLines.push(`• 외 ${similarModels.length - 8}개 유사 모델 존재`);
         }
 
-        const tooltipContent = tooltipLines.join('\n').replace(/"/g, '&quot;');
-        return `<span title="${tooltipContent}" class="badge-yu">유</span>`;
+        return `<span class="badge-yu" title="${tooltipLines.join('\n').replace(/"/g, '&quot;')}">유</span>`;
     }
 
     return '';
