@@ -39,8 +39,8 @@ body {
 }
 
 .container {
-    max-width: 1600px;
-    /* 기존 98%에서 고정 최대 너비로 변경하여 중앙 정렬 유지 */
+    max-width: 99vw;
+    width: 99%;
     margin: 0 auto;
 }
 

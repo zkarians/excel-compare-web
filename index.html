@@ -49,90 +49,90 @@
 
     <div class="container">
         <header
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.4rem; gap: 6px; flex-wrap: nowrap; overflow-x: auto;">
-            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-                <img src="build/icon.png" alt="logo" style="width: 28px; height: 28px; border-radius: 6px; object-fit: cover; box-shadow: 0 2px 6px rgba(6,182,212,0.25);">
-                <div style="display: flex; gap: 2px; background: #f1f5f9; padding: 2px; border-radius: 7px;">
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.35rem; gap: 4px; flex-wrap: nowrap; overflow-x: hidden;">
+            <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                <img src="build/icon.png" alt="logo" style="width: 24px; height: 24px; border-radius: 6px; object-fit: cover; box-shadow: 0 2px 6px rgba(6,182,212,0.25);">
+                <div style="display: flex; gap: 2px; background: #f1f5f9; padding: 2px; border-radius: 6px;">
                     <button id="mainTabBtnSelection" class="header-tab-btn header-tab-active"
-                        style="padding: 0.22rem 0.65rem; font-size: 0.76rem; border-radius: 5px; font-weight: 600; border: none; cursor: pointer; background: #fff; color: #0ea5e9; box-shadow: 0 1px 4px rgba(0,0,0,0.10); transition: all 0.18s; white-space: nowrap;">
-                        <i class="fas fa-file-upload" style="margin-right:3px;"></i>데이터 선택
+                        style="padding: 0.18rem 0.50rem; font-size: 0.72rem; border-radius: 4px; font-weight: 600; border: none; cursor: pointer; background: #fff; color: #0ea5e9; box-shadow: 0 1px 3px rgba(0,0,0,0.10); transition: all 0.15s; white-space: nowrap;">
+                        <i class="fas fa-file-upload" style="margin-right:2px;"></i>데이터 선택
                     </button>
                     <button id="mainTabBtnResults" class="header-tab-btn"
-                        style="padding: 0.22rem 0.65rem; font-size: 0.76rem; border-radius: 5px; font-weight: 600; border: none; cursor: pointer; background: transparent; color: #64748b; transition: all 0.18s; white-space: nowrap;">
-                        <i class="fas fa-chart-bar" style="margin-right:3px;"></i>비교 결과
+                        style="padding: 0.18rem 0.50rem; font-size: 0.72rem; border-radius: 4px; font-weight: 600; border: none; cursor: pointer; background: transparent; color: #64748b; transition: all 0.15s; white-space: nowrap;">
+                        <i class="fas fa-chart-bar" style="margin-right:2px;"></i>비교 결과
                     </button>
                     <button id="mainTabBtnAvailability" class="header-tab-btn"
-                        style="padding: 0.22rem 0.65rem; font-size: 0.76rem; border-radius: 5px; font-weight: 600; border: none; cursor: pointer; background: transparent; color: #64748b; transition: all 0.18s; white-space: nowrap;">
-                        <i class="fas fa-clipboard-check" style="margin-right:3px;"></i>작업 가용성 분석
+                        style="padding: 0.18rem 0.50rem; font-size: 0.72rem; border-radius: 4px; font-weight: 600; border: none; cursor: pointer; background: transparent; color: #64748b; transition: all 0.15s; white-space: nowrap;">
+                        <i class="fas fa-clipboard-check" style="margin-right:2px;"></i>작업분석
                     </button>
                 </div>
             </div>
             <div id="cloudStatsBadge" class="header-actions"
-                style="display: flex; gap: 6px; align-items: center; background: #f0fdf4; padding: 3px 8px; border-radius: 7px; border: 1px solid #bbf7d0; font-size: 0.72rem; color: #166534; flex-shrink: 0; white-space: nowrap;">
+                style="display: flex; gap: 4px; align-items: center; background: #f0fdf4; padding: 2px 6px; border-radius: 6px; border: 1px solid #bbf7d0; font-size: 0.69rem; color: #166534; flex-shrink: 0; white-space: nowrap;">
                 <div title="선사 매핑 수">🚢선사: <strong id="cloudCarrierCnt">0</strong></div>
-                <div style="width: 1px; height: 10px; background: #bbf7d0;"></div>
+                <div style="width: 1px; height: 9px; background: #bbf7d0;"></div>
                 <div title="자동분류 규칙 수">📋규칙: <strong id="cloudRuleCnt">0</strong></div>
-                <div style="width: 1px; height: 10px; background: #bbf7d0;"></div>
+                <div style="width: 1px; height: 9px; background: #bbf7d0;"></div>
                 <div title="제품 마스터 수">📦마스터: <strong id="cloudMasterCnt">0</strong></div>
                 <button id="btnRefreshCloudStats"
                     style="background: none; border: none; cursor: pointer; color: #10b981; padding: 1px;"
                     title="클라우드 상태 새로고침">
-                    <i class="fas fa-sync-alt" style="font-size: 0.68rem;"></i>
+                    <i class="fas fa-sync-alt" style="font-size: 0.65rem;"></i>
                 </button>
             </div>
 
             <div class="header-actions"
-                style="display: flex; gap: 3px; align-items: center; background: #f8fafc; padding: 2px 4px; border-radius: 7px; border: 1px solid #e2e8f0; flex-wrap: nowrap; flex-shrink: 0; white-space: nowrap;">
+                style="display: flex; gap: 2px; align-items: center; background: #f8fafc; padding: 1px 3px; border-radius: 6px; border: 1px solid #e2e8f0; flex-wrap: nowrap; flex-shrink: 0; white-space: nowrap;">
                 <button id="btnOpenMappingSettings" class="btn btn-warning-soft"
-                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; white-space: nowrap;">
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 600; background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; white-space: nowrap;">
                     <i class="fas fa-sitemap"></i> 매핑
                 </button>
                 <button id="btnOpenSettings" class="btn btn-secondary-outline"
-                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 500; white-space: nowrap;">⚙️선사</button>
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 500; white-space: nowrap;">⚙️선사</button>
                 <button id="btnOpenDestSettings" class="btn btn-secondary-outline"
-                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 500; white-space: nowrap;">🗺️도착지</button>
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 500; white-space: nowrap;">🗺️도착지</button>
                 <button id="btnOpenRules" class="btn btn-primary-soft"
-                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; white-space: nowrap;">📋자동분류</button>
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 600; white-space: nowrap;">📋자동분류</button>
                 <button id="btnOpenPalette" class="btn"
-                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #fdf5e6; color: #b45309; border: 1px solid #fef3c7; white-space: nowrap;">
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 600; background: #fdf5e6; color: #b45309; border: 1px solid #fef3c7; white-space: nowrap;">
                     📦파레트
                 </button>
                 <button id="btnOpenCautionModels" class="btn"
-                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; white-space: nowrap;">⚠️주의모델</button>
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 600; background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; white-space: nowrap;">⚠️주의모델</button>
                 <button id="btnOpenProductMaster" class="btn"
-                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; white-space: nowrap;">
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 600; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; white-space: nowrap;">
                     <i class="fas fa-box-open"></i> 제품검색
                 </button>
                 <button id="btnOpenHoldStock" class="btn"
-                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; white-space: nowrap;">
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 600; background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; white-space: nowrap;">
                     <i class="fas fa-exclamation-circle"></i> H재고
                 </button>
                 <button id="btnOpenBlockWork" class="btn"
-                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff; white-space: nowrap;">
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 600; background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff; white-space: nowrap;">
                     <i class="fas fa-lock"></i> 블록작업
                     <span id="blockWorkBadge"
-                        style="display:none; background:#7e22ce; color:white; font-size:0.62rem; padding:1px 4px; border-radius:8px; margin-left:1px; font-weight:700;">0</span>
+                        style="display:none; background:#7e22ce; color:white; font-size:0.60rem; padding:1px 3px; border-radius:8px; margin-left:1px; font-weight:700;">0</span>
                 </button>
                 <button id="btnOpenPopWeight" class="btn"
-                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; white-space: nowrap;">
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 600; background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; white-space: nowrap;">
                     <i class="fas fa-weight-hanging"></i> POP
                     <span id="popWeightBadge"
-                        style="display:none; background:#ea580c; color:white; font-size:0.62rem; padding:1px 4px; border-radius:8px; margin-left:1px; font-weight:700;">0</span>
+                        style="display:none; background:#ea580c; color:white; font-size:0.60rem; padding:1px 3px; border-radius:8px; margin-left:1px; font-weight:700;">0</span>
                 </button>
                 <button id="btnOpenDbSettings" class="btn"
-                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; white-space: nowrap;">
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 600; background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; white-space: nowrap;">
                     <i class="fas fa-mobile-alt"></i> DB설정
                 </button>
                 <button id="btnOpenDbSearchModal" class="btn"
-                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #fdf4ff; color: #86198f; border: 1px solid #f5d0fe; white-space: nowrap;">
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 600; background: #fdf4ff; color: #86198f; border: 1px solid #f5d0fe; white-space: nowrap;">
                     <i class="fas fa-database"></i> DB조회
                 </button>
                 <button id="btnOpenEmailSettings" class="btn"
-                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; white-space: nowrap;">
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 600; background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; white-space: nowrap;">
                     <i class="fas fa-envelope"></i> 메일
                 </button>
                 <button id="btnOpenPhotoGallery" class="btn"
-                    style="padding: 0.20rem 0.42rem; font-size: 0.72rem; border-radius: 5px; font-weight: 600; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; white-space: nowrap;">
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 600; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; white-space: nowrap;">
                     <i class="fas fa-camera"></i> 사진함
                 </button>
             </div>
