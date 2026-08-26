@@ -6201,18 +6201,18 @@ function displayResults(results, isDbMode = false) {
                         const diffStr = diffAbs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         const sign = effectiveMRaw >= oRaw ? '+' : '-';
                         return `
-                            <div class="gw-mismatch-box" style="display: flex; flex-direction: column; gap: 2px; font-size: 0.74rem; line-height: 1.25; min-width: 95px;">
-                                <div style="display: flex; justify-content: space-between; width: 100%;">
-                                    <span style="font-weight: 600; color: #64748b;">전산:</span>
-                                    <strong style="color: #0284c7;">${dRaw.toLocaleString()}</strong>
+                            <div class="gw-mismatch-box" style="display: flex; flex-direction: column; gap: 1px; font-size: 0.70rem; line-height: 1.2; width: 100%; box-sizing: border-box;">
+                                <div style="display: flex; justify-content: space-between; width: 100%; gap: 2px;">
+                                    <span style="font-weight: 600; color: #64748b; font-size: 0.68rem;">전산:</span>
+                                    <strong style="color: #0284c7; font-size: 0.70rem;">${dRaw.toLocaleString()}</strong>
                                 </div>
-                                <div style="display: flex; justify-content: space-between; width: 100%;">
-                                    <span style="font-weight: 600; color: #64748b;">원본:</span>
-                                    <strong style="color: #334155;">${oRaw.toLocaleString()}</strong>
+                                <div style="display: flex; justify-content: space-between; width: 100%; gap: 2px;">
+                                    <span style="font-weight: 600; color: #64748b; font-size: 0.68rem;">원본:</span>
+                                    <strong style="color: #334155; font-size: 0.70rem;">${oRaw.toLocaleString()}</strong>
                                 </div>
-                                <div style="display: flex; justify-content: space-between; width: 100%; border-top: 1px dashed #fecaca; padding-top: 2px; margin-top: 1px;">
-                                    <span style="font-weight: 700; color: #dc2626;">차이:</span>
-                                    <strong style="color: #dc2626; font-weight: 800;">${sign}${diffStr}</strong>
+                                <div style="display: flex; justify-content: space-between; width: 100%; border-top: 1px dashed #fecaca; padding-top: 1px; margin-top: 1px; gap: 2px;">
+                                    <span style="font-weight: 700; color: #dc2626; font-size: 0.68rem;">차이:</span>
+                                    <strong style="color: #dc2626; font-weight: 800; font-size: 0.70rem;">${sign}${diffStr}</strong>
                                 </div>
                             </div>
                         `;
