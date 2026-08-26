@@ -5970,6 +5970,7 @@ function displayResults(results, isDbMode = false) {
                         <td style="text-align: center; font-weight: 700; background: #cbd5e1; padding: 10px 8px;">규격</td>
                         <td style="text-align: center; font-weight: 700; background: #cbd5e1; padding: 10px 8px;">F.DEST</td>
                         <td style="text-align: center; font-weight: 700; background: #cbd5e1; padding: 10px 8px;">CTNR NO</td>
+                        <td style="text-align: center; font-weight: 700; background: #cbd5e1; padding: 10px 4px; width: 44px;">P</td>
                         <td style="text-align: center; font-weight: 700; background: #cbd5e1; padding: 10px 8px;">SEAL</td>
                         <td style="text-align: right; font-weight: 700; background: #cbd5e1; padding: 10px 8px;">G/W</td>
                         <td style="text-align: center; font-weight: 700; background: #cbd5e1; padding: 10px 8px;">리마크</td>
@@ -6013,17 +6014,17 @@ function displayResults(results, isDbMode = false) {
                         ${typeof renderDestinationHtml === 'function' ? renderDestinationHtml(null, res.destination.val, false) : res.destination.val}
                     </td>
                     <td style="color: ${effectiveCntrColor}; ${hasPop ? 'font-style:italic;' : ''}; padding: 6px 8px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%;">
-                            <div style="display: flex; align-items: center; gap: 4px;">
-                                <strong onclick="window.copyToClipboard('${res.cntrNo.replace(/'/g, "\\'")}', '컨테이너')" 
-                                        style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
-                                        title="클릭하여 컨테이너 복사"
-                                        class="copyable-item">${res.cntrNo}</strong>
-                                ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
-                                ${hasPop ? `<span style="display:inline-block;font-size:0.65rem;background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;border-radius:4px;padding:0px 4px;vertical-align:middle;">POP</span>` : ''}
-                            </div>
-                            ${typeof window.renderContainerPhotoBtn === 'function' ? window.renderContainerPhotoBtn(res.cntrNo, { iconOnly: true }) : ''}
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <strong onclick="window.copyToClipboard('${res.cntrNo.replace(/'/g, "\\'")}', '컨테이너')" 
+                                    style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
+                                    title="클릭하여 컨테이너 복사"
+                                    class="copyable-item">${res.cntrNo}</strong>
+                            ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
+                            ${hasPop ? `<span style="display:inline-block;font-size:0.65rem;background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;border-radius:4px;padding:0px 4px;vertical-align:middle;">POP</span>` : ''}
                         </div>
+                    </td>
+                    <td style="text-align: center; padding: 6px 2px; vertical-align: middle;">
+                        ${typeof window.renderContainerPhotoBtn === 'function' ? window.renderContainerPhotoBtn(res.cntrNo, { iconOnly: true }) : ''}
                     </td>
                     <td style="text-align: center; color: #3b82f6; font-weight: 500;">${res.sealNo || '-'}</td>
                     <td class="col-gw-entry" style="text-align: right; font-weight: 700; vertical-align: top; padding-top: 8px;">
@@ -6069,7 +6070,7 @@ function displayResults(results, isDbMode = false) {
                 if (hasMeaningfulError && !finalDetailHtml.includes('위와 동일')) {
                     const trError = document.createElement('tr');
                     trError.style.backgroundColor = '#fef2f2';
-                    trError.innerHTML = `<td colspan="10" style="padding: 4px 12px; font-size: 0.85rem; color: #b91c1c; border-bottom: 2px solid #fca5a5;">
+                    trError.innerHTML = `<td colspan="11" style="padding: 4px 12px; font-size: 0.85rem; color: #b91c1c; border-bottom: 2px solid #fca5a5;">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-exclamation-triangle"></i>
                             <span>${finalDetailHtml}</span>
@@ -6466,6 +6467,7 @@ function updateTableHeaders(filterName) {
                 <th class="col-spec">규격</th>
                 <th class="col-dest">F.DEST</th>
                 <th class="col-cntr">CTNR NO</th>
+                <th class="col-photo" style="text-align: center; width: 44px;">P</th>
                 <th class="col-seal">SEAL</th>
                 <th class="col-gw" style="text-align: right;">G/W</th>
                 <th class="col-remark" style="text-align: center;">리마크</th>
