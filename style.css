@@ -3872,6 +3872,15 @@ tr.border-group td {
     flex-shrink: 0;
 }
 
+.ctnr-folder-name {
+    font-size: 0.92rem;
+    font-weight: 900;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ctnr-folder-name.carrier-chunma,
 .ctnr-folder-name-red {
     font-size: 0.92rem;
     font-weight: 900;
@@ -3881,12 +3890,72 @@ tr.border-group td {
     flex-shrink: 0;
 }
 
+.ctnr-folder-name.carrier-bni {
+    font-size: 0.92rem;
+    font-weight: 900;
+    color: #4f46e5;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ctnr-folder-name.carrier-default {
+    font-size: 0.92rem;
+    font-weight: 900;
+    color: #1e293b;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ctnr-card-title {
+    font-size: 0.95rem;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.ctnr-card-title.carrier-chunma,
+.ctnr-card-title-red {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: #ef4444;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.ctnr-card-title.carrier-bni {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: #818cf8;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.ctnr-card-title.carrier-default {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: #f8fafc;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
 .ctnr-folder-carrier-tag {
     font-size: 0.72rem;
     font-weight: 700;
     color: #64748b;
     margin-left: 2px;
     white-space: nowrap;
+}
+
+.ctnr-folder-carrier-tag.carrier-chunma {
+    color: #e11d48;
+    font-weight: 800;
+}
+
+.ctnr-folder-carrier-tag.carrier-bni {
+    color: #4f46e5;
+    font-weight: 800;
 }
 
 .ctnr-folder-count-badge {
@@ -4966,6 +5035,94 @@ tr.border-group td {
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
 }
 
+/* CTNR 100% Identical Report Card & Header Styles */
+.report-date-group-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    margin-bottom: 24px;
+}
+
+.report-date-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.report-date-group-title {
+    font-size: 1.05rem;
+    font-weight: 900;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.report-header-total-badge {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    padding: 4px 14px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 900;
+    color: #1e293b;
+    flex-wrap: wrap;
+}
+
+.report-carrier-counts-wrap {
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.8rem;
+    border-left: 1px solid #cbd5e1;
+    padding-left: 8px;
+    margin-left: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.report-carrier-bni {
+    color: #4f46e5 !important;
+    font-weight: 900 !important;
+}
+
+.report-carrier-chunma {
+    color: #e11d48 !important;
+    font-weight: 900 !important;
+}
+
+.report-carrier-rework {
+    color: #d97706 !important;
+    font-weight: 900 !important;
+}
+
+.btn-edit-report-header {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    transition: all 0.15s ease;
+}
+.btn-edit-report-header:hover {
+    color: #0284c7;
+    background: #f1f5f9;
+}
+
 .report-team-columns {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -4976,21 +5133,35 @@ tr.border-group td {
 .report-team-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 14px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .report-team-header {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     font-weight: 900;
     color: #0f172a;
-    border-bottom: 2px solid #f1f5f9;
+    border-bottom: 1px solid #e2e8f0;
     padding-bottom: 8px;
     margin-bottom: 12px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+}
+
+.report-team-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.report-team-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #0f172a;
 }
 
 .report-team-count-badge {
@@ -5000,17 +5171,17 @@ tr.border-group td {
 }
 
 .report-cntr-card {
-    background: #ffffff;
+    background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
     transition: all 0.15s ease;
 }
 .report-cntr-card:hover {
     border-color: #cbd5e1;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 .report-cntr-card.is-cancelled {
     background: #fff1f2 !important;
@@ -5025,7 +5196,7 @@ tr.border-group td {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     gap: 8px;
 }
 
@@ -5036,9 +5207,18 @@ tr.border-group td {
 }
 
 .report-cntr-no {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     font-weight: 900;
     letter-spacing: 0.3px;
+}
+.report-cntr-no.carrier-chunma {
+    color: #ef4444 !important;
+}
+.report-cntr-no.carrier-bni {
+    color: #4f46e5 !important;
+}
+.report-cntr-no.carrier-default {
+    color: #1e293b !important;
 }
 
 .report-card-action-btn {
@@ -5046,7 +5226,7 @@ tr.border-group td {
     border: none;
     color: #94a3b8;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     padding: 2px 4px;
     border-radius: 4px;
     transition: all 0.15s ease;
@@ -5062,31 +5242,56 @@ tr.border-group td {
 .report-timeline-badge {
     background: #e0f2fe;
     border: 1px solid #bae6fd;
-    padding: 3px 8px;
+    padding: 2px 7px;
     border-radius: 6px;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 800;
     color: #0369a1;
     white-space: nowrap;
 }
 
 .report-cntr-summary-line {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 800;
     color: #1e293b;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
-.report-comment-box {
-    margin: 8px 0;
-    padding: 8px 12px;
-    background: #fefce8;
-    border: 1px solid #fef08a;
+.job-type-red {
+    color: #e11d48;
+    font-weight: 900;
+}
+
+.report-delay-box {
+    background: rgba(254, 252, 232, 0.95);
+    border: 1px solid rgba(254, 240, 138, 0.85);
+    padding: 7px 10px;
     border-radius: 10px;
-    font-size: 0.78rem;
+    margin: 6px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 0.75rem;
     font-weight: 700;
     color: #854d0e;
     line-height: 1.45;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.report-delay-icon {
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    margin-top: 1px;
+}
+
+.report-delay-text {
+    flex: 1;
+    word-break: break-word;
+}
+
+.report-delay-label {
+    font-weight: 900;
+    color: #713f12;
 }
 
 .report-prod-list {

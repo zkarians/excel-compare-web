@@ -12918,6 +12918,20 @@ window.restoreFolder = async function(cntrNo, e) {
     }
 };
 
+// 운송사 구분 헬퍼 (천마: 빨강, BNI: 인디고/파랑, 기타: 다크)
+function getGalleryCarrierInfo(transporter = '', teamName = '') {
+    const t = (transporter || '').trim();
+    const team = (teamName || '').trim();
+    if (t.includes('천마') || (!t && team.includes('천마'))) {
+        return { name: '천마', colorClass: 'carrier-chunma' };
+    }
+    if (t.includes('BNI') || t.includes('비엔아이') || (!t && (team.includes('BNI') || team.includes('비엔아이')))) {
+        return { name: 'BNI', colorClass: 'carrier-bni' };
+    }
+    const clean = t.split('(')[0] || '';
+    return { name: clean, colorClass: 'carrier-default' };
+}
+
 // 3. 사진 렌더링 (CTNR 날짜/조별 폴더 목록 뷰 및 컨테이너 4열 상세 뷰)
 window.renderGalleryPhotos = function() {
     const listEl = document.getElementById('photoGalleryList');
@@ -12982,6 +12996,7 @@ window.renderGalleryPhotos = function() {
             const isChecked = window.selectedPhotoIds.has(String(p.id));
             const currentDeg = (window.photoRotationOffsets && window.photoRotationOffsets[String(p.id)]) ? window.photoRotationOffsets[String(p.id)] : 0;
             const rotateStyle = currentDeg ? `transform: rotate(${currentDeg}deg);` : '';
+            const pCarrierInfo = getGalleryCarrierInfo(p.transporter, p.team_name);
 
             html += `
                 <div class="ctnr-card-large ${isChecked ? 'selected' : ''}" data-photo-id="${p.id}" onclick="window.handleCardClick('${p.id}', event)">
@@ -12995,7 +13010,7 @@ window.renderGalleryPhotos = function() {
                         <div class="ctnr-card-gradient-overlay"></div>
                     </div>
                     <div class="ctnr-card-bottom-info">
-                        <div class="ctnr-card-title-red">${p.cntr_no || '-'}</div>
+                        <div class="ctnr-card-title ${pCarrierInfo.colorClass}">${p.cntr_no || '-'}</div>
                         <div class="ctnr-card-filename-box" title="${fileName}">${fileName}</div>
                         <div class="ctnr-card-footer-info">
                             <span><i class="fas fa-user" style="margin-right:4px;"></i>${uploader}</span>
@@ -13128,7 +13143,7 @@ window.renderGalleryPhotos = function() {
                                 ${tFolders.map(f => {
                                     const folderKey = `${f.cntrNo}|${f.workDateStr}`;
                                     const isFolderSelected = window.selectedFolderKeys && window.selectedFolderKeys.has(folderKey);
-                                    const cleanCarrier = f.transporter ? (f.transporter.includes('천마') ? '천마' : (f.transporter.includes('BNI') || f.transporter.includes('비엔아이') ? 'BNI' : f.transporter.split('(')[0])) : '';
+                                    const carrierInfo = getGalleryCarrierInfo(f.transporter, f.teamName);
                                     const timeStr = f.lastUploadedAt ? new Date(f.lastUploadedAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
                                     
                                     const hasSeal = f.photos && f.photos.some(p => p.photo_type === 'seal');
@@ -13168,8 +13183,8 @@ window.renderGalleryPhotos = function() {
                                                 <div class="ctnr-folder-left-info">
                                                     <input type="checkbox" class="ctnr-folder-chk" ${isFolderSelected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="window.toggleFolderSelect('${folderKey}', event)">
                                                     <i class="fas fa-folder" style="color:#38bdf8; font-size:1rem;"></i>
-                                                    <strong class="ctnr-folder-name-red">${f.cntrNo}</strong>
-                                                    ${cleanCarrier ? `<span class="ctnr-folder-carrier-tag">[${cleanCarrier}]</span>` : ''}
+                                                    <strong class="ctnr-folder-name ${carrierInfo.colorClass}">${f.cntrNo}</strong>
+                                                    ${carrierInfo.name ? `<span class="ctnr-folder-carrier-tag ${carrierInfo.colorClass}">[${carrierInfo.name}]</span>` : ''}
                                                     ${!hasSeal ? `<span title="씰(Seal) 사진이 업로드되지 않았습니다." class="camera-pulse" style="margin-left:4px;"><i class="fas fa-camera"></i></span>` : ''}
                                                 </div>
                                                 <div style="display:flex; align-items:center; gap:5px;">
@@ -13656,6 +13671,50 @@ window.lightboxDownload = function() {
         }
     }
 
+    window.editingHeaderDate = null;
+    window.editCarrierCounts = {};
+    window.editRemarkVal = '';
+
+    window.handleEditReportHeader = function(dateStr, e) {
+        if (e) e.stopPropagation();
+        window.editingHeaderDate = dateStr;
+        const dateGroup = (window.currentReportData || []).find(dg => (dg.dateStr || dg.date) === dateStr);
+        if (!dateGroup) return;
+
+        const activeCarrierCounts = {};
+        (dateGroup.uploaders || []).forEach(u => {
+            (u.containers || []).forEach(c => {
+                if (c.isCancelled || (c.adminComment || '').includes('[취소]') || (c.adminComment || '').includes('[작업취소]') || (c.adminComment || '').includes('[작업제외]')) return;
+                const cTrans = (c.transporter || '').trim();
+                let cName = '기타';
+                if (cTrans.includes('천마') || u.teamName.includes('천마')) cName = '천마';
+                else if (cTrans.includes('BNI') || cTrans.includes('비엔아이') || u.teamName.includes('BNI') || u.teamName.includes('비엔아이')) cName = 'BNI';
+                activeCarrierCounts[cName] = (activeCarrierCounts[cName] || 0) + 1;
+            });
+        });
+
+        window.editCarrierCounts = { ...(dateGroup.customCarrierCounts || activeCarrierCounts) };
+        if (window.editCarrierCounts['BNI'] === undefined) window.editCarrierCounts['BNI'] = 0;
+        if (window.editCarrierCounts['천마'] === undefined) window.editCarrierCounts['천마'] = 0;
+        window.editRemarkVal = dateGroup.customRemark || '';
+        window.renderReportUI(window.currentReportData);
+    };
+
+    window.saveReportHeaderEdit = function(dateStr) {
+        const dateGroup = (window.currentReportData || []).find(dg => (dg.dateStr || dg.date) === dateStr);
+        if (dateGroup) {
+            dateGroup.customCarrierCounts = { ...window.editCarrierCounts };
+            dateGroup.customRemark = (window.editRemarkVal || '').trim();
+        }
+        window.editingHeaderDate = null;
+        window.renderReportUI(window.currentReportData);
+    };
+
+    window.cancelReportHeaderEdit = function() {
+        window.editingHeaderDate = null;
+        window.renderReportUI(window.currentReportData);
+    };
+
     window.renderReportUI = function(reportData) {
         const contentEl = document.getElementById('reportContentArea');
         const summaryTitleEl = document.getElementById('reportSummaryTitle');
@@ -13671,7 +13730,7 @@ window.lightboxDownload = function() {
             const dateStr = dateGroup.dateStr || dateGroup.date;
             const uploaders = dateGroup.uploaders || [];
             let dateContainerCount = 0;
-            const dateCarrierMap = {};
+            const dateCarrierMap = { 'BNI': 0, '천마': 0 };
 
             uploaders.forEach(u => {
                 (u.containers || []).forEach(c => {
@@ -13682,10 +13741,8 @@ window.lightboxDownload = function() {
                         totalContainers++;
                         const cTrans = (c.transporter || '').trim();
                         let cName = '기타';
-                        if (cTrans.includes('천마')) cName = '천마';
-                        else if (cTrans.includes('BNI') || cTrans.includes('비엔아이')) cName = 'BNI';
-                        else if (u.teamName.includes('천마')) cName = '천마';
-                        else if (u.teamName.includes('BNI') || u.teamName.includes('비엔아이')) cName = 'BNI';
+                        if (cTrans.includes('천마') || u.teamName.includes('천마')) cName = '천마';
+                        else if (cTrans.includes('BNI') || cTrans.includes('비엔아이') || u.teamName.includes('BNI') || u.teamName.includes('비엔아이')) cName = 'BNI';
 
                         dateCarrierMap[cName] = (dateCarrierMap[cName] || 0) + 1;
                         globalCarrierMap[cName] = (globalCarrierMap[cName] || 0) + 1;
@@ -13693,19 +13750,66 @@ window.lightboxDownload = function() {
                 });
             });
 
-            const carrierSummaryParts = Object.entries(dateCarrierMap).map(([k, v]) => `${k}: ${v}개`);
-            const carrierSummaryText = carrierSummaryParts.length > 0 ? ` ( ${carrierSummaryParts.join(', ')} )` : '';
+            const finalCarrierCounts = dateGroup.customCarrierCounts || dateCarrierMap;
+            const displayTotal = Object.values(finalCarrierCounts).reduce((a, b) => a + (Number(b) || 0), 0);
+            const bniCount = finalCarrierCounts['BNI'] !== undefined ? finalCarrierCounts['BNI'] : (dateCarrierMap['BNI'] || 0);
+            const chunmaCount = finalCarrierCounts['천마'] !== undefined ? finalCarrierCounts['천마'] : (dateCarrierMap['천마'] || 0);
+
+            // 기타 운송사
+            const otherEntries = Object.entries(finalCarrierCounts).filter(([k]) => k !== 'BNI' && k !== '천마' && finalCarrierCounts[k] > 0);
+            const otherCarriersHtml = otherEntries.map(([k, v]) => ` , <span class="report-carrier-rework">${k}: ${v}개</span>`).join('');
+
+            const numTeams = uploaders.length;
+            const gridColsStyle = numTeams === 1 ? 'style="grid-template-columns: 1fr;"' : (numTeams === 2 ? 'style="grid-template-columns: repeat(2, 1fr);"' : 'style="grid-template-columns: repeat(3, 1fr);"');
 
             html += `
-                <div class="report-date-section">
-                    <div class="report-team-columns">
+                <div class="report-date-group-card">
+                    <!-- 상단 헤더: 날짜 좌측 + 우측 총합계 뱃지 바 (CTNR 100% 동일) -->
+                    <div class="report-date-group-header">
+                        <h3 class="report-date-group-title">
+                            <i class="fas fa-calendar-alt" style="color: #0284c7;"></i>
+                            ${dateStr} 작업 분량
+                        </h3>
+
+                        ${window.editingHeaderDate === dateStr ? `
+                            <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #cbd5e1; padding: 4px 12px; border-radius: 9999px; font-size: 0.82rem; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                                <span>총합계: ${Object.values(window.editCarrierCounts).reduce((a, b) => a + (Number(b) || 0), 0)}개</span>
+                                <span style="color: #cbd5e1;">|</span>
+                                <span style="color: #4f46e5; font-weight: 900;">BNI:</span>
+                                <input type="number" style="width: 44px; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-weight: 900;" value="${window.editCarrierCounts['BNI'] || 0}" onchange="window.editCarrierCounts['BNI'] = parseInt(this.value) || 0; window.renderReportUI(window.currentReportData)">
+                                <span style="color: #e11d48; font-weight: 900;">천마:</span>
+                                <input type="number" style="width: 44px; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-weight: 900;" value="${window.editCarrierCounts['천마'] || 0}" onchange="window.editCarrierCounts['천마'] = parseInt(this.value) || 0; window.renderReportUI(window.currentReportData)">
+                                <span style="color: #cbd5e1;">|</span>
+                                <span>비고:</span>
+                                <input type="text" style="width: 90px; padding: 2px 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 700;" value="${window.editRemarkVal || ''}" placeholder="없음" onchange="window.editRemarkVal = this.value">
+                                <button type="button" style="background: #0284c7; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="window.saveReportHeaderEdit('${dateStr}')"><i class="fas fa-check"></i></button>
+                                <button type="button" style="background: #e2e8f0; color: #475569; border: none; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="window.cancelReportHeaderEdit()"><i class="fas fa-times"></i></button>
+                            </div>
+                        ` : `
+                            <div class="report-header-total-badge">
+                                <span>총합계: ${displayTotal}개 작업완료</span>
+                                <span class="report-carrier-counts-wrap">
+                                    ( <span class="report-carrier-bni">BNI: ${bniCount}개</span> , <span class="report-carrier-chunma">천마: ${chunmaCount}개</span>${otherCarriersHtml} )
+                                </span>
+                                ${dateGroup.customRemark ? `<span style="border-left: 1px solid #cbd5e1; padding-left: 8px; margin-left: 4px; color: #475569; font-size: 0.8rem; font-weight: 700;">비고: ${dateGroup.customRemark}</span>` : ''}
+                                <button type="button" class="btn-edit-report-header" onclick="window.handleEditReportHeader('${dateStr}', event)" title="총합계 및 비고 수정">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </button>
+                            </div>
+                        `}
+                    </div>
+
+                    <div class="report-team-columns" ${gridColsStyle}>
                         ${uploaders.map(team => {
                             const cntrs = team.containers || [];
                             const activeCntrs = cntrs.filter(c => !c.isCancelled && !(c.adminComment || '').includes('[작업취소]') && !(c.adminComment || '').includes('[작업제외]'));
                             return `
                                 <div class="report-team-card">
                                     <div class="report-team-header">
-                                        <span>● ${team.teamName}</span>
+                                        <span class="report-team-title">
+                                            <span class="report-team-dot"></span>
+                                            ${team.teamName}
+                                        </span>
                                         <span class="report-team-count-badge">합계 ${activeCntrs.length}개</span>
                                     </div>
                                     <div class="report-cntr-list">
@@ -13713,8 +13817,7 @@ window.lightboxDownload = function() {
                                             const cTrans = (c.transporter || '').trim();
                                             const isChunma = cTrans.includes('천마') || team.teamName.includes('천마');
                                             const isBni = cTrans.includes('BNI') || cTrans.includes('비엔아이') || team.teamName.includes('BNI') || team.teamName.includes('비엔아이');
-                                            const carrierClass = isChunma ? 'chunma' : (isBni ? 'bni' : '');
-                                            const carrierLabel = isChunma ? '천마' : (isBni ? 'BNI' : cTrans || '');
+                                            const carrierColorClass = isChunma ? 'carrier-chunma' : (isBni ? 'carrier-bni' : 'carrier-default');
 
                                             const isCancelled = c.isCancelled || (c.adminComment || '').includes('[작업취소]') || (c.adminComment || '').includes('[취소]');
                                             const isExcluded = (c.adminComment || '').includes('[작업제외]');
@@ -13726,17 +13829,18 @@ window.lightboxDownload = function() {
                                             const typeLabel = c.jobType ? ` ( ${c.jobType} )` : (cleanAdminComment ? ` ( ${cleanAdminComment} )` : '');
 
                                             const statusTag = isExcluded 
-                                                ? '<span style="background:#d97706; color:#fff; font-size:0.65rem; padding:1px 4px; border-radius:4px; margin-left:4px; font-weight:900;">작업제외</span>'
+                                                ? '<span style="background:rgba(217,119,6,0.15); color:#b45309; border:1px solid rgba(217,119,6,0.3); font-size:0.68rem; padding:1px 5px; border-radius:4px; margin-left:4px; font-weight:900;">[작업제외]</span>'
                                                 : isCancelled 
-                                                ? '<span style="background:#e11d48; color:#fff; font-size:0.65rem; padding:1px 4px; border-radius:4px; margin-left:4px; font-weight:900;">작업취소</span>'
+                                                ? '<span style="background:rgba(225,29,72,0.15); color:#e11d48; border:1px solid rgba(225,29,72,0.3); font-size:0.68rem; padding:1px 5px; border-radius:4px; margin-left:4px; font-weight:900;">[작업취소]</span>'
                                                 : '';
+
+                                            const displayRemark = (c.remark || c.lastRemark || '').replace(/^지연사유:\s*/, '').trim();
 
                                             return `
                                                 <div class="report-cntr-card ${cardStateClass}">
                                                     <div class="report-cntr-top">
                                                         <div class="report-cntr-title-group">
-                                                            <strong class="report-cntr-no" style="${isChunma ? 'color:#dc2626;' : 'color:#0284c7;'}">${c.cntrNo}</strong>
-                                                            ${carrierLabel ? `<span class="report-carrier-tag ${carrierClass}">[${carrierLabel}]</span>` : ''}
+                                                            <strong class="report-cntr-no ${carrierColorClass}">${c.cntrNo}</strong>
                                                             ${statusTag}
                                                             <button type="button" class="report-card-action-btn" onclick="window.handleEditReportItem('${c.cntrNo}', '${team.teamName}', '${dateStr}')" title="항목 수정">
                                                                 <i class="fas fa-pencil-alt"></i>
@@ -13749,12 +13853,16 @@ window.lightboxDownload = function() {
                                                     </div>
 
                                                     <div class="report-cntr-summary-line">
-                                                        ${modelCount}모델, ${totalQty.toLocaleString()}개<span style="color:#dc2626; font-weight:800;">${typeLabel}</span>
+                                                        <span>${modelCount}모델, ${totalQty.toLocaleString()}개</span>
+                                                        ${typeLabel ? `<span class="job-type-red">${typeLabel}</span>` : ''}
                                                     </div>
 
-                                                    ${(c.remark || c.lastRemark) ? `
-                                                        <div class="report-comment-box">
-                                                            <i class="far fa-comment-dots" style="margin-right:4px;"></i> 지연사유: ${(c.remark || c.lastRemark || '').replace(/^지연사유:\s*/, '').trim()}
+                                                    ${displayRemark ? `
+                                                        <div class="report-delay-box">
+                                                            <span class="report-delay-icon">💬</span>
+                                                            <div class="report-delay-text">
+                                                                <span class="report-delay-label">지연사유:</span> ${displayRemark}
+                                                            </div>
                                                         </div>
                                                     ` : ''}
 
@@ -13763,7 +13871,7 @@ window.lightboxDownload = function() {
                                                             <div class="report-prod-list">
                                                                 ${c.products.map(p => `
                                                                     <div class="report-prod-item">
-                                                                        <span class="report-prod-name" title="${p.name}">- [${p.division || 'CVZ'}] ${p.name}</span>
+                                                                        <span class="report-prod-name" title="[${p.division || 'CVZ'}] ${p.name}">- [${p.division || 'CVZ'}] ${p.name}</span>
                                                                         <span class="report-prod-qty">${(p.qty || 0).toLocaleString()}개</span>
                                                                     </div>
                                                                 `).join('')}
