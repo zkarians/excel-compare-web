@@ -2197,26 +2197,33 @@ if (btnClearDown) {
                     }
                     captureContainer.style.width = originalWidth;
 
-                    try {
-                        const dataUrl = canvas.toDataURL('image/png');
-                        window.electronAPI.writeImageToClipboard(dataUrl).then(res => {
-                            if (res && res.success) {
-                                alert("📋 H재고 현황 이미지가 클립보드에 성공적으로 복사되었습니다!\n카카오톡 채팅방(Ctrl+V)에 바로 붙여넣어 공지할 수 있습니다.");
+                    (async () => {
+                        try {
+                            const successMsg = "📋 H재고 현황 이미지가 클립보드에 성공적으로 복사되었습니다!\n카카오톡 채팅방(Ctrl+V)에 바로 붙여넣어 공지할 수 있습니다.";
+                            if (window.isElectron && window.electronAPI && typeof window.electronAPI.writeImageToClipboard === 'function') {
+                                const dataUrl = canvas.toDataURL('image/png');
+                                const res = await window.electronAPI.writeImageToClipboard(dataUrl);
+                                if (res && res.success) {
+                                    alert(successMsg);
+                                } else {
+                                    throw new Error(res ? res.error : '클립보드 복사 실패');
+                                }
+                            } else if (navigator.clipboard && window.ClipboardItem && canvas.toBlob) {
+                                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                                if (!blob) throw new Error("이미지 데이터 생성 실패");
+                                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                                alert(successMsg);
                             } else {
-                                const errMsg = res ? res.error : '알 수 없는 오류';
-                                alert("클립보드 이미지 복사에 실패했습니다: " + errMsg);
+                                throw new Error("브라우저에서 이미지 클립보드 복사를 지원하지 않습니다.");
                             }
-                        }).catch(err => {
-                            console.error("클립보드 복사 API 호출 실패:", err);
-                            alert("클립보드 복사 중 네이티브 오류가 발생했습니다: " + err.message);
-                        });
-                    } catch (err) {
-                        console.error("데이터 변환 실패:", err);
-                        alert("이미지 데이터 변환 중 오류가 발생했습니다: " + err.message);
-                    }
-
-                    btnCopyHoldStockImage.disabled = false;
-                    btnCopyHoldStockImage.innerHTML = '<i class="far fa-copy"></i> 이미지 복사 (카톡 공지용)';
+                        } catch (err) {
+                            console.error("클립보드 복사 오류:", err);
+                            alert("이미지 클립보드 복사 실패: " + err.message);
+                        } finally {
+                            btnCopyHoldStockImage.disabled = false;
+                            btnCopyHoldStockImage.innerHTML = '<i class="far fa-copy"></i> 이미지 복사 (카톡 공지용)';
+                        }
+                    })();
                 }).catch(err => {
                     if (captureHeader) captureHeader.style.display = 'none';
 
@@ -2928,26 +2935,33 @@ window.getProductLocationStockDetails = getProductLocationStockDetails;
                     }
                     captureContainer.style.width = originalWidth;
 
-                    try {
-                        const dataUrl = canvas.toDataURL('image/png');
-                        window.electronAPI.writeImageToClipboard(dataUrl).then(res => {
-                            if (res && res.success) {
-                                alert("📋 홀드·롱텀·BIN블록 작업 공지 이미지가 클립보드에 성공적으로 복사되었습니다!\n카카오톡 또는 사내 메신저(Ctrl+V)에 바로 붙여넣어 근무자에게 공지할 수 있습니다.");
+                    (async () => {
+                        try {
+                            const successMsg = "📋 홀드·롱텀·BIN블록 작업 공지 이미지가 클립보드에 성공적으로 복사되었습니다!\n카카오톡 또는 사내 메신저(Ctrl+V)에 바로 붙여넣어 근무자에게 공지할 수 있습니다.";
+                            if (window.isElectron && window.electronAPI && typeof window.electronAPI.writeImageToClipboard === 'function') {
+                                const dataUrl = canvas.toDataURL('image/png');
+                                const res = await window.electronAPI.writeImageToClipboard(dataUrl);
+                                if (res && res.success) {
+                                    alert(successMsg);
+                                } else {
+                                    throw new Error(res ? res.error : '클립보드 복사 실패');
+                                }
+                            } else if (navigator.clipboard && window.ClipboardItem && canvas.toBlob) {
+                                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                                if (!blob) throw new Error("이미지 데이터 생성 실패");
+                                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                                alert(successMsg);
                             } else {
-                                const errMsg = res ? res.error : '알 수 없는 오류';
-                                alert("클립보드 이미지 복사 실패: " + errMsg);
+                                throw new Error("브라우저에서 이미지 클립보드 복사를 지원하지 않습니다.");
                             }
-                        }).catch(err => {
-                            console.error("클립보드 복사 API 호출 실패:", err);
-                            alert("클립보드 복사 중 오류가 발생했습니다: " + err.message);
-                        });
-                    } catch (err) {
-                        console.error("데이터 변환 실패:", err);
-                        alert("이미지 변환 오류: " + err.message);
-                    }
-
-                    btnCopyBlockWorkImage.disabled = false;
-                    btnCopyBlockWorkImage.innerHTML = '<i class="far fa-copy"></i> 이미지 복사 (카톡 공지용)';
+                        } catch (err) {
+                            console.error("클립보드 복사 오류:", err);
+                            alert("이미지 클립보드 복사 실패: " + err.message);
+                        } finally {
+                            btnCopyBlockWorkImage.disabled = false;
+                            btnCopyBlockWorkImage.innerHTML = '<i class="far fa-copy"></i> 이미지 복사 (카톡 공지용)';
+                        }
+                    })();
                 }).catch(err => {
                     if (captureHeader) captureHeader.style.display = 'none';
                     if (scrollWrapper) {
@@ -10156,16 +10170,19 @@ if (btnCopyPaletteImage) {
             const blob = await capturePaletteTable();
             if (!blob) throw new Error('캡처 실패');
             
-            const reader = new FileReader();
-            reader.onload = async function () {
-                if (window.isElectron && window.electronAPI && window.electronAPI.writeImageToClipboard) {
+            if (window.isElectron && window.electronAPI && typeof window.electronAPI.writeImageToClipboard === 'function') {
+                const reader = new FileReader();
+                reader.onload = async function () {
                     await window.electronAPI.writeImageToClipboard(reader.result);
-                    alert('이미지가 클립보드에 복사되었습니다.\n카카오톡에 Ctrl+V로 붙여넣기 하세요.');
-                } else {
-                    alert('Electron 환경이 아닙니다.');
-                }
-            };
-            reader.readAsDataURL(blob);
+                    alert('📋 이미지가 클립보드에 복사되었습니다.\n카카오톡에 Ctrl+V로 붙여넣기 하세요.');
+                };
+                reader.readAsDataURL(blob);
+            } else if (navigator.clipboard && window.ClipboardItem) {
+                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                alert('📋 이미지가 클립보드에 복사되었습니다.\n카카오톡에 Ctrl+V로 붙여넣기 하세요.');
+            } else {
+                throw new Error('브라우저에서 이미지 클립보드 복사를 지원하지 않습니다.');
+            }
         } catch (err) {
             console.error(err);
             alert('복사 중 오류가 발생했습니다.');
