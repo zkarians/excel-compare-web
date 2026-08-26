@@ -9,7 +9,7 @@
     <link href="css/libs/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/libs/fontawesome.min.css">
     <link rel="stylesheet" href="css/libs/animate.min.css">
-    <link rel="stylesheet" href="style.css?v=20260827-reportparity">
+    <link rel="stylesheet" href="style.css?v=20260827-teamsummaryfix">
     <!-- Local JS Libraries -->
     <script src="js/libs/exceljs.min.js"></script>
     <script src="js/libs/FileSaver.min.js"></script>
@@ -3261,16 +3261,16 @@
     <!-- ==================================================== -->
     <!-- 조별 작업수량 요약 모달 (CTNR 100% 동일 TeamSummaryModal) -->
     <!-- ==================================================== -->
-    <div id="teamSummaryModal" class="ctnr-gallery-modal" style="display: none; z-index: 100020;">
-        <div class="ctnr-submodal-container" style="max-width: 980px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden;">
-            <div class="ctnr-submodal-header" style="flex-shrink: 0;">
+    <div id="teamSummaryModal" class="ctnr-submodal-backdrop" style="display: none; z-index: 100030;">
+        <div class="ctnr-submodal-container" style="max-width: 980px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; padding: 20px;">
+            <div class="ctnr-submodal-header" style="flex-shrink: 0; margin-bottom: 14px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="padding: 6px 10px; background: #e0e7ff; color: #4f46e5; border-radius: 8px; font-size: 1.1rem;">
                         <i class="fas fa-chart-bar"></i>
                     </div>
                     <h3 style="margin: 0; font-size: 1.1rem; font-weight: 900; color: #1e293b;">조별 작업수량 요약</h3>
                 </div>
-                <button type="button" class="ctnr-btn-close" onclick="window.closeTeamSummaryModal()" title="닫기">
+                <button type="button" class="ctnr-submodal-close" onclick="window.closeTeamSummaryModal()" title="닫기">
                     <i class="fas fa-times"></i>
                 </button>
             </div>

@@ -5467,6 +5467,18 @@ tr.border-group td {
     padding: 16px;
 }
 
+#teamSummaryModal.ctnr-submodal-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 100030 !important;
+    background: rgba(15, 23, 42, 0.75) !important;
+    backdrop-filter: blur(8px) !important;
+    display: none;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 16px !important;
+}
+
 .ctnr-submodal-container {
     background: #ffffff;
     border-radius: 16px;
