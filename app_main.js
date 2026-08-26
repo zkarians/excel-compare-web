@@ -13885,7 +13885,7 @@ window.lightboxDownload = function() {
         if (statusBadgeEl) statusBadgeEl.style.display = 'none';
 
         try {
-            const res = await fetch(`/api/reports/generate?startDate=${encodeURIComponent(targetDate)}&endDate=${encodeURIComponent(targetDate)}`);
+            const res = await fetch(`${API_BASE}/api/reports/generate?startDate=${encodeURIComponent(targetDate)}&endDate=${encodeURIComponent(targetDate)}`);
             const data = await res.json();
 
             if (loadingEl) loadingEl.style.display = 'none';
@@ -13924,7 +13924,7 @@ window.lightboxDownload = function() {
 
     async function checkSavedReportStatus(targetDate) {
         try {
-            const res = await fetch(`/api/reports/saved?workDate=${encodeURIComponent(targetDate)}`);
+            const res = await fetch(`${API_BASE}/api/reports/saved?workDate=${encodeURIComponent(targetDate)}`);
             const data = await res.json();
             const statusBadgeEl = document.getElementById('reportSavedStatusBadge');
             const statusTextEl = document.getElementById('reportSavedStatusText');
@@ -14193,7 +14193,7 @@ window.lightboxDownload = function() {
         const targetDate = dateInput?.value || formatReportYMD(new Date());
 
         try {
-            const res = await fetch('/api/reports/save', {
+            const res = await fetch(`${API_BASE}/api/reports/save`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -14229,7 +14229,7 @@ window.lightboxDownload = function() {
         const targetDate = dateInput?.value || formatReportYMD(new Date());
 
         try {
-            const res = await fetch(`/api/reports/saved?workDate=${encodeURIComponent(targetDate)}`);
+            const res = await fetch(`${API_BASE}/api/reports/saved?workDate=${encodeURIComponent(targetDate)}`);
             const data = await res.json();
 
             if (!data.success || !data.reportData || data.reportData.length === 0) {
@@ -14343,7 +14343,7 @@ window.lightboxDownload = function() {
         const targetDate = dateInput?.value || formatReportYMD(new Date());
 
         try {
-            await fetch('/api/reports/toggle-cancel', {
+            await fetch(`${API_BASE}/api/reports/toggle-cancel`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cntrNo, workDate: targetDate, mode: window.cancelMode })
@@ -14360,7 +14360,7 @@ window.lightboxDownload = function() {
         const targetDate = dateInput?.value || formatReportYMD(new Date());
 
         try {
-            await fetch('/api/reports/toggle-cancel', {
+            await fetch(`${API_BASE}/api/reports/toggle-cancel`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cntrNo, workDate: targetDate, cancelType })
@@ -14613,7 +14613,7 @@ window.lightboxDownload = function() {
         try {
             if (editId || !window.editingReportItem) {
                 // 신규 수동 추가 또는 수동 항목 수정
-                const res = await fetch('/api/reports/manual-entry', {
+                const res = await fetch(`${API_BASE}/api/reports/manual-entry`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -14636,7 +14636,7 @@ window.lightboxDownload = function() {
                 }
             } else {
                 // 기존 DB 컨테이너 수정
-                await fetch('/api/reports/update-container', {
+                await fetch(`${API_BASE}/api/reports/update-container`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -14684,10 +14684,10 @@ window.lightboxDownload = function() {
         try {
             if (manualEntryId) {
                 // 수동 항목 영구 삭제
-                await fetch(`/api/reports/manual-entry?id=${manualEntryId}`, { method: 'DELETE' });
+                await fetch(`${API_BASE}/api/reports/manual-entry?id=${manualEntryId}`, { method: 'DELETE' });
             } else {
                 // 기존 컨테이너 [작업취소] 토글
-                await fetch('/api/reports/toggle-cancel', {
+                await fetch(`${API_BASE}/api/reports/toggle-cancel`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cntrNo, workDate: dateStr, cancelType: 'cancel' })

@@ -1,8 +1,10 @@
 node_modules/
 dist/
+dist_clean_release/
 release/
 data/
 uploads/
+*.asar
 backup/
 scratch/
 *_backup_*.js
