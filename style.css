@@ -3618,46 +3618,211 @@ tr.border-group td {
     letter-spacing: -0.2px;
 }
 
-.ctnr-folder-header {
+/* CTNR 날짜별 / 조별 폴더 목록 스타일 (Screenshot 2) */
+.ctnr-folders-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+}
+
+.ctnr-date-card {
+    background: #e2e8f0;
+    border: 1px solid #cbd5e1;
+    border-radius: 20px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.ctnr-date-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.ctnr-folder-title {
-    font-size: 1.1rem;
-    font-weight: 900;
-    color: #38bdf8;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-}
-
-.ctnr-folder-thumbs-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    padding-bottom: 10px;
+    border-bottom: 1px solid #cbd5e1;
+    flex-wrap: wrap;
     gap: 10px;
 }
 
-.ctnr-thumb-box {
-    position: relative;
-    aspect-ratio: 4/3;
-    background: #0f172a;
-    border-radius: 8px;
-    overflow: hidden;
-    cursor: pointer;
-    border: 1px solid #334155;
-    transition: all 0.15s ease;
+.ctnr-date-title-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
-.ctnr-thumb-box:hover {
-    transform: scale(1.04);
+.ctnr-date-title {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ctnr-date-btn-select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ctnr-date-info-summary {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #475569;
+}
+
+.ctnr-date-info-summary strong {
+    color: #0369a1;
+}
+
+.ctnr-team-card {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.ctnr-team-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.ctnr-team-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ctnr-team-title i {
+    color: #059669;
+}
+
+.ctnr-team-summary {
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-left: 4px;
+}
+
+.ctnr-team-btn-select {
+    padding: 2px 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.ctnr-folders-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+.ctnr-folder-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    user-select: none;
+}
+
+.ctnr-folder-item:hover {
     border-color: #38bdf8;
-    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(2, 132, 199, 0.15);
+}
+
+.ctnr-folder-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.ctnr-folder-left-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex: 1;
+}
+
+.ctnr-folder-chk {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: #0284c7;
+    margin: 0;
+}
+
+.ctnr-folder-name-red {
+    font-size: 0.85rem;
+    font-weight: 900;
+    color: #ef4444;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ctnr-folder-carrier-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748b;
+    margin-left: 2px;
+}
+
+.ctnr-folder-count-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: #e0f2fe;
+    color: #0284c7;
+    white-space: nowrap;
+}
+
+.ctnr-folder-bottom-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 600;
+    padding-top: 6px;
+    border-top: 1px solid #f1f5f9;
 }
 
 .ctnr-thumb-box img {

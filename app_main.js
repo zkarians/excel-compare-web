@@ -11166,8 +11166,6 @@ function renderAvailabilityTable() {
         return;
     }
 
-    const fragment = document.createDocumentFragment();
-
     groups.forEach((group, gIdx) => {
         const N = group.items.length;
         const totalPlanQty = group.items.reduce((acc, it) => acc + it.qty, 0);
@@ -11866,7 +11864,39 @@ window.loadPhotoGallery = async function(targetCntr = '') {
     }
 };
 
-// 3. 사진 렌더링 (CTNR [크게] 및 [바둑판] 모드)
+// 작업일자 계산 유틸리티 (13시 기준 이전일/당일 구분 - CTNR 동일)
+function getGalleryWorkDateString(d) {
+    const workDate = new Date(d);
+    if (workDate.getHours() < 13) {
+        workDate.setDate(workDate.getDate() - 1);
+    }
+    const y = workDate.getFullYear();
+    const m = String(workDate.getMonth() + 1).padStart(2, '0');
+    const day = String(workDate.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+function formatKoreanDate(dateStr) {
+    try {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+        const dayName = dayNames[dateObj.getDay()];
+        return `${y}년 ${String(m).padStart(2, '0')}월 ${String(d).padStart(2, '0')}일 (${dayName})`;
+    } catch (e) {
+        return dateStr;
+    }
+}
+
+// 특정 컨테이너 폴더 진입
+window.openContainerFolderPhotos = function(cntrNo, workDateStr) {
+    window.currentGalleryTargetCntr = (cntrNo || '').trim().toUpperCase();
+    const searchEl = document.getElementById('photoGallerySearchCntr');
+    if (searchEl) searchEl.value = window.currentGalleryTargetCntr;
+    window.renderGalleryPhotos();
+};
+
+// 3. 사진 렌더링 (CTNR 날짜/조별 폴더 목록 뷰 및 컨테이너 4열 상세 뷰)
 window.renderGalleryPhotos = function() {
     const listEl = document.getElementById('photoGalleryList');
     const summaryEl = document.getElementById('photoGallerySummary');
@@ -11877,39 +11907,30 @@ window.renderGalleryPhotos = function() {
 
     if (!listEl) return;
 
-    // 정렬 수행
-    const photos = [...window.currentGalleryPhotos].sort((a, b) => {
-        if (window.gallerySortBy === 'NAME_ASC') {
-            return (a.photo_path || '').localeCompare(b.photo_path || '');
-        } else if (window.gallerySortBy === 'NAME_DESC') {
-            return (b.photo_path || '').localeCompare(a.photo_path || '');
-        } else if (window.gallerySortBy === 'UPLOAD_DESC') {
-            return new Date(b.uploaded_at || 0).getTime() - new Date(a.uploaded_at || 0).getTime();
-        } else if (window.gallerySortBy === 'UPLOAD_ASC') {
-            return new Date(a.uploaded_at || 0).getTime() - new Date(b.uploaded_at || 0).getTime();
-        }
-        return 0;
-    });
+    const allPhotos = [...window.currentGalleryPhotos];
 
-    // 고유 컨테이너 수 계산
-    const uniqueCntrs = new Set(photos.map(p => (p.cntr_no || '').toUpperCase()));
-    if (summaryEl) {
-        summaryEl.textContent = `조회된 사진: ${photos.length}장 (${uniqueCntrs.size}개 컨테이너)`;
-    }
+    // 1. 특정 컨테이너가 선택된 경우 -> 해당 컨테이너의 4열 대형 사진 그리드 렌더링 (Screenshot 1)
+    if (window.currentGalleryTargetCntr) {
+        const targetCntrUpper = window.currentGalleryTargetCntr.toUpperCase().trim();
+        const photos = allPhotos.filter(p => (p.cntr_no || '').toUpperCase().trim() === targetCntrUpper).sort((a, b) => {
+            if (window.gallerySortBy === 'NAME_ASC') return (a.photo_path || '').localeCompare(b.photo_path || '');
+            if (window.gallerySortBy === 'NAME_DESC') return (b.photo_path || '').localeCompare(a.photo_path || '');
+            if (window.gallerySortBy === 'UPLOAD_DESC') return new Date(b.uploaded_at || 0).getTime() - new Date(a.uploaded_at || 0).getTime();
+            if (window.gallerySortBy === 'UPLOAD_ASC') return new Date(a.uploaded_at || 0).getTime() - new Date(b.uploaded_at || 0).getTime();
+            return 0;
+        });
 
-    // 상단 컨테이너 배지 및 뒤로가기 버튼 제어
-    if (window.currentGalleryTargetCntr && uniqueCntrs.size <= 1) {
+        if (summaryEl) summaryEl.textContent = `조회된 사진: ${photos.length}장 (컨테이너 ${targetCntrUpper})`;
         if (badgeBox) badgeBox.style.display = 'inline-flex';
-        if (badgeCntrText) badgeCntrText.textContent = window.currentGalleryTargetCntr;
+        if (badgeCntrText) badgeCntrText.textContent = targetCntrUpper;
         if (badgeCount) badgeCount.textContent = `${photos.length}장`;
         if (btnBack) btnBack.style.display = 'inline-flex';
-    } else {
-        if (badgeBox) badgeBox.style.display = 'none';
-        if (btnBack) btnBack.style.display = 'none';
-    }
 
-    if (window.galleryViewMode === 'LARGE') {
-        // [크게] 뷰 모드 (CTNR 스크린샷과 100% 동일: 4열 대형 카드)
+        if (photos.length === 0) {
+            listEl.innerHTML = `<div style="text-align:center; padding:80px 20px; color:#94a3b8; font-weight:700;">'${targetCntrUpper}' 컨테이너에 등록된 사진이 없습니다.</div>`;
+            return;
+        }
+
         let html = '<div class="ctnr-grid-large">';
         photos.forEach((p, idx) => {
             const isSeal = p.photo_type === 'seal';
@@ -11941,57 +11962,139 @@ window.renderGalleryPhotos = function() {
         });
         html += '</div>';
         listEl.innerHTML = html;
+        return;
+    }
 
-    } else {
-        // [바둑판] 뷰 모드 (CTNR 스크린샷 2와 동일 - 컨테이너별 폴더 그룹핑)
-        const grouped = {};
-        photos.forEach(p => {
-            const cntr = (p.cntr_no || '기타').toUpperCase();
-            if (!grouped[cntr]) grouped[cntr] = [];
-            grouped[cntr].push(p);
+    // 2. 특정 컨테이너가 지정되지 않은 메인 사진함 화면 -> CTNR과 100% 동일한 날짜별/조별 폴더 계층 목록 렌더링 (Screenshot 2)
+    if (badgeBox) badgeBox.style.display = 'none';
+    if (btnBack) btnBack.style.display = 'none';
+
+    // 폴더 그룹핑 (cntrNo + workDateStr)
+    const folderGroup = {};
+    allPhotos.forEach(p => {
+        if (!p.cntr_no) return;
+        const cntrNo = p.cntr_no.toUpperCase().trim();
+        const workDateStr = getGalleryWorkDateString(p.uploaded_at ? new Date(p.uploaded_at) : new Date());
+        const key = `${cntrNo}_${workDateStr}`;
+        if (!folderGroup[key]) {
+            folderGroup[key] = {
+                cntrNo,
+                workDateStr,
+                photos: [],
+                transporter: p.transporter || '',
+                teamName: p.team_name || '미지정 조',
+                uploaderName: p.uploader_name || '작업자',
+                lastUploadedAt: new Date(p.uploaded_at || 0)
+            };
+        }
+        folderGroup[key].photos.push(p);
+        const pTime = new Date(p.uploaded_at || 0);
+        if (pTime > folderGroup[key].lastUploadedAt) {
+            folderGroup[key].lastUploadedAt = pTime;
+        }
+    });
+
+    const folderList = Object.values(folderGroup);
+    const uniqueCntrs = new Set(folderList.map(f => f.cntrNo));
+    if (summaryEl) {
+        summaryEl.textContent = `총 ${folderList.length}개 폴더 (${uniqueCntrs.size}개 컨테이너 · ${allPhotos.length}장)`;
+    }
+
+    if (folderList.length === 0) {
+        listEl.innerHTML = `<div style="text-align:center; padding:80px 20px; color:#94a3b8; font-weight:700;">조회된 사진 폴더가 없습니다.</div>`;
+        return;
+    }
+
+    // 날짜별 그룹핑
+    const dateMap = {};
+    folderList.forEach(f => {
+        if (!dateMap[f.workDateStr]) dateMap[f.workDateStr] = [];
+        dateMap[f.workDateStr].push(f);
+    });
+
+    const sortedDates = Object.keys(dateMap).sort((a, b) => b.localeCompare(a));
+
+    let html = '<div class="ctnr-folders-wrapper">';
+    sortedDates.forEach(dateStr => {
+        const dateFolders = dateMap[dateStr];
+        const totalDatePhotos = dateFolders.reduce((sum, f) => sum + f.photos.length, 0);
+        const dayNum = parseInt(dateStr.split('-')[2] || '0', 10);
+
+        // 조(Team)별 그룹핑
+        const teamMap = {};
+        dateFolders.forEach(f => {
+            const tName = f.teamName || '미지정 조';
+            if (!teamMap[tName]) teamMap[tName] = [];
+            teamMap[tName].push(f);
         });
 
-        let html = '<div class="ctnr-grid-compact">';
-        for (const [cntrNo, groupPhotos] of Object.entries(grouped)) {
-            const sealCount = groupPhotos.filter(p => p.photo_type === 'seal').length;
-            const transporter = groupPhotos[0]?.transporter || '';
-            const uploader = groupPhotos[0]?.uploader_name || '';
-            const latestUpload = groupPhotos[0]?.uploaded_at ? new Date(groupPhotos[0].uploaded_at).toLocaleString() : '';
+        const sortedTeamNames = Object.keys(teamMap).sort((a, b) => a.localeCompare(b, 'ko-KR'));
 
-            html += `
-                <div class="ctnr-folder-card">
-                    <div class="ctnr-folder-header">
-                        <div class="ctnr-folder-title" onclick="window.openContainerPhotoModal('${cntrNo}')" title="클릭하여 '${cntrNo}' 상세 보기">
-                            <i class="fas fa-folder-open" style="color: #0284c7;"></i>
-                            <span>${cntrNo}</span>
-                            ${transporter ? `<span style="font-size:0.72rem; padding:2px 8px; border-radius:6px; background:#0f172a; color:#93c5fd; font-weight:700;">${transporter}</span>` : ''}
-                            ${sealCount > 0 ? `<span style="font-size:0.72rem; padding:2px 8px; border-radius:6px; background:#e11d48; color:white; font-weight:800;">🔴 씰 사진 ${sealCount}장</span>` : ''}
-                            <span style="font-size:0.75rem; color:#94a3b8; font-weight:600;">총 ${groupPhotos.length}장</span>
+        html += `
+            <div class="ctnr-date-card">
+                <!-- Date Section Header -->
+                <div class="ctnr-date-header">
+                    <div class="ctnr-date-title-box">
+                        <div class="ctnr-date-title">
+                            <i class="fas fa-calendar-alt" style="color:#0284c7;"></i>
+                            <span>${formatKoreanDate(dateStr)} 작업</span>
                         </div>
-                        <div style="font-size:0.75rem; color:#64748b;">최근 등록: ${latestUpload} (${uploader})</div>
-                    </div>
-                    <div class="ctnr-folder-thumbs-grid">
-                        ${groupPhotos.map((p) => {
-                            const isSeal = p.photo_type === 'seal';
-                            const photoUrl = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(p.photo_path)}`;
-                            const timeStr = p.uploaded_at ? new Date(p.uploaded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-                            const sortedIdx = photos.findIndex(item => item.id === p.id);
-
-                            return `
-                                <div class="ctnr-thumb-box" onclick="window.openPhotoLightboxFromSorted(${sortedIdx})">
-                                    <img src="${photoUrl}" alt="${cntrNo}" loading="lazy" onerror="this.src='https://placehold.co/130x98/1e293b/94a3b8?text=Image+Load+Fail'">
-                                    ${isSeal ? `<span style="position:absolute; top:4px; left:4px; background:#e11d48; color:white; font-size:0.6rem; font-weight:800; padding:1px 4px; border-radius:3px;">🔴 씰</span>` : ''}
-                                    <span class="ctnr-thumb-time-tag">${timeStr} · ${p.uploader_name || '작업자'}</span>
-                                </div>
-                            `;
-                        }).join('')}
+                        <button class="ctnr-date-btn-select-all" onclick="event.stopPropagation()">
+                            <input type="checkbox" style="cursor:pointer; margin:0;" onchange="event.stopPropagation()">
+                            <span>${dayNum}일 전체 선택 (0/${dateFolders.length})</span>
+                        </button>
+                        <span class="ctnr-date-info-summary">
+                            컨테이너 <strong>${dateFolders.length}개</strong> · 총 <strong>${totalDatePhotos}장</strong>
+                        </span>
                     </div>
                 </div>
-            `;
-        }
-        html += '</div>';
-        listEl.innerHTML = html;
-    }
+
+                <!-- Team Sub-sections -->
+                ${sortedTeamNames.map(tName => {
+                    const tFolders = teamMap[tName];
+                    const tPhotosCount = tFolders.reduce((sum, f) => sum + f.photos.length, 0);
+
+                    return `
+                        <div class="ctnr-team-card">
+                            <div class="ctnr-team-header">
+                                <div class="ctnr-team-title">
+                                    <i class="fas fa-user-friends"></i>
+                                    <span>${tName}</span>
+                                    <span class="ctnr-team-summary">(${tFolders.length}개 컨테이너 · ${tPhotosCount}장)</span>
+                                </div>
+                            </div>
+                            <div class="ctnr-folders-grid">
+                                ${tFolders.map(f => {
+                                    const cleanCarrier = f.transporter ? (f.transporter.includes('천마') ? '천마' : (f.transporter.includes('BNI') || f.transporter.includes('비엔아이') ? 'BNI' : f.transporter.split('(')[0])) : '';
+                                    const timeStr = f.lastUploadedAt ? new Date(f.lastUploadedAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+
+                                    return `
+                                        <div class="ctnr-folder-item" onclick="window.openContainerFolderPhotos('${f.cntrNo}', '${f.workDateStr}')" title="클릭하여 '${f.cntrNo}' 사진 ${f.photos.length}장 보기">
+                                            <div class="ctnr-folder-top-row">
+                                                <div class="ctnr-folder-left-info">
+                                                    <input type="checkbox" class="ctnr-folder-chk" onclick="event.stopPropagation()">
+                                                    <i class="fas fa-folder" style="color:#38bdf8; font-size:0.9rem;"></i>
+                                                    <strong class="ctnr-folder-name-red">${f.cntrNo}</strong>
+                                                    ${cleanCarrier ? `<span class="ctnr-folder-carrier-tag">[${cleanCarrier}]</span>` : ''}
+                                                </div>
+                                                <span class="ctnr-folder-count-badge">${f.photos.length}장</span>
+                                            </div>
+                                            <div class="ctnr-folder-bottom-row">
+                                                <span>조: ${f.teamName} (${f.uploaderName})</span>
+                                                <span>${timeStr}</span>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    });
+    html += '</div>';
+    listEl.innerHTML = html;
 };
 
 window.filterPhotoGallery = function() {
