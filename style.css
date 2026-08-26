@@ -3825,6 +3825,109 @@ tr.border-group td {
     border-top: 1px solid #f1f5f9;
 }
 
+/* CTNR 작업 구분 3단 탭 (진행중 / 완료 / 휴지통) */
+.ctnr-tab-group {
+    display: inline-flex;
+    align-items: center;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    gap: 3px;
+}
+
+.ctnr-tab-btn {
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #475569;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ctnr-tab-btn:hover {
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.ctnr-tab-btn.active#tabBtnActive {
+    background: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+}
+
+.ctnr-tab-btn.active#tabBtnCompleted {
+    background: #059669;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
+}
+
+.ctnr-tab-btn.active#tabBtnTrash {
+    background: #475569;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(71, 85, 105, 0.3);
+}
+
+/* 폴더 액션 버튼 (완료 / 원복 / 삭제 / 복구) */
+.ctnr-folder-action-btn {
+    padding: 3px 8px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.ctnr-btn-complete {
+    background: #ecfdf5;
+    color: #059669;
+    border-color: #a7f3d0;
+}
+.ctnr-btn-complete:hover {
+    background: #059669;
+    color: #ffffff;
+}
+
+.ctnr-btn-undo {
+    background: #fef3c7;
+    color: #d97706;
+    border-color: #fde68a;
+}
+.ctnr-btn-undo:hover {
+    background: #d97706;
+    color: #ffffff;
+}
+
+.ctnr-btn-trash {
+    background: #ffe4e6;
+    color: #e11d48;
+    border-color: #fecdd3;
+}
+.ctnr-btn-trash:hover {
+    background: #e11d48;
+    color: #ffffff;
+}
+
+.ctnr-btn-restore {
+    background: #e0f2fe;
+    color: #0284c7;
+    border-color: #bae6fd;
+}
+.ctnr-btn-restore:hover {
+    background: #0284c7;
+    color: #ffffff;
+}
+
 .ctnr-thumb-box img {
     width: 100%;
     height: 100%;

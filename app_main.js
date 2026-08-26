@@ -11677,6 +11677,7 @@ window.openAvailabilityInExcel = async function() {
 window.containerPhotoCounts = {};
 window.galleryViewMode = 'LARGE'; // 'LARGE' (스크린샷 1 크게) or 'GRID' (스크린샷 2 바둑판)
 window.gallerySortBy = 'NAME_ASC';
+window.galleryTabState = 'ACTIVE'; // 'ACTIVE' (진행 중) | 'COMPLETED' (완료됨) | 'TRASH' (휴지통)
 window.selectedPhotoIds = new Set();
 window.currentGalleryPhotos = [];
 window.currentGalleryTargetCntr = '';
@@ -11737,6 +11738,33 @@ let lightboxRotation = 0;
 let lightboxPan = { x: 0, y: 0 };
 let isLightboxDragging = false;
 let lightboxDragStart = { x: 0, y: 0 };
+
+// 3단 작업구분 탭 전환 (진행중 / 완료 / 휴지통)
+window.setGalleryTabState = function(tab) {
+    window.galleryTabState = tab;
+    const btnActive = document.getElementById('tabBtnActive');
+    const btnCompleted = document.getElementById('tabBtnCompleted');
+    const btnTrash = document.getElementById('tabBtnTrash');
+    const titleEl = document.getElementById('galleryHeaderTitle');
+    const subtitleEl = document.getElementById('galleryHeaderSubtitle');
+
+    if (btnActive) btnActive.classList.toggle('active', tab === 'ACTIVE');
+    if (btnCompleted) btnCompleted.classList.toggle('active', tab === 'COMPLETED');
+    if (btnTrash) btnTrash.classList.toggle('active', tab === 'TRASH');
+
+    if (tab === 'ACTIVE') {
+        if (titleEl) titleEl.textContent = '진행 중인 작업 사진 보관함';
+        if (subtitleEl) subtitleEl.textContent = '현장에서 업로드된 진행 중인 컨테이너 적재 사진을 조회하고 완료 처리합니다.';
+    } else if (tab === 'COMPLETED') {
+        if (titleEl) titleEl.textContent = '완료된 작업 사진 보관함';
+        if (subtitleEl) subtitleEl.textContent = '작업 완료 처리된 컨테이너 적재 사진을 조회하고 관리합니다.';
+    } else if (tab === 'TRASH') {
+        if (titleEl) titleEl.textContent = '휴지통 사진 보관함';
+        if (subtitleEl) subtitleEl.textContent = '삭제된 컨테이너 사진을 조회하고 복구하거나 영구 삭제합니다.';
+    }
+
+    window.loadPhotoGallery(window.currentGalleryTargetCntr);
+};
 
 // 뷰 모드 전환 (바둑판 / 크게)
 window.setGalleryViewMode = function(mode) {
@@ -11809,6 +11837,7 @@ window.resetGalleryFilters = function() {
     if (searchEl) searchEl.value = '';
     if (typeEl) typeEl.value = 'all';
 
+    window.setGalleryTabState('ACTIVE');
     window.currentGalleryTargetCntr = '';
     window.loadPhotoGallery('');
 };
@@ -11881,6 +11910,15 @@ window.loadPhotoGallery = async function(targetCntr = '') {
         let url = `${API_BASE}/api/photos?`;
         const queryParams = [];
 
+        // 탭 상태 필터
+        if (window.galleryTabState === 'COMPLETED') {
+            queryParams.push('showCompleted=true');
+        } else if (window.galleryTabState === 'TRASH') {
+            queryParams.push('showTrash=true');
+        } else {
+            queryParams.push('showCompleted=false');
+        }
+
         // 컨테이너 번호 검색 시 날짜 제약 없이 모든 일자의 사진 로드
         if (searchCntr) {
             queryParams.push(`cntrNo=${encodeURIComponent(searchCntr)}`);
@@ -11900,11 +11938,12 @@ window.loadPhotoGallery = async function(targetCntr = '') {
         if (!data.success || !data.photos || data.photos.length === 0) {
             window.currentGalleryPhotos = [];
             window.selectedPhotoIds.clear();
+            const tabName = window.galleryTabState === 'COMPLETED' ? '완료된' : (window.galleryTabState === 'TRASH' ? '휴지통' : '진행 중인');
             if (listEl) {
                 listEl.innerHTML = `
                     <div style="text-align: center; padding: 100px 20px; color: #64748b;">
                         <i class="fas fa-camera-retro" style="font-size: 3.5rem; margin-bottom: 16px; opacity: 0.4;"></i>
-                        <div style="font-size: 1.1rem; font-weight: 800; color: #94a3b8;">등록된 컨테이너 사진이 없습니다.</div>
+                        <div style="font-size: 1.1rem; font-weight: 800; color: #94a3b8;">${tabName} 컨테이너 사진이 없습니다.</div>
                         <div style="font-size: 0.85rem; margin-top: 8px; color: #64748b;">현장 CTNR 앱에서 사진이 등록되면 실시간으로 조회할 수 있습니다.</div>
                     </div>
                 `;
@@ -11958,6 +11997,89 @@ window.openContainerFolderPhotos = function(cntrNo, workDateStr) {
     const searchEl = document.getElementById('photoGallerySearchCntr');
     if (searchEl) searchEl.value = window.currentGalleryTargetCntr;
     window.renderGalleryPhotos();
+};
+
+// 컨테이너 완료 상태 변경 액션
+window.toggleCompleteFolder = async function(cntrNo, isCompleted, e) {
+    if (e) e.stopPropagation();
+    const msg = isCompleted 
+        ? `'${cntrNo}' 컨테이너 작업을 [완료] 상태로 변경하시겠습니까?`
+        : `'${cntrNo}' 컨테이너 작업을 [진행 중] 상태로 되돌리시겠습니까?`;
+    if (!confirm(msg)) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'toggle_complete_folder',
+                cntrNo,
+                isCompleted
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+            if (window.fetchContainerPhotoCounts) window.fetchContainerPhotoCounts();
+        } else {
+            alert(`상태 변경 실패: ${data.error}`);
+        }
+    } catch (err) {
+        console.error("toggleCompleteFolder error:", err);
+        alert("통신 오류가 발생했습니다: " + err.message);
+    }
+};
+
+window.trashFolder = async function(cntrNo, e) {
+    if (e) e.stopPropagation();
+    if (!confirm(`'${cntrNo}' 컨테이너 사진을 휴지통으로 이동하시겠습니까?`)) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'trash_folder',
+                cntrNo
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+            if (window.fetchContainerPhotoCounts) window.fetchContainerPhotoCounts();
+        } else {
+            alert(`삭제 실패: ${data.error}`);
+        }
+    } catch (err) {
+        console.error("trashFolder error:", err);
+        alert("통신 오류가 발생했습니다: " + err.message);
+    }
+};
+
+window.restoreFolder = async function(cntrNo, e) {
+    if (e) e.stopPropagation();
+    if (!confirm(`'${cntrNo}' 컨테이너 사진을 복구하시겠습니까?`)) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'restore_folder',
+                cntrNo
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+            if (window.fetchContainerPhotoCounts) window.fetchContainerPhotoCounts();
+        } else {
+            alert(`복구 실패: ${data.error}`);
+        }
+    } catch (err) {
+        console.error("restoreFolder error:", err);
+        alert("통신 오류가 발생했습니다: " + err.message);
+    }
 };
 
 // 3. 사진 렌더링 (CTNR 날짜/조별 폴더 목록 뷰 및 컨테이너 4열 상세 뷰)
@@ -12077,6 +12199,8 @@ window.renderGalleryPhotos = function() {
     });
 
     const sortedDates = Object.keys(dateMap).sort((a, b) => b.localeCompare(a));
+    const isTrashTab = window.galleryTabState === 'TRASH';
+    const isCompletedTab = window.galleryTabState === 'COMPLETED';
 
     let html = '<div class="ctnr-folders-wrapper">';
     sortedDates.forEach(dateStr => {
@@ -12132,6 +12256,33 @@ window.renderGalleryPhotos = function() {
                                     const cleanCarrier = f.transporter ? (f.transporter.includes('천마') ? '천마' : (f.transporter.includes('BNI') || f.transporter.includes('비엔아이') ? 'BNI' : f.transporter.split('(')[0])) : '';
                                     const timeStr = f.lastUploadedAt ? new Date(f.lastUploadedAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
 
+                                    let actionBtnsHtml = '';
+                                    if (isTrashTab) {
+                                        actionBtnsHtml = `
+                                            <button class="ctnr-folder-action-btn ctnr-btn-restore" onclick="window.restoreFolder('${f.cntrNo}', event)" title="폴더 복구">
+                                                <i class="fas fa-redo"></i> 복구
+                                            </button>
+                                        `;
+                                    } else if (isCompletedTab) {
+                                        actionBtnsHtml = `
+                                            <button class="ctnr-folder-action-btn ctnr-btn-undo" onclick="window.toggleCompleteFolder('${f.cntrNo}', false, event)" title="진행 중인 작업으로 되돌리기">
+                                                <i class="fas fa-undo"></i> 되돌리기
+                                            </button>
+                                            <button class="ctnr-folder-action-btn ctnr-btn-trash" onclick="window.trashFolder('${f.cntrNo}', event)" title="휴지통으로 이동">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        `;
+                                    } else {
+                                        actionBtnsHtml = `
+                                            <button class="ctnr-folder-action-btn ctnr-btn-complete" onclick="window.toggleCompleteFolder('${f.cntrNo}', true, event)" title="작업 완료 처리">
+                                                <i class="fas fa-check"></i> 완료
+                                            </button>
+                                            <button class="ctnr-folder-action-btn ctnr-btn-trash" onclick="window.trashFolder('${f.cntrNo}', event)" title="휴지통으로 이동">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        `;
+                                    }
+
                                     return `
                                         <div class="ctnr-folder-item" onclick="window.openContainerFolderPhotos('${f.cntrNo}', '${f.workDateStr}')" title="클릭하여 '${f.cntrNo}' 사진 ${f.photos.length}장 보기">
                                             <div class="ctnr-folder-top-row">
@@ -12141,7 +12292,10 @@ window.renderGalleryPhotos = function() {
                                                     <strong class="ctnr-folder-name-red">${f.cntrNo}</strong>
                                                     ${cleanCarrier ? `<span class="ctnr-folder-carrier-tag">[${cleanCarrier}]</span>` : ''}
                                                 </div>
-                                                <span class="ctnr-folder-count-badge">${f.photos.length}장</span>
+                                                <div style="display:flex; align-items:center; gap:6px;">
+                                                    <span class="ctnr-folder-count-badge">${f.photos.length}장</span>
+                                                    ${actionBtnsHtml}
+                                                </div>
                                             </div>
                                             <div class="ctnr-folder-bottom-row">
                                                 <span>조: ${f.teamName} (${f.uploaderName})</span>

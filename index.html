@@ -9,7 +9,7 @@
     <link href="css/libs/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/libs/fontawesome.min.css">
     <link rel="stylesheet" href="css/libs/animate.min.css">
-    <link rel="stylesheet" href="style.css?v=20260826-ctnrfolder">
+    <link rel="stylesheet" href="style.css?v=20260826-tabstate">
     <!-- Local JS Libraries -->
     <script src="js/libs/exceljs.min.js"></script>
     <script src="js/libs/FileSaver.min.js"></script>
@@ -2557,8 +2557,8 @@
                         <i class="fas fa-external-link-alt"></i>
                     </div>
                     <div>
-                        <h2 class="ctnr-header-title">진행 중인 작업 사진 보관함</h2>
-                        <p class="ctnr-header-subtitle">현장에서 업로드된 진행 중인 컨테이너 적재 사진을 조회하고 완료 처리합니다.</p>
+                        <h2 id="galleryHeaderTitle" class="ctnr-header-title">진행 중인 작업 사진 보관함</h2>
+                        <p id="galleryHeaderSubtitle" class="ctnr-header-subtitle">현장에서 업로드된 진행 중인 컨테이너 적재 사진을 조회하고 완료 처리합니다.</p>
                     </div>
                 </div>
 
@@ -2631,6 +2631,19 @@
                     <button type="button" class="ctnr-btn-secondary" onclick="window.resetGalleryFilters()">
                         <i class="fas fa-sync-alt"></i> 초기화
                     </button>
+
+                    <!-- CTNR 3단 작업구분 탭 -->
+                    <div class="ctnr-tab-group">
+                        <button type="button" id="tabBtnActive" class="ctnr-tab-btn active" onclick="window.setGalleryTabState('ACTIVE')">
+                            <i class="fas fa-spinner"></i> 진행 중인 작업
+                        </button>
+                        <button type="button" id="tabBtnCompleted" class="ctnr-tab-btn" onclick="window.setGalleryTabState('COMPLETED')">
+                            <i class="fas fa-check-circle"></i> 완료된 작업
+                        </button>
+                        <button type="button" id="tabBtnTrash" class="ctnr-tab-btn" onclick="window.setGalleryTabState('TRASH')">
+                            <i class="fas fa-trash-alt"></i> 휴지통
+                        </button>
+                    </div>
                 </div>
 
                 <div class="ctnr-filter-group-right">
@@ -2702,7 +2715,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260826-reloadfix"></script>
+    <script src="app_main.js?v=20260826-tabstate"></script>
 </body>
 
 </html>

@@ -2736,7 +2736,7 @@ app.get('/api/photos/counts', async (req, res) => {
 app.get('/api/photos', async (req, res) => {
     try {
         const pool = await getPool();
-        const { cntrNo, startDate, endDate, showTrash, photoType } = req.query;
+        const { cntrNo, startDate, endDate, showTrash, showCompleted, photoType } = req.query;
 
         const params = [];
         let paramIdx = 1;
@@ -2746,6 +2746,13 @@ app.get('/api/photos', async (req, res) => {
             whereConditions.push(`p.is_deleted = true`);
         } else {
             whereConditions.push(`(p.is_deleted IS NULL OR p.is_deleted = false)`);
+            if (showCompleted === 'true') {
+                whereConditions.push(`p.is_completed = true`);
+            } else if (showCompleted === 'all') {
+                // 전체 (완료/진행중 무관)
+            } else {
+                whereConditions.push(`(p.is_completed IS NULL OR p.is_completed = false)`);
+            }
         }
 
         if (cntrNo) {
@@ -2824,6 +2831,59 @@ app.get('/api/photos', async (req, res) => {
         res.json({ success: true, photos: photosWithStats });
     } catch (err) {
         console.error("GET /api/photos error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 작업 완료 및 상태 변경 API
+app.patch('/api/photos', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const { action, ids, cntrNo, isCompleted } = req.body;
+
+        if (action === 'toggle_complete_folder' && cntrNo) {
+            const targetCompleted = !!isCompleted;
+            const completedAt = targetCompleted ? new Date() : null;
+            await pool.query(
+                `UPDATE container_photos 
+                 SET is_completed = $1, completed_at = $2 
+                 WHERE cntr_no = $3`,
+                [targetCompleted, completedAt, cntrNo.toUpperCase().trim()]
+            );
+            return res.json({ success: true, message: `컨테이너 '${cntrNo}' 작업 상태가 변경되었습니다.` });
+        }
+
+        if (action === 'toggle_complete_photos' && Array.isArray(ids) && ids.length > 0) {
+            const targetCompleted = !!isCompleted;
+            const completedAt = targetCompleted ? new Date() : null;
+            await pool.query(
+                `UPDATE container_photos 
+                 SET is_completed = $1, completed_at = $2 
+                 WHERE id = ANY($3)`,
+                [targetCompleted, completedAt, ids]
+            );
+            return res.json({ success: true, message: `선택한 사진 ${ids.length}장 작업 상태가 변경되었습니다.` });
+        }
+
+        if (action === 'trash_folder' && cntrNo) {
+            await pool.query(
+                `UPDATE container_photos SET is_deleted = true WHERE cntr_no = $1`,
+                [cntrNo.toUpperCase().trim()]
+            );
+            return res.json({ success: true, message: `컨테이너 '${cntrNo}' 사진이 휴지통으로 이동되었습니다.` });
+        }
+
+        if (action === 'restore_folder' && cntrNo) {
+            await pool.query(
+                `UPDATE container_photos SET is_deleted = false WHERE cntr_no = $1`,
+                [cntrNo.toUpperCase().trim()]
+            );
+            return res.json({ success: true, message: `컨테이너 '${cntrNo}' 사진이 복구되었습니다.` });
+        }
+
+        res.status(400).json({ success: false, error: 'Unknown action' });
+    } catch (err) {
+        console.error("PATCH /api/photos error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
