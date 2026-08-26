@@ -12745,6 +12745,9 @@ window.renderGalleryPhotos = function() {
                             <input type="checkbox" style="cursor:pointer; margin:0;" ${allDateSelected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="window.toggleDateGroupFolders('${dateStr}', event)">
                             <span>${dayNum}일 전체 선택 (${dateSelectedCount}/${dateFolders.length})</span>
                         </button>
+                        <button class="ctnr-date-btn-report" onclick="window.openReportModal('${dateStr}', event)" title="${dateStr} 작업 보고서 보기" style="background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.35); color: #0284c7; font-weight: 800; font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; height: 26px; transition: all 0.15s ease;">
+                            <i class="fas fa-file-alt"></i> ${dayNum}일 보고서
+                        </button>
                         <span class="ctnr-date-info-summary">
                             컨테이너 <strong>${dateFolders.length}개</strong> · 총 <strong>${totalDatePhotos}장</strong>
                         </span>
@@ -13043,6 +13046,447 @@ window.lightboxDownload = function() {
         if (btnOpenPhotoGallery && !btnOpenPhotoGallery._bound) {
             btnOpenPhotoGallery._bound = true;
             btnOpenPhotoGallery.onclick = () => window.openPhotoGalleryModal();
+        }
+
+        const btnOpenReportModal = document.getElementById('btnOpenReportModal');
+        if (btnOpenReportModal && !btnOpenReportModal._bound) {
+            btnOpenReportModal._bound = true;
+            btnOpenReportModal.onclick = () => window.openReportModal();
+        }
+    };
+
+    // ==========================================
+    // [작업 완료 보고서 (ReportModal) 제어 로직]
+    // ==========================================
+    window.currentReportData = null;
+    window.currentReportText = '';
+
+    window.openReportModal = function(targetDate = null, event = null) {
+        if (event) event.stopPropagation();
+        const modal = document.getElementById('reportModal');
+        if (!modal) return;
+
+        const dateInput = document.getElementById('reportTargetDate');
+        if (targetDate) {
+            if (dateInput) dateInput.value = targetDate;
+        } else if (!dateInput?.value) {
+            const now = new Date();
+            if (now.getHours() < 13) {
+                now.setDate(now.getDate() - 1);
+            }
+            if (dateInput) dateInput.value = formatYMD(now);
+        }
+
+        modal.style.display = 'flex';
+        window.loadReportData();
+    };
+
+    window.closeReportModal = function() {
+        const modal = document.getElementById('reportModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    window.navigateReportDate = function(dir) {
+        const dateInput = document.getElementById('reportTargetDate');
+        if (!dateInput || !dateInput.value) return;
+
+        const cur = new Date(dateInput.value);
+        cur.setDate(cur.getDate() + dir);
+        dateInput.value = formatYMD(cur);
+        window.loadReportData();
+    };
+
+    window.loadReportData = async function() {
+        const dateInput = document.getElementById('reportTargetDate');
+        const targetDate = dateInput?.value || formatYMD(new Date());
+
+        const loadingEl = document.getElementById('reportLoading');
+        const contentEl = document.getElementById('reportContentArea');
+        const summaryTitleEl = document.getElementById('reportSummaryTitle');
+        const carrierCountsEl = document.getElementById('reportCarrierCounts');
+
+        if (loadingEl) loadingEl.style.display = 'block';
+        if (contentEl) contentEl.innerHTML = '';
+        if (summaryTitleEl) summaryTitleEl.textContent = `📅 ${targetDate} 작업 분량 조회 중...`;
+        if (carrierCountsEl) carrierCountsEl.innerHTML = '';
+
+        try {
+            const res = await fetch(`/api/reports/generate?startDate=${encodeURIComponent(targetDate)}&endDate=${encodeURIComponent(targetDate)}`);
+            const data = await res.json();
+
+            if (loadingEl) loadingEl.style.display = 'none';
+
+            if (!data.success || !data.reportData || data.reportData.length === 0) {
+                window.currentReportData = [];
+                window.currentReportText = '';
+                if (summaryTitleEl) summaryTitleEl.textContent = `📅 ${targetDate} 작업 분량 (작업 내역 없음)`;
+                if (contentEl) {
+                    contentEl.innerHTML = `
+                        <div style="text-align: center; padding: 80px 20px; color: #94a3b8;">
+                            <i class="fas fa-file-excel" style="font-size: 3rem; margin-bottom: 14px; opacity: 0.35;"></i>
+                            <div style="font-size: 1.1rem; font-weight: 800; color: #64748b;">${targetDate} 작업 데이터가 없습니다.</div>
+                            <div style="font-size: 0.85rem; margin-top: 6px; color: #94a3b8;">작업 일자를 변경하거나 이전/다음 날짜를 조회해 보세요.</div>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            window.currentReportData = data.reportData;
+            window.currentReportText = data.reportText || '';
+            window.renderReportUI(data.reportData);
+
+        } catch (err) {
+            console.error("loadReportData error:", err);
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (contentEl) {
+                contentEl.innerHTML = `<div style="text-align:center; color:#ef4444; padding:50px; font-weight:700;">보고서 생성 중 오류가 발생했습니다: ${err.message}</div>`;
+            }
+        }
+    };
+
+    window.renderReportUI = function(reportData) {
+        const contentEl = document.getElementById('reportContentArea');
+        const summaryTitleEl = document.getElementById('reportSummaryTitle');
+        const carrierCountsEl = document.getElementById('reportCarrierCounts');
+        if (!contentEl) return;
+
+        let totalContainers = 0;
+        const globalCarrierMap = {};
+
+        let html = '';
+
+        reportData.forEach((dateGroup) => {
+            const dateStr = dateGroup.dateStr || dateGroup.date;
+            const uploaders = dateGroup.uploaders || [];
+            let dateContainerCount = 0;
+            const dateCarrierMap = {};
+
+            uploaders.forEach(u => {
+                (u.containers || []).forEach(c => {
+                    dateContainerCount++;
+                    totalContainers++;
+                    const cTrans = (c.transporter || '').trim();
+                    let cName = '기타';
+                    if (cTrans.includes('천마')) cName = '천마';
+                    else if (cTrans.includes('BNI') || cTrans.includes('비엔아이')) cName = 'BNI';
+                    else if (u.teamName.includes('천마')) cName = '천마';
+                    else if (u.teamName.includes('BNI') || u.teamName.includes('비엔아이')) cName = 'BNI';
+
+                    dateCarrierMap[cName] = (dateCarrierMap[cName] || 0) + 1;
+                    globalCarrierMap[cName] = (globalCarrierMap[cName] || 0) + 1;
+                });
+            });
+
+            const carrierSummaryParts = Object.entries(dateCarrierMap).map(([k, v]) => `${k}: ${v}개`);
+            const carrierSummaryText = carrierSummaryParts.length > 0 ? ` ( ${carrierSummaryParts.join(', ')} )` : '';
+
+            html += `
+                <div class="report-date-section">
+                    <div class="report-date-title-box">
+                        <span class="report-date-title-text">📅 ${dateStr} 작업 분량 - 총 ${dateContainerCount}개 작업완료${carrierSummaryText}</span>
+                        <span style="font-size:0.8rem; font-weight:800; color:#0284c7;">${uploaders.length}개 조</span>
+                    </div>
+
+                    <div class="report-team-columns">
+                        ${uploaders.map(team => {
+                            const cntrs = team.containers || [];
+                            return `
+                                <div class="report-team-card">
+                                    <div class="report-team-header">
+                                        <span>■ ${team.teamName}</span>
+                                        <span class="report-team-count-badge">합계 ${cntrs.length}개</span>
+                                    </div>
+                                    <div class="report-cntr-list">
+                                        ${cntrs.map(c => {
+                                            const cTrans = (c.transporter || '').trim();
+                                            const isChunma = cTrans.includes('천마') || team.teamName.includes('천마');
+                                            const isBni = cTrans.includes('BNI') || cTrans.includes('비엔아이') || team.teamName.includes('BNI') || team.teamName.includes('비엔아이');
+                                            const carrierClass = isChunma ? 'chunma' : (isBni ? 'bni' : '');
+                                            const carrierLabel = isChunma ? '천마' : (isBni ? 'BNI' : cTrans || '');
+
+                                            const totalQty = (c.products || []).reduce((sum, p) => sum + (p.qty || 0), 0);
+                                            const modelCount = (c.products || []).length;
+                                            const breakTag = c.hasBreak ? '<span style="color:#e11d48; margin-left:3px; font-weight:800;">*휴식포함*</span>' : '';
+                                            const commentNote = c.adminComment ? ` (${c.adminComment})` : '';
+
+                                            return `
+                                                <div class="report-cntr-card">
+                                                    <div class="report-cntr-top">
+                                                        <div>
+                                                            <strong class="report-cntr-no">${c.cntrNo}</strong>
+                                                            ${carrierLabel ? `<span class="report-carrier-tag ${carrierClass}">[${carrierLabel}]</span>` : ''}
+                                                        </div>
+                                                        <span class="report-timeline-badge">${c.durationMinutes || 45}분: ${c.startTimeStr || '19:00'}~${c.endTimeStr || '19:45'}${breakTag}</span>
+                                                    </div>
+
+                                                    <div class="report-cntr-summary-line">
+                                                        📊 ${modelCount}모델 · 총 ${totalQty.toLocaleString()}개${commentNote}
+                                                    </div>
+
+                                                    ${(c.products && c.products.length > 0) ? `
+                                                        <div class="report-prod-list">
+                                                            ${c.products.map(p => `
+                                                                <div class="report-prod-item">
+                                                                    <span class="report-prod-name" title="${p.name}">[${p.division || '일반'}] ${p.name}</span>
+                                                                    <span class="report-prod-qty">${(p.qty || 0).toLocaleString()}개</span>
+                                                                </div>
+                                                            `).join('')}
+                                                        </div>
+                                                    ` : ''}
+
+                                                    ${(c.emptyBoxes && c.emptyBoxes.length > 0) ? `
+                                                        <div class="report-prod-list" style="margin-top:4px;">
+                                                            ${c.emptyBoxes.map(eb => `
+                                                                <div class="report-prod-item" style="color:#b45309;">
+                                                                    <span class="report-prod-name">📦 [공박스] ${eb.name}</span>
+                                                                    <span class="report-prod-qty" style="color:#b45309;">${(eb.qty || 0).toLocaleString()}개</span>
+                                                                </div>
+                                                            `).join('')}
+                                                        </div>
+                                                    ` : ''}
+
+                                                    ${(c.remark || c.lastRemark) ? `
+                                                        <div class="report-comment-box">
+                                                            <i class="fas fa-comment-dots"></i> 💬 지연/비고: ${(c.remark || c.lastRemark || '').trim()}
+                                                        </div>
+                                                    ` : ''}
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        });
+
+        contentEl.innerHTML = html;
+
+        const firstDate = reportData[0]?.dateStr || reportData[0]?.date || '';
+        if (summaryTitleEl) {
+            summaryTitleEl.textContent = `📅 ${firstDate} 작업 분량 - 총합계: ${totalContainers}개 작업완료`;
+        }
+
+        if (carrierCountsEl) {
+            carrierCountsEl.innerHTML = Object.entries(globalCarrierMap).map(([k, v]) => `
+                <span class="report-carrier-badge">🏷️ ${k}: <strong>${v}개</strong></span>
+            `).join('');
+        }
+    };
+
+    window.copyReportPreset = function(preset) {
+        if (!window.currentReportData || window.currentReportData.length === 0) {
+            alert("복사할 보고서 데이터가 없습니다.");
+            return;
+        }
+
+        const text = buildClientReportText(window.currentReportData, preset);
+        if (!text) {
+            alert("보고서 텍스트 생성에 실패했습니다.");
+            return;
+        }
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                const presetName = preset === 'summary' ? '콤팩트 요약' : (preset === 'anomaly' ? '특이사항/지연' : '기본');
+                alert(`✅ [${presetName} 보고서] 텍스트가 클립보드에 복사되었습니다!\n메신저(카카오톡 등)에 바로 붙여넣기(Ctrl+V) 하세요.`);
+            }).catch(err => {
+                copyTextFallback(text);
+            });
+        } else {
+            copyTextFallback(text);
+        }
+    };
+
+    function buildClientReportText(dataArray, preset = 'full') {
+        if (!dataArray || dataArray.length === 0) return '';
+        const lines = [];
+
+        if (preset === 'summary') {
+            lines.push(`📋 [작업 현황 간략 요약 보고]`);
+        } else if (preset === 'anomaly') {
+            lines.push(`🚨 [작업 특이사항 및 비고 집중 보고]`);
+        } else {
+            lines.push(`📋 [일자별 작업 현황 보고서]`);
+        }
+
+        dataArray.forEach((dateGroup) => {
+            lines.push(`📅 ${dateGroup.dateStr || dateGroup.date} 작업 분량`);
+            const activeCarrierCounts = {};
+            dateGroup.uploaders?.forEach((u) => {
+                u.containers?.forEach((c) => {
+                    const cTrans = (c.transporter || '').trim();
+                    let cName = '기타';
+                    if (cTrans.includes('천마') || u.teamName.includes('천마')) cName = '천마';
+                    else if (cTrans.includes('BNI') || cTrans.includes('비엔아이')) cName = 'BNI';
+                    activeCarrierCounts[cName] = (activeCarrierCounts[cName] || 0) + 1;
+                });
+            });
+            const displayTotal = Object.values(activeCarrierCounts).reduce((a, b) => a + b, 0);
+            const carrierEntries = Object.entries(activeCarrierCounts);
+            const carrierStr = carrierEntries.length > 0 ? ` ( ${carrierEntries.map(([k, v]) => `${k}: ${v}개`).join(', ')} )` : '';
+            lines.push(`총합계: ${displayTotal}개 작업완료${carrierStr}\n`);
+
+            if (preset === 'anomaly') {
+                let anomalyCount = 0;
+                dateGroup.uploaders?.forEach((team) => {
+                    const teamAnomalies = (team.containers || []).filter((cntr) => 
+                        (cntr.adminComment && cntr.adminComment.trim()) || 
+                        (cntr.lastRemark && cntr.lastRemark.trim()) ||
+                        (cntr.remark && cntr.remark.trim())
+                    );
+
+                    if (teamAnomalies.length > 0) {
+                        lines.push(`■ ${team.teamName}`);
+                        teamAnomalies.forEach((cntr) => {
+                            anomalyCount++;
+                            const adminCommentNote = cntr.adminComment ? ` (코멘트: ${cntr.adminComment})` : '';
+                            const remarkNote = (cntr.lastRemark || cntr.remark || '').trim();
+                            lines.push(`- ${cntr.cntrNo}${adminCommentNote}`);
+                            if (remarkNote) {
+                                lines.push(`  💬 비고/지연: ${remarkNote}`);
+                            }
+                        });
+                        lines.push(``);
+                    }
+                });
+
+                if (anomalyCount === 0) {
+                    lines.push(`특이사항 및 지연/취소 건이 없습니다. (전 건 정상 작업 완료)`);
+                }
+                return;
+            }
+
+            dateGroup.uploaders?.forEach((team) => {
+                lines.push(`■ ${team.teamName} (합계 ${team.containers.length}개)`);
+                team.containers?.forEach((cntr) => {
+                    const adminCommentNote = cntr.adminComment ? ` (${cntr.adminComment})` : '';
+                    const totalQty = cntr.totalQty ? cntr.totalQty.toLocaleString() : (cntr.products || []).reduce((s, p) => s + (p.qty || 0), 0).toLocaleString();
+                    const modelCount = cntr.modelCount || (cntr.products || []).length;
+                    
+                    if (preset === 'summary') {
+                        lines.push(`- ${cntr.cntrNo} (${modelCount}모델, ${totalQty}개${adminCommentNote}) ${cntr.workTimeStr ? `[${cntr.workTimeStr}]` : ''}`);
+                        if (cntr.lastRemark && cntr.lastRemark.trim()) {
+                            lines.push(`  💬 ${cntr.lastRemark.trim()}`);
+                        }
+                    } else {
+                        lines.push(`${cntr.cntrNo} (${modelCount}모델, ${totalQty}개${adminCommentNote}) [${cntr.workTimeStr || ''}]`);
+
+                        if (cntr.lastRemark && cntr.lastRemark.trim()) {
+                            lines.push(`- 💬 ${cntr.lastRemark.trim()}`);
+                        }
+                        if (cntr.products) {
+                            for (const p of cntr.products) {
+                                lines.push(`- [${p.division || 'DFZ'}] ${p.name} ${(p.qty || 0).toLocaleString()}개`);
+                            }
+                        }
+                        if (cntr.emptyBoxes && cntr.emptyBoxes.length > 0) {
+                            for (const eb of cntr.emptyBoxes) {
+                                lines.push(`- 📦 [공박스] ${eb.name} ${(eb.qty || 0).toLocaleString()}개`);
+                            }
+                        }
+                        lines.push(``);
+                    }
+                });
+                if (preset === 'summary') {
+                    lines.push(``);
+                }
+            });
+        });
+
+        return lines.join('\n');
+    }
+
+    function copyTextFallback(text) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            alert("✅ 보고서 텍스트가 클립보드에 복사되었습니다!");
+        } catch (e) {
+            alert("클립보드 복사에 실패했습니다.");
+        }
+        document.body.removeChild(textArea);
+    }
+
+    window.copyReportImage = async function() {
+        const captureArea = document.getElementById('reportCaptureArea');
+        if (!captureArea) return;
+        if (typeof html2canvas !== 'function') {
+            alert("html2canvas 라이브러리를 불러올 수 없습니다.");
+            return;
+        }
+
+        try {
+            const canvas = await html2canvas(captureArea, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            });
+
+            canvas.toBlob(async (blob) => {
+                if (!blob) {
+                    alert("이미지 생성에 실패했습니다.");
+                    return;
+                }
+                try {
+                    if (navigator.clipboard && navigator.clipboard.write && window.ClipboardItem) {
+                        await navigator.clipboard.write([
+                            new ClipboardItem({ 'image/png': blob })
+                        ]);
+                        alert("🖼️ 보고서 고해상도 이미지가 클립보드에 복사되었습니다!\n메신저에 바로 붙여넣기(Ctrl+V) 하세요.");
+                    } else {
+                        const dataUrl = canvas.toDataURL('image/png');
+                        const imgWin = window.open('');
+                        imgWin.document.write(`<img src="${dataUrl}" style="max-width:100%;">`);
+                    }
+                } catch (err) {
+                    console.error("Clipboard write error:", err);
+                    const dataUrl = canvas.toDataURL('image/png');
+                    const imgWin = window.open('');
+                    imgWin.document.write(`<img src="${dataUrl}" style="max-width:100%;">`);
+                }
+            }, 'image/png');
+        } catch (err) {
+            console.error("copyReportImage error:", err);
+            alert("이미지 캡처 중 오류가 발생했습니다: " + err.message);
+        }
+    };
+
+    window.downloadReportImage = async function() {
+        const captureArea = document.getElementById('reportCaptureArea');
+        if (!captureArea) return;
+        if (typeof html2canvas !== 'function') {
+            alert("html2canvas 라이브러리를 불러올 수 없습니다.");
+            return;
+        }
+
+        const dateInput = document.getElementById('reportTargetDate');
+        const targetDate = dateInput?.value || formatYMD(new Date());
+
+        try {
+            const canvas = await html2canvas(captureArea, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            });
+
+            const link = document.createElement('a');
+            link.download = `작업완료보고서_${targetDate.replace(/-/g, '')}.png`;
+            link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            console.error("downloadReportImage error:", err);
+            alert("이미지 다운로드 중 오류가 발생했습니다: " + err.message);
         }
     };
 

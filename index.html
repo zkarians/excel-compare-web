@@ -135,6 +135,10 @@
                     style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 600; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; white-space: nowrap;">
                     <i class="fas fa-camera"></i> 사진함
                 </button>
+                <button id="btnOpenReportModal" class="btn" onclick="window.openReportModal()"
+                    style="padding: 0.16rem 0.32rem; font-size: 0.69rem; border-radius: 4px; font-weight: 600; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; white-space: nowrap;">
+                    <i class="fas fa-file-alt"></i> 보고서
+                </button>
             </div>
         </header>
 
@@ -2595,6 +2599,9 @@
                         <option value="UPLOAD_ASC">업로드순 (과거) &#9660;</option>
                     </select>
 
+                    <button type="button" class="ctnr-btn-report" onclick="window.openReportModal()" title="작업 완료 보고서 보기" style="background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.35); color: #0284c7; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; height: 34px; transition: all 0.2s;">
+                        <i class="fas fa-file-alt"></i> 보고서 보기
+                    </button>
                     <button type="button" class="ctnr-btn-close" onclick="window.closePhotoGalleryModal()" title="닫기 (ESC)">
                         <i class="fas fa-times"></i> 닫기
                     </button>
@@ -2884,6 +2891,94 @@
         </button>
     </div>
 
+    <!-- ========================================== -->
+    <!-- 작업 완료 보고서 모달 (CTNR 호환 ReportModal) -->
+    <!-- ========================================== -->
+    <div id="reportModal" class="ctnr-gallery-modal" style="display: none;">
+        <div class="ctnr-gallery-container report-modal-container">
+            <!-- 1단 상단 헤더 (제목, 날짜 제어, 닫기) -->
+            <header class="report-header">
+                <div class="report-header-left">
+                    <div class="report-title-badge">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div>
+                        <h2 class="report-title">작업 완료 보고서</h2>
+                        <p class="report-subtitle">일자별 컨테이너 적재 실적, 품목/수량 및 작업 타임라인 현황</p>
+                    </div>
+                </div>
+
+                <!-- 중앙 날짜 제어기 -->
+                <div class="report-date-control">
+                    <button type="button" class="report-date-btn" onclick="window.navigateReportDate(-1)" title="이전 날짜 (←)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="report-date-input-wrap">
+                        <i class="far fa-calendar-alt"></i>
+                        <input type="date" id="reportTargetDate" onchange="window.loadReportData()">
+                    </div>
+                    <button type="button" class="report-date-btn" onclick="window.navigateReportDate(1)" title="다음 날짜 (→)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button type="button" class="report-refresh-btn" onclick="window.loadReportData()" title="보고서 새로고침">
+                        <i class="fas fa-sync-alt"></i> 새로고침
+                    </button>
+                </div>
+
+                <!-- 우측 닫기 버튼 -->
+                <div class="report-header-right">
+                    <button type="button" class="ctnr-btn-close" onclick="window.closeReportModal()" title="닫기 (ESC)">
+                        <i class="fas fa-times"></i> 닫기
+                    </button>
+                </div>
+            </header>
+
+            <!-- 2단 원클릭 보고서 복사 & 내보내기 툴바 -->
+            <div class="report-actions-toolbar">
+                <div class="report-preset-buttons">
+                    <span class="report-toolbar-label"><i class="fas fa-paste"></i> 메신저 복사:</span>
+                    <button type="button" class="report-action-btn btn-preset-full" onclick="window.copyReportPreset('full')">
+                        <i class="fas fa-copy"></i> 📋 기본 보고서 복사
+                    </button>
+                    <button type="button" class="report-action-btn btn-preset-summary" onclick="window.copyReportPreset('summary')">
+                        <i class="fas fa-align-left"></i> 📝 콤팩트 요약 복사
+                    </button>
+                    <button type="button" class="report-action-btn btn-preset-anomaly" onclick="window.copyReportPreset('anomaly')">
+                        <i class="fas fa-exclamation-triangle"></i> 🚨 특이사항/지연 복사
+                    </button>
+                </div>
+
+                <div class="report-export-buttons">
+                    <button type="button" class="report-action-btn btn-image-copy" onclick="window.copyReportImage()" title="보고서 화면을 고해상도 이미지로 클립보드에 복사">
+                        <i class="far fa-image"></i> 🖼️ 이미지 복사
+                    </button>
+                    <button type="button" class="report-action-btn btn-image-download" onclick="window.downloadReportImage()" title="보고서 화면을 PNG 파일로 다운로드">
+                        <i class="fas fa-download"></i> 💾 PNG 다운로드
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3단 요약 배너 -->
+            <div id="reportSummaryBanner" class="report-summary-banner">
+                <div class="report-summary-text">
+                    <span id="reportSummaryTitle">📅 데이터 조회 중...</span>
+                </div>
+                <div id="reportCarrierCounts" class="report-carrier-tags"></div>
+            </div>
+
+            <!-- 4단 보고서 본문 캡처 영역 (스크롤 가능) -->
+            <div class="report-body-scroll">
+                <div id="reportCaptureArea" class="report-capture-area">
+                    <div id="reportLoading" class="report-loading" style="display: none;">
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                        <p>보고서 데이터를 계산하고 분석 중입니다...</p>
+                    </div>
+                    <div id="reportContentArea"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="js/modules/excelParser.js?v=20260611"></script>
     <script src="js/modules/mappingManager.js?v=20260528-fixed"></script>
@@ -2892,7 +2987,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260827-teamfiltersealcamera"></script>
+    <script src="app_main.js?v=20260827-reportmodal"></script>
 </body>
 
 </html>

@@ -3493,6 +3493,651 @@ app.get('/api/photos/view', async (req, res) => {
     }
 });
 
+// ==========================================
+// [REPORT GENERATION ENGINE (CTNR 호환)]
+// ==========================================
+
+const REPORT_BREAK_TIMES = [
+    { start: 120, end: 130, name: '휴식' },  // 21:00 ~ 21:10
+    { start: 240, end: 300, name: '식사' },  // 23:00 ~ 24:00
+    { start: 420, end: 430, name: '휴식' },  // 02:00 ~ 02:10
+];
+const REPORT_SHIFT_START_HOUR = 19;
+
+function getReportWorkDateString(d) {
+    const dateObj = new Date(d);
+    if (isNaN(dateObj.getTime())) return '';
+    if (dateObj.getHours() < 13) {
+        dateObj.setDate(dateObj.getDate() - 1);
+    }
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function formatReportOffsetToTime(offsetMinutes) {
+    const totalMinutes = (REPORT_SHIFT_START_HOUR * 60 + offsetMinutes) % (24 * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+}
+
+function advanceReportWorkTime(startOffsetMinutes, durationMinutes) {
+    let currentOffset = startOffsetMinutes;
+    let remainingWorkMins = Math.max(1, durationMinutes);
+
+    while (true) {
+        let insideBreak = false;
+        for (const b of REPORT_BREAK_TIMES) {
+            if (currentOffset >= b.start && currentOffset < b.end) {
+                currentOffset = b.end;
+                insideBreak = true;
+                break;
+            }
+        }
+        if (!insideBreak) break;
+    }
+
+    const actualStartOffset = currentOffset;
+    let hasBreak = false;
+
+    while (remainingWorkMins > 0) {
+        let isBreak = false;
+        for (const b of REPORT_BREAK_TIMES) {
+            if (currentOffset >= b.start && currentOffset < b.end) {
+                isBreak = true;
+                hasBreak = true;
+                break;
+            }
+        }
+        if (!isBreak) {
+            remainingWorkMins--;
+        }
+        currentOffset++;
+    }
+
+    const actualEndOffset = currentOffset;
+
+    return {
+        endOffsetMinutes: actualEndOffset,
+        startTimeStr: formatReportOffsetToTime(actualStartOffset),
+        endTimeStr: formatReportOffsetToTime(actualEndOffset),
+        durationMinutes,
+        hasBreak
+    };
+}
+
+function calculateReportTeamTimeline(containers) {
+    let currentOffset = 0;
+    return containers.map((item) => {
+        const duration = item.durationMinutes && item.durationMinutes > 0 ? item.durationMinutes : 45;
+        const result = advanceReportWorkTime(currentOffset, duration);
+        currentOffset = result.endOffsetMinutes;
+        return {
+            ...item,
+            durationMinutes: duration,
+            startTimeStr: result.startTimeStr,
+            endTimeStr: result.endTimeStr,
+            hasBreak: result.hasBreak,
+            workTimeStr: `${result.startTimeStr}~${result.endTimeStr}`
+        };
+    });
+}
+
+function getNormalizedReportCarrier(transporter, fallbackTeam) {
+    const t = (transporter || '').trim();
+    if (t) {
+        if (t.includes('천마')) return '천마';
+        if (t.includes('BNI') || t.includes('비엔아이')) return 'BNI';
+        if (t.includes('재작업')) return '재작업';
+        if (t.includes('기타') || t.includes('오류')) return '기타';
+        return '기타';
+    }
+    const team = (fallbackTeam || '').trim();
+    if (team.includes('천마')) return '천마';
+    if (team.includes('BNI') || team.includes('비엔아이')) return 'BNI';
+    return '기타';
+}
+
+function generateReportJobType(products) {
+    if (!products || products.length === 0) return '';
+    let totalCdzQty = 0;
+    let totalValidQty = 0;
+    const uniqueModels = new Set();
+
+    for (const p of products) {
+        if (p.division === 'ZZZ') continue;
+        uniqueModels.add(p.name);
+        totalValidQty += (p.qty || 0);
+        if (p.division === 'CDZ') {
+            totalCdzQty += (p.qty || 0);
+        }
+    }
+
+    const isMultiModel = uniqueModels.size >= 6;
+    const jobTypes = new Set();
+
+    for (const p of products) {
+        if (p.division === 'ZZZ') continue;
+        const nameUpper = (p.name || '').toUpperCase();
+        let typeName = '';
+
+        switch (p.division) {
+            case 'DFZ':
+                if (nameUpper.startsWith('WDP')) {
+                    typeName = '페데스탈';
+                } else {
+                    typeName = '세탁기';
+                }
+                break;
+            case 'CVZ':
+                if (nameUpper.startsWith('SK')) {
+                    typeName = 'SK오븐';
+                } else if (p.height !== undefined && p.height > 0 && p.height <= 500) {
+                    typeName = '쿡탑';
+                } else {
+                    typeName = '오븐';
+                }
+                break;
+            case 'CNZ':
+                if (nameUpper.startsWith('SK')) {
+                    typeName = 'SK냉장고';
+                } else {
+                    typeName = '냉장고';
+                }
+                break;
+            case 'CDZ':
+                if (totalCdzQty > 150) {
+                    typeName = '글로벌식기';
+                } else {
+                    typeName = '식기';
+                }
+                break;
+            case 'DHZ':
+                typeName = '콤프';
+                break;
+            case 'DMZ':
+                typeName = '에어컨';
+                break;
+            default:
+                typeName = p.division || '기타';
+                break;
+        }
+        if (typeName) {
+            jobTypes.add(typeName);
+        }
+    }
+
+    if (jobTypes.has('SK오븐') && jobTypes.has('오븐')) {
+        jobTypes.delete('오븐');
+    }
+    if (jobTypes.has('SK냉장고') && jobTypes.has('냉장고')) {
+        jobTypes.delete('냉장고');
+    }
+
+    let finalType = '';
+    const sortedTypes = Array.from(jobTypes);
+
+    if (sortedTypes.length === 1 && sortedTypes[0] === '냉장고' && uniqueModels.size <= 3 && totalValidQty >= 48 && totalValidQty <= 51) {
+        finalType = '횡적';
+    } else if (sortedTypes.length >= 2) {
+        finalType = sortedTypes.join('') + '혼적';
+    } else if (sortedTypes.length === 1) {
+        finalType = sortedTypes[0];
+    }
+
+    if (isMultiModel && finalType) {
+        finalType = '다모델 ' + finalType;
+    }
+    return finalType;
+}
+
+function buildReportTextFromData(dataArray, preset = 'full') {
+    if (!dataArray || dataArray.length === 0) return '';
+    const lines = [];
+
+    if (preset === 'summary') {
+        lines.push(`📋 [작업 현황 간략 요약 보고]`);
+    } else if (preset === 'anomaly') {
+        lines.push(`🚨 [작업 특이사항 및 비고 집중 보고]`);
+    } else {
+        lines.push(`📋 [일자별 작업 현황 보고서]`);
+    }
+
+    dataArray.forEach((dateGroup) => {
+        lines.push(`📅 ${dateGroup.dateStr || dateGroup.date} 작업 분량`);
+        const activeCarrierCounts = {};
+        dateGroup.uploaders?.forEach((u) => {
+            u.containers?.forEach((c) => {
+                if (!c.isCancelled && !c.adminComment?.includes('[취소]') && !c.adminComment?.includes('[작업취소]') && !c.adminComment?.includes('[작업제외]')) {
+                    const cName = getNormalizedReportCarrier(c.transporter, u.teamName);
+                    activeCarrierCounts[cName] = (activeCarrierCounts[cName] || 0) + 1;
+                }
+            });
+        });
+        const finalCarrierCounts = dateGroup.customCarrierCounts || activeCarrierCounts;
+        const displayTotal = Object.values(finalCarrierCounts).reduce((a, b) => a + b, 0);
+
+        const carrierEntries = Object.entries(finalCarrierCounts);
+        const carrierStr = carrierEntries.length > 0 ? ` ( ${carrierEntries.map(([k, v]) => `${k}: ${v}개`).join(', ')} )` : '';
+        const remarkText = dateGroup.customRemark ? ` | 비고: ${dateGroup.customRemark}` : '';
+        lines.push(`총합계: ${displayTotal}개 작업완료${carrierStr}${remarkText}\n`);
+
+        if (preset === 'anomaly') {
+            let anomalyCount = 0;
+            dateGroup.uploaders?.forEach((team) => {
+                const teamAnomalies = (team.containers || []).filter((cntr) => 
+                    cntr.isCancelled || 
+                    cntr.adminComment?.includes('[취소]') || 
+                    cntr.adminComment?.includes('[작업취소]') || 
+                    cntr.adminComment?.includes('[작업제외]') || 
+                    (cntr.adminComment && cntr.adminComment.trim()) || 
+                    (cntr.lastRemark && cntr.lastRemark.trim()) ||
+                    (cntr.remark && cntr.remark.trim())
+                );
+
+                if (teamAnomalies.length > 0) {
+                    lines.push(`■ ${team.teamName}`);
+                    teamAnomalies.forEach((cntr) => {
+                        anomalyCount++;
+                        const isExcluded = cntr.adminComment?.includes('[작업제외]');
+                        const isCancelled = !isExcluded && (cntr.isCancelled || cntr.adminComment?.includes('[취소]') || cntr.adminComment?.includes('[작업취소]'));
+                        const cancelTag = isExcluded ? ' [작업제외]' : isCancelled ? ' [작업취소]' : '';
+                        const cleanComment = cntr.adminComment ? cntr.adminComment.replace(/\[작업취소\]/g, '').replace(/\[작업제외\]/g, '').replace(/\[취소\]/g, '').trim() : '';
+                        const adminCommentNote = cleanComment ? ` (코멘트: ${cleanComment})` : '';
+                        const remarkNote = (cntr.lastRemark || cntr.remark || '').trim();
+
+                        lines.push(`- ${cntr.cntrNo}${cancelTag}${adminCommentNote}`);
+                        if (remarkNote) {
+                            lines.push(`  💬 비고/지연: ${remarkNote}`);
+                        }
+                    });
+                    lines.push(``);
+                }
+            });
+
+            if (anomalyCount === 0) {
+                lines.push(`특이사항 및 지연/취소 건이 없습니다. (전 건 정상 작업 완료)`);
+            }
+            return;
+        }
+
+        dateGroup.uploaders?.forEach((team) => {
+            const activeTeamCntrs = (team.containers || []).filter((c) => !c.isCancelled && !c.adminComment?.includes('[취소]') && !c.adminComment?.includes('[작업취소]') && !c.adminComment?.includes('[작업제외]'));
+            lines.push(`■ ${team.teamName} (합계 ${activeTeamCntrs.length}개)`);
+            team.containers?.forEach((cntr) => {
+                const isExcluded = cntr.adminComment?.includes('[작업제외]');
+                const isCancelled = !isExcluded && (cntr.isCancelled || cntr.adminComment?.includes('[취소]') || cntr.adminComment?.includes('[작업취소]'));
+                const cancelTag = isExcluded ? ' [작업제외]' : isCancelled ? ' [작업취소]' : '';
+
+                const cleanComment = cntr.adminComment ? cntr.adminComment.replace(/\[작업취소\]/g, '').replace(/\[작업제외\]/g, '').replace(/\[취소\]/g, '').trim() : '';
+                const adminCommentNote = cleanComment ? ` (${cleanComment})` : '';
+
+                const totalQty = cntr.totalQty ? cntr.totalQty.toLocaleString() : (cntr.products || []).reduce((s, p) => s + (p.qty || 0), 0).toLocaleString();
+                const modelCount = cntr.modelCount || cntr.products?.length || 0;
+                
+                if (preset === 'summary') {
+                    lines.push(`- ${cntr.cntrNo}${cancelTag} (${modelCount}모델, ${totalQty}개${adminCommentNote}) ${cntr.workTimeStr ? `[${cntr.workTimeStr}]` : ''}`);
+                    if (cntr.lastRemark && cntr.lastRemark.trim()) {
+                        lines.push(`  💬 ${cntr.lastRemark.trim()}`);
+                    }
+                } else {
+                    lines.push(`${cntr.cntrNo}${cancelTag} (${modelCount}모델, ${totalQty}개${adminCommentNote}) [${cntr.workTimeStr || ''}]`);
+
+                    if (cntr.lastRemark && cntr.lastRemark.trim()) {
+                        lines.push(`- 💬 ${cntr.lastRemark.trim()}`);
+                    }
+                    if (cntr.products) {
+                        for (const p of cntr.products) {
+                            lines.push(`- [${p.division || 'DFZ'}] ${p.name} ${(p.qty || 0).toLocaleString()}개`);
+                        }
+                    }
+                    if (cntr.emptyBoxes && cntr.emptyBoxes.length > 0) {
+                        for (const eb of cntr.emptyBoxes) {
+                            lines.push(`- 📦 [공박스] ${eb.name} ${(eb.qty || 0).toLocaleString()}개`);
+                        }
+                    }
+                    lines.push(``);
+                }
+            });
+            if (preset === 'summary') {
+                lines.push(``);
+            }
+        });
+    });
+
+    return lines.join('\n');
+}
+
+app.get('/api/reports/generate', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const client = await pool.connect();
+        try {
+            const todayWorkDateStr = getReportWorkDateString(new Date());
+            const startDateStr = typeof req.query.startDate === 'string' ? req.query.startDate.trim() : '';
+            const endDateStr = typeof req.query.endDate === 'string' ? req.query.endDate.trim() : '';
+            const productNameStr = typeof req.query.productName === 'string' ? req.query.productName.trim() : '';
+            const containerNoStr = typeof req.query.cntrNo === 'string' ? req.query.cntrNo.trim() : '';
+            const targetDateStr = startDateStr || todayWorkDateStr;
+
+            const whereClauses = [];
+            const params = [];
+            let paramIdx = 1;
+
+            whereClauses.push(`COALESCE(r.qty_plan, 0) > 0`);
+
+            if (!startDateStr && !endDateStr) {
+                whereClauses.push(`COALESCE(p.uploaded_at, j.saved_at) AT TIME ZONE 'Asia/Seoul' >= $${paramIdx++}::timestamp`);
+                params.push(`${todayWorkDateStr} 13:00:00`);
+            } else {
+                if (startDateStr) {
+                    whereClauses.push(`COALESCE(p.uploaded_at, j.saved_at) AT TIME ZONE 'Asia/Seoul' >= $${paramIdx++}::timestamp`);
+                    params.push(`${startDateStr} 13:00:00`);
+                }
+                if (endDateStr) {
+                    whereClauses.push(`COALESCE(p.uploaded_at, j.saved_at) AT TIME ZONE 'Asia/Seoul' <= ($${paramIdx++}::date + INTERVAL '1 day 12 hours 59 minutes 59.999 seconds')`);
+                    params.push(endDateStr);
+                }
+            }
+
+            if (productNameStr) {
+                whereClauses.push(`r.prod_name ILIKE $${paramIdx++}`);
+                params.push(`%${productNameStr}%`);
+            }
+            if (containerNoStr) {
+                whereClauses.push(`r.cntr_no ILIKE $${paramIdx++}`);
+                params.push(`%${containerNoStr}%`);
+            }
+
+            const commentDateParamIdx = paramIdx++;
+            params.push(targetDateStr);
+
+            const whereSql = "WHERE " + whereClauses.join(" AND ");
+
+            // Ensure container_comments table exists
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS container_comments (
+                    cntr_no VARCHAR(50) NOT NULL,
+                    work_date VARCHAR(20) DEFAULT '',
+                    admin_comment TEXT,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (cntr_no, work_date)
+                );
+            `).catch(() => {});
+
+            // Ensure manual_report_entries table exists
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS manual_report_entries (
+                    id SERIAL PRIMARY KEY,
+                    work_date VARCHAR(20) NOT NULL,
+                    team_name VARCHAR(50) NOT NULL,
+                    cntr_no VARCHAR(50) NOT NULL,
+                    category VARCHAR(100),
+                    duration_minutes INTEGER DEFAULT 45,
+                    remark TEXT,
+                    products JSONB,
+                    empty_boxes JSONB,
+                    first_uploaded_at TIMESTAMP WITH TIME ZONE,
+                    transporter VARCHAR(100),
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            `).catch(() => {});
+
+            // Main grouped results query
+            const query = `
+                WITH GroupedResults AS (
+                    SELECT 
+                        MAX(COALESCE(p.photo_job_id, j.id)) as job_id,
+                        COALESCE(r.cntr_no, j.job_name, '미지정') as cntr_no,
+                        r.prod_name,
+                        r.division,
+                        SUM(COALESCE(r.qty_plan, 0)) as qty,
+                        COALESCE(t.name, '미지정 조') as team_name,
+                        BOOL_OR(p.is_completed) as is_completed,
+                        COALESCE(MAX(p.uploaded_at), MAX(j.saved_at)) as work_time,
+                        COALESCE(MAX(p.work_duration_minutes), 45) as duration_minutes,
+                        COALESCE(MIN(p.uploaded_at), MAX(j.saved_at)) as first_uploaded_at,
+                        MAX(p.remark) as remark,
+                        MAX(r.transporter) as transporter,
+                        MAX(cc.admin_comment) as admin_comment,
+                        MAX(mp.height) as height,
+                        MAX(r.remark) as db_remark
+                    FROM container_results r
+                    JOIN container_jobs j ON r.job_id = j.id
+                    LEFT JOIN product_master_sync mp ON r.prod_name = mp.prod_name
+                    LEFT JOIN (
+                        SELECT 
+                            cj.job_name,
+                            cp.cntr_no, 
+                            MAX(cp.job_id) as photo_job_id,
+                            MAX(cp.team_id) as team_id,
+                            MAX(cp.work_duration_minutes) as work_duration_minutes,
+                            BOOL_OR(cp.is_completed) as is_completed,
+                            MIN(cp.uploaded_at) as uploaded_at,
+                            MAX(cp.remark) as remark
+                        FROM container_photos cp
+                        LEFT JOIN container_jobs cj ON cp.job_id = cj.id
+                        WHERE (cp.is_deleted IS NOT TRUE)
+                        GROUP BY cj.job_name, cp.cntr_no
+                    ) p ON p.job_name = j.job_name AND (p.cntr_no = r.cntr_no OR (r.cntr_no IS NULL AND p.cntr_no IS NULL))
+                    LEFT JOIN teams t ON p.team_id = t.id
+                    LEFT JOIN container_comments cc 
+                      ON cc.cntr_no = COALESCE(r.cntr_no, j.job_name, '미지정')
+                     AND (cc.work_date = $${commentDateParamIdx} OR cc.work_date = '' OR cc.work_date IS NULL)
+                    ${whereSql}
+                    GROUP BY COALESCE(r.cntr_no, j.job_name, '미지정'), r.prod_name, r.division, t.name
+                )
+                SELECT gr.*,
+                       (SELECT json_agg(json_build_object('name', eb.box_name, 'qty', eb.qty)) 
+                        FROM container_empty_boxes eb 
+                        WHERE eb.job_id = gr.job_id AND eb.cntr_no = gr.cntr_no AND eb.qty > 0) as empty_boxes
+                FROM GroupedResults gr
+                ORDER BY gr.team_name, gr.cntr_no, gr.prod_name
+            `;
+
+            let rows = [];
+            try {
+                const resDb = await client.query(query, params);
+                rows = resDb.rows || [];
+            } catch (queryErr) {
+                console.warn("[Report query warn]:", queryErr.message);
+                const fallbackQuery = `
+                    SELECT 
+                        COALESCE(r.cntr_no, '미지정') as cntr_no,
+                        r.prod_name,
+                        r.division,
+                        SUM(COALESCE(r.qty_plan, 0)) as qty,
+                        '1조' as team_name,
+                        MAX(r.transporter) as transporter,
+                        NOW() as first_uploaded_at,
+                        45 as duration_minutes
+                    FROM container_results r
+                    GROUP BY r.cntr_no, r.prod_name, r.division
+                    LIMIT 200
+                `;
+                const resFb = await client.query(fallbackQuery);
+                rows = resFb.rows || [];
+            }
+
+            // Fetch manual report entries
+            let manualRows = [];
+            try {
+                const manualRes = await client.query(`SELECT * FROM manual_report_entries WHERE work_date = $1`, [targetDateStr]);
+                manualRows = manualRes.rows || [];
+            } catch (mErr) {}
+
+            // Group by workDate -> teamName -> entryKey
+            const dateMap = new Map();
+
+            for (const row of rows) {
+                const teamName = row.team_name || '미지정 조';
+                if (!teamName || teamName === '미지정 조') continue;
+
+                const cntrNo = row.cntr_no;
+                const entryKey = `db_${cntrNo}`;
+                const division = row.division || '일반';
+                const prodName = row.prod_name;
+                const qty = Math.round(Number(row.qty)) || 0;
+                const height = Number(row.height) || 0;
+                const isCompleted = !!row.is_completed;
+                const workTime = row.work_time ? new Date(row.work_time) : new Date();
+                const durationMinutes = Number(row.duration_minutes) || 45;
+                const firstUploadedAt = row.first_uploaded_at ? new Date(row.first_uploaded_at) : workTime;
+                const remark = row.remark || '';
+                const transporter = row.transporter || '';
+                const adminComment = row.admin_comment || '';
+                const workDateStr = getReportWorkDateString(workTime);
+
+                if (!dateMap.has(workDateStr)) dateMap.set(workDateStr, new Map());
+                const teamMap = dateMap.get(workDateStr);
+
+                if (!teamMap.has(teamName)) teamMap.set(teamName, new Map());
+                const cntrMap = teamMap.get(teamName);
+
+                if (!cntrMap.has(entryKey)) {
+                    cntrMap.set(entryKey, { cntrNo, jobId: row.job_id, isCompleted, division, durationMinutes, firstUploadedAt, remark, transporter, adminComment, products: [], emptyBoxes: [] });
+                }
+                const cntrData = cntrMap.get(entryKey);
+                if (remark && !cntrData.remark) cntrData.remark = remark;
+                if (transporter && !cntrData.transporter) cntrData.transporter = transporter;
+                if (adminComment && !cntrData.adminComment) cntrData.adminComment = adminComment;
+                cntrData.products.push({ name: prodName, qty, division, height });
+                
+                const emptyBoxes = Array.isArray(row.empty_boxes) ? row.empty_boxes : [];
+                if (emptyBoxes.length > 0 && cntrData.emptyBoxes.length === 0) {
+                    cntrData.emptyBoxes = emptyBoxes;
+                }
+            }
+
+            // Merge Manual Entries
+            for (const mRow of manualRows) {
+                const workDateStr = mRow.work_date;
+                const teamName = mRow.team_name;
+                const cntrNo = mRow.cntr_no;
+                const entryKey = `manual_${mRow.id}_${cntrNo}`;
+                
+                if (!dateMap.has(workDateStr)) dateMap.set(workDateStr, new Map());
+                const teamMap = dateMap.get(workDateStr);
+                if (!teamMap.has(teamName)) teamMap.set(teamName, new Map());
+                const cntrMap = teamMap.get(teamName);
+                
+                if (!cntrMap.has(entryKey)) {
+                    cntrMap.set(entryKey, { 
+                        cntrNo,
+                        isCompleted: true, 
+                        division: 'DFZ', 
+                        durationMinutes: mRow.duration_minutes || 45, 
+                        firstUploadedAt: mRow.first_uploaded_at ? new Date(mRow.first_uploaded_at) : new Date(), 
+                        remark: mRow.remark || '', 
+                        transporter: mRow.transporter || '',
+                        adminComment: mRow.category || '', 
+                        products: [], 
+                        emptyBoxes: [],
+                        manualEntryId: mRow.id
+                    });
+                }
+                
+                const cntrData = cntrMap.get(entryKey);
+                const mProducts = mRow.products || [];
+                for (const p of mProducts) {
+                    cntrData.products.push({ name: p.name, qty: p.qty, division: p.division || 'DFZ', height: 0 });
+                }
+                const mEmptyBoxes = mRow.empty_boxes || [];
+                if (mEmptyBoxes.length > 0) {
+                    cntrData.emptyBoxes.push(...mEmptyBoxes);
+                }
+            }
+
+            const sortedDates = Array.from(dateMap.keys()).sort((a, b) => b.localeCompare(a));
+            const reportData = [];
+
+            sortedDates.forEach((dateStr) => {
+                const teamMap = dateMap.get(dateStr);
+                let totalContainersSum = 0;
+                const uploaders = [];
+
+                const sortedTeamNames = Array.from(teamMap.keys()).sort((a, b) => a.localeCompare(b, 'ko-KR'));
+
+                sortedTeamNames.forEach((teamName) => {
+                    const cntrMap = teamMap.get(teamName);
+                    const rawList = Array.from(cntrMap.values()).sort((a, b) => a.firstUploadedAt.getTime() - b.firstUploadedAt.getTime());
+                    const timelineList = calculateReportTeamTimeline(rawList);
+
+                    timelineList.forEach(c => {
+                        if (!c.adminComment) {
+                            c.adminComment = generateReportJobType(c.products);
+                        }
+                    });
+
+                    totalContainersSum += timelineList.length;
+                    uploaders.push({
+                        teamName,
+                        totalContainers: timelineList.length,
+                        containers: timelineList
+                    });
+                });
+
+                reportData.push({
+                    date: dateStr,
+                    dateStr,
+                    totalContainers: totalContainersSum,
+                    uploaders
+                });
+            });
+
+            const reportText = buildReportTextFromData(reportData, 'full');
+            return res.json({
+                success: true,
+                reportData,
+                reportText
+            });
+
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error("GET /api/reports/generate error:", err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.post('/api/reports/comment', async (req, res) => {
+    try {
+        const { cntrNo, workDate, adminComment } = req.body;
+        if (!cntrNo) return res.status(400).json({ success: false, message: "컨테이너 번호가 필요합니다." });
+
+        const pool = await getPool();
+        const client = await pool.connect();
+        try {
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS container_comments (
+                    cntr_no VARCHAR(50) NOT NULL,
+                    work_date VARCHAR(20) DEFAULT '',
+                    admin_comment TEXT,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (cntr_no, work_date)
+                );
+            `);
+
+            await client.query(`
+                INSERT INTO container_comments (cntr_no, work_date, admin_comment)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (cntr_no, work_date)
+                DO UPDATE SET admin_comment = EXCLUDED.admin_comment;
+            `, [cntrNo.trim(), (workDate || '').trim(), adminComment || '']);
+
+            return res.json({ success: true, message: "메모/코멘트가 저장되었습니다." });
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error("POST /api/reports/comment error:", err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Static file serving (re-enabled to allow browser access)
 app.use(express.static(__dirname));
 
