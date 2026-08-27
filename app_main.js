@@ -13633,12 +13633,23 @@ window.resetGalleryFilters = function() {
 window.closePhotoGalleryModal = function() {
     const modal = document.getElementById('photoGalleryModal');
     if (modal) modal.style.display = 'none';
+    if (typeof window.clearAllGallerySelection === 'function') {
+        window.clearAllGallerySelection();
+    }
 };
 
 // 1. 사진 보관함 모달 오픈
 window.openPhotoGalleryModal = function(initialCntrNo = '') {
     const modal = document.getElementById('photoGalleryModal');
     if (!modal) return;
+
+    // 사진함 열릴 때 이전 선택 상태(폴더 및 사진 선택) 완벽 초기화
+    if (typeof window.clearAllGallerySelection === 'function') {
+        window.clearAllGallerySelection();
+    } else {
+        if (window.selectedFolderKeys) window.selectedFolderKeys.clear();
+        if (window.selectedPhotoIds) window.selectedPhotoIds.clear();
+    }
 
     modal.style.display = 'flex';
 
@@ -13758,7 +13769,12 @@ window.loadPhotoGallery = async function(targetCntr = null) {
         }
 
         window.currentGalleryPhotos = loadedPhotos;
-        window.selectedPhotoIds.clear();
+        if (typeof window.clearAllGallerySelection === 'function') {
+            window.clearAllGallerySelection();
+        } else {
+            if (window.selectedPhotoIds) window.selectedPhotoIds.clear();
+            if (window.selectedFolderKeys) window.selectedFolderKeys.clear();
+        }
         window.renderGalleryPhotos();
 
     } catch (err) {
@@ -14801,14 +14817,27 @@ window.lightboxDownload = function() {
         }
 
         window.addEventListener('keydown', (e) => {
-            const modal = document.getElementById('photoLightboxModal');
-            if (modal && modal.style.display !== 'none') {
+            const lbModal = document.getElementById('photoLightboxModal');
+            if (lbModal && lbModal.style.display !== 'none') {
                 if (e.key === 'Escape') window.closePhotoLightbox();
                 else if (e.key === 'ArrowLeft') window.lightboxPrev();
                 else if (e.key === 'ArrowRight') window.lightboxNext();
                 else if (e.key === '+' || e.key === '=') window.lightboxZoom(1.25);
                 else if (e.key === '-') window.lightboxZoom(0.8);
                 else if (e.key === '0') window.lightboxResetZoom();
+                return;
+            }
+
+            const copyModal = document.getElementById('modalLocalCopyPhoto');
+            if (copyModal && copyModal.style.display !== 'none') {
+                if (e.key === 'Escape') window.closeLocalCopyModal();
+                return;
+            }
+
+            const gModal = document.getElementById('photoGalleryModal');
+            if (gModal && gModal.style.display !== 'none') {
+                if (e.key === 'Escape') window.closePhotoGalleryModal();
+                return;
             }
         });
 
