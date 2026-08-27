@@ -52,297 +52,6 @@ function updateActiveWarehouseStock() {
     }
 }
 
-// ===================================================================
-// [신규] IndexedDB 기반 작업 세션 영구 보관 & 자동 복원 엔진
-// ===================================================================
-const SessionDB = {
-    dbName: 'ExcelCompareSessionDB_v1',
-    storeName: 'workSessions',
-
-    open: function() {
-        return new Promise((resolve, reject) => {
-            const req = indexedDB.open(this.dbName, 1);
-            req.onupgradeneeded = (e) => {
-                const db = e.target.result;
-                if (!db.objectStoreNames.contains(this.storeName)) {
-                    db.createObjectStore(this.storeName, { keyPath: 'id' });
-                }
-            };
-            req.onsuccess = (e) => resolve(e.target.result);
-            req.onerror = (e) => reject(e.target.error);
-        });
-    },
-
-    save: async function(id, data) {
-        try {
-            const db = await this.open();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(this.storeName, 'readwrite');
-                const store = tx.objectStore(this.storeName);
-                store.put({ id, data, updatedAt: Date.now() });
-                tx.oncomplete = () => resolve(true);
-                tx.onerror = (e) => reject(e.target.error);
-            });
-        } catch (err) {
-            console.warn('SessionDB.save error:', err);
-        }
-    },
-
-    get: async function(id) {
-        try {
-            const db = await this.open();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(this.storeName, 'readonly');
-                const store = tx.objectStore(this.storeName);
-                const req = store.get(id);
-                req.onsuccess = () => resolve(req.result ? req.result.data : null);
-                req.onerror = (e) => reject(e.target.error);
-            });
-        } catch (err) {
-            console.warn('SessionDB.get error:', err);
-            return null;
-        }
-    },
-
-    clear: async function() {
-        try {
-            const db = await this.open();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(this.storeName, 'readwrite');
-                const store = tx.objectStore(this.storeName);
-                store.clear();
-                tx.oncomplete = () => resolve(true);
-                tx.onerror = (e) => reject(e.target.error);
-            });
-        } catch (err) {
-            console.warn('SessionDB.clear error:', err);
-        }
-    }
-};
-
-async function fileToArrayBuffer(file) {
-    if (!file) return null;
-    if (file instanceof ArrayBuffer) return file;
-    if (typeof file.arrayBuffer === 'function') {
-        return await file.arrayBuffer();
-    }
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(file);
-    });
-}
-
-window.autoSaveWorkSession = async function() {
-    try {
-        const filesPayload = {};
-        const rawMap = window.savedRawFiles || {};
-
-        for (const key of ['original', 'download', 'rework', 'warehouse']) {
-            const f = rawMap[key];
-            if (f && f.name) {
-                try {
-                    const buf = await fileToArrayBuffer(f);
-                    if (buf) {
-                        filesPayload[key] = {
-                            name: f.name,
-                            type: f.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                            size: f.size,
-                            buffer: buf
-                        };
-                    }
-                } catch (fe) {
-                    console.warn(`Failed to buffer file ${key}:`, fe);
-                }
-            }
-        }
-
-        const sessionData = {
-            timestamp: Date.now(),
-            files: filesPayload,
-            comparisonResult: (typeof comparisonResult !== 'undefined' && comparisonResult && comparisonResult.length > 0) ? comparisonResult : (window.comparisonResult || null),
-            originalData: typeof originalData !== 'undefined' ? originalData : null,
-            downloadData: typeof downloadData !== 'undefined' ? downloadData : null,
-            reworkData: typeof reworkData !== 'undefined' ? reworkData : null,
-            warehouseStockLoaded: typeof warehouseStockLoaded !== 'undefined' ? warehouseStockLoaded : false,
-            processedAvailabilityData: typeof processedAvailabilityData !== 'undefined' ? processedAvailabilityData : null
-        };
-
-        await SessionDB.save('currentSession', sessionData);
-        console.log('💾 [SessionDB] 작업 세션 자동 저장 완료 (파일 수:', Object.keys(filesPayload).length, ')');
-    } catch (err) {
-        console.warn('autoSaveWorkSession error:', err);
-    }
-};
-
-window.autoRestoreWorkSession = async function() {
-    try {
-        const session = await SessionDB.get('currentSession');
-        if (!session || !session.files || Object.keys(session.files).length === 0) {
-            return false;
-        }
-
-        console.log('🔄 [SessionDB] 이전 작업 세션 발견! 자동 복원 시작...', session);
-
-        window.savedRawFiles = window.savedRawFiles || {};
-
-        // 1. 파일 객체 복원
-        if (session.files.original && session.files.original.buffer) {
-            originalFile = new File([session.files.original.buffer], session.files.original.name, { type: session.files.original.type });
-            window.savedRawFiles['original'] = originalFile;
-            const statOrig = document.getElementById('statusOriginal');
-            if (statOrig) {
-                statOrig.textContent = `업로드됨: ${originalFile.name}`;
-                statOrig.style.color = '#1e293b';
-            }
-            const lastOrigEl = document.getElementById('lastOrig');
-            if (lastOrigEl) lastOrigEl.textContent = `최근 사용: ${originalFile.name}`;
-            const btnRelOrig = document.getElementById('btnReloadOriginal');
-            if (btnRelOrig) btnRelOrig.style.display = 'inline-block';
-        }
-
-        if (session.files.download && session.files.download.buffer) {
-            downloadFile = new File([session.files.download.buffer], session.files.download.name, { type: session.files.download.type });
-            window.savedRawFiles['download'] = downloadFile;
-            const statDown = document.getElementById('statusDownload');
-            if (statDown) {
-                statDown.textContent = `업로드됨: ${downloadFile.name}`;
-                statDown.style.color = '#1e293b';
-            }
-            const lastDownEl = document.getElementById('lastDown');
-            if (lastDownEl) lastDownEl.textContent = `최근 사용: ${downloadFile.name}`;
-            const btnRelDown = document.getElementById('btnReloadDownload');
-            if (btnRelDown) btnRelDown.style.display = 'inline-block';
-        }
-
-        if (session.files.rework && session.files.rework.buffer) {
-            reworkFile = new File([session.files.rework.buffer], session.files.rework.name, { type: session.files.rework.type });
-            window.savedRawFiles['rework'] = reworkFile;
-            const statRework = document.getElementById('statusRework');
-            if (statRework) {
-                statRework.textContent = `업로드됨: ${reworkFile.name}`;
-                statRework.style.color = '#1e293b';
-            }
-            const btnClrRework = document.getElementById('btnClearRework');
-            if (btnClrRework) btnClrRework.style.display = 'inline-block';
-        }
-
-        if (session.files.warehouse && session.files.warehouse.buffer) {
-            const wsFile = new File([session.files.warehouse.buffer], session.files.warehouse.name, { type: session.files.warehouse.type });
-            window.savedRawFiles['warehouse'] = wsFile;
-            const wsStat = document.getElementById('statusWarehouseStock');
-            if (wsStat) {
-                wsStat.textContent = `업로드됨: ${wsFile.name}`;
-                wsStat.style.color = '#1e293b';
-            }
-            const btnClrWs = document.getElementById('btnClearWarehouseStock');
-            if (btnClrWs) btnClrWs.style.display = 'inline-block';
-        }
-
-        if (session.originalData) originalData = session.originalData;
-        if (session.downloadData) downloadData = session.downloadData;
-        if (session.reworkData) reworkData = session.reworkData;
-        if (session.processedAvailabilityData) processedAvailabilityData = session.processedAvailabilityData;
-
-        // 2. 비교 결과 복원
-        if (session.comparisonResult && session.comparisonResult.length > 0) {
-            comparisonResult = session.comparisonResult;
-            window.comparisonResult = session.comparisonResult;
-            window.displayData = session.comparisonResult;
-
-            const dashEl = document.getElementById('dashboardContainer');
-            const resEl = document.getElementById('resultsContainer');
-            if (dashEl) dashEl.style.display = 'flex';
-            if (resEl) resEl.style.display = 'block';
-
-            if (typeof renderTable === 'function') {
-                renderTable(window.comparisonResult);
-            }
-            if (typeof updateStats === 'function') {
-                updateStats();
-            }
-            if (window.fetchContainerPhotoCounts) {
-                window.fetchContainerPhotoCounts();
-            }
-
-            if (typeof setProcessStatus === 'function') {
-                setProcessStatus("이전 작업 세션이 0.1초 만에 자동 복원되었습니다.", 100, true);
-            }
-            window.showSessionRestoredBanner(session.timestamp);
-        }
-
-        if (typeof checkReadyStatus === 'function') {
-            checkReadyStatus();
-        }
-
-        return true;
-    } catch (err) {
-        console.warn('autoRestoreWorkSession error:', err);
-        return false;
-    }
-};
-
-window.clearWorkSession = async function() {
-    if (confirm("저장된 이전 작업 세션(업로드된 4개 엑셀 파일 및 비교 결과)을 모두 초기화하시겠습니까?")) {
-        await SessionDB.clear();
-        location.reload();
-    }
-};
-
-window.showSessionRestoredBanner = function(timestamp) {
-    let banner = document.getElementById('sessionRestoredBanner');
-    if (banner) banner.remove();
-
-    const timeStr = timestamp ? new Date(timestamp).toLocaleTimeString() : '';
-
-    banner = document.createElement('div');
-    banner.id = 'sessionRestoredBanner';
-    banner.style.cssText = `
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        z-index: 999999;
-        background: rgba(15, 23, 42, 0.95);
-        color: #f8fafc;
-        border: 1px solid #38bdf8;
-        border-radius: 14px;
-        padding: 12px 18px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-        backdrop-filter: blur(12px);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        animation: popoverFadeIn 0.3s ease;
-        font-family: inherit;
-    `;
-    banner.innerHTML = `
-        <div style="font-size: 1.4rem; color: #38bdf8;">🔄</div>
-        <div>
-            <div style="font-size: 0.85rem; font-weight: 800; color: #38bdf8; display:flex; align-items:center; gap:6px;">
-                <span>작업 세션 자동 복원 완료</span>
-                <span style="font-size:0.7rem; color:#94a3b8; font-weight:600;">(${timeStr})</span>
-            </div>
-            <div style="font-size: 0.76rem; color: #cbd5e1; margin-top: 2px;">
-                새로고침 전의 엑셀 파일 4종과 비교 화면이 그대로 복원되었습니다.
-            </div>
-        </div>
-        <button type="button" onclick="window.clearWorkSession()" style="background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.5); color: #fca5a5; border-radius: 8px; padding: 5px 10px; font-size: 0.75rem; font-weight: 800; cursor: pointer; white-space: nowrap; margin-left: 6px;">
-            <i class="fas fa-trash-alt"></i> 새로 시작
-        </button>
-        <button type="button" onclick="document.getElementById('sessionRestoredBanner').remove()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; padding: 0 4px; line-height: 1;">&times;</button>
-    `;
-    document.body.appendChild(banner);
-
-    setTimeout(() => {
-        if (banner && banner.parentNode) {
-            banner.style.opacity = '0';
-            banner.style.transition = 'opacity 0.5s ease';
-            setTimeout(() => banner.remove(), 500);
-        }
-    }, 8000);
-};
-
 // POP 샘플 무게 전역 상태 { "CNTR_NO": { weight: 150.5, memo: "샘플" } }
 let popWeightMap = {};
 
@@ -1332,9 +1041,6 @@ async function initializeApp() {
     }
 
     checkReadyStatus();
-
-    // [신규] 이전 작업 세션 (4종 파일 및 비교 결과) 자동 복원
-    await window.autoRestoreWorkSession();
 }
 
 // --- DB Settings & Sync Logic ---
@@ -1961,8 +1667,6 @@ fileOriginal.addEventListener('change', async (e) => {
         } else {
             pathOriginal.value = file.name;
         }
-
-        if (window.autoSaveWorkSession) window.autoSaveWorkSession();
     }
     checkReadyStatus();
 });
@@ -2002,8 +1706,6 @@ fileDownload.addEventListener('change', async (e) => {
         } else {
             pathDownload.value = file.name;
         }
-
-        if (window.autoSaveWorkSession) window.autoSaveWorkSession();
     }
     checkReadyStatus();
 });
@@ -2032,8 +1734,6 @@ fileRework.addEventListener('change', async (e) => {
         } else {
             pathRework.value = file.name;
         }
-
-        if (window.autoSaveWorkSession) window.autoSaveWorkSession();
     } else {
         if (!pathRework.value.trim() && btnClearRework) {
             btnClearRework.style.display = 'none';
@@ -2291,9 +1991,6 @@ if (btnClearDown) {
                 }
 
                 console.log(`✅ 창고재고 파싱 완료: (동) 접두어 ${result.dongPrefixes.length}개 / Block Qty 대상 ${warehouseStockBlockProducts.size}개`);
-                window.savedRawFiles = window.savedRawFiles || {};
-                window.savedRawFiles['warehouse'] = file;
-                if (window.autoSaveWorkSession) window.autoSaveWorkSession();
             } else {
                 throw new Error(result.message);
             }
@@ -5343,9 +5040,6 @@ btnCompare.addEventListener('click', async () => {
         resultsContainer.style.display = 'block';
 
         setProcessStatus("모든 처리가 완료되었습니다!", 100, true);
-
-        // [신규] 비교 완료 후 작업 세션 (4종 파일 & 결과 데이터) IndexedDB 영구 보관
-        if (window.autoSaveWorkSession) window.autoSaveWorkSession();
 
         // 결과 영역으로 스크롤
         resultsContainer.scrollIntoView({ behavior: 'smooth' });

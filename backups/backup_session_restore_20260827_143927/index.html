@@ -1262,21 +1262,6 @@
         <!-- New selection grid layout to conserve vertical space -->
         <div class="card selection-grid"
             style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 1.1rem 1.3rem;">
-            <!-- [신규] 자동 세션 복원 상태 바 -->
-            <div id="sessionQuickBar" style="grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem;">
-                <div style="display: flex; align-items: center; gap: 8px; color: #166534; font-weight: 700;">
-                    <i class="fas fa-shield-check" style="color: #16a34a;"></i>
-                    <span>자동 세션 복원 활성화됨 (새로고침 시 엑셀 4종 파일 및 비교 결과 즉시 유지)</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <button type="button" onclick="window.autoRestoreWorkSession()" class="btn btn-secondary-outline" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 6px; background: white; border-color:#86efac; color:#15803d; font-weight:700;">
-                        <i class="fas fa-redo-alt"></i> 즉시 복원
-                    </button>
-                    <button type="button" onclick="window.clearWorkSession()" class="btn btn-secondary-outline" style="padding: 3px 8px; font-size: 0.72rem; border-color: #fca5a5; color: #ef4444; border-radius: 6px; background: white; font-weight:700;">
-                        <i class="fas fa-trash-alt"></i> 세션 초기화
-                    </button>
-                </div>
-            </div>
             <!-- Left Column: Source Excel files -->
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <div class="file-input-group" style="margin-bottom: 0;">
@@ -3503,7 +3488,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260827-sessionrestore"></script>
+    <script src="app_main.js?v=20260827-smartbadge"></script>
 </body>
 
 </html>
