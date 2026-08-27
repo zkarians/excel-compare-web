@@ -5204,6 +5204,52 @@ tr.border-group td {
     font-weight: 900 !important;
 }
 
+.report-carrier-badge {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #334155;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+.report-carrier-badge.badge-bni {
+    background: #eef2ff !important;
+    border-color: #c7d2fe !important;
+    color: #3730a3 !important;
+}
+.report-carrier-badge.badge-bni strong {
+    color: #4f46e5 !important;
+}
+.report-carrier-badge.badge-chunma {
+    background: #fff1f2 !important;
+    border-color: #fecdd3 !important;
+    color: #9f1239 !important;
+}
+.report-carrier-badge.badge-chunma strong {
+    color: #e11d48 !important;
+}
+.report-carrier-badge.badge-rework {
+    background: #fffbeb !important;
+    border-color: #fde68a !important;
+    color: #92400e !important;
+}
+.report-carrier-badge.badge-rework strong {
+    color: #d97706 !important;
+}
+.report-carrier-badge.badge-other {
+    background: #f0fdf4 !important;
+    border-color: #bbf7d0 !important;
+    color: #166534 !important;
+}
+.report-carrier-badge.badge-other strong {
+    color: #16a34a !important;
+}
+
 .btn-edit-report-header {
     background: transparent;
     border: none;
@@ -5284,8 +5330,8 @@ tr.border-group td {
     border-color: #fecdd3 !important;
 }
 .report-cntr-card.is-excluded {
-    background: #fffbeb !important;
-    border-color: #fde68a !important;
+    background: #faf5ff !important;
+    border-color: #e9d5ff !important;
 }
 
 .report-cntr-top {

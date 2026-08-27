@@ -15094,11 +15094,11 @@ window.lightboxDownload = function() {
                                             const typeLabel = typeText ? `<span class="report-bracket-red" style="margin-left: 6px;">(</span> <strong style="color: #0f172a; font-weight: 800;">${typeText}</strong> <span class="report-bracket-red">)</span>` : '';
 
                                             const statusTag = isExcluded 
-                                                ? '<span style="background:rgba(217,119,6,0.15); color:#b45309; border:1px solid rgba(217,119,6,0.3); font-size:0.68rem; padding:1px 5px; border-radius:4px; margin-left:4px; font-weight:900;">[작업제외]</span>'
+                                                ? '<span class="report-status-tag" style="background:rgba(124, 58, 237, 0.12); color:#7c3aed; border:1px solid rgba(124, 58, 237, 0.3); margin-left:2px;">[작업제외]</span>'
                                                 : isCancelled 
-                                                ? '<span style="background:rgba(225,29,72,0.15); color:#e11d48; border:1px solid rgba(225,29,72,0.3); font-size:0.68rem; padding:1px 5px; border-radius:4px; margin-left:4px; font-weight:900;">[작업취소]</span>'
+                                                ? '<span class="report-status-tag" style="background:rgba(225,29,72,0.15); color:#e11d48; border:1px solid rgba(225,29,72,0.3); margin-left:2px;">[작업취소]</span>'
                                                 : (isRework 
-                                                ? '<span style="background:rgba(217,119,6,0.15); color:#d97706; border:1px solid rgba(217,119,6,0.3); font-size:0.68rem; padding:1px 5px; border-radius:4px; margin-left:4px; font-weight:900;">[재작업]</span>'
+                                                ? '<span class="report-status-tag" style="background:rgba(217,119,6,0.15); color:#d97706; border:1px solid rgba(217,119,6,0.3); margin-left:2px;">[재작업]</span>'
                                                 : '');
 
                                             const displayRemark = (c.remark || c.lastRemark || '').replace(/^지연사유:\s*/, '').trim();
@@ -15172,9 +15172,37 @@ window.lightboxDownload = function() {
         }
 
         if (carrierCountsEl) {
-            carrierCountsEl.innerHTML = Object.entries(globalCarrierMap).map(([k, v]) => `
-                <span class="report-carrier-badge">🏷️ ${k}: <strong>${v}개</strong></span>
-            `).join('');
+            const orderedKeys = ['BNI', '천마', '재작업'];
+            Object.keys(globalCarrierMap).forEach(k => {
+                if (!orderedKeys.includes(k) && globalCarrierMap[k] > 0) {
+                    orderedKeys.push(k);
+                }
+            });
+
+            carrierCountsEl.innerHTML = orderedKeys.map(k => {
+                const count = globalCarrierMap[k] || 0;
+                if (count === 0 && k !== 'BNI' && k !== '천마') return '';
+
+                let badgeClass = 'badge-other';
+                let iconColor = '#16a34a';
+                if (k === 'BNI') {
+                    badgeClass = 'badge-bni';
+                    iconColor = '#4f46e5';
+                } else if (k === '천마') {
+                    badgeClass = 'badge-chunma';
+                    iconColor = '#e11d48';
+                } else if (k === '재작업') {
+                    badgeClass = 'badge-rework';
+                    iconColor = '#d97706';
+                }
+
+                return `
+                    <span class="report-carrier-badge ${badgeClass}">
+                        <i class="fas fa-tag" style="color: ${iconColor}; font-size: 0.72rem; margin-right: 4px;"></i>
+                        <span>${k}:</span> <strong>${count}개</strong>
+                    </span>
+                `;
+            }).join('');
         }
     };
 
@@ -15311,7 +15339,7 @@ window.lightboxDownload = function() {
                                             <div style="min-width:0; flex:1;">
                                                 <div style="font-weight:900; font-size:0.82rem; color:#0f172a; display:flex; align-items:center; gap:4px;">
                                                     <span>${c.cntrNo}</span>
-                                                    ${isExcluded ? '<span style="background:#d97706; color:#fff; font-size:0.65rem; padding:1px 4px; border-radius:4px;">작업제외</span>' : (isCancelled ? '<span style="background:#e11d48; color:#fff; font-size:0.65rem; padding:1px 4px; border-radius:4px;">작업취소</span>' : '')}
+                                                    ${isExcluded ? '<span style="background:#7c3aed; color:#fff; font-size:0.65rem; padding:1px 4px; border-radius:4px;">작업제외</span>' : (isCancelled ? '<span style="background:#e11d48; color:#fff; font-size:0.65rem; padding:1px 4px; border-radius:4px;">작업취소</span>' : '')}
                                                 </div>
                                                 <div style="font-size:0.7rem; color:#64748b; margin-top:2px;">${(c.products || []).length}모델 · ${c.jobType || ''}</div>
                                             </div>
@@ -15319,7 +15347,7 @@ window.lightboxDownload = function() {
                                         ${isChecked ? `
                                             <div style="display:flex; gap:3px;">
                                                 <button type="button" class="btn-toggle-cancel-type" style="${isCancelled ? 'background:#e11d48; color:#fff;' : ''}" onclick="window.handleSetCancelType('${c.cntrNo}', 'cancel', ${c.jobId || 'null'}, ${c.manualEntryId || 'null'})">취소</button>
-                                                <button type="button" class="btn-toggle-cancel-type" style="${isExcluded ? 'background:#d97706; color:#fff;' : ''}" onclick="window.handleSetCancelType('${c.cntrNo}', 'exclude', ${c.jobId || 'null'}, ${c.manualEntryId || 'null'})">제외</button>
+                                                <button type="button" class="btn-toggle-cancel-type" style="${isExcluded ? 'background:#7c3aed; color:#fff;' : ''}" onclick="window.handleSetCancelType('${c.cntrNo}', 'exclude', ${c.jobId || 'null'}, ${c.manualEntryId || 'null'})">제외</button>
                                             </div>
                                         ` : ''}
                                     </div>
