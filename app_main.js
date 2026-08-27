@@ -11095,7 +11095,313 @@ window.toggleSelectAvailRow = function(rowId, event) {
 };
 
 // 시트 필터 전환
-window.filter// [폴더 액션 6] 선택한 폴더 사진 ZIP 일괄 다운로드
+window.filterAvailBySheet = function(sheet) {
+    currentAvailSheetFilter = sheet;
+    const tabs = document.querySelectorAll('.avail-sheet-tab');
+    tabs.forEach(t => {
+        if (t.dataset.sheet === sheet) t.classList.add('active');
+        else t.classList.remove('active');
+    });
+    renderAvailabilityTable();
+};
+
+// 상태 필터 전환
+window.filterAvailByStatus = function(status) {
+    currentAvailStatusFilter = status;
+    const btns = document.querySelectorAll('.avail-status-btn');
+    btns.forEach(b => {
+        if (b.dataset.status === status) b.classList.add('active');
+        else b.classList.remove('active');
+    });
+    renderAvailabilityTable();
+};
+
+// 텍스트 검색
+window.searchAvailability = function() {
+    const searchInput = document.getElementById('availSearchInput');
+    const searchSelect = document.getElementById('availSearchField');
+    if (searchInput) currentAvailSearchQuery = searchInput.value;
+    if (searchSelect) currentAvailSearchField = searchSelect.value;
+    renderAvailabilityTable();
+};
+
+// 검색 및 필터 초기화
+window.resetAvailFilters = function() {
+    currentAvailSheetFilter = 'all';
+    currentAvailStatusFilter = 'all';
+    currentAvailSearchQuery = '';
+    currentAvailSearchField = 'all';
+
+    const tabs = document.querySelectorAll('.avail-sheet-tab');
+    tabs.forEach(t => {
+        if (t.dataset.sheet === 'all') t.classList.add('active');
+        else t.classList.remove('active');
+    });
+
+    const btns = document.querySelectorAll('.avail-status-btn');
+    btns.forEach(b => {
+        if (b.dataset.status === 'all') b.classList.add('active');
+        else b.classList.remove('active');
+    });
+
+    const searchInput = document.getElementById('availSearchInput');
+    if (searchInput) searchInput.value = '';
+
+    const searchSelect = document.getElementById('availSearchField');
+    if (searchSelect) searchSelect.value = 'all';
+
+    renderAvailabilityTable();
+};
+
+// 엑셀 내보내기 (ExcelJS 기반)
+window.exportAvailabilityToExcel = async function() {
+    if (!processedAvailabilityData || processedAvailabilityData.length === 0) {
+        alert("내보낼 작업 가용성 분석 데이터가 없습니다.");
+        return;
+    }
+
+    try {
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'ExcelCompare';
+        workbook.created = new Date();
+
+        const worksheet = workbook.addWorksheet('작업가용성_상세내역');
+
+        worksheet.columns = [
+            { header: '시트구분', key: 'sheetName', width: 12 },
+            { header: '작업명', key: 'jobName', width: 22 },
+            { header: '컨테이너번호', key: 'cntrNo', width: 18 },
+            { header: '도착지', key: 'dest', width: 10 },
+            { header: '선사', key: 'carrier', width: 10 },
+            { header: '규격', key: 'cntrType', width: 10 },
+            { header: '제품구분', key: 'prodType', width: 10 },
+            { header: '사업부', key: 'division', width: 12 },
+            { header: '제품모델명', key: 'prodName', width: 30 },
+            { header: '계획수량', key: 'qty', width: 12 },
+            { header: '가용재고(양품)', key: 'good', width: 14 },
+            { header: 'OQC홀드', key: 'oqc', width: 12 },
+            { header: '롱텀홀드', key: 'longTerm', width: 12 },
+            { header: 'BIN블록', key: 'bin', width: 12 },
+            { header: '팬딩재고', key: 'pending', width: 12 },
+            { header: '부족수량', key: 'shortage', width: 12 },
+            { header: '판정상태', key: 'statusLabel', width: 16 },
+            { header: '구분1', key: 'adj1', width: 20 },
+            { header: '구분2', key: 'adj2', width: 20 },
+            { header: '블록 로케이션 및 비고', key: 'blockLocs', width: 35 }
+        ];
+
+        const headerRow = worksheet.getRow(1);
+        headerRow.height = 26;
+        headerRow.eachCell(cell => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: '1E293B' }
+            };
+            cell.font = { color: { argb: 'FFFFFF' }, bold: true, size: 10 };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        });
+
+        processedAvailabilityData.forEach(d => {
+            const row = worksheet.addRow({
+                sheetName: d.sheetName,
+                jobName: d.jobName,
+                cntrNo: d.cntrNo,
+                dest: d.dest,
+                carrier: d.carrier,
+                cntrType: d.cntrType,
+                prodType: d.prodType || '-',
+                division: d.division || '-',
+                prodName: d.prodName,
+                qty: d.qty,
+                good: d.good,
+                oqc: d.oqc,
+                longTerm: d.longTerm,
+                bin: d.bin,
+                pending: d.pending,
+                shortage: d.shortage > 0 ? d.shortage : 0,
+                statusLabel: d.statusLabel,
+                adj1: d.adj1 && d.adj1 !== '-' ? d.adj1 : '',
+                adj2: d.adj2 && d.adj2 !== '-' ? d.adj2 : '',
+                blockLocs: d.blockLocs && d.blockLocs.length > 0 ? d.blockLocs.join(' | ') : (d.remark !== '-' ? d.remark : '')
+            });
+
+            if (d.status === 'SHORTAGE') {
+                row.eachCell(cell => {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FEE2E2' } };
+                });
+            } else if (d.status === 'BLOCK_WARN') {
+                row.eachCell(cell => {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FAF5FF' } };
+                });
+            }
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const dateStr = new Date().toISOString().split('T')[0];
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, `작업가용성_분석내역_${dateStr}.xlsx`);
+    } catch (err) {
+        console.error("엑셀 내보내기 실패:", err);
+        alert("엑셀 내보내기 중 오류가 발생했습니다: " + err.message);
+    }
+};
+
+// 엑셀 바로보기
+window.openAvailabilityInExcel = async function() {
+    if (!processedAvailabilityData || processedAvailabilityData.length === 0) {
+        alert("열람할 작업 가용성 분석 데이터가 없습니다.");
+        return;
+    }
+
+    try {
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'ExcelCompare';
+        workbook.created = new Date();
+
+        const worksheet = workbook.addWorksheet('작업가용성_상세내역');
+
+        worksheet.columns = [
+            { header: '시트구분', key: 'sheetName', width: 12 },
+            { header: '작업명', key: 'jobName', width: 22 },
+            { header: '컨테이너번호', key: 'cntrNo', width: 18 },
+            { header: '도착지', key: 'dest', width: 10 },
+            { header: '선사', key: 'carrier', width: 10 },
+            { header: '규격', key: 'cntrType', width: 10 },
+            { header: '제품구분', key: 'prodType', width: 10 },
+            { header: '사업부', key: 'division', width: 12 },
+            { header: '제품모델명', key: 'prodName', width: 30 },
+            { header: '계획수량', key: 'qty', width: 12 },
+            { header: '가용재고(양품)', key: 'good', width: 14 },
+            { header: 'OQC홀드', key: 'oqc', width: 12 },
+            { header: '롱텀홀드', key: 'longTerm', width: 12 },
+            { header: 'BIN블록', key: 'bin', width: 12 },
+            { header: '팬딩재고', key: 'pending', width: 12 },
+            { header: '부족수량', key: 'shortage', width: 12 },
+            { header: '판정상태', key: 'statusLabel', width: 16 },
+            { header: '구분1', key: 'adj1', width: 20 },
+            { header: '구분2', key: 'adj2', width: 20 },
+            { header: '블록 로케이션 및 비고', key: 'blockLocs', width: 35 }
+        ];
+
+        const headerRow = worksheet.getRow(1);
+        headerRow.height = 26;
+        headerRow.eachCell(cell => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: '1E293B' }
+            };
+            cell.font = { color: { argb: 'FFFFFF' }, bold: true, size: 10 };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        });
+
+        processedAvailabilityData.forEach(d => {
+            worksheet.addRow({
+                sheetName: d.sheetName,
+                jobName: d.jobName,
+                cntrNo: d.cntrNo,
+                dest: d.dest,
+                carrier: d.carrier,
+                cntrType: d.cntrType,
+                prodType: d.prodType || '-',
+                division: d.division || '-',
+                prodName: d.prodName,
+                qty: d.qty,
+                good: d.good,
+                oqc: d.oqc,
+                longTerm: d.longTerm,
+                bin: d.bin,
+                pending: d.pending,
+                shortage: d.shortage > 0 ? d.shortage : 0,
+                statusLabel: d.statusLabel,
+                adj1: d.adj1 && d.adj1 !== '-' ? d.adj1 : '',
+                adj2: d.adj2 && d.adj2 !== '-' ? d.adj2 : '',
+                blockLocs: d.blockLocs && d.blockLocs.length > 0 ? d.blockLocs.join(' | ') : (d.remark !== '-' ? d.remark : '')
+            });
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const dateStr = new Date().toISOString().split('T')[0];
+        const fileName = `작업가용성_분석내역_${dateStr}.xlsx`;
+        const base64 = bufToBase64(buffer);
+
+        await fetch(`${API_BASE}/api/open-excel`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ buffer: base64, fileName: fileName })
+        });
+    } catch (err) {
+        console.error("엑셀 바로보기 실패:", err);
+        alert("엑셀 바로보기 실행 중 오류가 발생했습니다: " + err.message);
+    }
+};
+
+window.handleAvailSearch = function(query) {
+    currentAvailSearchQuery = (query || '').trim();
+    renderAvailabilityTable();
+};
+
+window.handleAvailSearchFieldChange = function(field) {
+    currentAvailSearchField = field || 'all';
+    renderAvailabilityTable();
+};
+
+// 메신저 공지용 텍스트 클립보드 복사
+window.copyAvailabilityNotice = function() {
+    if (!processedAvailabilityData || processedAvailabilityData.length === 0) {
+        alert("복사할 작업 가용성 분석 데이터가 없습니다.");
+        return;
+    }
+
+    const totalJobs = processedAvailabilityData.length;
+    const totalQty = processedAvailabilityData.reduce((acc, d) => acc + d.qty, 0);
+    const okItems = processedAvailabilityData.filter(d => d.status === 'OK');
+    const blockWarnItems = processedAvailabilityData.filter(d => d.status === 'BLOCK_WARN');
+    const shortageItems = processedAvailabilityData.filter(d => d.status === 'SHORTAGE');
+
+    const lines = [];
+    lines.push(`📋 [출하 작업 가용성 및 재고 분석 현황]`);
+    lines.push(`- 총 계획 작업: ${totalJobs}건 (${totalQty.toLocaleString()} EA)`);
+    lines.push(`- 🟢 작업 가능: ${okItems.length}건`);
+    lines.push(`- 🟣 블록 주의(홀드/롱텀/빈): ${blockWarnItems.length}건`);
+    lines.push(`- 🔴 재고 부족(출하불가): ${shortageItems.length}건`);
+    lines.push(``);
+
+    if (shortageItems.length > 0) {
+        lines.push(`🚨 [재고 부족 품목 (${shortageItems.length}건)]`);
+        shortageItems.forEach((item, i) => {
+            lines.push(`${i + 1}. [${item.sheetName}] ${item.jobName} / ${item.prodName}`);
+            lines.push(`   ▶ 계획: ${item.qty}EA | 가용: ${item.good}EA (부족: ${item.shortage}EA)`);
+        });
+        lines.push(``);
+    }
+
+    if (blockWarnItems.length > 0) {
+        lines.push(`⚠️ [블록 주의 품목 (홀드/롱텀/빈블럭 감지)]`);
+        blockWarnItems.forEach((item, i) => {
+            const blockDesc = [];
+            if (item.oqc > 0) blockDesc.push(`OQC ${item.oqc}EA`);
+            if (item.longTerm > 0) blockDesc.push(`롱텀 ${item.longTerm}EA`);
+            if (item.bin > 0) blockDesc.push(`BIN ${item.bin}EA`);
+            lines.push(`${i + 1}. [${item.sheetName}] ${item.jobName} / ${item.prodName}`);
+            lines.push(`   ▶ 계획: ${item.qty}EA | 가용: ${item.good}EA | 블록: ${blockDesc.join(', ')}`);
+            if (item.blockLocs && item.blockLocs.length > 0) {
+                lines.push(`   ▶ 위치: ${item.blockLocs.join(', ')}`);
+            }
+        });
+    }
+
+    const textToCopy = lines.join('\n');
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        alert("📋 작업 가용성 분석 현황 요약이 클립보드에 복사되었습니다!\n사내 메신저(Ctrl+V)나 카카오톡에 붙여넣어 공유하세요.");
+    }).catch(err => {
+        console.error("클립보드 복사 실패:", err);
+        alert("클립보드 복사에 실패했습니다.");
+    });
+};
+
+// [폴더 액션 6] 선택한 폴더 사진 ZIP 일괄 다운로드
 window.handleDownloadSelectedFolders = function() {
     const keys = Array.from(window.selectedFolderKeys);
     if (keys.length === 0) return;
