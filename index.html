@@ -2912,7 +2912,7 @@
                 <p style="font-size: 0.85rem; color: #475569; margin-bottom: 10px;">선택한 <b id="localCopyPhotoCount" style="color: #10b981;">0개 폴더</b>의 사진을 복사할 로컬 폴더 경로를 지정하세요.</p>
                 <div style="display: flex; gap: 8px; margin-bottom: 12px;">
                     <input type="text" id="inputLocalCopyPath" class="ctnr-input-field" placeholder="예: W:\helpdesk\사진보관" style="flex: 1;">
-                    <button type="button" class="ctnr-btn-secondary" onclick="window.handleBrowseLocalFolder()" style="height: 38px; padding: 0 12px; font-size: 0.8rem; font-weight: 800; white-space: nowrap;">
+                    <button type="button" id="btnBrowseLocalFolder" class="ctnr-btn-secondary" onclick="window.handleBrowseLocalFolder()" style="height: 38px; padding: 0 12px; font-size: 0.8rem; font-weight: 800; white-space: nowrap;">
                         <i class="fas fa-folder-open"></i> 폴더 선택...
                     </button>
                 </div>
@@ -3504,7 +3504,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260828-loadbtnnowrap"></script>
+    <script src="app_main.js?v=20260828-folderdialog"></script>
 </body>
 
 </html>

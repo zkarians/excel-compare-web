@@ -3694,6 +3694,7 @@ app.get('/api/photos/download', async (req, res) => {
 // 윈도우 로컬 폴더 선택기 API (PowerShell FolderBrowserDialog)
 app.get('/api/photos/select-local-folder', async (req, res) => {
     try {
+        const initialPath = (req.query.initialPath || '').replace(/"/g, '`"');
         const scratchDir = path.join(DATA_DIR, 'scratch');
         if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
 
@@ -3701,11 +3702,26 @@ app.get('/api/photos/select-local-folder', async (req, res) => {
         const scriptContent = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 Add-Type -AssemblyName System.Windows.Forms
+$form = New-Object System.Windows.Forms.Form
+$form.TopMost = $true
+$form.Opacity = 0
+$form.ShowInTaskbar = $false
+$form.StartPosition = 'CenterScreen'
+$form.Show()
+$form.Activate()
+$form.Focus()
 $FolderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
 $FolderBrowser.Description = "사진을 복사할 대상 로컬 폴더를 선택해 주세요."
 $FolderBrowser.ShowNewFolderButton = $true
-$Result = $FolderBrowser.ShowDialog()
+$init = "${initialPath}"
+if ($init -and (Test-Path $init)) {
+    $FolderBrowser.SelectedPath = $init
+}
+$Result = $FolderBrowser.ShowDialog($form)
+$form.Close()
+$form.Dispose()
 if ($Result -eq [System.Windows.Forms.DialogResult]::OK) {
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
     Write-Output $FolderBrowser.SelectedPath
 } else {
     Write-Output "CANCELLED"
@@ -3713,12 +3729,12 @@ if ($Result -eq [System.Windows.Forms.DialogResult]::OK) {
         fs.writeFileSync(scriptPath, scriptContent, 'utf8');
 
         const cmd = `chcp 65001 >nul && powershell -STA -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}"`;
-        exec(cmd, { encoding: 'buffer' }, (error, stdoutBuf) => {
+        exec(cmd, { encoding: 'buffer', windowsHide: false }, (error, stdoutBuf) => {
             if (error) {
                 console.error('PowerShell folder dialog error:', error);
                 return res.json({ success: false, error: error.message });
             }
-            const result = stdoutBuf.toString('utf8').trim();
+            const result = stdoutBuf ? stdoutBuf.toString('utf8').trim() : '';
             if (result === 'CANCELLED' || !result) {
                 return res.json({ success: true, cancelled: true });
             } else {

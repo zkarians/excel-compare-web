@@ -11990,32 +11990,47 @@ window.handleOpenLocalCopyModal = function() {
 
 window.handleBrowseLocalFolder = async function() {
     const inputEl = document.getElementById('inputLocalCopyPath');
+    const btn = document.getElementById('btnBrowseLocalFolder');
     const currentVal = (inputEl ? inputEl.value.trim() : '') || 'W:\\helpdesk\\사진보관';
 
-    // 1. Electron 네이티브 폴더 선택 다이얼로그 (최우선)
-    if (window.isElectron && window.electronAPI && typeof window.electronAPI.selectFolder === 'function') {
-        try {
-            const res = await window.electronAPI.selectFolder(currentVal);
-            if (res && res.success && res.path && !res.cancelled) {
-                if (inputEl) inputEl.value = res.path;
-                localStorage.setItem('lastPhotoLocalCopyPath', res.path);
-            }
-            return;
-        } catch (ipcErr) {
-            console.warn("Electron selectFolder IPC error, fallback to API:", ipcErr);
-        }
+    const originalBtnHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 폴더 선택 중...';
     }
 
-    // 2. 웹/서버 파워셸 다이얼로그 폴백
     try {
-        const res = await fetch(`${API_BASE}/api/photos/select-local-folder`);
+        // 1. Electron 네이티브 폴더 선택 다이얼로그 (최우선)
+        if (window.isElectron && window.electronAPI && typeof window.electronAPI.selectFolder === 'function') {
+            try {
+                const res = await window.electronAPI.selectFolder(currentVal);
+                if (res && res.success && res.path && !res.cancelled) {
+                    if (inputEl) inputEl.value = res.path;
+                    localStorage.setItem('lastPhotoLocalCopyPath', res.path);
+                }
+                return;
+            } catch (ipcErr) {
+                console.warn("Electron selectFolder IPC error, fallback to API:", ipcErr);
+            }
+        }
+
+        // 2. 웹/서버 파워셸 다이얼로그 폴백
+        const res = await fetch(`${API_BASE}/api/photos/select-local-folder?initialPath=${encodeURIComponent(currentVal)}`);
         const data = await res.json();
         if (data.success && data.path && !data.cancelled) {
             if (inputEl) inputEl.value = data.path;
             localStorage.setItem('lastPhotoLocalCopyPath', data.path);
+        } else if (data.error) {
+            alert(`폴더 선택 실패: ${data.error}`);
         }
     } catch (e) {
         console.warn("Folder dialog failed:", e);
+        alert(`폴더 선택 창을 여는 중 오류가 발생했습니다: ${e.message}`);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHtml || '<i class="fas fa-folder-open"></i> 폴더 선택...';
+        }
     }
 };
 
@@ -13021,32 +13036,47 @@ window.handleOpenLocalCopyModal = function() {
 
 window.handleBrowseLocalFolder = async function() {
     const inputEl = document.getElementById('inputLocalCopyPath');
+    const btn = document.getElementById('btnBrowseLocalFolder');
     const currentVal = (inputEl ? inputEl.value.trim() : '') || 'W:\\helpdesk\\사진보관';
 
-    // 1. Electron 네이티브 폴더 선택 다이얼로그 (최우선)
-    if (window.isElectron && window.electronAPI && typeof window.electronAPI.selectFolder === 'function') {
-        try {
-            const res = await window.electronAPI.selectFolder(currentVal);
-            if (res && res.success && res.path && !res.cancelled) {
-                if (inputEl) inputEl.value = res.path;
-                localStorage.setItem('lastPhotoLocalCopyPath', res.path);
-            }
-            return;
-        } catch (ipcErr) {
-            console.warn("Electron selectFolder IPC error, fallback to API:", ipcErr);
-        }
+    const originalBtnHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 폴더 선택 중...';
     }
 
-    // 2. 웹/서버 파워셸 다이얼로그 폴백
     try {
-        const res = await fetch(`${API_BASE}/api/photos/select-local-folder`);
+        // 1. Electron 네이티브 폴더 선택 다이얼로그 (최우선)
+        if (window.isElectron && window.electronAPI && typeof window.electronAPI.selectFolder === 'function') {
+            try {
+                const res = await window.electronAPI.selectFolder(currentVal);
+                if (res && res.success && res.path && !res.cancelled) {
+                    if (inputEl) inputEl.value = res.path;
+                    localStorage.setItem('lastPhotoLocalCopyPath', res.path);
+                }
+                return;
+            } catch (ipcErr) {
+                console.warn("Electron selectFolder IPC error, fallback to API:", ipcErr);
+            }
+        }
+
+        // 2. 웹/서버 파워셸 다이얼로그 폴백
+        const res = await fetch(`${API_BASE}/api/photos/select-local-folder?initialPath=${encodeURIComponent(currentVal)}`);
         const data = await res.json();
         if (data.success && data.path && !data.cancelled) {
             if (inputEl) inputEl.value = data.path;
             localStorage.setItem('lastPhotoLocalCopyPath', data.path);
+        } else if (data.error) {
+            alert(`폴더 선택 실패: ${data.error}`);
         }
     } catch (e) {
         console.warn("Folder dialog failed:", e);
+        alert(`폴더 선택 창을 여는 중 오류가 발생했습니다: ${e.message}`);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHtml || '<i class="fas fa-folder-open"></i> 폴더 선택...';
+        }
     }
 };
 
