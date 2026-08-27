@@ -4512,8 +4512,8 @@ async function handleAutoLoad(type) {
     }
 }
 
-btnAutoLoadOrig.addEventListener('click', () => handleAutoLoad('original'));
-btnAutoLoadDown.addEventListener('click', () => handleAutoLoad('download'));
+if (btnAutoLoadOrig) btnAutoLoadOrig.addEventListener('click', () => handleAutoLoad('original'));
+if (btnAutoLoadDown) btnAutoLoadDown.addEventListener('click', () => handleAutoLoad('download'));
 if (btnAutoLoadRework) btnAutoLoadRework.addEventListener('click', () => handleAutoLoad('rework'));
 if (btnReloadRework) btnReloadRework.addEventListener('click', () => reloadLatestFile('rework'));
 
