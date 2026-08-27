@@ -3022,6 +3022,11 @@ app.get('/api/containers/info', async (req, res) => {
         const query = `
             SELECT * FROM container_results
             WHERE cntr_no = $1
+              AND job_id = (
+                  SELECT job_id FROM container_results 
+                  WHERE cntr_no = $1 
+                  ORDER BY id DESC LIMIT 1
+              )
             ORDER BY id ASC
         `;
         let result = await pool.query(query, [cntrNo]);
@@ -3031,6 +3036,11 @@ app.get('/api/containers/info', async (req, res) => {
             const fallback = await pool.query(
                 `SELECT * FROM container_results
                  WHERE cntr_no ILIKE $1
+                   AND job_id = (
+                       SELECT job_id FROM container_results 
+                       WHERE cntr_no ILIKE $1 
+                       ORDER BY id DESC LIMIT 1
+                   )
                  ORDER BY id ASC`,
                 [`%${cntrNo}%`]
             );
@@ -4555,19 +4565,17 @@ app.get('/api/reports/generate', async (req, res) => {
                     LEFT JOIN product_master_sync mp ON r.prod_name = mp.prod_name
                     LEFT JOIN (
                         SELECT 
-                            cj.job_name,
+                            cp.job_id as photo_job_id,
                             cp.cntr_no, 
-                            MAX(cp.job_id) as photo_job_id,
                             MAX(cp.team_id) as team_id,
                             MAX(cp.work_duration_minutes) as work_duration_minutes,
                             BOOL_OR(cp.is_completed) as is_completed,
                             MIN(cp.uploaded_at) as uploaded_at,
                             MAX(cp.remark) as remark
                         FROM container_photos cp
-                        LEFT JOIN container_jobs cj ON cp.job_id = cj.id
                         WHERE (cp.is_deleted IS NOT TRUE)
-                        GROUP BY cj.job_name, cp.cntr_no
-                    ) p ON p.job_name = j.job_name AND (p.cntr_no = r.cntr_no OR (r.cntr_no IS NULL AND p.cntr_no IS NULL))
+                        GROUP BY cp.job_id, cp.cntr_no
+                    ) p ON p.photo_job_id = j.id AND (p.cntr_no = r.cntr_no OR (r.cntr_no IS NULL AND p.cntr_no IS NULL))
                     LEFT JOIN teams t ON p.team_id = t.id
                     LEFT JOIN container_comments cc 
                       ON cc.cntr_no = COALESCE(r.cntr_no, j.job_name, '미지정')
