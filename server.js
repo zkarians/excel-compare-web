@@ -4014,7 +4014,17 @@ app.post('/api/photos/local-copy', async (req, res) => {
         let skippedCount = 0;
         const teamCopiedMap = {};
 
+        let isAborted = false;
+        req.on('close', () => {
+            isAborted = true;
+        });
+
         for (const photo of pRes.rows) {
+            if (isAborted || req.destroyed || (req.socket && req.socket.destroyed)) {
+                console.log("🛑 [Local Copy] 클라이언트 취소로 인해 파일 복사가 중단되었습니다.");
+                break;
+            }
+
             const srcPath = path.resolve(CTNR_UPLOADS_DIR, photo.photo_path);
             const filename = path.basename(photo.photo_path);
 

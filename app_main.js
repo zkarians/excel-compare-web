@@ -12028,6 +12028,12 @@ window.handleOpenLocalCopyModal = function() {
         chkByTeam.checked = (savedByTeam === null) ? true : (savedByTeam === 'true');
     }
 
+    const btnExec = document.getElementById('btnExecuteLocalCopy');
+    if (btnExec) {
+        btnExec.disabled = false;
+        btnExec.innerHTML = '<i class="fas fa-copy"></i> 복사 시작';
+    }
+
     window.updateLocalCopyPreview();
 
     const m = document.getElementById('modalLocalCopyPhoto');
@@ -12168,7 +12174,28 @@ window.handleBrowseLocalFolder = async function() {
     }
 };
 
+window.localCopyAbortController = null;
+window.isLocalCopying = false;
+
 window.closeLocalCopyModal = function() {
+    if (window.isLocalCopying && window.localCopyAbortController) {
+        if (confirm("현재 진행 중인 로컬 복사 작업을 취소(중단)하시겠습니까?")) {
+            try {
+                window.localCopyAbortController.abort();
+            } catch (e) {}
+            window.isLocalCopying = false;
+            window.localCopyAbortController = null;
+        } else {
+            return;
+        }
+    }
+
+    const btnExec = document.getElementById('btnExecuteLocalCopy');
+    if (btnExec) {
+        btnExec.disabled = false;
+        btnExec.innerHTML = '<i class="fas fa-copy"></i> 복사 시작';
+    }
+
     const m = document.getElementById('modalLocalCopyPhoto');
     if (m) m.style.display = 'none';
 };
@@ -12201,16 +12228,19 @@ window.executeLocalCopy = async function() {
     localStorage.setItem('lastPhotoLocalCopyPath', targetPath);
 
     const btnExec = document.getElementById('btnExecuteLocalCopy');
-    const origBtnHtml = btnExec ? btnExec.innerHTML : '';
     if (btnExec) {
         btnExec.disabled = true;
         btnExec.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 복사 중...';
     }
 
+    window.isLocalCopying = true;
+    window.localCopyAbortController = new AbortController();
+
     try {
         const res = await fetch(`${API_BASE}/api/photos/local-copy`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: window.localCopyAbortController.signal,
             body: JSON.stringify({
                 ids: ids,
                 targetPath: targetPath,
@@ -12226,12 +12256,19 @@ window.executeLocalCopy = async function() {
             alert(`❌ 로컬 복사 실패: ${data.error || data.message}`);
         }
     } catch (err) {
-        console.error("Local copy error:", err);
-        alert("로컬 복사 중 오류가 발생했습니다: " + err.message);
+        if (err.name === 'AbortError' || (window.localCopyAbortController && window.localCopyAbortController.signal.aborted)) {
+            console.log("Local copy was cancelled by user.");
+            alert("로컬 복사 작업이 취소되었습니다.");
+        } else {
+            console.error("Local copy error:", err);
+            alert("로컬 복사 중 오류가 발생했습니다: " + err.message);
+        }
     } finally {
+        window.isLocalCopying = false;
+        window.localCopyAbortController = null;
         if (btnExec) {
             btnExec.disabled = false;
-            btnExec.innerHTML = origBtnHtml || '<i class="fas fa-copy"></i> 복사 시작';
+            btnExec.innerHTML = '<i class="fas fa-copy"></i> 복사 시작';
         }
     }
 };
