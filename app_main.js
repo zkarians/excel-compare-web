@@ -15117,10 +15117,10 @@ window.lightboxDownload = function() {
                                                         <div class="report-cntr-title-group">
                                                             <strong class="report-cntr-no ${carrierColorClass}">${c.cntrNo}</strong>
                                                             ${statusTag}
-                                                            <button type="button" class="report-card-action-btn" onclick="window.handleEditReportItem('${c.cntrNo}', '${team.teamName}', '${dateStr}')" title="항목 수정">
+                                                            <button type="button" class="report-card-action-btn" onclick="window.handleEditReportItem('${c.cntrNo}', '${team.teamName}', '${dateStr}', ${c.jobId || 'null'}, ${c.manualEntryId || 'null'})" title="항목 수정">
                                                                 <i class="fas fa-pencil-alt"></i>
                                                             </button>
-                                                            <button type="button" class="report-card-action-btn delete" onclick="window.handleDeleteReportItem('${c.cntrNo}', '${team.teamName}', '${dateStr}', ${c.manualEntryId || 'null'})" title="항목 취소 / 삭제">
+                                                            <button type="button" class="report-card-action-btn delete" onclick="window.handleDeleteReportItem('${c.cntrNo}', '${team.teamName}', '${dateStr}', ${c.jobId || 'null'}, ${c.manualEntryId || 'null'})" title="항목 취소 / 삭제">
                                                                 <i class="fas fa-trash-alt"></i>
                                                             </button>
                                                         </div>
@@ -15648,6 +15648,7 @@ window.lightboxDownload = function() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
+                        jobId: window.editingReportItem?.jobId,
                         cntrNo,
                         workDate: targetDate,
                         durationMinutes,
@@ -15669,12 +15670,16 @@ window.lightboxDownload = function() {
         }
     };
 
-    window.handleEditReportItem = function(cntrNo, teamName, dateStr) {
+    window.handleEditReportItem = function(cntrNo, teamName, dateStr, jobId = null, manualEntryId = null) {
         if (!window.currentReportData) return;
         let foundCntr = null;
         window.currentReportData.forEach(dg => {
             dg.uploaders?.forEach(u => {
-                const c = u.containers?.find(x => x.cntrNo === cntrNo);
+                const c = u.containers?.find(x => {
+                    if (manualEntryId && x.manualEntryId) return Number(x.manualEntryId) === Number(manualEntryId);
+                    if (jobId && x.jobId) return Number(x.jobId) === Number(jobId) && x.cntrNo === cntrNo;
+                    return x.cntrNo === cntrNo;
+                });
                 if (c) foundCntr = { ...c, teamName: u.teamName };
             });
         });
@@ -15684,7 +15689,7 @@ window.lightboxDownload = function() {
         }
     };
 
-    window.handleDeleteReportItem = async function(cntrNo, teamName, dateStr, manualEntryId) {
+    window.handleDeleteReportItem = async function(cntrNo, teamName, dateStr, jobId = null, manualEntryId = null) {
         if (!confirm(`'${cntrNo}' 컨테이너 항목을 삭제 또는 [작업취소] 처리하시겠습니까?`)) {
             return;
         }
@@ -15698,7 +15703,7 @@ window.lightboxDownload = function() {
                 await fetch(`${API_BASE}/api/reports/toggle-cancel`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cntrNo, workDate: dateStr, cancelType: 'cancel' })
+                    body: JSON.stringify({ jobId, cntrNo, workDate: dateStr, cancelType: 'cancel' })
                 });
             }
             await window.loadReportData();

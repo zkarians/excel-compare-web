@@ -4545,7 +4545,7 @@ app.get('/api/reports/generate', async (req, res) => {
             const query = `
                 WITH GroupedResults AS (
                     SELECT 
-                        MAX(COALESCE(p.photo_job_id, j.id)) as job_id,
+                        j.id as job_id,
                         COALESCE(r.cntr_no, j.job_name, '미지정') as cntr_no,
                         r.prod_name,
                         r.division,
@@ -4580,8 +4580,9 @@ app.get('/api/reports/generate', async (req, res) => {
                     LEFT JOIN container_comments cc 
                       ON cc.cntr_no = COALESCE(r.cntr_no, j.job_name, '미지정')
                      AND (cc.work_date = $${commentDateParamIdx} OR cc.work_date = '' OR cc.work_date IS NULL)
+                     AND (cc.job_id = j.id OR cc.job_id = 0 OR cc.job_id IS NULL)
                     ${whereSql}
-                    GROUP BY COALESCE(r.cntr_no, j.job_name, '미지정'), r.prod_name, r.division, t.name
+                    GROUP BY j.id, COALESCE(r.cntr_no, j.job_name, '미지정'), r.prod_name, r.division, t.name
                 )
                 SELECT gr.*,
                        (SELECT json_agg(json_build_object('name', eb.box_name, 'qty', eb.qty)) 
@@ -4600,6 +4601,7 @@ app.get('/api/reports/generate', async (req, res) => {
                 const fallbackQuery = `
                     SELECT 
                         COALESCE(r.cntr_no, '미지정') as cntr_no,
+                        r.job_id,
                         r.prod_name,
                         r.division,
                         SUM(COALESCE(r.qty_plan, 0)) as qty,
@@ -4608,7 +4610,7 @@ app.get('/api/reports/generate', async (req, res) => {
                         NOW() as first_uploaded_at,
                         45 as duration_minutes
                     FROM container_results r
-                    GROUP BY r.cntr_no, r.prod_name, r.division
+                    GROUP BY r.job_id, r.cntr_no, r.prod_name, r.division
                     LIMIT 200
                 `;
                 const resFb = await client.query(fallbackQuery);
@@ -4630,7 +4632,7 @@ app.get('/api/reports/generate', async (req, res) => {
                 if (!teamName || teamName === '미지정 조') continue;
 
                 const cntrNo = row.cntr_no;
-                const entryKey = `db_${cntrNo}`;
+                const entryKey = `db_${row.job_id}_${cntrNo}`;
                 const division = row.division || '일반';
                 const prodName = row.prod_name;
                 const qty = Math.round(Number(row.qty)) || 0;
@@ -4898,7 +4900,7 @@ app.get('/api/reports/saved', async (req, res) => {
 // --- 작업취소 / 작업제외 상태 토글 및 저장 ---
 app.post('/api/reports/toggle-cancel', async (req, res) => {
     try {
-        const { cntrNo, workDate, mode, cancelType } = req.body;
+        const { jobId, cntrNo, workDate, mode, cancelType } = req.body;
         if (!cntrNo) return res.status(400).json({ success: false, error: "컨테이너 번호가 필요합니다." });
 
         const pool = await getPool();
@@ -4909,17 +4911,24 @@ app.post('/api/reports/toggle-cancel', async (req, res) => {
                     cntr_no VARCHAR(50) NOT NULL,
                     work_date VARCHAR(20) DEFAULT '',
                     admin_comment TEXT,
+                    job_id INTEGER DEFAULT 0,
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                     PRIMARY KEY (cntr_no, work_date)
                 );
-            `);
+            `).catch(() => {});
+            await client.query(`ALTER TABLE container_comments ADD COLUMN IF NOT EXISTS job_id INTEGER DEFAULT 0;`).catch(() => {});
 
             const cleanCntrNo = cntrNo.trim();
             const targetDate = (workDate || '').trim();
+            const parsedJobId = jobId ? Number(jobId) : 0;
 
             const sel = await client.query(`
-                SELECT admin_comment FROM container_comments WHERE cntr_no = $1 AND (work_date = $2 OR work_date = '' OR work_date IS NULL)
-            `, [cleanCntrNo, targetDate]);
+                SELECT admin_comment FROM container_comments 
+                WHERE cntr_no = $1 
+                  AND (work_date = $2 OR work_date = '' OR work_date IS NULL)
+                  AND (job_id = $3 OR job_id = 0 OR job_id IS NULL)
+                ORDER BY id DESC LIMIT 1
+            `.replace('ORDER BY id DESC', 'ORDER BY created_at DESC'), [cleanCntrNo, targetDate, parsedJobId]);
 
             let currentComment = sel.rows[0]?.admin_comment || '';
             let newComment = currentComment;
@@ -4942,11 +4951,14 @@ app.post('/api/reports/toggle-cancel', async (req, res) => {
             }
 
             await client.query(`
-                INSERT INTO container_comments (cntr_no, work_date, admin_comment)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (cntr_no, work_date)
-                DO UPDATE SET admin_comment = EXCLUDED.admin_comment;
-            `, [cleanCntrNo, targetDate, newComment]);
+                DELETE FROM container_comments 
+                WHERE cntr_no = $1 
+                  AND (work_date = $2 OR work_date = '' OR work_date IS NULL)
+                  AND (job_id = $3 OR job_id = 0);
+
+                INSERT INTO container_comments (cntr_no, work_date, admin_comment, job_id)
+                VALUES ($1, $2, $3, $4);
+            `, [cleanCntrNo, targetDate, newComment, parsedJobId]);
 
             return res.json({
                 success: true,
@@ -5049,7 +5061,7 @@ app.delete('/api/reports/manual-entry', async (req, res) => {
 // --- 기존 컨테이너 보고서 상세 정보(소요시간/지연사유/운송사/카테고리) 수정 ---
 app.post('/api/reports/update-container', async (req, res) => {
     try {
-        const { cntrNo, workDate, durationMinutes, remark, category, transporter, emptyBoxes } = req.body;
+        const { jobId, cntrNo, workDate, durationMinutes, remark, category, transporter, emptyBoxes } = req.body;
         if (!cntrNo) return res.status(400).json({ success: false, error: "컨테이너 번호가 필요합니다." });
 
         const pool = await getPool();
@@ -5058,33 +5070,70 @@ app.post('/api/reports/update-container', async (req, res) => {
             await client.query('BEGIN');
 
             const cleanCntrNo = cntrNo.trim().toUpperCase();
+            const parsedJobId = jobId ? Number(jobId) : null;
 
             // 1. container_photos duration & remark
-            await client.query(`
-                UPDATE container_photos 
-                SET work_duration_minutes = $1,
-                    remark = $2
-                WHERE UPPER(TRIM(cntr_no)) = $3
-                  AND (is_deleted IS NOT TRUE)
-            `, [durationMinutes || 45, remark || '', cleanCntrNo]);
+            if (parsedJobId) {
+                await client.query(`
+                    UPDATE container_photos 
+                    SET work_duration_minutes = $1,
+                        remark = $2
+                    WHERE UPPER(TRIM(cntr_no)) = $3
+                      AND job_id = $4
+                      AND (is_deleted IS NOT TRUE)
+                `, [durationMinutes || 45, remark || '', cleanCntrNo, parsedJobId]);
+            } else {
+                await client.query(`
+                    UPDATE container_photos 
+                    SET work_duration_minutes = $1,
+                        remark = $2
+                    WHERE UPPER(TRIM(cntr_no)) = $3
+                      AND (is_deleted IS NOT TRUE)
+                `, [durationMinutes || 45, remark || '', cleanCntrNo]);
+            }
 
             // 2. container_results transporter
             if (transporter !== undefined) {
-                await client.query(`
-                    UPDATE container_results 
-                    SET transporter = $1
-                    WHERE UPPER(TRIM(cntr_no)) = $2
-                `, [transporter, cleanCntrNo]);
+                if (parsedJobId) {
+                    await client.query(`
+                        UPDATE container_results 
+                        SET transporter = $1
+                        WHERE UPPER(TRIM(cntr_no)) = $2
+                          AND job_id = $3
+                    `, [transporter, cleanCntrNo, parsedJobId]);
+                } else {
+                    await client.query(`
+                        UPDATE container_results 
+                        SET transporter = $1
+                        WHERE UPPER(TRIM(cntr_no)) = $2
+                    `, [transporter, cleanCntrNo]);
+                }
             }
 
             // 3. container_comments category
             if (category !== undefined) {
                 await client.query(`
-                    INSERT INTO container_comments (cntr_no, work_date, admin_comment)
-                    VALUES ($1, $2, $3)
-                    ON CONFLICT (cntr_no, work_date)
-                    DO UPDATE SET admin_comment = EXCLUDED.admin_comment;
-                `, [cleanCntrNo, (workDate || '').trim(), category]);
+                    CREATE TABLE IF NOT EXISTS container_comments (
+                        cntr_no VARCHAR(50) NOT NULL,
+                        work_date VARCHAR(20) DEFAULT '',
+                        admin_comment TEXT,
+                        job_id INTEGER DEFAULT 0,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                        PRIMARY KEY (cntr_no, work_date)
+                    );
+                `).catch(() => {});
+                await client.query(`ALTER TABLE container_comments ADD COLUMN IF NOT EXISTS job_id INTEGER DEFAULT 0;`).catch(() => {});
+
+                const jId = parsedJobId || 0;
+                await client.query(`
+                    DELETE FROM container_comments 
+                    WHERE cntr_no = $1 
+                      AND (work_date = $2 OR work_date = '' OR work_date IS NULL)
+                      AND (job_id = $3 OR job_id = 0);
+
+                    INSERT INTO container_comments (cntr_no, work_date, admin_comment, job_id)
+                    VALUES ($1, $2, $3, $4);
+                `, [cleanCntrNo, (workDate || '').trim(), category, jId]);
             }
 
             await client.query('COMMIT');
