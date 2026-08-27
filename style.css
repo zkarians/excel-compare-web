@@ -5985,12 +5985,36 @@ tr.border-group td {
     font-weight: 900;
     padding: 1.5px 6px;
     border-radius: 4px;
-    background: #fef3c7;
-    color: #b45309;
-    border: 1px solid #fde68a;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
     min-width: 22px;
     text-align: center;
     flex-shrink: 0;
+}
+
+.popover-prod-type.type-q {
+    background: #ccfbf1;
+    color: #0f766e;
+    border-color: #99f6e4;
+}
+
+.popover-prod-type.type-f {
+    background: #fef3c7;
+    color: #b45309;
+    border-color: #fde68a;
+}
+
+.popover-prod-type.type-h {
+    background: #f3e8ff;
+    color: #7e22ce;
+    border-color: #e9d5ff;
+}
+
+.popover-prod-type.type-w {
+    background: #e0f2fe;
+    color: #0369a1;
+    border-color: #bae6fd;
 }
 
 .popover-prod-div {
@@ -6015,6 +6039,22 @@ tr.border-group td {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.popover-prod-title.type-q {
+    color: #0d9488;
+}
+
+.popover-prod-title.type-f {
+    color: #0f172a;
+}
+
+.popover-prod-title.type-h {
+    color: #7c3aed;
+}
+
+.popover-prod-title.type-w {
+    color: #0284c7;
 }
 
 .popover-prod-dims {
@@ -6099,9 +6139,33 @@ tr.border-group td {
 }
 
 .lightbox-prod-popover .popover-prod-type {
+    background: rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.lightbox-prod-popover .popover-prod-type.type-q {
+    background: rgba(20, 184, 166, 0.2);
+    color: #2dd4bf;
+    border-color: rgba(45, 212, 191, 0.4);
+}
+
+.lightbox-prod-popover .popover-prod-type.type-f {
     background: rgba(245, 158, 11, 0.2);
     color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+.lightbox-prod-popover .popover-prod-type.type-h {
+    background: rgba(168, 85, 247, 0.2);
+    color: #c084fc;
+    border-color: rgba(192, 132, 252, 0.4);
+}
+
+.lightbox-prod-popover .popover-prod-type.type-w {
+    background: rgba(14, 165, 233, 0.2);
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.4);
 }
 
 .lightbox-prod-popover .popover-prod-div {
@@ -6112,6 +6176,22 @@ tr.border-group td {
 
 .lightbox-prod-popover .popover-prod-title {
     color: #ffffff;
+}
+
+.lightbox-prod-popover .popover-prod-title.type-q {
+    color: #2dd4bf;
+}
+
+.lightbox-prod-popover .popover-prod-title.type-f {
+    color: #ffffff;
+}
+
+.lightbox-prod-popover .popover-prod-title.type-h {
+    color: #c084fc;
+}
+
+.lightbox-prod-popover .popover-prod-title.type-w {
+    color: #38bdf8;
 }
 
 .lightbox-prod-popover .popover-prod-dims {

@@ -14014,7 +14014,9 @@ window.updateGalleryProductSummary = async function(cntrNo) {
     if (popBody) {
         let phtml = '';
         info.products.forEach((p, idx) => {
-            const typeTag = (p.prodType && p.prodType !== '-') ? `<span class="popover-prod-type">${p.prodType}</span>` : '<span class="popover-prod-type" style="visibility:hidden;">-</span>';
+            const ptUpper = (p.prodType || '').trim().toUpperCase();
+            const typeClass = ptUpper === 'Q' ? 'type-q' : ptUpper === 'F' ? 'type-f' : ptUpper === 'H' ? 'type-h' : ptUpper === 'W' ? 'type-w' : '';
+            const typeTag = (p.prodType && p.prodType !== '-') ? `<span class="popover-prod-type ${typeClass}">${p.prodType}</span>` : '<span class="popover-prod-type" style="visibility:hidden;">-</span>';
             const divTag = (p.division && p.division !== '-') ? `<span class="popover-prod-div">${p.division}</span>` : '<span class="popover-prod-div" style="visibility:hidden;">-</span>';
             const dimsTag = (p.dims && p.dims !== '-' && p.dims !== '0x0x0' && p.dims.trim()) ? `<span class="popover-prod-dims" title="제품 규격">${p.dims}</span>` : '';
             phtml += `
@@ -14022,7 +14024,7 @@ window.updateGalleryProductSummary = async function(cntrNo) {
                     <span class="popover-prod-idx">${idx + 1}.</span>
                     ${typeTag}
                     ${divTag}
-                    <span class="popover-prod-title" title="${p.prodName}">${p.prodName}</span>
+                    <span class="popover-prod-title ${typeClass}" title="${p.prodName}">${p.prodName}</span>
                     ${dimsTag}
                     <span class="popover-prod-qty">${p.qty.toLocaleString()}개</span>
                 </div>
@@ -14096,7 +14098,9 @@ window.updateLightboxProductSummary = async function(cntrNo) {
     if (popBody) {
         let phtml = '';
         info.products.forEach((p, idx) => {
-            const typeTag = (p.prodType && p.prodType !== '-') ? `<span class="popover-prod-type">${p.prodType}</span>` : '<span class="popover-prod-type" style="visibility:hidden;">-</span>';
+            const ptUpper = (p.prodType || '').trim().toUpperCase();
+            const typeClass = ptUpper === 'Q' ? 'type-q' : ptUpper === 'F' ? 'type-f' : ptUpper === 'H' ? 'type-h' : ptUpper === 'W' ? 'type-w' : '';
+            const typeTag = (p.prodType && p.prodType !== '-') ? `<span class="popover-prod-type ${typeClass}">${p.prodType}</span>` : '<span class="popover-prod-type" style="visibility:hidden;">-</span>';
             const divTag = (p.division && p.division !== '-') ? `<span class="popover-prod-div">${p.division}</span>` : '<span class="popover-prod-div" style="visibility:hidden;">-</span>';
             const dimsTag = (p.dims && p.dims !== '-' && p.dims !== '0x0x0' && p.dims.trim()) ? `<span class="popover-prod-dims" title="제품 규격">${p.dims}</span>` : '';
             phtml += `
@@ -14104,7 +14108,7 @@ window.updateLightboxProductSummary = async function(cntrNo) {
                     <span class="popover-prod-idx">${idx + 1}.</span>
                     ${typeTag}
                     ${divTag}
-                    <span class="popover-prod-title" title="${p.prodName}">${p.prodName}</span>
+                    <span class="popover-prod-title ${typeClass}" title="${p.prodName}">${p.prodName}</span>
                     ${dimsTag}
                     <span class="popover-prod-qty">${p.qty.toLocaleString()}개</span>
                 </div>
