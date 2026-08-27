@@ -4531,6 +4531,7 @@ app.get('/api/reports/generate', async (req, res) => {
             `).catch(() => {});
             await client.query(`ALTER TABLE container_comments ADD COLUMN IF NOT EXISTS job_id INTEGER DEFAULT 0;`).catch(() => {});
             await client.query(`ALTER TABLE container_comments ADD COLUMN IF NOT EXISTS duration_minutes INT;`).catch(() => {});
+            await client.query(`ALTER TABLE container_comments ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`).catch(() => {});
 
             // Ensure manual_report_entries table exists
             await client.query(`
@@ -4909,46 +4910,76 @@ app.get('/api/reports/saved', async (req, res) => {
 // --- 작업취소 / 작업제외 상태 토글 및 저장 ---
 app.post('/api/reports/toggle-cancel', async (req, res) => {
     try {
-        const { jobId, cntrNo, workDate, mode, cancelType } = req.body;
+        const { jobId, manualEntryId, cntrNo, workDate, mode, cancelType } = req.body;
         if (!cntrNo) return res.status(400).json({ success: false, error: "컨테이너 번호가 필요합니다." });
 
         const pool = await getPool();
         const client = await pool.connect();
         try {
+            const cleanCntrNo = cntrNo.trim().toUpperCase();
+            const targetDate = (workDate || '').trim();
+
+            if (manualEntryId) {
+                const sel = await client.query('SELECT category FROM manual_report_entries WHERE id = $1', [Number(manualEntryId)]);
+                let currentCategory = sel.rows[0]?.category || '';
+                let newCategory = currentCategory;
+                if (cancelType) {
+                    const tag = cancelType === 'exclude' ? '[작업제외]' : '[작업취소]';
+                    const clean = currentCategory.replace(/\[작업취소\]/g, '').replace(/\[작업제외\]/g, '').replace(/\[취소\]/g, '').trim();
+                    newCategory = clean ? `${clean} ${tag}`.trim() : tag;
+                } else {
+                    const isCurrentlyCancelled = currentCategory.includes('[작업취소]') || currentCategory.includes('[작업제외]') || currentCategory.includes('[취소]');
+                    if (isCurrentlyCancelled) {
+                        newCategory = currentCategory.replace(/\[작업취소\]/g, '').replace(/\[작업제외\]/g, '').replace(/\[취소\]/g, '').trim();
+                    } else {
+                        const tag = mode === 'exclude' ? '[작업제외]' : '[작업취소]';
+                        const clean = currentCategory.replace(/\[작업취소\]/g, '').replace(/\[작업제외\]/g, '').replace(/\[취소\]/g, '').trim();
+                        newCategory = clean ? `${clean} ${tag}`.trim() : tag;
+                    }
+                }
+                await client.query('UPDATE manual_report_entries SET category = $1 WHERE id = $2', [newCategory, Number(manualEntryId)]);
+                return res.json({
+                    success: true,
+                    cntrNo: cleanCntrNo,
+                    adminComment: newCategory,
+                    isCancelled: newCategory.includes('[작업취소]') || newCategory.includes('[취소]'),
+                    isExcluded: newCategory.includes('[작업제외]')
+                });
+            }
+
             await client.query(`
                 CREATE TABLE IF NOT EXISTS container_comments (
                     cntr_no VARCHAR(50) NOT NULL,
                     work_date VARCHAR(20) DEFAULT '',
                     admin_comment TEXT,
                     job_id INTEGER DEFAULT 0,
-                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (cntr_no, work_date)
+                    duration_minutes INT,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                 );
             `).catch(() => {});
             await client.query(`ALTER TABLE container_comments ADD COLUMN IF NOT EXISTS job_id INTEGER DEFAULT 0;`).catch(() => {});
+            await client.query(`ALTER TABLE container_comments ADD COLUMN IF NOT EXISTS duration_minutes INT;`).catch(() => {});
+            await client.query(`ALTER TABLE container_comments ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`).catch(() => {});
 
-            const cleanCntrNo = cntrNo.trim();
-            const targetDate = (workDate || '').trim();
             const parsedJobId = jobId ? Number(jobId) : 0;
 
             const sel = await client.query(`
-                SELECT admin_comment FROM container_comments 
+                SELECT admin_comment, duration_minutes FROM container_comments 
                 WHERE cntr_no = $1 
                   AND (work_date = $2 OR work_date = '' OR work_date IS NULL)
                   AND (job_id = $3 OR job_id = 0 OR job_id IS NULL)
-                ORDER BY id DESC LIMIT 1
-            `.replace('ORDER BY id DESC', 'ORDER BY created_at DESC'), [cleanCntrNo, targetDate, parsedJobId]);
+                ORDER BY created_at DESC LIMIT 1
+            `, [cleanCntrNo, targetDate, parsedJobId]);
 
             let currentComment = sel.rows[0]?.admin_comment || '';
+            let currentDuration = sel.rows[0]?.duration_minutes || 45;
             let newComment = currentComment;
 
             if (cancelType) {
-                // 직접 특정 타입 지정 (cancel / exclude)
                 const tag = cancelType === 'exclude' ? '[작업제외]' : '[작업취소]';
                 const clean = currentComment.replace(/\[작업취소\]/g, '').replace(/\[작업제외\]/g, '').replace(/\[취소\]/g, '').trim();
                 newComment = clean ? `${clean} ${tag}`.trim() : tag;
             } else {
-                // 토글 처리
                 const isCurrentlyCancelled = currentComment.includes('[작업취소]') || currentComment.includes('[작업제외]') || currentComment.includes('[취소]');
                 if (isCurrentlyCancelled) {
                     newComment = currentComment.replace(/\[작업취소\]/g, '').replace(/\[작업제외\]/g, '').replace(/\[취소\]/g, '').trim();
@@ -4963,11 +4994,13 @@ app.post('/api/reports/toggle-cancel', async (req, res) => {
                 DELETE FROM container_comments 
                 WHERE cntr_no = $1 
                   AND (work_date = $2 OR work_date = '' OR work_date IS NULL)
-                  AND (job_id = $3 OR job_id = 0);
+                  AND (job_id = $3 OR job_id = 0)
+            `, [cleanCntrNo, targetDate, parsedJobId]);
 
-                INSERT INTO container_comments (cntr_no, work_date, admin_comment, job_id)
-                VALUES ($1, $2, $3, $4);
-            `, [cleanCntrNo, targetDate, newComment, parsedJobId]);
+            await client.query(`
+                INSERT INTO container_comments (cntr_no, work_date, admin_comment, job_id, duration_minutes)
+                VALUES ($1, $2, $3, $4, $5)
+            `, [cleanCntrNo, targetDate, newComment, parsedJobId, currentDuration]);
 
             return res.json({
                 success: true,

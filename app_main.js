@@ -15307,7 +15307,7 @@ window.lightboxDownload = function() {
                                 return `
                                     <div class="cancel-cntr-item ${itemClass}">
                                         <label style="display:flex; align-items:center; gap:8px; cursor:pointer; flex:1; min-width:0;">
-                                            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.handleToggleCancelCntr('${c.cntrNo}')" style="cursor:pointer;">
+                                            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.handleToggleCancelCntr('${c.cntrNo}', ${c.jobId || 'null'}, ${c.manualEntryId || 'null'})" style="cursor:pointer;">
                                             <div style="min-width:0; flex:1;">
                                                 <div style="font-weight:900; font-size:0.82rem; color:#0f172a; display:flex; align-items:center; gap:4px;">
                                                     <span>${c.cntrNo}</span>
@@ -15318,8 +15318,8 @@ window.lightboxDownload = function() {
                                         </label>
                                         ${isChecked ? `
                                             <div style="display:flex; gap:3px;">
-                                                <button type="button" class="btn-toggle-cancel-type" style="${isCancelled ? 'background:#e11d48; color:#fff;' : ''}" onclick="window.handleSetCancelType('${c.cntrNo}', 'cancel')">취소</button>
-                                                <button type="button" class="btn-toggle-cancel-type" style="${isExcluded ? 'background:#d97706; color:#fff;' : ''}" onclick="window.handleSetCancelType('${c.cntrNo}', 'exclude')">제외</button>
+                                                <button type="button" class="btn-toggle-cancel-type" style="${isCancelled ? 'background:#e11d48; color:#fff;' : ''}" onclick="window.handleSetCancelType('${c.cntrNo}', 'cancel', ${c.jobId || 'null'}, ${c.manualEntryId || 'null'})">취소</button>
+                                                <button type="button" class="btn-toggle-cancel-type" style="${isExcluded ? 'background:#d97706; color:#fff;' : ''}" onclick="window.handleSetCancelType('${c.cntrNo}', 'exclude', ${c.jobId || 'null'}, ${c.manualEntryId || 'null'})">제외</button>
                                             </div>
                                         ` : ''}
                                     </div>
@@ -15334,7 +15334,7 @@ window.lightboxDownload = function() {
         area.innerHTML = html;
     };
 
-    window.handleToggleCancelCntr = async function(cntrNo) {
+    window.handleToggleCancelCntr = async function(cntrNo, jobId = null, manualEntryId = null) {
         const dateInput = document.getElementById('reportTargetDate');
         const targetDate = dateInput?.value || formatReportYMD(new Date());
 
@@ -15342,7 +15342,7 @@ window.lightboxDownload = function() {
             await fetch(`${API_BASE}/api/reports/toggle-cancel`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cntrNo, workDate: targetDate, mode: window.cancelMode })
+                body: JSON.stringify({ jobId, manualEntryId, cntrNo, workDate: targetDate, mode: window.cancelMode })
             });
             await window.loadReportData();
             window.renderCancelManageList();
@@ -15351,7 +15351,7 @@ window.lightboxDownload = function() {
         }
     };
 
-    window.handleSetCancelType = async function(cntrNo, cancelType) {
+    window.handleSetCancelType = async function(cntrNo, cancelType, jobId = null, manualEntryId = null) {
         const dateInput = document.getElementById('reportTargetDate');
         const targetDate = dateInput?.value || formatReportYMD(new Date());
 
@@ -15359,7 +15359,7 @@ window.lightboxDownload = function() {
             await fetch(`${API_BASE}/api/reports/toggle-cancel`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cntrNo, workDate: targetDate, cancelType })
+                body: JSON.stringify({ jobId, manualEntryId, cntrNo, workDate: targetDate, cancelType })
             });
             await window.loadReportData();
             window.renderCancelManageList();
