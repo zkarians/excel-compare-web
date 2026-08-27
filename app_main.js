@@ -266,9 +266,6 @@ window.autoRestoreWorkSession = async function() {
                 window.fetchContainerPhotoCounts();
             }
 
-            if (typeof setProcessStatus === 'function') {
-                setProcessStatus("이전 작업 세션이 0.1초 만에 자동 복원되었습니다.", 100, true);
-            }
             window.showSessionRestoredBanner(session.timestamp);
         }
 
@@ -306,31 +303,25 @@ window.showSessionRestoredBanner = function(timestamp) {
         background: rgba(15, 23, 42, 0.95);
         color: #f8fafc;
         border: 1px solid #38bdf8;
-        border-radius: 14px;
-        padding: 12px 18px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        border-radius: 12px;
+        padding: 9px 15px;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.5);
         backdrop-filter: blur(12px);
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
         animation: popoverFadeIn 0.3s ease;
         font-family: inherit;
     `;
     banner.innerHTML = `
-        <div style="font-size: 1.4rem; color: #38bdf8;">🔄</div>
-        <div>
-            <div style="font-size: 0.85rem; font-weight: 800; color: #38bdf8; display:flex; align-items:center; gap:6px;">
-                <span>작업 세션 자동 복원 완료</span>
-                <span style="font-size:0.7rem; color:#94a3b8; font-weight:600;">(${timeStr})</span>
-            </div>
-            <div style="font-size: 0.76rem; color: #cbd5e1; margin-top: 2px;">
-                새로고침 전의 엑셀 파일 4종과 비교 화면이 그대로 복원되었습니다.
-            </div>
+        <span style="font-size: 1.1rem; color: #38bdf8;">🔄</span>
+        <div style="font-size: 0.85rem; font-weight: 800; color: #38bdf8; white-space: nowrap;">
+            세션복원완료 <span style="font-size:0.75rem; color:#94a3b8; font-weight:600;">(${timeStr})</span>
         </div>
-        <button type="button" onclick="window.clearWorkSession()" style="background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.5); color: #fca5a5; border-radius: 8px; padding: 5px 10px; font-size: 0.75rem; font-weight: 800; cursor: pointer; white-space: nowrap; margin-left: 6px;">
+        <button type="button" onclick="window.clearWorkSession()" style="background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.5); color: #fca5a5; border-radius: 6px; padding: 4px 8px; font-size: 0.75rem; font-weight: 800; cursor: pointer; white-space: nowrap; margin-left: 4px;">
             <i class="fas fa-trash-alt"></i> 새로 시작
         </button>
-        <button type="button" onclick="document.getElementById('sessionRestoredBanner').remove()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; padding: 0 4px; line-height: 1;">&times;</button>
+        <button type="button" onclick="document.getElementById('sessionRestoredBanner').remove()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.1rem; cursor: pointer; padding: 0 2px; line-height: 1;">&times;</button>
     `;
     document.body.appendChild(banner);
 
@@ -340,7 +331,7 @@ window.showSessionRestoredBanner = function(timestamp) {
             banner.style.transition = 'opacity 0.5s ease';
             setTimeout(() => banner.remove(), 500);
         }
-    }, 8000);
+    }, 6000);
 };
 
 // POP 샘플 무게 전역 상태 { "CNTR_NO": { weight: 150.5, memo: "샘플" } }
