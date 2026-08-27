@@ -15479,6 +15479,79 @@ window.lightboxDownload = function() {
         select.innerHTML = html;
     };
 
+    function parseExcelProductText(text) {
+        if (!text) return [];
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+        const results = [];
+
+        for (const line of lines) {
+            let cols = [];
+            if (line.includes('\t')) {
+                cols = line.split('\t').map(c => c.trim()).filter(c => c.length > 0);
+            } else {
+                cols = line.split(/\s{2,}|\t/).map(c => c.trim()).filter(c => c.length > 0);
+            }
+
+            if (cols.length >= 3) {
+                let qtyIdx = -1;
+                for (let i = cols.length - 1; i >= 0; i--) {
+                    const num = parseInt(cols[i].replace(/[개,EAea\s]/g, ''), 10);
+                    if (!isNaN(num) && num > 0) {
+                        qtyIdx = i;
+                        break;
+                    }
+                }
+
+                if (qtyIdx !== -1) {
+                    const qty = parseInt(cols[qtyIdx].replace(/[개,EAea\s]/g, ''), 10) || 0;
+                    let name = '';
+                    let div = 'DFZ';
+
+                    if (cols.length === 3) {
+                        div = cols[0];
+                        name = cols[1];
+                    } else if (cols.length === 4) {
+                        div = cols[1];
+                        name = cols[2];
+                    } else if (cols.length >= 5) {
+                        div = cols[2];
+                        name = cols[3];
+                    }
+                    if (name && qty > 0) {
+                        results.push({ division: div, name: name, qty: qty });
+                        continue;
+                    }
+                }
+            } else if (cols.length === 2) {
+                const numVal = parseInt(cols[1].replace(/[개,EAea\s]/g, ''), 10);
+                if (!isNaN(numVal) && numVal > 0) {
+                    const subMatch = cols[0].match(/^([A-Za-z0-9]{2,5})\s+([A-Za-z0-9\.\-_]+)$/);
+                    if (subMatch) {
+                        results.push({ division: subMatch[1], name: subMatch[2], qty: numVal });
+                    } else {
+                        results.push({ division: 'DFZ', name: cols[0], qty: numVal });
+                    }
+                    continue;
+                }
+            }
+
+            const m3 = line.match(/^([A-Za-z0-9]+)\s+([A-Za-z0-9\.\-_]+)\s+([\d,]+)(?:개)?$/);
+            if (m3) {
+                const qty = parseInt(m3[3].replace(/,/g, ''), 10) || 0;
+                results.push({ division: m3[1], name: m3[2], qty: qty });
+                continue;
+            }
+
+            const m2 = line.match(/^([A-Za-z0-9\.\-_]+)\s+([\d,]+)(?:개)?$/);
+            if (m2) {
+                const qty = parseInt(m2[2].replace(/,/g, ''), 10) || 0;
+                results.push({ division: 'DFZ', name: m2[1], qty: qty });
+                continue;
+            }
+        }
+        return results;
+    }
+
     window.addManualProductRow = function(division = 'CVZ', name = '', qty = 0) {
         const container = document.getElementById('manualProductRows');
         if (!container) return;
@@ -15493,6 +15566,13 @@ window.lightboxDownload = function() {
                 <i class="fas fa-trash-alt"></i>
             </button>
         `;
+
+        row.querySelectorAll('input').forEach(inp => {
+            inp.addEventListener('paste', function(e) {
+                window.handlePasteExcelToManual(e, row);
+            });
+        });
+
         container.appendChild(row);
     };
 
@@ -15522,40 +15602,42 @@ window.lightboxDownload = function() {
         if (row) row.remove();
     };
 
-    window.handlePasteExcelToManual = function(e) {
-        const text = e.clipboardData.getData('Text');
+    window.handlePasteExcelToManual = function(e, targetRow = null) {
+        const text = e.clipboardData?.getData('Text') || (window.clipboardData && window.clipboardData.getData('Text'));
         if (!text) return;
 
-        const rows = text.split(/\r?\n/).filter(r => r.trim() !== '');
-        const parsedProducts = [];
+        const parsedProducts = parseExcelProductText(text);
+        if (parsedProducts.length === 0) return;
 
-        for (const r of rows) {
-            const cols = r.split('\t').map(c => c.trim());
-            if (cols.length >= 3) {
-                const qty = parseInt(cols[2].replace(/,/g, ''), 10) || 0;
-                parsedProducts.push({ division: cols[0] || 'CVZ', name: cols[1], qty });
-            } else if (cols.length === 2) {
-                const qty = parseInt(cols[1].replace(/,/g, ''), 10) || 0;
-                parsedProducts.push({ division: 'CVZ', name: cols[0], qty });
-            }
-        }
+        e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
 
-        if (parsedProducts.length > 0) {
-            e.preventDefault();
-            const container = document.getElementById('manualProductRows');
-            if (container) {
-                const existingRows = container.querySelectorAll('.manual-product-row');
-                if (existingRows.length === 1) {
-                    const firstInput = existingRows[0].querySelector('.prod-name');
-                    if (!firstInput?.value.trim()) {
-                        container.innerHTML = '';
-                    }
+        const container = document.getElementById('manualProductRows');
+        if (!container) return;
+
+        if (parsedProducts.length === 1 && targetRow) {
+            const divInput = targetRow.querySelector('.prod-div');
+            const nameInput = targetRow.querySelector('.prod-name');
+            const qtyInput = targetRow.querySelector('.prod-qty');
+            if (divInput) divInput.value = parsedProducts[0].division;
+            if (nameInput) nameInput.value = parsedProducts[0].name;
+            if (qtyInput) qtyInput.value = parsedProducts[0].qty;
+        } else {
+            const existingRows = container.querySelectorAll('.manual-product-row');
+            if (existingRows.length === 1) {
+                const firstInput = existingRows[0].querySelector('.prod-name');
+                if (!firstInput?.value.trim()) {
+                    container.innerHTML = '';
                 }
-                parsedProducts.forEach(p => {
-                    window.addManualProductRow(p.division, p.name, p.qty);
-                });
+            } else if (targetRow) {
+                const nameInput = targetRow.querySelector('.prod-name');
+                if (!nameInput?.value.trim()) {
+                    targetRow.remove();
+                }
             }
-            alert(`📋 엑셀에서 ${parsedProducts.length}개 품목이 자동 입력되었습니다!`);
+            parsedProducts.forEach(p => {
+                window.addManualProductRow(p.division, p.name, p.qty);
+            });
         }
     };
 
