@@ -5994,18 +5994,42 @@ tr.border-group td {
 }
 
 .popover-prod-div {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 1.5px 6px;
     border-radius: 4px;
     background: #f1f5f9;
     color: #475569;
+    border: 1px solid #cbd5e1;
+    white-space: nowrap;
+}
+
+.popover-prod-title {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #0f172a;
+    word-break: break-all;
+}
+
+.popover-prod-dims {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #475569;
+    background: #f8fafc;
+    padding: 1.5px 6px;
+    border-radius: 4px;
     border: 1px solid #e2e8f0;
+    white-space: nowrap;
+    font-family: Consolas, monospace;
 }
 
 .popover-prod-qty {
-    font-weight: 800;
+    font-weight: 900;
     color: #0284c7;
     background: #e0f2fe;
     padding: 2px 8px;
     border-radius: 6px;
+    border: 1px solid #bae6fd;
     font-size: 0.8rem;
     white-space: nowrap;
     margin-left: 8px;
@@ -6027,14 +6051,14 @@ tr.border-group td {
     position: absolute;
     top: 56px;
     left: 20px;
-    width: 380px;
+    width: 440px;
     max-width: 90vw;
-    background: rgba(15, 23, 42, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(15, 23, 42, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(16px);
     border-radius: 12px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
-    z-index: 10000;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
+    z-index: 9999999;
     overflow: hidden;
     animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     color: #f8fafc;
@@ -6042,8 +6066,8 @@ tr.border-group td {
 }
 
 .lightbox-prod-popover .popover-header {
-    background: rgba(30, 41, 59, 0.8);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(30, 41, 59, 0.85);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     padding: 10px 14px;
     display: flex;
     justify-content: space-between;
@@ -6057,32 +6081,50 @@ tr.border-group td {
 }
 
 .lightbox-prod-popover .popover-prod-item {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .lightbox-prod-popover .popover-prod-model {
     color: #f1f5f9;
 }
 
+.lightbox-prod-popover .popover-prod-type {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
 .lightbox-prod-popover .popover-prod-div {
-    background: rgba(255, 255, 255, 0.1);
-    color: #cbd5e1;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(148, 163, 184, 0.2);
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.lightbox-prod-popover .popover-prod-title {
+    color: #ffffff;
+}
+
+.lightbox-prod-popover .popover-prod-dims {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.15);
+    border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
 .lightbox-prod-popover .popover-prod-qty {
-    background: rgba(2, 132, 199, 0.3);
+    background: rgba(2, 132, 199, 0.35);
     color: #38bdf8;
     border: 1px solid rgba(56, 189, 248, 0.4);
 }
 
 .lightbox-prod-popover .popover-footer {
-    background: rgba(245, 158, 11, 0.15);
-    border-top: 1px solid rgba(245, 158, 11, 0.25);
+    background: rgba(30, 41, 59, 0.6);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     padding: 8px 12px;
     font-size: 0.75rem;
-    color: #fbbf24;
+    color: #fcd34d;
     font-weight: 600;
+    line-height: 1.4;
+    word-break: break-all;
 }
 
 

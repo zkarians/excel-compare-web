@@ -13909,15 +13909,23 @@ window.getContainerProductsInfo = async function(cntrNo) {
             transporter: first.transporter || '',
             modelCount: foundRows.length,
             totalQty: totalQty,
-            products: foundRows.map(r => ({
-                prodName: r.prodName || r.prod_name || r.model || '-',
-                qty: Number(r.qty || r.qty_plan || r.qty_load || 0) || 0,
-                division: r.division || '-',
-                prodType: r.prodType || r.prod_type || r.jobType || r.job_type || '-',
-                dims: r.dims || r.dimensions || '',
-                weight: r.weight || 0,
-                status: r.status || 'OK'
-            }))
+            products: foundRows.map(r => {
+                let dims = r.dims || r.dimensions || '';
+                if ((!dims || dims === '-' || dims === '0x0x0') && Array.isArray(productMaster) && productMaster.length > 0) {
+                    const cleanName = (r.prodName || r.prod_name || r.model || '').toUpperCase().trim();
+                    const m = productMaster.find(pm => (pm.prod_name || pm.model || '').toUpperCase().trim() === cleanName);
+                    if (m && m.dims) dims = m.dims;
+                }
+                return {
+                    prodName: r.prodName || r.prod_name || r.model || '-',
+                    qty: Number(r.qty || r.qty_plan || r.qty_load || 0) || 0,
+                    division: r.division || '-',
+                    prodType: r.prodType || r.prod_type || r.jobType || r.job_type || '-',
+                    dims: dims || '',
+                    weight: r.weight || 0,
+                    status: r.status || 'OK'
+                };
+            })
         };
         window.containerProductInfoCache.set(key, info);
         return info;
@@ -13939,15 +13947,23 @@ window.getContainerProductsInfo = async function(cntrNo) {
                 transporter: first.transporter || '',
                 modelCount: data.products.length,
                 totalQty: totalQty,
-                products: data.products.map(r => ({
-                    prodName: r.prod_name || '-',
-                    qty: Number(r.qty_plan || r.qty_load || 0) || 0,
-                    division: r.division || '-',
-                    prodType: r.prod_type || r.prodType || r.job_type || '-',
-                    dims: r.dims || '',
-                    weight: r.weight || 0,
-                    status: 'OK'
-                }))
+                products: data.products.map(r => {
+                    let dims = r.dims || '';
+                    if ((!dims || dims === '-' || dims === '0x0x0') && Array.isArray(productMaster) && productMaster.length > 0) {
+                        const cleanName = (r.prod_name || '').toUpperCase().trim();
+                        const m = productMaster.find(pm => (pm.prod_name || pm.model || '').toUpperCase().trim() === cleanName);
+                        if (m && m.dims) dims = m.dims;
+                    }
+                    return {
+                        prodName: r.prod_name || '-',
+                        qty: Number(r.qty_plan || r.qty_load || 0) || 0,
+                        division: r.division || '-',
+                        prodType: r.prod_type || r.prodType || r.job_type || '-',
+                        dims: dims || '',
+                        weight: r.weight || 0,
+                        status: 'OK'
+                    };
+                })
             };
             window.containerProductInfoCache.set(key, info);
             return info;
@@ -14000,6 +14016,7 @@ window.updateGalleryProductSummary = async function(cntrNo) {
         info.products.forEach((p, idx) => {
             const typeTag = (p.prodType && p.prodType !== '-') ? `<span class="popover-prod-type">${p.prodType}</span>` : '';
             const divTag = (p.division && p.division !== '-') ? `<span class="popover-prod-div">${p.division}</span>` : '';
+            const dimsTag = (p.dims && p.dims !== '-' && p.dims !== '0x0x0' && p.dims.trim()) ? `<span class="popover-prod-dims" title="제품 규격">${p.dims}</span>` : '';
             phtml += `
                 <div class="popover-prod-item">
                     <div class="popover-prod-model">
@@ -14007,6 +14024,7 @@ window.updateGalleryProductSummary = async function(cntrNo) {
                         ${typeTag}
                         ${divTag}
                         <span class="popover-prod-title">${p.prodName}</span>
+                        ${dimsTag}
                     </div>
                     <div class="popover-prod-qty">${p.qty.toLocaleString()}개</div>
                 </div>
@@ -14082,6 +14100,7 @@ window.updateLightboxProductSummary = async function(cntrNo) {
         info.products.forEach((p, idx) => {
             const typeTag = (p.prodType && p.prodType !== '-') ? `<span class="popover-prod-type">${p.prodType}</span>` : '';
             const divTag = (p.division && p.division !== '-') ? `<span class="popover-prod-div">${p.division}</span>` : '';
+            const dimsTag = (p.dims && p.dims !== '-' && p.dims !== '0x0x0' && p.dims.trim()) ? `<span class="popover-prod-dims" title="제품 규격">${p.dims}</span>` : '';
             phtml += `
                 <div class="popover-prod-item">
                     <div class="popover-prod-model">
@@ -14089,6 +14108,7 @@ window.updateLightboxProductSummary = async function(cntrNo) {
                         ${typeTag}
                         ${divTag}
                         <span class="popover-prod-title">${p.prodName}</span>
+                        ${dimsTag}
                     </div>
                     <div class="popover-prod-qty">${p.qty.toLocaleString()}개</div>
                 </div>
