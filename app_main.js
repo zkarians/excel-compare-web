@@ -10762,7 +10762,7 @@ window.runPreWorkAvailabilityCheck = async function(isSilent = false) {
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-clipboard-check" style="font-size: 0.85rem;"></i><span>작업 가용성(홀드·롱텀) 분석</span>';
+            btn.innerHTML = '<i class="fas fa-clipboard-check" style="font-size: 0.85rem;"></i><span>작업 분석</span>';
         }
     }
 };
