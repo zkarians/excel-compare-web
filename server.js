@@ -5245,16 +5245,15 @@ app.post('/api/reports/toggle-cancel', async (req, res) => {
             }
 
             await client.query(`
-                DELETE FROM container_comments 
-                WHERE cntr_no = $1 
-                  AND (work_date = $2 OR work_date = '' OR work_date IS NULL)
-                  AND (job_id = $3 OR job_id = 0)
-            `, [cleanCntrNo, targetDate, parsedJobId]);
-
-            await client.query(`
-                INSERT INTO container_comments (cntr_no, work_date, admin_comment, job_id, duration_minutes)
-                VALUES ($1, $2, $3, $4, $5)
-            `, [cleanCntrNo, targetDate, newComment, parsedJobId, currentDuration]);
+                INSERT INTO container_comments (cntr_no, work_date, admin_comment, job_id, duration_minutes, updated_at)
+                VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+                ON CONFLICT (cntr_no, work_date)
+                DO UPDATE SET 
+                    admin_comment = EXCLUDED.admin_comment,
+                    job_id = COALESCE(NULLIF(EXCLUDED.job_id, 0), container_comments.job_id),
+                    duration_minutes = COALESCE(EXCLUDED.duration_minutes, container_comments.duration_minutes),
+                    updated_at = CURRENT_TIMESTAMP;
+            `, [cleanCntrNo, targetDate, newComment, parsedJobId || 0, currentDuration]);
 
             return res.json({
                 success: true,
@@ -5436,15 +5435,14 @@ app.post('/api/reports/update-container', async (req, res) => {
                 : (existCommentRes.rows[0]?.admin_comment || '');
 
             await client.query(`
-                DELETE FROM container_comments 
-                WHERE cntr_no = $1 
-                  AND (work_date = $2 OR work_date = '' OR work_date IS NULL)
-                  AND (job_id = $3 OR job_id = 0)
-            `, [cleanCntrNo, targetWorkDate, jId]);
-
-            await client.query(`
-                INSERT INTO container_comments (cntr_no, work_date, admin_comment, job_id, duration_minutes)
-                VALUES ($1, $2, $3, $4, $5)
+                INSERT INTO container_comments (cntr_no, work_date, admin_comment, job_id, duration_minutes, updated_at)
+                VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+                ON CONFLICT (cntr_no, work_date)
+                DO UPDATE SET 
+                    admin_comment = EXCLUDED.admin_comment,
+                    job_id = COALESCE(NULLIF(EXCLUDED.job_id, 0), container_comments.job_id),
+                    duration_minutes = EXCLUDED.duration_minutes,
+                    updated_at = CURRENT_TIMESTAMP;
             `, [cleanCntrNo, targetWorkDate, finalAdminComment, jId, durationMinutes || 45]);
 
             await client.query('COMMIT');

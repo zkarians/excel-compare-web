@@ -15961,7 +15961,7 @@ window.lightboxDownload = function() {
                 }
             } else {
                 // 기존 DB 컨테이너 수정
-                await fetch(`${API_BASE}/api/reports/update-container`, {
+                const res = await fetch(`${API_BASE}/api/reports/update-container`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -15975,6 +15975,11 @@ window.lightboxDownload = function() {
                         emptyBoxes
                     })
                 });
+                const data = await res.json();
+                if (!data.success) {
+                    alert(`저장 실패: ${data.error || data.message}`);
+                    return;
+                }
             }
 
             window.closeAddManualModal();
