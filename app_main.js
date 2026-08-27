@@ -15465,15 +15465,21 @@ window.lightboxDownload = function() {
 
         let cntrsInTeam = [];
         if (window.currentReportData && window.currentReportData[0]) {
-            const teamObj = window.currentReportData[0].uploaders?.find(u => u.teamName === window.selectedManualTeam);
+            const selected = (window.selectedManualTeam || '').replace(/[\(\)\s]/g, '');
+            const teamObj = window.currentReportData[0].uploaders?.find(u => {
+                const uName = (u.teamName || '').replace(/[\(\)\s]/g, '');
+                return uName.includes(selected) || selected.includes(uName);
+            });
             cntrsInTeam = teamObj?.containers || [];
         }
 
         let html = '<option value="end">맨 마지막 (자동 계산)</option>';
         if (cntrsInTeam.length > 0) {
-            html += '<option value="0">1번째 작업 (맨 처음)</option>';
+            html += `<option value="0">1번째 작업 (맨 처음 - ${cntrsInTeam[0].cntrNo} 앞)</option>`;
             for (let i = 1; i < cntrsInTeam.length; i++) {
-                html += `<option value="${i}">${i + 1}번째 작업 (${cntrsInTeam[i - 1].cntrNo} 다음)</option>`;
+                const prev = cntrsInTeam[i - 1];
+                const next = cntrsInTeam[i];
+                html += `<option value="${i}">${i + 1}번째 작업 (${prev.cntrNo} 와 ${next.cntrNo} 사이)</option>`;
             }
         }
         select.innerHTML = html;
@@ -15691,14 +15697,41 @@ window.lightboxDownload = function() {
             ? (category ? `${category} [작업취소]` : '[작업취소]')
             : category;
 
+        // 작업 위치(순서) 기반 업로드 시점 계산
+        let calculatedFirstUploadedAt = undefined;
+        if (insertIndex !== undefined && insertIndex !== 'end' && !isNaN(parseInt(insertIndex, 10))) {
+            const idx = parseInt(insertIndex, 10);
+            const selected = (window.selectedManualTeam || '').replace(/[\(\)\s]/g, '');
+            const teamObj = window.currentReportData?.[0]?.uploaders?.find(u => {
+                const uName = (u.teamName || '').replace(/[\(\)\s]/g, '');
+                return uName.includes(selected) || selected.includes(uName);
+            });
+            const cntrsInTeam = teamObj?.containers || [];
+            if (cntrsInTeam.length > 0) {
+                if (idx === 0) {
+                    const firstTime = new Date(cntrsInTeam[0].firstUploadedAt || new Date()).getTime();
+                    calculatedFirstUploadedAt = new Date(firstTime - 60000).toISOString();
+                } else if (idx < cntrsInTeam.length) {
+                    const prevTime = new Date(cntrsInTeam[idx - 1].firstUploadedAt || new Date()).getTime();
+                    const nextTime = new Date(cntrsInTeam[idx].firstUploadedAt || new Date()).getTime();
+                    const midTime = prevTime + Math.floor((nextTime - prevTime) / 2) || (prevTime + 1000);
+                    calculatedFirstUploadedAt = new Date(midTime).toISOString();
+                } else {
+                    const lastTime = new Date(cntrsInTeam[cntrsInTeam.length - 1].firstUploadedAt || new Date()).getTime();
+                    calculatedFirstUploadedAt = new Date(lastTime + 60000).toISOString();
+                }
+            }
+        }
+
         try {
-            if (editId || !window.editingReportItem) {
+            if (editId || (window.editingReportItem && window.editingReportItem.manualEntryId) || !window.editingReportItem) {
                 // 신규 수동 추가 또는 수동 항목 수정
+                const targetManualId = editId ? parseInt(editId, 10) : (window.editingReportItem?.manualEntryId ? parseInt(window.editingReportItem.manualEntryId, 10) : undefined);
                 const res = await fetch(`${API_BASE}/api/reports/manual-entry`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        id: editId ? parseInt(editId, 10) : undefined,
+                        id: targetManualId,
                         workDate: targetDate,
                         teamName: window.selectedManualTeam,
                         cntrNo,
@@ -15707,7 +15740,8 @@ window.lightboxDownload = function() {
                         durationMinutes,
                         remark,
                         products,
-                        emptyBoxes
+                        emptyBoxes,
+                        firstUploadedAt: calculatedFirstUploadedAt
                     })
                 });
                 const data = await res.json();
@@ -15749,8 +15783,12 @@ window.lightboxDownload = function() {
         window.currentReportData.forEach(dg => {
             dg.uploaders?.forEach(u => {
                 const c = u.containers?.find(x => {
-                    if (manualEntryId && x.manualEntryId) return Number(x.manualEntryId) === Number(manualEntryId);
-                    if (jobId && x.jobId) return Number(x.jobId) === Number(jobId) && x.cntrNo === cntrNo;
+                    if (manualEntryId) {
+                        return Number(x.manualEntryId) === Number(manualEntryId);
+                    }
+                    if (jobId) {
+                        return Number(x.jobId) === Number(jobId) && x.cntrNo === cntrNo;
+                    }
                     return x.cntrNo === cntrNo;
                 });
                 if (c) foundCntr = { ...c, teamName: u.teamName };

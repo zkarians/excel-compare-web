@@ -5009,24 +5009,24 @@ app.post('/api/reports/manual-entry', async (req, res) => {
                     UPDATE manual_report_entries
                     SET work_date = $1, team_name = $2, cntr_no = $3, category = $4, transporter = $5,
                         duration_minutes = $6, remark = $7, products = $8::jsonb, empty_boxes = $9::jsonb,
-                        first_uploaded_at = COALESCE($10, first_uploaded_at)
+                        first_uploaded_at = COALESCE($10::timestamptz, first_uploaded_at)
                     WHERE id = $11
                 `, [
                     workDate, teamName, cntrNo.trim().toUpperCase(), category || '', transporter || '',
                     durationMinutes || 45, remark || '', JSON.stringify(products || []), JSON.stringify(emptyBoxes || []),
-                    firstUploadedAt || null, id
+                    firstUploadedAt ? new Date(firstUploadedAt).toISOString() : null, id
                 ]);
                 return res.json({ success: true, message: "수동 항목이 수정되었습니다." });
             } else {
                 // 신규 추가
                 const insRes = await client.query(`
                     INSERT INTO manual_report_entries (work_date, team_name, cntr_no, category, transporter, duration_minutes, remark, products, empty_boxes, first_uploaded_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::timestamptz)
                     RETURNING id;
                 `, [
                     workDate, teamName, cntrNo.trim().toUpperCase(), category || '', transporter || '',
                     durationMinutes || 45, remark || '', JSON.stringify(products || []), JSON.stringify(emptyBoxes || []),
-                    firstUploadedAt || new Date().toISOString()
+                    firstUploadedAt ? new Date(firstUploadedAt).toISOString() : new Date().toISOString()
                 ]);
                 return res.json({ success: true, message: "수동 항목이 추가되었습니다.", id: insRes.rows[0]?.id });
             }
