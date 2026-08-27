@@ -4518,10 +4518,11 @@ app.get('/api/reports/generate', async (req, res) => {
                     cntr_no VARCHAR(50) NOT NULL,
                     work_date VARCHAR(20) DEFAULT '',
                     admin_comment TEXT,
-                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (cntr_no, work_date)
+                    job_id INTEGER DEFAULT 0,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                 );
             `).catch(() => {});
+            await client.query(`ALTER TABLE container_comments ADD COLUMN IF NOT EXISTS job_id INTEGER DEFAULT 0;`).catch(() => {});
 
             // Ensure manual_report_entries table exists
             await client.query(`
