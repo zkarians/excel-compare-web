@@ -13912,8 +13912,8 @@ window.getContainerProductsInfo = async function(cntrNo) {
             products: foundRows.map(r => ({
                 prodName: r.prodName || r.prod_name || r.model || '-',
                 qty: Number(r.qty || r.qty_plan || r.qty_load || 0) || 0,
-                division: r.division || r.prodType || '-',
-                prodType: r.prodType || '-',
+                division: r.division || '-',
+                prodType: r.prodType || r.prod_type || r.jobType || r.job_type || '-',
                 dims: r.dims || r.dimensions || '',
                 weight: r.weight || 0,
                 status: r.status || 'OK'
@@ -13933,7 +13933,7 @@ window.getContainerProductsInfo = async function(cntrNo) {
             const info = {
                 cntrNo: key,
                 carrier: first.carrier || '-',
-                dest: first.dest || '-',
+                dest: first.destination || first.dest || '-',
                 cntrType: first.cntr_type || '-',
                 remark: first.remark || '',
                 transporter: first.transporter || '',
@@ -13943,7 +13943,7 @@ window.getContainerProductsInfo = async function(cntrNo) {
                     prodName: r.prod_name || '-',
                     qty: Number(r.qty_plan || r.qty_load || 0) || 0,
                     division: r.division || '-',
-                    prodType: r.prod_type || '-',
+                    prodType: r.prod_type || r.prodType || r.job_type || '-',
                     dims: r.dims || '',
                     weight: r.weight || 0,
                     status: 'OK'
@@ -13998,13 +13998,15 @@ window.updateGalleryProductSummary = async function(cntrNo) {
     if (popBody) {
         let phtml = '';
         info.products.forEach((p, idx) => {
+            const typeTag = (p.prodType && p.prodType !== '-') ? `<span class="popover-prod-type">${p.prodType}</span>` : '';
             const divTag = (p.division && p.division !== '-') ? `<span class="popover-prod-div">${p.division}</span>` : '';
             phtml += `
                 <div class="popover-prod-item">
                     <div class="popover-prod-model">
                         <span style="color:#94a3b8; font-size:0.75rem; font-weight:800; min-width:18px;">${idx + 1}.</span>
+                        ${typeTag}
                         ${divTag}
-                        <span>${p.prodName}</span>
+                        <span class="popover-prod-title">${p.prodName}</span>
                     </div>
                     <div class="popover-prod-qty">${p.qty.toLocaleString()}개</div>
                 </div>
@@ -14078,13 +14080,15 @@ window.updateLightboxProductSummary = async function(cntrNo) {
     if (popBody) {
         let phtml = '';
         info.products.forEach((p, idx) => {
+            const typeTag = (p.prodType && p.prodType !== '-') ? `<span class="popover-prod-type">${p.prodType}</span>` : '';
             const divTag = (p.division && p.division !== '-') ? `<span class="popover-prod-div">${p.division}</span>` : '';
             phtml += `
                 <div class="popover-prod-item">
                     <div class="popover-prod-model">
                         <span style="color:#94a3b8; font-size:0.75rem; font-weight:800; min-width:18px;">${idx + 1}.</span>
+                        ${typeTag}
                         ${divTag}
-                        <span>${p.prodName}</span>
+                        <span class="popover-prod-title">${p.prodName}</span>
                     </div>
                     <div class="popover-prod-qty">${p.qty.toLocaleString()}개</div>
                 </div>
