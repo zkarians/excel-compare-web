@@ -3020,22 +3020,18 @@ app.get('/api/containers/info', async (req, res) => {
         }
 
         const query = `
-            SELECT r.*, j.status as job_status
-            FROM container_results r
-            LEFT JOIN container_jobs j ON r.job_id = j.id
-            WHERE r.cntr_no = $1
-            ORDER BY r.id ASC
+            SELECT * FROM container_results
+            WHERE cntr_no = $1
+            ORDER BY id ASC
         `;
         let result = await pool.query(query, [cntrNo]);
         let rows = result.rows;
 
         if (rows.length === 0) {
             const fallback = await pool.query(
-                `SELECT r.*, j.status as job_status
-                 FROM container_results r
-                 LEFT JOIN container_jobs j ON r.job_id = j.id
-                 WHERE r.cntr_no ILIKE $1
-                 ORDER BY r.id ASC`,
+                `SELECT * FROM container_results
+                 WHERE cntr_no ILIKE $1
+                 ORDER BY id ASC`,
                 [`%${cntrNo}%`]
             );
             rows = fallback.rows;
