@@ -1846,15 +1846,25 @@ app.post('/api/save-to-db', async (req, res) => {
 
             const jobIdsMap = new Map();
             for (const [key, job] of jobsMap.entries()) {
-                // 기존에 동일한 Job이 있는지 확인 (최근 1시간 내 동일 정보면 재사용 또는 신규 생성)
+                // 자가 치유(Self-Healing): 동일 지시서(job_name)가 있으면 단일 메인 작업 ID로 일원화
                 const jobCheck = await client.query(
-                    "SELECT id FROM container_jobs WHERE job_name = $1 AND eta = $2 AND etd = $3 ORDER BY saved_at DESC LIMIT 1",
-                    [job.jobName, job.eta, job.etd]
+                    "SELECT id FROM container_jobs WHERE job_name = $1 ORDER BY saved_at DESC, id DESC",
+                    [job.jobName]
                 );
 
                 let jobId;
                 if (jobCheck.rows.length > 0) {
                     jobId = jobCheck.rows[0].id;
+                    const otherJobIds = jobCheck.rows.slice(1).map(r => r.id);
+                    if (otherJobIds.length > 0) {
+                        await client.query("UPDATE container_results SET job_id = $1 WHERE job_id = ANY($2::int[])", [jobId, otherJobIds]);
+                        await client.query("UPDATE container_photos SET job_id = $1 WHERE job_id = ANY($2::int[])", [jobId, otherJobIds]);
+                        await client.query("DELETE FROM container_jobs WHERE id = ANY($1::int[]) AND id NOT IN (SELECT DISTINCT job_id FROM container_results)", [otherJobIds]);
+                    }
+                    await client.query(
+                        "UPDATE container_jobs SET eta = COALESCE(NULLIF($1, ''), eta), etd = COALESCE(NULLIF($2, ''), etd), remark = COALESCE(NULLIF($3, ''), remark), saved_at = NOW() WHERE id = $4",
+                        [job.eta, job.etd, job.remark, jobId]
+                    );
                 } else {
                     const jobInsert = await client.query(
                         "INSERT INTO container_jobs (job_name, eta, etd, remark) VALUES ($1, $2, $3, $4) RETURNING id",
@@ -1958,12 +1968,23 @@ app.post('/api/save-to-db', async (req, res) => {
                     // 로컬과 동일한 로직으로 저장 (이미 insertQuery와 jobIdsMap은 준비됨)
                     for (const [key, job] of jobsMap.entries()) {
                         const jobCheck = await remoteClient.query(
-                            "SELECT id FROM container_jobs WHERE job_name = $1 AND eta = $2 AND etd = $3 ORDER BY saved_at DESC LIMIT 1",
-                            [job.jobName, job.eta, job.etd]
+                            "SELECT id FROM container_jobs WHERE job_name = $1 ORDER BY saved_at DESC, id DESC",
+                            [job.jobName]
                         );
                         let jobId;
-                        if (jobCheck.rows.length > 0) jobId = jobCheck.rows[0].id;
-                        else {
+                        if (jobCheck.rows.length > 0) {
+                            jobId = jobCheck.rows[0].id;
+                            const otherJobIds = jobCheck.rows.slice(1).map(r => r.id);
+                            if (otherJobIds.length > 0) {
+                                await remoteClient.query("UPDATE container_results SET job_id = $1 WHERE job_id = ANY($2::int[])", [jobId, otherJobIds]);
+                                await remoteClient.query("UPDATE container_photos SET job_id = $1 WHERE job_id = ANY($2::int[])", [jobId, otherJobIds]);
+                                await remoteClient.query("DELETE FROM container_jobs WHERE id = ANY($1::int[]) AND id NOT IN (SELECT DISTINCT job_id FROM container_results)", [otherJobIds]);
+                            }
+                            await remoteClient.query(
+                                "UPDATE container_jobs SET eta = COALESCE(NULLIF($1, ''), eta), etd = COALESCE(NULLIF($2, ''), etd), remark = COALESCE(NULLIF($3, ''), remark), saved_at = NOW() WHERE id = $4",
+                                [job.eta, job.etd, job.remark, jobId]
+                            );
+                        } else {
                             const jobInsert = await remoteClient.query(
                                 "INSERT INTO container_jobs (job_name, eta, etd, remark) VALUES ($1, $2, $3, $4) RETURNING id",
                                 [job.jobName, job.eta, job.etd, job.remark]
@@ -3047,11 +3068,21 @@ app.get('/api/containers/info', async (req, res) => {
             rows = fallback.rows;
         }
 
+        const mappedProducts = rows.map(r => {
+            const finalName = r.prod_name || r.model_name || r.name || '';
+            return {
+                ...r,
+                name: finalName,
+                prod_name: finalName,
+                model_name: finalName
+            };
+        });
+
         res.json({
             success: true,
             cntrNo: cntrNo,
-            count: rows.length,
-            products: rows
+            count: mappedProducts.length,
+            products: mappedProducts
         });
     } catch (err) {
         console.error("GET /api/containers/info error:", err);
@@ -4557,7 +4588,7 @@ app.get('/api/reports/generate', async (req, res) => {
                     SELECT 
                         j.id as job_id,
                         COALESCE(r.cntr_no, j.job_name, '미지정') as cntr_no,
-                        r.prod_name,
+                        COALESCE(NULLIF(r.prod_name, ''), NULLIF(r.prod_type, ''), '미지정 모델') as prod_name,
                         r.division,
                         SUM(COALESCE(r.qty_plan, 0)) as qty,
                         COALESCE(t.name, '미지정 조') as team_name,
@@ -4592,7 +4623,7 @@ app.get('/api/reports/generate', async (req, res) => {
                      AND (cc.work_date = $${commentDateParamIdx} OR cc.work_date = '' OR cc.work_date IS NULL)
                      AND (cc.job_id = j.id OR cc.job_id = 0 OR cc.job_id IS NULL)
                     ${whereSql}
-                    GROUP BY j.id, COALESCE(r.cntr_no, j.job_name, '미지정'), r.prod_name, r.division, t.name
+                    GROUP BY j.id, COALESCE(r.cntr_no, j.job_name, '미지정'), COALESCE(NULLIF(r.prod_name, ''), NULLIF(r.prod_type, ''), '미지정 모델'), r.division, t.name
                 )
                 SELECT gr.*,
                        (SELECT json_agg(json_build_object('name', eb.box_name, 'qty', eb.qty)) 
@@ -4612,7 +4643,7 @@ app.get('/api/reports/generate', async (req, res) => {
                     SELECT 
                         COALESCE(r.cntr_no, '미지정') as cntr_no,
                         r.job_id,
-                        r.prod_name,
+                        COALESCE(NULLIF(r.prod_name, ''), NULLIF(r.prod_type, ''), '미지정 모델') as prod_name,
                         r.division,
                         SUM(COALESCE(r.qty_plan, 0)) as qty,
                         '1조' as team_name,
@@ -4620,7 +4651,7 @@ app.get('/api/reports/generate', async (req, res) => {
                         NOW() as first_uploaded_at,
                         45 as duration_minutes
                     FROM container_results r
-                    GROUP BY r.job_id, r.cntr_no, r.prod_name, r.division
+                    GROUP BY r.job_id, r.cntr_no, COALESCE(NULLIF(r.prod_name, ''), NULLIF(r.prod_type, ''), '미지정 모델'), r.division
                     LIMIT 200
                 `;
                 const resFb = await client.query(fallbackQuery);
@@ -4644,7 +4675,7 @@ app.get('/api/reports/generate', async (req, res) => {
                 const cntrNo = row.cntr_no;
                 const entryKey = `db_${row.job_id}_${cntrNo}`;
                 const division = row.division || '일반';
-                const prodName = row.prod_name;
+                const prodName = row.prod_name || row.model_name || row.name || '미지정 모델';
                 const qty = Math.round(Number(row.qty)) || 0;
                 const height = Number(row.height) || 0;
                 const isCompleted = !!row.is_completed;
