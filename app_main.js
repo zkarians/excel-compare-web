@@ -11971,27 +11971,161 @@ window.handleDownloadSelectedPhotos = function() {
     a.remove();
 };
 
-// 6. 로컬 폴더 복사 모달 & 실행
+// 6. 로컬 폴더 복사 모달 & 실행 (CTNR 조별 하위 폴더 자동 분류 완벽 지원)
 window.handleOpenLocalCopyModal = function() {
     const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
-    const count = isFolderMode ? window.selectedFolderKeys.size : window.selectedPhotoIds.size;
-    if (count === 0) {
+    let selectedContainers = new Set();
+    let selectedPhotos = [];
+    const allPhotos = window.currentGalleryPhotos || [];
+
+    if (isFolderMode) {
+        const keys = Array.from(window.selectedFolderKeys);
+        keys.forEach(k => selectedContainers.add(k.split('|')[0].toUpperCase().trim()));
+        selectedPhotos = allPhotos.filter(p => selectedContainers.has((p.cntr_no || '').toUpperCase().trim()));
+    } else {
+        selectedPhotos = allPhotos.filter(p => window.selectedPhotoIds && window.selectedPhotoIds.has(p.id));
+        selectedPhotos.forEach(p => {
+            if (p.cntr_no) selectedContainers.add(p.cntr_no.toUpperCase().trim());
+        });
+    }
+
+    const containerCount = selectedContainers.size || (isFolderMode ? window.selectedFolderKeys.size : 0);
+    const photoCount = selectedPhotos.length;
+
+    if (containerCount === 0 && photoCount === 0) {
         alert("복사할 폴더 또는 사진을 선택해 주세요.");
         return;
     }
+
     const countEl = document.getElementById('localCopyPhotoCount');
-    if (countEl) countEl.textContent = isFolderMode ? `${count}개 폴더` : `${count}장`;
+    if (countEl) countEl.textContent = `${containerCount}개`;
+
+    // 팀 목록 확인하여 힌트 표시
+    const teamSet = new Set();
+    selectedPhotos.forEach(p => {
+        let tm = (p.team_name || '').trim();
+        const m = tm.match(/^(\d+조)/);
+        if (m) tm = m[1];
+        else if (tm.includes('재작업')) tm = '재작업';
+        else if (!tm) tm = '기타';
+        teamSet.add(tm);
+    });
+    const teamListStr = Array.from(teamSet).join(', ');
+    const hintTextEl = document.getElementById('localCopyTeamHintText');
+    if (hintTextEl) {
+        hintTextEl.textContent = teamSet.size > 0 ? `[${teamListStr}] 선택됨 - 마지막 저장 경로가 자동 적용됩니다.` : `마지막 저장 경로가 자동 적용됩니다.`;
+    }
+
     const inputEl = document.getElementById('inputLocalCopyPath');
     if (inputEl) {
-        inputEl.value = localStorage.getItem('lastPhotoLocalCopyPath') || 'W:\\helpdesk\\사진보관';
+        const savedPath = localStorage.getItem('lastPhotoLocalCopyPath');
+        inputEl.value = savedPath || 'X:\\26.08\\27\\야간';
     }
-    document.getElementById('modalLocalCopyPhoto').style.display = 'flex';
+
+    const chkByTeam = document.getElementById('chkByTeamFolder');
+    if (chkByTeam) {
+        const savedByTeam = localStorage.getItem('lastPhotoLocalCopyByTeam');
+        chkByTeam.checked = (savedByTeam === null) ? true : (savedByTeam === 'true');
+    }
+
+    window.updateLocalCopyPreview();
+
+    const m = document.getElementById('modalLocalCopyPhoto');
+    if (m) m.style.display = 'flex';
+};
+
+window.updateLocalCopyPreview = function() {
+    const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
+    const inputEl = document.getElementById('inputLocalCopyPath');
+    let basePath = (inputEl ? inputEl.value.trim() : '') || 'X:\\26.08\\27\\야간';
+    if (basePath && !basePath.endsWith('\\') && !basePath.endsWith('/')) {
+        basePath += '\\';
+    }
+
+    const chkByTeam = document.getElementById('chkByTeamFolder');
+    const byTeam = chkByTeam ? chkByTeam.checked : true;
+    localStorage.setItem('lastPhotoLocalCopyByTeam', byTeam ? 'true' : 'false');
+
+    const previewTitle = document.getElementById('localCopyPreviewTitle');
+    const previewList = document.getElementById('localCopyPreviewList');
+    if (!previewList) return;
+
+    const allPhotos = window.currentGalleryPhotos || [];
+    let selectedPhotos = [];
+    if (isFolderMode) {
+        const keys = Array.from(window.selectedFolderKeys);
+        const cntrNos = new Set(keys.map(k => k.split('|')[0].toUpperCase().trim()));
+        selectedPhotos = allPhotos.filter(p => cntrNos.has((p.cntr_no || '').toUpperCase().trim()));
+    } else {
+        selectedPhotos = allPhotos.filter(p => window.selectedPhotoIds && window.selectedPhotoIds.has(p.id));
+    }
+
+    const teamMap = {};
+    selectedPhotos.forEach(p => {
+        let tName = (p.team_name || '').trim();
+        const m = tName.match(/^(\d+조)/);
+        if (m) tName = m[1];
+        else if (tName.includes('재작업')) tName = '재작업';
+        else if (!tName) tName = '기타';
+
+        if (!teamMap[tName]) teamMap[tName] = new Set();
+        teamMap[tName].add((p.cntr_no || '기타').toUpperCase().trim());
+    });
+
+    const teamNames = Object.keys(teamMap).sort((a, b) => {
+        const numA = parseInt(a);
+        const numB = parseInt(b);
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        if (!isNaN(numA)) return -1;
+        if (!isNaN(numB)) return 1;
+        return a.localeCompare(b);
+    });
+
+    const totalContainers = new Set(selectedPhotos.map(p => (p.cntr_no || '기타').toUpperCase().trim())).size;
+
+    if (byTeam) {
+        if (previewTitle) {
+            previewTitle.textContent = `조별 자동 분류 미리보기 (${teamNames.length}개 조 / 총 ${totalContainers}개 컨테이너)`;
+        }
+        if (teamNames.length === 0) {
+            previewList.innerHTML = `<div style="color: #64748b; font-size: 0.78rem; text-align: center; padding: 6px;">선택된 컨테이너가 없습니다.</div>`;
+        } else {
+            previewList.innerHTML = teamNames.map(tm => {
+                const count = teamMap[tm].size;
+                const pathStr = `${basePath}${tm}\\`;
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: #131d2e; border: 1px solid #1e293b; border-radius: 8px; padding: 8px 12px; font-size: 0.8rem;">
+                        <div style="display: flex; align-items: center; gap: 6px; color: #fbbf24; font-weight: 800;">
+                            <i class="fas fa-tag"></i> <span>${tm} (${count}개)</span>
+                        </div>
+                        <div style="color: #94a3b8; font-family: monospace; font-size: 0.78rem; word-break: break-all; text-align: right; margin-left: 10px;">
+                            ${pathStr}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } else {
+        if (previewTitle) {
+            previewTitle.textContent = `기준 폴더 직하위 복사 (총 ${totalContainers}개 컨테이너)`;
+        }
+        previewList.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #131d2e; border: 1px solid #1e293b; border-radius: 8px; padding: 8px 12px; font-size: 0.8rem;">
+                <div style="display: flex; align-items: center; gap: 6px; color: #38bdf8; font-weight: 800;">
+                    <i class="fas fa-folder-open"></i> <span>직하위 저장 (총 ${totalContainers}개)</span>
+                </div>
+                <div style="color: #94a3b8; font-family: monospace; font-size: 0.78rem; word-break: break-all; text-align: right; margin-left: 10px;">
+                    ${basePath}
+                </div>
+            </div>
+        `;
+    }
 };
 
 window.handleBrowseLocalFolder = async function() {
     const inputEl = document.getElementById('inputLocalCopyPath');
     const btn = document.getElementById('btnBrowseLocalFolder');
-    const currentVal = (inputEl ? inputEl.value.trim() : '') || 'W:\\helpdesk\\사진보관';
+    const currentVal = (inputEl ? inputEl.value.trim() : '') || 'X:\\26.08\\27\\야간';
 
     const originalBtnHtml = btn ? btn.innerHTML : '';
     if (btn) {
@@ -12000,13 +12134,13 @@ window.handleBrowseLocalFolder = async function() {
     }
 
     try {
-        // 1. Electron 네이티브 폴더 선택 다이얼로그 (최우선)
         if (window.isElectron && window.electronAPI && typeof window.electronAPI.selectFolder === 'function') {
             try {
                 const res = await window.electronAPI.selectFolder(currentVal);
                 if (res && res.success && res.path && !res.cancelled) {
                     if (inputEl) inputEl.value = res.path;
                     localStorage.setItem('lastPhotoLocalCopyPath', res.path);
+                    window.updateLocalCopyPreview();
                 }
                 return;
             } catch (ipcErr) {
@@ -12014,12 +12148,12 @@ window.handleBrowseLocalFolder = async function() {
             }
         }
 
-        // 2. 웹/서버 파워셸 다이얼로그 폴백
         const res = await fetch(`${API_BASE}/api/photos/select-local-folder?initialPath=${encodeURIComponent(currentVal)}`);
         const data = await res.json();
         if (data.success && data.path && !data.cancelled) {
             if (inputEl) inputEl.value = data.path;
             localStorage.setItem('lastPhotoLocalCopyPath', data.path);
+            window.updateLocalCopyPreview();
         } else if (data.error) {
             alert(`폴더 선택 실패: ${data.error}`);
         }
@@ -12029,7 +12163,7 @@ window.handleBrowseLocalFolder = async function() {
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = originalBtnHtml || '<i class="fas fa-folder-open"></i> 폴더 선택...';
+            btn.innerHTML = originalBtnHtml || '<i class="fas fa-folder-open"></i> 찾아보기...';
         }
     }
 };
@@ -12045,18 +12179,19 @@ window.executeLocalCopy = async function() {
 
     if (isFolderMode) {
         const keys = Array.from(window.selectedFolderKeys);
-        const cntrNos = new Set(keys.map(k => k.split('|')[0]));
+        const cntrNos = new Set(keys.map(k => k.split('|')[0].toUpperCase().trim()));
         const photos = (window.currentGalleryPhotos || []).filter(p => cntrNos.has((p.cntr_no || '').toUpperCase().trim()));
         ids = photos.map(p => p.id);
     } else {
-        ids = Array.from(window.selectedPhotoIds);
+        ids = Array.from(window.selectedPhotoIds || []);
     }
 
     const targetPath = document.getElementById('inputLocalCopyPath')?.value?.trim();
     const conflictAction = document.querySelector('input[name="localCopyConflict"]:checked')?.value || 'overwrite';
+    const byTeamFolder = document.getElementById('chkByTeamFolder')?.checked ?? true;
 
     if (!targetPath) {
-        alert("대상 로컬 폴더 경로를 입력해 주세요.");
+        alert("대상 로컬 폴더 기준 경로를 입력해 주세요.");
         return;
     }
     if (ids.length === 0) {
@@ -12065,6 +12200,13 @@ window.executeLocalCopy = async function() {
     }
     localStorage.setItem('lastPhotoLocalCopyPath', targetPath);
 
+    const btnExec = document.getElementById('btnExecuteLocalCopy');
+    const origBtnHtml = btnExec ? btnExec.innerHTML : '';
+    if (btnExec) {
+        btnExec.disabled = true;
+        btnExec.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 복사 중...';
+    }
+
     try {
         const res = await fetch(`${API_BASE}/api/photos/local-copy`, {
             method: 'POST',
@@ -12072,19 +12214,25 @@ window.executeLocalCopy = async function() {
             body: JSON.stringify({
                 ids: ids,
                 targetPath: targetPath,
-                conflictAction: conflictAction
+                conflictAction: conflictAction,
+                byTeamFolder: byTeamFolder
             })
         });
         const data = await res.json();
         if (data.success) {
             window.closeLocalCopyModal();
-            alert(data.message || `성공적으로 ${data.copiedCount}장의 사진을 복사했습니다.`);
+            alert(`✅ ${data.message}`);
         } else {
-            alert(`로컬 복사 실패: ${data.error || data.message}`);
+            alert(`❌ 로컬 복사 실패: ${data.error || data.message}`);
         }
     } catch (err) {
         console.error("Local copy error:", err);
         alert("로컬 복사 중 오류가 발생했습니다: " + err.message);
+    } finally {
+        if (btnExec) {
+            btnExec.disabled = false;
+            btnExec.innerHTML = origBtnHtml || '<i class="fas fa-copy"></i> 복사 시작';
+        }
     }
 };
 
@@ -13015,123 +13163,6 @@ window.handleDownloadSelectedPhotos = function() {
     document.body.appendChild(a);
     a.click();
     a.remove();
-};
-
-// 6. 로컬 폴더 복사 모달 & 실행
-window.handleOpenLocalCopyModal = function() {
-    const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
-    const count = isFolderMode ? window.selectedFolderKeys.size : window.selectedPhotoIds.size;
-    if (count === 0) {
-        alert("복사할 폴더 또는 사진을 선택해 주세요.");
-        return;
-    }
-    const countEl = document.getElementById('localCopyPhotoCount');
-    if (countEl) countEl.textContent = isFolderMode ? `${count}개 폴더` : `${count}장`;
-    const inputEl = document.getElementById('inputLocalCopyPath');
-    if (inputEl) {
-        inputEl.value = localStorage.getItem('lastPhotoLocalCopyPath') || 'W:\\helpdesk\\사진보관';
-    }
-    document.getElementById('modalLocalCopyPhoto').style.display = 'flex';
-};
-
-window.handleBrowseLocalFolder = async function() {
-    const inputEl = document.getElementById('inputLocalCopyPath');
-    const btn = document.getElementById('btnBrowseLocalFolder');
-    const currentVal = (inputEl ? inputEl.value.trim() : '') || 'W:\\helpdesk\\사진보관';
-
-    const originalBtnHtml = btn ? btn.innerHTML : '';
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 폴더 선택 중...';
-    }
-
-    try {
-        // 1. Electron 네이티브 폴더 선택 다이얼로그 (최우선)
-        if (window.isElectron && window.electronAPI && typeof window.electronAPI.selectFolder === 'function') {
-            try {
-                const res = await window.electronAPI.selectFolder(currentVal);
-                if (res && res.success && res.path && !res.cancelled) {
-                    if (inputEl) inputEl.value = res.path;
-                    localStorage.setItem('lastPhotoLocalCopyPath', res.path);
-                }
-                return;
-            } catch (ipcErr) {
-                console.warn("Electron selectFolder IPC error, fallback to API:", ipcErr);
-            }
-        }
-
-        // 2. 웹/서버 파워셸 다이얼로그 폴백
-        const res = await fetch(`${API_BASE}/api/photos/select-local-folder?initialPath=${encodeURIComponent(currentVal)}`);
-        const data = await res.json();
-        if (data.success && data.path && !data.cancelled) {
-            if (inputEl) inputEl.value = data.path;
-            localStorage.setItem('lastPhotoLocalCopyPath', data.path);
-        } else if (data.error) {
-            alert(`폴더 선택 실패: ${data.error}`);
-        }
-    } catch (e) {
-        console.warn("Folder dialog failed:", e);
-        alert(`폴더 선택 창을 여는 중 오류가 발생했습니다: ${e.message}`);
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = originalBtnHtml || '<i class="fas fa-folder-open"></i> 폴더 선택...';
-        }
-    }
-};
-
-window.closeLocalCopyModal = function() {
-    const m = document.getElementById('modalLocalCopyPhoto');
-    if (m) m.style.display = 'none';
-};
-
-window.executeLocalCopy = async function() {
-    const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
-    let ids = [];
-
-    if (isFolderMode) {
-        const keys = Array.from(window.selectedFolderKeys);
-        const cntrNos = new Set(keys.map(k => k.split('|')[0]));
-        const photos = (window.currentGalleryPhotos || []).filter(p => cntrNos.has((p.cntr_no || '').toUpperCase().trim()));
-        ids = photos.map(p => p.id);
-    } else {
-        ids = Array.from(window.selectedPhotoIds);
-    }
-
-    const targetPath = document.getElementById('inputLocalCopyPath')?.value?.trim();
-    const conflictAction = document.querySelector('input[name="localCopyConflict"]:checked')?.value || 'overwrite';
-
-    if (!targetPath) {
-        alert("대상 로컬 폴더 경로를 입력해 주세요.");
-        return;
-    }
-    if (ids.length === 0) {
-        alert("복사할 대상 사진이 없습니다.");
-        return;
-    }
-    localStorage.setItem('lastPhotoLocalCopyPath', targetPath);
-
-    try {
-        const res = await fetch(`${API_BASE}/api/photos/local-copy`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                ids: ids,
-                targetPath: targetPath,
-                conflictAction: conflictAction
-            })
-        });
-        const data = await res.json();
-        if (data.success) {
-            window.closeLocalCopyModal();
-            alert(data.message || `성공적으로 ${data.copiedCount}장의 사진을 복사했습니다.`);
-        } else {
-            alert(`로컬 복사 실패: ${data.error || data.message}`);
-        }
-    } catch (err) {
-        console.error("Local copy error:", err);
-        alert("로컬 복사 중 오류가 발생했습니다: " + err.message);
-    }
 };
 
 // 7. 구글드라이브 백업 & 로컬 용량 정리 (CTNR 100% 동일 NDJSON 스트리밍)

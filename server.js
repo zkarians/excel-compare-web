@@ -3974,11 +3974,11 @@ app.post('/api/photos/duplicates', async (req, res) => {
     }
 });
 
-// 사진 로컬 복사 API (CTNR 호환)
+// 사진 로컬 복사 API (CTNR 조별 자동 분류 지원 호환)
 app.post('/api/photos/local-copy', async (req, res) => {
     try {
         const pool = await getPool();
-        const { ids, targetPath, conflictAction = 'overwrite' } = req.body;
+        const { ids, targetPath, conflictAction = 'overwrite', byTeamFolder = false } = req.body;
 
         if (!Array.isArray(ids) || ids.length === 0 || !targetPath) {
             return res.status(400).json({ success: false, error: '복사할 사진 ID와 대상 경로를 지정해 주세요.' });
@@ -3994,17 +3994,39 @@ app.post('/api/photos/local-copy', async (req, res) => {
         }
 
         const pRes = await pool.query(
-            `SELECT cp.cntr_no, cp.photo_path FROM container_photos cp WHERE cp.id = ANY($1) AND (cp.is_deleted IS NOT TRUE)`,
+            `SELECT cp.id, cp.cntr_no, cp.photo_path, cp.team_id, t.name as team_name 
+             FROM container_photos cp 
+             LEFT JOIN teams t ON cp.team_id = t.id 
+             WHERE cp.id = ANY($1) AND (cp.is_deleted IS NOT TRUE)`,
             [ids]
         );
 
+        function normalizeTeamFolder(teamName) {
+            if (!teamName) return '기타';
+            const t = teamName.trim();
+            const m = t.match(/^(\d+조)/);
+            if (m) return m[1];
+            if (t.includes('재작업')) return '재작업';
+            return t.replace(/[\\/:*?"<>|]/g, '_');
+        }
+
         let copiedCount = 0;
         let skippedCount = 0;
+        const teamCopiedMap = {};
 
         for (const photo of pRes.rows) {
             const srcPath = path.resolve(CTNR_UPLOADS_DIR, photo.photo_path);
             const filename = path.basename(photo.photo_path);
-            const cntrFolder = path.resolve(resolvedTargetDir, photo.cntr_no || '기타');
+
+            let cntrFolder;
+            if (byTeamFolder) {
+                const teamFolderName = normalizeTeamFolder(photo.team_name);
+                cntrFolder = path.resolve(resolvedTargetDir, teamFolderName, photo.cntr_no || '기타');
+                teamCopiedMap[teamFolderName] = (teamCopiedMap[teamFolderName] || 0);
+            } else {
+                cntrFolder = path.resolve(resolvedTargetDir, photo.cntr_no || '기타');
+            }
+
             if (!fs.existsSync(cntrFolder)) fs.mkdirSync(cntrFolder, { recursive: true });
             const destPath = path.resolve(cntrFolder, filename);
 
@@ -4017,6 +4039,10 @@ app.post('/api/photos/local-copy', async (req, res) => {
                 try {
                     fs.copyFileSync(srcPath, destPath);
                     copiedCount++;
+                    if (byTeamFolder) {
+                        const teamFolderName = normalizeTeamFolder(photo.team_name);
+                        teamCopiedMap[teamFolderName] = (teamCopiedMap[teamFolderName] || 0) + 1;
+                    }
                 } catch (e) {
                     skippedCount++;
                 }
@@ -4025,12 +4051,18 @@ app.post('/api/photos/local-copy', async (req, res) => {
             }
         }
 
+        let teamBreakdownMsg = '';
+        if (byTeamFolder && Object.keys(teamCopiedMap).length > 0) {
+            teamBreakdownMsg = ' [' + Object.entries(teamCopiedMap).map(([tm, count]) => `${tm}: ${count}장`).join(', ') + ']';
+        }
+
         res.json({
             success: true,
             copiedCount,
             skippedCount,
             targetPath: resolvedTargetDir,
-            message: `총 ${copiedCount}장의 사진이 '${resolvedTargetDir}'(으)로 복사되었습니다.` + (skippedCount > 0 ? ` (${skippedCount}장 건너뜀)` : '')
+            teamCopiedMap,
+            message: `총 ${copiedCount}장의 사진이 '${resolvedTargetDir}'(으)로 복사되었습니다.${teamBreakdownMsg}` + (skippedCount > 0 ? ` (${skippedCount}장 건너뜀)` : '')
         });
     } catch (err) {
         console.error("POST /api/photos/local-copy error:", err);
