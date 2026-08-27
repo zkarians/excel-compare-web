@@ -4519,10 +4519,12 @@ app.get('/api/reports/generate', async (req, res) => {
                     work_date VARCHAR(20) DEFAULT '',
                     admin_comment TEXT,
                     job_id INTEGER DEFAULT 0,
+                    duration_minutes INT,
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                 );
             `).catch(() => {});
             await client.query(`ALTER TABLE container_comments ADD COLUMN IF NOT EXISTS job_id INTEGER DEFAULT 0;`).catch(() => {});
+            await client.query(`ALTER TABLE container_comments ADD COLUMN IF NOT EXISTS duration_minutes INT;`).catch(() => {});
 
             // Ensure manual_report_entries table exists
             await client.query(`
@@ -4554,7 +4556,7 @@ app.get('/api/reports/generate', async (req, res) => {
                         COALESCE(t.name, '미지정 조') as team_name,
                         BOOL_OR(p.is_completed) as is_completed,
                         COALESCE(MAX(p.uploaded_at), MAX(j.saved_at)) as work_time,
-                        COALESCE(MAX(p.work_duration_minutes), 45) as duration_minutes,
+                        COALESCE(MAX(cc.duration_minutes), MAX(p.work_duration_minutes), 45) as duration_minutes,
                         COALESCE(MIN(p.uploaded_at), MAX(j.saved_at)) as first_uploaded_at,
                         MAX(p.remark) as remark,
                         MAX(r.transporter) as transporter,
@@ -5080,7 +5082,7 @@ app.post('/api/reports/update-container', async (req, res) => {
                     SET work_duration_minutes = $1,
                         remark = $2
                     WHERE UPPER(TRIM(cntr_no)) = $3
-                      AND job_id = $4
+                      AND (job_id = $4 OR job_id IS NULL)
                       AND (is_deleted IS NOT TRUE)
                 `, [durationMinutes || 45, remark || '', cleanCntrNo, parsedJobId]);
             } else {
@@ -5111,31 +5113,46 @@ app.post('/api/reports/update-container', async (req, res) => {
                 }
             }
 
-            // 3. container_comments category
-            if (category !== undefined) {
-                await client.query(`
-                    CREATE TABLE IF NOT EXISTS container_comments (
-                        cntr_no VARCHAR(50) NOT NULL,
-                        work_date VARCHAR(20) DEFAULT '',
-                        admin_comment TEXT,
-                        job_id INTEGER DEFAULT 0,
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                        PRIMARY KEY (cntr_no, work_date)
-                    );
-                `).catch(() => {});
-                await client.query(`ALTER TABLE container_comments ADD COLUMN IF NOT EXISTS job_id INTEGER DEFAULT 0;`).catch(() => {});
+            // 3. container_comments category & duration_minutes
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS container_comments (
+                    cntr_no VARCHAR(50) NOT NULL,
+                    work_date VARCHAR(20) DEFAULT '',
+                    admin_comment TEXT,
+                    job_id INTEGER DEFAULT 0,
+                    duration_minutes INT,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+            `).catch(() => {});
+            await client.query(`ALTER TABLE container_comments ADD COLUMN IF NOT EXISTS job_id INTEGER DEFAULT 0;`).catch(() => {});
+            await client.query(`ALTER TABLE container_comments ADD COLUMN IF NOT EXISTS duration_minutes INT;`).catch(() => {});
 
-                const jId = parsedJobId || 0;
-                await client.query(`
-                    DELETE FROM container_comments 
-                    WHERE cntr_no = $1 
-                      AND (work_date = $2 OR work_date = '' OR work_date IS NULL)
-                      AND (job_id = $3 OR job_id = 0);
+            const jId = parsedJobId || 0;
+            const targetWorkDate = (workDate || '').trim();
 
-                    INSERT INTO container_comments (cntr_no, work_date, admin_comment, job_id)
-                    VALUES ($1, $2, $3, $4);
-                `, [cleanCntrNo, (workDate || '').trim(), category, jId]);
-            }
+            const existCommentRes = await client.query(`
+                SELECT admin_comment FROM container_comments
+                WHERE cntr_no = $1
+                  AND (work_date = $2 OR work_date = '' OR work_date IS NULL)
+                  AND (job_id = $3 OR job_id = 0)
+                LIMIT 1
+            `, [cleanCntrNo, targetWorkDate, jId]);
+
+            const finalAdminComment = category !== undefined 
+                ? category 
+                : (existCommentRes.rows[0]?.admin_comment || '');
+
+            await client.query(`
+                DELETE FROM container_comments 
+                WHERE cntr_no = $1 
+                  AND (work_date = $2 OR work_date = '' OR work_date IS NULL)
+                  AND (job_id = $3 OR job_id = 0)
+            `, [cleanCntrNo, targetWorkDate, jId]);
+
+            await client.query(`
+                INSERT INTO container_comments (cntr_no, work_date, admin_comment, job_id, duration_minutes)
+                VALUES ($1, $2, $3, $4, $5)
+            `, [cleanCntrNo, targetWorkDate, finalAdminComment, jId, durationMinutes || 45]);
 
             await client.query('COMMIT');
             return res.json({ success: true, message: "컨테이너 정보가 업데이트되었습니다." });
