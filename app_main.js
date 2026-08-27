@@ -15396,6 +15396,39 @@ window.lightboxDownload = function() {
         }
     };
 
+    function resolveReportTransporter(transporterStr, teamName, categoryStr, adminCommentStr) {
+        const raw = (transporterStr || '').trim();
+        const cat = (categoryStr || '').trim();
+        const adm = (adminCommentStr || '').trim();
+        const tName = (teamName || '').trim();
+
+        if (raw === 'BNI' || raw === '천마' || raw === '재작업' || raw === '기타') {
+            return raw;
+        }
+        if (raw.includes('재작업') || cat.includes('재작업') || adm.includes('재작업')) {
+            return '재작업';
+        }
+        if (raw.includes('BNI') || raw.includes('비엔아이') || raw.toLowerCase().includes('bni')) {
+            return 'BNI';
+        }
+        if (raw.includes('천마') || raw.includes('천마물류')) {
+            return '천마';
+        }
+        if (raw.includes('기타')) {
+            return '기타';
+        }
+        if (tName.includes('BNI') || tName.includes('비엔아이')) {
+            return 'BNI';
+        }
+        if (tName.includes('천마')) {
+            return '천마';
+        }
+        if (tName.includes('재작업')) {
+            return '재작업';
+        }
+        return '천마';
+    }
+
     // --- 수동 항목 추가 및 수정 모달 (AddManualModal) ---
     window.openAddManualModal = function(itemToEdit = null) {
         const modal = document.getElementById('addManualReportModal');
@@ -15413,16 +15446,24 @@ window.lightboxDownload = function() {
         const isCancelEl = document.getElementById('manualIsCancelled');
 
         if (itemToEdit) {
+            const resolvedTeam = itemToEdit.teamName || '1조(BNI)';
+            const resolvedTransporter = resolveReportTransporter(
+                itemToEdit.transporter, 
+                resolvedTeam, 
+                itemToEdit.category, 
+                itemToEdit.adminComment
+            );
+
             if (titleEl) titleEl.textContent = '보고서 항목 수정';
             if (submitBtnTextEl) submitBtnTextEl.textContent = '수정 완료';
             if (editIdEl) editIdEl.value = itemToEdit.manualEntryId || '';
             if (cntrNoEl) cntrNoEl.value = itemToEdit.cntrNo || '';
-            if (transpEl) transpEl.value = itemToEdit.transporter || '천마';
+            if (transpEl) transpEl.value = resolvedTransporter;
             if (catEl) catEl.value = itemToEdit.category || itemToEdit.adminComment || '';
             if (durEl) durEl.value = itemToEdit.durationMinutes || 45;
             if (remarkEl) remarkEl.value = (itemToEdit.remark || itemToEdit.lastRemark || '').replace(/^지연사유:\s*/, '');
             if (isCancelEl) isCancelEl.checked = itemToEdit.isCancelled || false;
-            window.selectManualTeam(itemToEdit.teamName || '1조(BNI)');
+            window.selectManualTeam(resolvedTeam, false);
 
             // populate product rows
             const prodRowsEl = document.getElementById('manualProductRows');
@@ -15446,12 +15487,12 @@ window.lightboxDownload = function() {
             if (submitBtnTextEl) submitBtnTextEl.textContent = '항목 저장';
             if (editIdEl) editIdEl.value = '';
             if (cntrNoEl) cntrNoEl.value = '';
-            if (transpEl) transpEl.value = '천마';
+            if (transpEl) transpEl.value = 'BNI';
             if (catEl) catEl.value = '';
             if (durEl) durEl.value = 45;
             if (remarkEl) remarkEl.value = '';
             if (isCancelEl) isCancelEl.checked = false;
-            window.selectManualTeam('1조(BNI)');
+            window.selectManualTeam('1조(BNI)', true);
 
             const prodRowsEl = document.getElementById('manualProductRows');
             if (prodRowsEl) {
@@ -15472,13 +15513,13 @@ window.lightboxDownload = function() {
         window.editingReportItem = null;
     };
 
-    window.selectManualTeam = function(teamName) {
+    window.selectManualTeam = function(teamName, autoUpdateTransporter = true) {
         window.selectedManualTeam = teamName;
         document.querySelectorAll('.btn-team-tab').forEach(b => {
             b.classList.toggle('active', b.dataset.team === teamName);
         });
         const transpEl = document.getElementById('manualTransporter');
-        if (transpEl && !window.editingReportItem) {
+        if (transpEl && autoUpdateTransporter) {
             transpEl.value = teamName.includes('BNI') || teamName.includes('비엔아이') ? 'BNI' : '천마';
         }
         window.updateManualInsertIndexOptions();
