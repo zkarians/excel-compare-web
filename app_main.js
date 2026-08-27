@@ -13567,6 +13567,252 @@ function getGalleryCarrierInfo(transporter = '', teamName = '') {
     return { name: clean, colorClass: 'carrier-default' };
 }
 
+// ===================================================================
+// [신규] 컨테이너 작업 제품 리스트 & 수량 실시간 조회 엔진
+// ===================================================================
+window.containerProductInfoCache = new Map();
+
+window.getContainerProductsInfo = async function(cntrNo) {
+    if (!cntrNo) return null;
+    const key = cntrNo.toUpperCase().trim();
+    if (window.containerProductInfoCache.has(key)) {
+        return window.containerProductInfoCache.get(key);
+    }
+
+    // 1. 현재 로드된 클라이언트 데이터에서 검색
+    let foundRows = [];
+    if (Array.isArray(window.processedData) && window.processedData.length > 0) {
+        foundRows = window.processedData.filter(r => (r.cntrNo || r.cntr_no || '').toUpperCase().trim() === key);
+    }
+    if (foundRows.length === 0 && Array.isArray(window.containerTableData) && window.containerTableData.length > 0) {
+        foundRows = window.containerTableData.filter(r => (r.cntrNo || r.cntr_no || '').toUpperCase().trim() === key);
+    }
+    if (foundRows.length === 0 && Array.isArray(window.processedAvailabilityData) && window.processedAvailabilityData.length > 0) {
+        foundRows = window.processedAvailabilityData.filter(r => (r.cntrNo || r.cntr_no || '').toUpperCase().trim() === key);
+    }
+
+    if (foundRows.length > 0) {
+        const first = foundRows[0];
+        const totalQty = foundRows.reduce((sum, r) => sum + (Number(r.qty || r.qty_plan || r.qty_load || 0) || 0), 0);
+        const info = {
+            cntrNo: key,
+            carrier: first.carrier || first.shipping_line || '-',
+            dest: first.dest || first.destination || '-',
+            cntrType: first.cntrType || first.cntr_type || first.spec || '-',
+            remark: first.remark || first.admin_comment || first.specialNotes || '',
+            transporter: first.transporter || '',
+            modelCount: foundRows.length,
+            totalQty: totalQty,
+            products: foundRows.map(r => ({
+                prodName: r.prodName || r.prod_name || r.model || '-',
+                qty: Number(r.qty || r.qty_plan || r.qty_load || 0) || 0,
+                division: r.division || r.prodType || '-',
+                prodType: r.prodType || '-',
+                dims: r.dims || r.dimensions || '',
+                weight: r.weight || 0,
+                status: r.status || 'OK'
+            }))
+        };
+        window.containerProductInfoCache.set(key, info);
+        return info;
+    }
+
+    // 2. 서버 DB (/api/containers/info) 폴백 조회
+    try {
+        const res = await fetch(`${API_BASE}/api/containers/info?cntrNo=${encodeURIComponent(key)}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.products) && data.products.length > 0) {
+            const first = data.products[0];
+            const totalQty = data.products.reduce((sum, r) => sum + (Number(r.qty_plan || r.qty_load || 0) || 0), 0);
+            const info = {
+                cntrNo: key,
+                carrier: first.carrier || '-',
+                dest: first.dest || '-',
+                cntrType: first.cntr_type || '-',
+                remark: first.remark || '',
+                transporter: first.transporter || '',
+                modelCount: data.products.length,
+                totalQty: totalQty,
+                products: data.products.map(r => ({
+                    prodName: r.prod_name || '-',
+                    qty: Number(r.qty_plan || r.qty_load || 0) || 0,
+                    division: r.division || '-',
+                    prodType: r.prod_type || '-',
+                    dims: r.dims || '',
+                    weight: r.weight || 0,
+                    status: 'OK'
+                }))
+            };
+            window.containerProductInfoCache.set(key, info);
+            return info;
+        }
+    } catch (e) {
+        console.warn("Failed to fetch container info for", key, e);
+    }
+
+    return null;
+};
+
+window.updateGalleryProductSummary = async function(cntrNo) {
+    const btn = document.getElementById('btnGalleryProductSummary');
+    const popover = document.getElementById('galleryProductPopover');
+    if (!btn || !cntrNo) {
+        if (btn) btn.style.display = 'none';
+        if (popover) popover.style.display = 'none';
+        return;
+    }
+
+    const info = await window.getContainerProductsInfo(cntrNo);
+    if (!info || !info.products || info.products.length === 0) {
+        btn.style.display = 'none';
+        if (popover) popover.style.display = 'none';
+        return;
+    }
+
+    btn.style.display = 'inline-flex';
+    const textEl = document.getElementById('galleryProductSummaryText');
+    if (textEl) {
+        textEl.textContent = `${info.modelCount}모델 ${info.totalQty.toLocaleString()}개`;
+    }
+
+    const popCntr = document.getElementById('popoverCntrNo');
+    const popMeta = document.getElementById('popoverHeaderMeta');
+    const popBody = document.getElementById('popoverProductBody');
+    const popFooter = document.getElementById('popoverFooterRemark');
+
+    if (popCntr) popCntr.textContent = info.cntrNo;
+    if (popMeta) {
+        const metaParts = [];
+        if (info.cntrType && info.cntrType !== '-') metaParts.push(info.cntrType);
+        if (info.carrier && info.carrier !== '-') metaParts.push(info.carrier);
+        if (info.dest && info.dest !== '-') metaParts.push(info.dest);
+        popMeta.textContent = metaParts.length > 0 ? `(${metaParts.join(' / ')})` : '';
+    }
+
+    if (popBody) {
+        let phtml = '';
+        info.products.forEach((p, idx) => {
+            const divTag = (p.division && p.division !== '-') ? `<span class="popover-prod-div">${p.division}</span>` : '';
+            phtml += `
+                <div class="popover-prod-item">
+                    <div class="popover-prod-model">
+                        <span style="color:#94a3b8; font-size:0.75rem; font-weight:800; min-width:18px;">${idx + 1}.</span>
+                        ${divTag}
+                        <span>${p.prodName}</span>
+                    </div>
+                    <div class="popover-prod-qty">${p.qty.toLocaleString()}개</div>
+                </div>
+            `;
+        });
+        popBody.innerHTML = phtml;
+    }
+
+    if (popFooter) {
+        if (info.remark && info.remark.trim() && info.remark !== '-') {
+            popFooter.style.display = 'block';
+            popFooter.innerHTML = `💬 <strong>비고:</strong> ${info.remark.trim()}`;
+        } else {
+            popFooter.style.display = 'none';
+        }
+    }
+};
+
+window.toggleGalleryProductPopover = function(e) {
+    if (e) e.stopPropagation();
+    const popover = document.getElementById('galleryProductPopover');
+    if (!popover) return;
+    if (popover.style.display === 'none' || !popover.style.display) {
+        popover.style.display = 'block';
+    } else {
+        popover.style.display = 'none';
+    }
+};
+
+window.closeGalleryProductPopover = function() {
+    const popover = document.getElementById('galleryProductPopover');
+    if (popover) popover.style.display = 'none';
+};
+
+window.updateLightboxProductSummary = async function(cntrNo) {
+    const btn = document.getElementById('btnLightboxProductSummary');
+    const popover = document.getElementById('lightboxProductPopover');
+    if (!btn || !cntrNo) {
+        if (btn) btn.style.display = 'none';
+        if (popover) popover.style.display = 'none';
+        return;
+    }
+
+    const info = await window.getContainerProductsInfo(cntrNo);
+    if (!info || !info.products || info.products.length === 0) {
+        btn.style.display = 'none';
+        if (popover) popover.style.display = 'none';
+        return;
+    }
+
+    btn.style.display = 'inline-flex';
+    const textEl = document.getElementById('lightboxProductSummaryText');
+    if (textEl) {
+        textEl.textContent = `${info.modelCount}모델 ${info.totalQty.toLocaleString()}개`;
+    }
+
+    const popCntr = document.getElementById('lbPopoverCntrNo');
+    const popMeta = document.getElementById('lbPopoverHeaderMeta');
+    const popBody = document.getElementById('lbPopoverProductBody');
+    const popFooter = document.getElementById('lbPopoverFooterRemark');
+
+    if (popCntr) popCntr.textContent = info.cntrNo;
+    if (popMeta) {
+        const metaParts = [];
+        if (info.cntrType && info.cntrType !== '-') metaParts.push(info.cntrType);
+        if (info.carrier && info.carrier !== '-') metaParts.push(info.carrier);
+        if (info.dest && info.dest !== '-') metaParts.push(info.dest);
+        popMeta.textContent = metaParts.length > 0 ? `(${metaParts.join(' / ')})` : '';
+    }
+
+    if (popBody) {
+        let phtml = '';
+        info.products.forEach((p, idx) => {
+            const divTag = (p.division && p.division !== '-') ? `<span class="popover-prod-div">${p.division}</span>` : '';
+            phtml += `
+                <div class="popover-prod-item">
+                    <div class="popover-prod-model">
+                        <span style="color:#94a3b8; font-size:0.75rem; font-weight:800; min-width:18px;">${idx + 1}.</span>
+                        ${divTag}
+                        <span>${p.prodName}</span>
+                    </div>
+                    <div class="popover-prod-qty">${p.qty.toLocaleString()}개</div>
+                </div>
+            `;
+        });
+        popBody.innerHTML = phtml;
+    }
+
+    if (popFooter) {
+        if (info.remark && info.remark.trim() && info.remark !== '-') {
+            popFooter.style.display = 'block';
+            popFooter.innerHTML = `💬 <strong>비고:</strong> ${info.remark.trim()}`;
+        } else {
+            popFooter.style.display = 'none';
+        }
+    }
+};
+
+window.toggleLightboxProductPopover = function(e) {
+    if (e) e.stopPropagation();
+    const popover = document.getElementById('lightboxProductPopover');
+    if (!popover) return;
+    if (popover.style.display === 'none' || !popover.style.display) {
+        popover.style.display = 'block';
+    } else {
+        popover.style.display = 'none';
+    }
+};
+
+window.closeLightboxProductPopover = function() {
+    const popover = document.getElementById('lightboxProductPopover');
+    if (popover) popover.style.display = 'none';
+};
+
 // 3. 사진 렌더링 (CTNR 날짜/조별 폴더 목록 뷰 및 컨테이너 4열 상세 뷰)
 window.renderGalleryPhotos = function() {
     const listEl = document.getElementById('photoGalleryList');
@@ -13586,8 +13832,9 @@ window.renderGalleryPhotos = function() {
         const matchedPhotos = allPhotos.filter(p => (p.cntr_no || '').toUpperCase().trim() === targetCntrUpper);
         const photos = window.sortPhotoList(matchedPhotos);
 
-        // 단일 컨테이너 진입 시 중복 사진 자동 검사 트리거
+        // 단일 컨테이너 진입 시 중복 사진 자동 검사 트리거 및 제품 품목 요약 업데이트
         window.fetchFolderDuplicates(targetCntrUpper);
+        window.updateGalleryProductSummary(targetCntrUpper);
 
         if (summaryEl) summaryEl.textContent = `조회된 사진: ${photos.length}장 (컨테이너 ${targetCntrUpper})`;
         if (badgeBox) badgeBox.style.display = 'inline-flex';
@@ -13937,6 +14184,14 @@ window.renderLightboxPhoto = function() {
     if (remarkEl) {
         remarkEl.textContent = photo.remark ? `비고: ${photo.remark}` : '';
     }
+
+    if (photo && photo.cntr_no) {
+        window.updateLightboxProductSummary(photo.cntr_no);
+    } else {
+        window.closeLightboxProductPopover();
+        const lbBtn = document.getElementById('btnLightboxProductSummary');
+        if (lbBtn) lbBtn.style.display = 'none';
+    }
 };
 
 window.applyLightboxTransform = function() {
@@ -14073,6 +14328,7 @@ window.lightboxNext = function() {
 window.closePhotoLightbox = function() {
     const modal = document.getElementById('photoLightboxModal');
     if (modal) modal.style.display = 'none';
+    window.closeLightboxProductPopover();
 };
 
 window.lightboxDownload = function() {
@@ -14185,6 +14441,25 @@ window.lightboxDownload = function() {
             btnOpenReportModal._bound = true;
             btnOpenReportModal.onclick = () => window.openReportModal();
         }
+
+        // 팝오버 외부 클릭 시 자동 닫기 리스너
+        document.addEventListener('click', (e) => {
+            const gPop = document.getElementById('galleryProductPopover');
+            const gBtn = document.getElementById('btnGalleryProductSummary');
+            if (gPop && gPop.style.display !== 'none') {
+                if (!gPop.contains(e.target) && (!gBtn || !gBtn.contains(e.target))) {
+                    gPop.style.display = 'none';
+                }
+            }
+
+            const lbPop = document.getElementById('lightboxProductPopover');
+            const lbBtn = document.getElementById('btnLightboxProductSummary');
+            if (lbPop && lbPop.style.display !== 'none') {
+                if (!lbPop.contains(e.target) && (!lbBtn || !lbBtn.contains(e.target))) {
+                    lbPop.style.display = 'none';
+                }
+            }
+        });
     };
 
     if (document.readyState === 'loading') {

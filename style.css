@@ -5891,15 +5891,184 @@ tr.border-group td {
 }
 .btn-modal-primary:hover { background: #0369a1; }
 
-.btn-modal-secondary {
-    padding: 8px 14px;
-    background: #f1f5f9;
+.btn-modal-secondary:hover { background: #e2e8f0; }
+
+/* 사진보관함 & 라이트박스 컨테이너 적재 품목 실시간 인스펙터 팝오버 */
+.gallery-prod-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 380px;
+    max-width: 90vw;
+    background: #ffffff;
     border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    color: #475569;
-    font-size: 0.8rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    overflow: hidden;
+    animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family: inherit;
+    text-align: left;
+}
+
+@keyframes popoverFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.gallery-prod-popover .popover-header {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gallery-prod-popover .popover-header strong {
+    font-size: 0.92rem;
+    color: #0f172a;
     font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.gallery-prod-popover .popover-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    line-height: 1;
+    color: #94a3b8;
     cursor: pointer;
+    padding: 0 4px;
+}
+.gallery-prod-popover .popover-close-btn:hover { color: #0f172a; }
+
+.gallery-prod-popover .popover-body {
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 8px 12px;
+}
+
+.popover-prod-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 4px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.82rem;
+}
+.popover-prod-item:last-child {
+    border-bottom: none;
+}
+
+.popover-prod-model {
+    font-weight: 700;
+    color: #1e293b;
+    word-break: break-all;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.popover-prod-div {
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.popover-prod-qty {
+    font-weight: 800;
+    color: #0284c7;
+    background: #e0f2fe;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    margin-left: 8px;
+}
+
+.gallery-prod-popover .popover-footer {
+    background: #fffbeb;
+    border-top: 1px solid #fef3c7;
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    color: #b45309;
+    font-weight: 600;
+    line-height: 1.4;
+    word-break: break-all;
+}
+
+/* 라이트박스 다크모드 팝오버 */
+.lightbox-prod-popover {
+    position: absolute;
+    top: 56px;
+    left: 20px;
+    width: 380px;
+    max-width: 90vw;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(16px);
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+    overflow: hidden;
+    animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    color: #f8fafc;
+    text-align: left;
+}
+
+.lightbox-prod-popover .popover-header {
+    background: rgba(30, 41, 59, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.lightbox-prod-popover .popover-body {
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 8px 12px;
+}
+
+.lightbox-prod-popover .popover-prod-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.lightbox-prod-popover .popover-prod-model {
+    color: #f1f5f9;
+}
+
+.lightbox-prod-popover .popover-prod-div {
+    background: rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.lightbox-prod-popover .popover-prod-qty {
+    background: rgba(2, 132, 199, 0.3);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.lightbox-prod-popover .popover-footer {
+    background: rgba(245, 158, 11, 0.15);
+    border-top: 1px solid rgba(245, 158, 11, 0.25);
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    color: #fbbf24;
+    font-weight: 600;
 }
 
 

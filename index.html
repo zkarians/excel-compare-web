@@ -2568,10 +2568,39 @@
                 </div>
 
                 <!-- 현재 선택된 컨테이너 배지 (컨테이너 상세 모드일 때 표시) -->
-                <div id="galleryCntrBadgeBox" class="ctnr-cntr-badge-box" style="display: none;">
-                    <i class="fas fa-folder-open" style="color: #0284c7;"></i>
-                    <span id="galleryCurrentCntrText" class="ctnr-badge-cntr-text">-</span>
-                    <span id="galleryCurrentCountBadge" class="ctnr-badge-count">0장</span>
+                <div id="galleryCntrBadgeBox" class="ctnr-cntr-badge-box" style="display: none; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 6px; background: #e0f2fe; padding: 4px 10px; border-radius: 8px; border: 1px solid #bae6fd;">
+                        <i class="fas fa-folder-open" style="color: #0284c7;"></i>
+                        <span id="galleryCurrentCntrText" class="ctnr-badge-cntr-text" style="font-weight: 800; color: #0369a1;">-</span>
+                        <span id="galleryCurrentCountBadge" class="ctnr-badge-count" style="background: #0284c7; color: white; border-radius: 12px; padding: 1px 7px; font-size: 0.72rem; font-weight: 800;">0장</span>
+                    </div>
+
+                    <!-- [신규] 컨테이너 적재 품목 실시간 확인 버튼 & 팝오버 컨테이너 -->
+                    <div style="position: relative; display: inline-block;">
+                        <button type="button" id="btnGalleryProductSummary" onclick="window.toggleGalleryProductPopover(event)" class="btn-gallery-prod-summary" style="display: none; align-items: center; gap: 6px; padding: 4px 10px; height: 32px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; border-radius: 8px; font-size: 0.8rem; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                            <i class="fas fa-boxes" style="color: #10b981;"></i>
+                            <span id="galleryProductSummaryText">품목 정보</span>
+                            <i class="fas fa-chevron-down" style="font-size: 0.7rem; color: #059669;"></i>
+                        </button>
+
+                        <!-- 품목 상세 드롭다운 팝오버 카드 -->
+                        <div id="galleryProductPopover" class="gallery-prod-popover" style="display: none;">
+                            <div class="popover-header">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <i class="fas fa-clipboard-list" style="color: #0284c7;"></i>
+                                    <strong id="popoverCntrNo">-</strong>
+                                    <span id="popoverHeaderMeta" style="font-size: 0.75rem; color: #64748b; font-weight: 600;">-</span>
+                                </div>
+                                <button type="button" class="popover-close-btn" onclick="window.closeGalleryProductPopover()">&times;</button>
+                            </div>
+                            <div id="popoverProductBody" class="popover-body">
+                                <!-- 동적 렌더링 -->
+                            </div>
+                            <div id="popoverFooterRemark" class="popover-footer" style="display: none;">
+                                <!-- 비고 메모 -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="ctnr-header-right">
@@ -3005,6 +3034,10 @@
                 <span id="lightboxFilename" style="font-size: 0.85rem; color: #cbd5e1; font-weight: 700; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</span>
                 <button type="button" class="lightbox-btn" onclick="window.lightboxRename()" title="파일명 수정" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fas fa-pencil-alt"></i></button>
                 <span id="lightboxIndexInfo" style="font-size: 0.85rem; color: #94a3b8; font-weight: 700;">(1 / 1)</span>
+                <!-- 라이트박스 품목 정보 토글 버튼 -->
+                <button type="button" id="btnLightboxProductSummary" onclick="window.toggleLightboxProductPopover(event)" class="lightbox-btn" title="컨테이너 적재 제품 목록 및 수량 확인" style="display: none; padding: 4px 10px; width: auto; font-size: 0.78rem; font-weight: 800; background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4); color: #34d399; gap: 5px;">
+                    <i class="fas fa-boxes"></i> <span id="lightboxProductSummaryText">품목 정보</span>
+                </button>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
                 <button class="lightbox-btn" onclick="window.lightboxZoom(1.25)" title="확대 (+)"><i class="fas fa-search-plus"></i></button>
@@ -3018,6 +3051,24 @@
                 <button class="lightbox-btn" onclick="window.lightboxDownload()" title="다운로드"><i class="fas fa-download"></i></button>
                 <button class="lightbox-btn" onclick="window.lightboxDelete()" title="사진 삭제" style="color: #fda4af;"><i class="fas fa-trash-alt"></i></button>
                 <button class="lightbox-btn close" onclick="window.closePhotoLightbox()" title="닫기 (ESC)"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+
+        <!-- 라이트박스 품목 상세 팝오버 -->
+        <div id="lightboxProductPopover" class="lightbox-prod-popover" style="display: none;">
+            <div class="popover-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-clipboard-list" style="color: #38bdf8;"></i>
+                    <strong id="lbPopoverCntrNo" style="color: #38bdf8;">-</strong>
+                    <span id="lbPopoverHeaderMeta" style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">-</span>
+                </div>
+                <button type="button" class="popover-close-btn" onclick="window.closeLightboxProductPopover()">&times;</button>
+            </div>
+            <div id="lbPopoverProductBody" class="popover-body">
+                <!-- 동적 렌더링 -->
+            </div>
+            <div id="lbPopoverFooterRemark" class="popover-footer" style="display: none;">
+                <!-- 비고 메모 -->
             </div>
         </div>
 

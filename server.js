@@ -3011,6 +3011,48 @@ app.get('/api/photos', async (req, res) => {
     }
 });
 
+// [추가] 컨테이너별 상세 작업 품목 및 수량 실시간 조회 API
+app.get('/api/containers/info', async (req, res) => {
+    try {
+        const cntrNo = (req.query.cntrNo || '').trim();
+        if (!cntrNo) {
+            return res.status(400).json({ success: false, error: 'cntrNo is required' });
+        }
+
+        const query = `
+            SELECT r.*, j.status as job_status
+            FROM container_results r
+            LEFT JOIN container_jobs j ON r.job_id = j.id
+            WHERE r.cntr_no = $1
+            ORDER BY r.id ASC
+        `;
+        let result = await pool.query(query, [cntrNo]);
+        let rows = result.rows;
+
+        if (rows.length === 0) {
+            const fallback = await pool.query(
+                `SELECT r.*, j.status as job_status
+                 FROM container_results r
+                 LEFT JOIN container_jobs j ON r.job_id = j.id
+                 WHERE r.cntr_no ILIKE $1
+                 ORDER BY r.id ASC`,
+                [`%${cntrNo}%`]
+            );
+            rows = fallback.rows;
+        }
+
+        res.json({
+            success: true,
+            cntrNo: cntrNo,
+            count: rows.length,
+            products: rows
+        });
+    } catch (err) {
+        console.error("GET /api/containers/info error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // 조(팀) 목록 조회 API
 app.get('/api/teams', async (req, res) => {
     try {
