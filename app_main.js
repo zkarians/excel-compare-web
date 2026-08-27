@@ -11626,9 +11626,36 @@ window.setGalleryViewMode = function(mode) {
     window.renderGalleryPhotos();
 };
 
+// 통일된 사진 정렬 함수 (오름차순/내림차순 자연 정렬 및 드롭다운 실시간 동기화)
+window.sortPhotoList = function(photoArray, sortBy) {
+    const sortMode = sortBy || window.gallerySortBy || document.getElementById('gallerySortSelect')?.value || 'NAME_ASC';
+    window.gallerySortBy = sortMode;
+    const sortSelect = document.getElementById('gallerySortSelect');
+    if (sortSelect && sortSelect.value !== sortMode) {
+        sortSelect.value = sortMode;
+    }
+
+    return [...photoArray].sort((a, b) => {
+        const pathA = (a.photo_path || a.filename || '').split('/').pop().split('\\').pop() || '';
+        const pathB = (b.photo_path || b.filename || '').split('/').pop().split('\\').pop() || '';
+        if (sortMode === 'NAME_ASC') {
+            return pathA.localeCompare(pathB, undefined, { numeric: true, sensitivity: 'base' });
+        } else if (sortMode === 'NAME_DESC') {
+            return pathB.localeCompare(pathA, undefined, { numeric: true, sensitivity: 'base' });
+        } else if (sortMode === 'UPLOAD_DESC') {
+            return new Date(b.uploaded_at || 0).getTime() - new Date(a.uploaded_at || 0).getTime();
+        } else if (sortMode === 'UPLOAD_ASC') {
+            return new Date(a.uploaded_at || 0).getTime() - new Date(b.uploaded_at || 0).getTime();
+        }
+        return pathA.localeCompare(pathB, undefined, { numeric: true, sensitivity: 'base' });
+    });
+};
+
 // 정렬 변경
 window.setGallerySort = function(sortBy) {
     window.gallerySortBy = sortBy;
+    const sortSelect = document.getElementById('gallerySortSelect');
+    if (sortSelect) sortSelect.value = sortBy;
     window.renderGalleryPhotos();
 };
 
@@ -13106,6 +13133,14 @@ window.openContainerFolderPhotos = function(cntrNo, workDateStr) {
     window.currentGalleryTargetCntr = (cntrNo || '').trim().toUpperCase();
     const searchEl = document.getElementById('photoGallerySearchCntr');
     if (searchEl) searchEl.value = window.currentGalleryTargetCntr;
+
+    // CTNR 호환: 씰 사진이 있으면 최신 씰 사진이 맨 앞에 오도록 내림차순(NAME_DESC), 없으면 오름차순(NAME_ASC)
+    const targetPhotos = (window.currentGalleryPhotos || []).filter(p => (p.cntr_no || '').toUpperCase().trim() === window.currentGalleryTargetCntr);
+    const hasSeal = targetPhotos.some(p => p.photo_type === 'seal');
+    window.gallerySortBy = hasSeal ? 'NAME_DESC' : 'NAME_ASC';
+    const sortSelect = document.getElementById('gallerySortSelect');
+    if (sortSelect) sortSelect.value = window.gallerySortBy;
+
     window.renderGalleryPhotos();
 };
 
@@ -13242,13 +13277,8 @@ window.renderGalleryPhotos = function() {
     // 1. 특정 컨테이너가 선택된 경우 -> 해당 컨테이너의 4열 대형 사진 그리드 렌더링
     if (window.currentGalleryTargetCntr) {
         const targetCntrUpper = window.currentGalleryTargetCntr.toUpperCase().trim();
-        const photos = allPhotos.filter(p => (p.cntr_no || '').toUpperCase().trim() === targetCntrUpper).sort((a, b) => {
-            if (window.gallerySortBy === 'NAME_ASC') return (a.photo_path || '').localeCompare(b.photo_path || '');
-            if (window.gallerySortBy === 'NAME_DESC') return (b.photo_path || '').localeCompare(a.photo_path || '');
-            if (window.gallerySortBy === 'UPLOAD_DESC') return new Date(b.uploaded_at || 0).getTime() - new Date(a.uploaded_at || 0).getTime();
-            if (window.gallerySortBy === 'UPLOAD_ASC') return new Date(a.uploaded_at || 0).getTime() - new Date(b.uploaded_at || 0).getTime();
-            return 0;
-        });
+        const matchedPhotos = allPhotos.filter(p => (p.cntr_no || '').toUpperCase().trim() === targetCntrUpper);
+        const photos = window.sortPhotoList(matchedPhotos);
 
         // 단일 컨테이너 진입 시 중복 사진 자동 검사 트리거
         window.fetchFolderDuplicates(targetCntrUpper);
@@ -13528,18 +13558,7 @@ window.openPhotoLightboxById = function(photoId) {
         const targetCntrUpper = window.currentGalleryTargetCntr.toUpperCase().trim();
         photos = photos.filter(p => (p.cntr_no || '').toUpperCase().trim() === targetCntrUpper);
     }
-    photos.sort((a, b) => {
-        if (window.gallerySortBy === 'NAME_ASC') {
-            return (a.photo_path || '').localeCompare(b.photo_path || '');
-        } else if (window.gallerySortBy === 'NAME_DESC') {
-            return (b.photo_path || '').localeCompare(a.photo_path || '');
-        } else if (window.gallerySortBy === 'UPLOAD_DESC') {
-            return new Date(b.uploaded_at || 0).getTime() - new Date(a.uploaded_at || 0).getTime();
-        } else if (window.gallerySortBy === 'UPLOAD_ASC') {
-            return new Date(a.uploaded_at || 0).getTime() - new Date(b.uploaded_at || 0).getTime();
-        }
-        return 0;
-    });
+    photos = window.sortPhotoList(photos);
 
     if (!photos || photos.length === 0) return;
     const targetIdx = photos.findIndex(p => String(p.id) === String(photoId));
@@ -13556,18 +13575,7 @@ window.openPhotoLightboxFromSorted = function(idx) {
         const targetCntrUpper = window.currentGalleryTargetCntr.toUpperCase().trim();
         photos = photos.filter(p => (p.cntr_no || '').toUpperCase().trim() === targetCntrUpper);
     }
-    photos.sort((a, b) => {
-        if (window.gallerySortBy === 'NAME_ASC') {
-            return (a.photo_path || '').localeCompare(b.photo_path || '');
-        } else if (window.gallerySortBy === 'NAME_DESC') {
-            return (b.photo_path || '').localeCompare(a.photo_path || '');
-        } else if (window.gallerySortBy === 'UPLOAD_DESC') {
-            return new Date(b.uploaded_at || 0).getTime() - new Date(a.uploaded_at || 0).getTime();
-        } else if (window.gallerySortBy === 'UPLOAD_ASC') {
-            return new Date(a.uploaded_at || 0).getTime() - new Date(b.uploaded_at || 0).getTime();
-        }
-        return 0;
-    });
+    photos = window.sortPhotoList(photos);
 
     if (!photos || photos.length === 0) return;
     lightboxPhotos = photos;
