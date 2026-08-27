@@ -5326,21 +5326,38 @@ tr.border-group td {
 }
 
 .report-card-action-btn {
-    background: transparent;
-    border: none;
-    color: #94a3b8;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #f97316;
     cursor: pointer;
-    font-size: 0.78rem;
-    padding: 2px 4px;
-    border-radius: 4px;
+    font-size: 0.85rem;
+    padding: 3px 6px;
+    border-radius: 6px;
     transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 .report-card-action-btn:hover {
-    background: #f1f5f9;
-    color: #0284c7;
+    background: #ffedd5;
+    border-color: #fdba74;
+    color: #ea580c;
+}
+.report-card-action-btn.delete {
+    color: #94a3b8;
+    background: #f8fafc;
+    border-color: #e2e8f0;
 }
 .report-card-action-btn.delete:hover {
+    background: #ffe4e6;
+    border-color: #fca5a5;
     color: #e11d48;
+}
+
+.report-bracket-red {
+    color: #ef4444 !important;
+    font-weight: 900 !important;
 }
 
 .report-timeline-badge {

@@ -15090,7 +15090,8 @@ window.lightboxDownload = function() {
                                             const totalQty = (c.products || []).reduce((sum, p) => sum + (p.qty || 0), 0);
                                             const modelCount = (c.products || []).length;
                                             const cleanAdminComment = (c.adminComment || '').replace(/\[작업취소\]/g, '').replace(/\[작업제외\]/g, '').replace(/\[취소\]/g, '').trim();
-                                            const typeLabel = c.jobType ? ` ( ${c.jobType} )` : (cleanAdminComment ? ` ( ${cleanAdminComment} )` : '');
+                                            const typeText = c.jobType || cleanAdminComment || '';
+                                            const typeLabel = typeText ? `<span class="report-bracket-red" style="margin-left: 6px;">(</span> <strong style="color: #0f172a; font-weight: 800;">${typeText}</strong> <span class="report-bracket-red">)</span>` : '';
 
                                             const statusTag = isExcluded 
                                                 ? '<span style="background:rgba(217,119,6,0.15); color:#b45309; border:1px solid rgba(217,119,6,0.3); font-size:0.68rem; padding:1px 5px; border-radius:4px; margin-left:4px; font-weight:900;">[작업제외]</span>'
@@ -15108,19 +15109,15 @@ window.lightboxDownload = function() {
                                                         <div class="report-cntr-title-group">
                                                             <strong class="report-cntr-no ${carrierColorClass}">${c.cntrNo}</strong>
                                                             ${statusTag}
-                                                            <button type="button" class="report-card-action-btn" onclick="window.handleEditReportItem('${c.cntrNo}', '${team.teamName}', '${dateStr}', ${c.jobId || 'null'}, ${c.manualEntryId || 'null'})" title="항목 수정">
-                                                                <i class="fas fa-pencil-alt"></i>
-                                                            </button>
-                                                            <button type="button" class="report-card-action-btn delete" onclick="window.handleDeleteReportItem('${c.cntrNo}', '${team.teamName}', '${dateStr}', ${c.jobId || 'null'}, ${c.manualEntryId || 'null'})" title="항목 취소 / 삭제">
-                                                                <i class="fas fa-trash-alt"></i>
-                                                            </button>
+                                                            <button type="button" class="report-card-action-btn" onclick="window.handleEditReportItem('${c.cntrNo}', '${team.teamName}', '${dateStr}', ${c.jobId || 'null'}, ${c.manualEntryId || 'null'})" title="항목 수정">✏️</button>
+                                                            <button type="button" class="report-card-action-btn delete" onclick="window.handleDeleteReportItem('${c.cntrNo}', '${team.teamName}', '${dateStr}', ${c.jobId || 'null'}, ${c.manualEntryId || 'null'})" title="항목 취소 / 삭제">🗑️</button>
                                                         </div>
                                                         <span class="report-timeline-badge">${c.durationMinutes || 45}분 (${c.startTimeStr || '19:00'}~${c.endTimeStr || '19:45'})</span>
                                                     </div>
 
                                                     <div class="report-cntr-summary-line">
                                                         <span>${modelCount}모델, ${totalQty.toLocaleString()}개</span>
-                                                        ${typeLabel ? `<span class="job-type-black">${typeLabel}</span>` : ''}
+                                                        ${typeLabel}
                                                     </div>
 
                                                     ${displayRemark ? `
