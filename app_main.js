@@ -13603,6 +13603,7 @@ window.renderLightboxPhoto = function() {
     modal.style.display = 'flex';
 
     // 줌 및 회전 초기화
+    isLightboxDragging = false;
     lightboxScale = 1;
     lightboxRotation = 0;
     lightboxPan = { x: 0, y: 0 };
@@ -13634,16 +13635,25 @@ window.renderLightboxPhoto = function() {
 
 window.applyLightboxTransform = function() {
     const img = document.getElementById('lightboxImg');
+    const canvas = document.getElementById('lightboxCanvas');
     if (!img) return;
     img.style.transform = `translate(${lightboxPan.x}px, ${lightboxPan.y}px) scale(${lightboxScale}) rotate(${lightboxRotation}deg)`;
+    img.style.transition = isLightboxDragging ? 'none' : 'transform 0.15s ease-out';
+    if (canvas) {
+        canvas.style.cursor = (lightboxScale > 1) ? (isLightboxDragging ? 'grabbing' : 'grab') : 'zoom-in';
+    }
 };
 
 window.lightboxZoom = function(factor) {
-    lightboxScale = Math.max(0.2, Math.min(6, lightboxScale * factor));
+    lightboxScale = Math.max(0.5, Math.min(8, lightboxScale * factor));
+    if (lightboxScale <= 1) {
+        lightboxPan = { x: 0, y: 0 };
+    }
     window.applyLightboxTransform();
 };
 
 window.lightboxResetZoom = function() {
+    isLightboxDragging = false;
     lightboxScale = 1;
     lightboxRotation = 0;
     lightboxPan = { x: 0, y: 0 };
@@ -13775,8 +13785,15 @@ window.lightboxDownload = function() {
 (function initLightboxEvents() {
     const attachEvents = () => {
         const canvas = document.getElementById('lightboxCanvas');
+        const img = document.getElementById('lightboxImg');
+
+        let hasDragged = false;
+        let dragStartClient = { x: 0, y: 0 };
+
         if (canvas && !canvas._bound) {
             canvas._bound = true;
+
+            // 마우스 휠 줌
             canvas.addEventListener('wheel', (e) => {
                 const modal = document.getElementById('photoLightboxModal');
                 if (modal && modal.style.display !== 'none') {
@@ -13786,28 +13803,57 @@ window.lightboxDownload = function() {
                 }
             }, { passive: false });
 
+            // 마우스 다운 (확대된 상태에서만 패닝 드래그 시작)
             canvas.addEventListener('mousedown', (e) => {
                 if (e.button === 0) {
-                    isLightboxDragging = true;
-                    lightboxDragStart = { x: e.clientX - lightboxPan.x, y: e.clientY - lightboxPan.y };
-                    canvas.style.cursor = 'grabbing';
+                    e.preventDefault();
+                    dragStartClient = { x: e.clientX, y: e.clientY };
+                    hasDragged = false;
+
+                    if (lightboxScale > 1) {
+                        isLightboxDragging = true;
+                        lightboxDragStart = { x: e.clientX - lightboxPan.x, y: e.clientY - lightboxPan.y };
+                        window.applyLightboxTransform();
+                    }
+                }
+            });
+
+            // 클릭 (단순 클릭 시 2.5배율 확대 또는 1배율 리셋 토글)
+            canvas.addEventListener('click', (e) => {
+                if (hasDragged) return;
+                if (lightboxScale > 1) {
+                    window.lightboxResetZoom();
+                } else {
+                    lightboxScale = 2.5;
+                    lightboxPan = { x: 0, y: 0 };
+                    window.applyLightboxTransform();
                 }
             });
 
             window.addEventListener('mousemove', (e) => {
-                if (isLightboxDragging) {
+                if (isLightboxDragging && lightboxScale > 1) {
+                    e.preventDefault();
+                    const dx = e.clientX - dragStartClient.x;
+                    const dy = e.clientY - dragStartClient.y;
+                    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                        hasDragged = true;
+                    }
                     lightboxPan.x = e.clientX - lightboxDragStart.x;
                     lightboxPan.y = e.clientY - lightboxDragStart.y;
                     window.applyLightboxTransform();
                 }
             });
 
-            window.addEventListener('mouseup', () => {
+            const stopDrag = () => {
                 if (isLightboxDragging) {
                     isLightboxDragging = false;
-                    if (canvas) canvas.style.cursor = 'grab';
+                    window.applyLightboxTransform();
                 }
-            });
+            };
+
+            window.addEventListener('mouseup', stopDrag);
+            window.addEventListener('mouseleave', stopDrag);
+            window.addEventListener('blur', stopDrag);
         }
 
         window.addEventListener('keydown', (e) => {
@@ -13816,8 +13862,9 @@ window.lightboxDownload = function() {
                 if (e.key === 'Escape') window.closePhotoLightbox();
                 else if (e.key === 'ArrowLeft') window.lightboxPrev();
                 else if (e.key === 'ArrowRight') window.lightboxNext();
-                else if (e.key === '+' || e.key === '=') window.lightboxZoom(1.2);
+                else if (e.key === '+' || e.key === '=') window.lightboxZoom(1.25);
                 else if (e.key === '-') window.lightboxZoom(0.8);
+                else if (e.key === '0') window.lightboxResetZoom();
             }
         });
 
