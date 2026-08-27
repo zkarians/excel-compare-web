@@ -15082,9 +15082,11 @@ window.lightboxDownload = function() {
                         // Carrier summary
                         let carrier = '기타';
                         const cTrans = (cntr.transporter || '').trim();
-                        if (cTrans.includes('천마') || team.teamName.includes('천마')) carrier = '천마';
-                        else if (cTrans.includes('BNI') || cTrans.includes('비엔아이') || team.teamName.includes('BNI') || team.teamName.includes('비엔아이')) carrier = 'BNI';
-                        else if (cTrans.includes('재작업')) carrier = '재작업';
+                        if (cTrans.includes('재작업') || (cntr.category || '').includes('재작업') || (cntr.adminComment || '').includes('재작업')) carrier = '재작업';
+                        else if (cTrans.includes('천마')) carrier = '천마';
+                        else if (cTrans.includes('BNI') || cTrans.includes('비엔아이')) carrier = 'BNI';
+                        else if (team.teamName.includes('천마')) carrier = '천마';
+                        else if (team.teamName.includes('BNI') || team.teamName.includes('비엔아이')) carrier = 'BNI';
                         carrierSummary[carrier] = (carrierSummary[carrier] || 0) + 1;
 
                         // Empty box summary
