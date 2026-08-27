@@ -68,6 +68,9 @@ header p {
     box-shadow: var(--shadow-premium);
     margin-bottom: 1.5rem;
     border: 1px solid var(--border);
+    box-sizing: border-box;
+    width: 100%;
+    overflow: hidden;
 }
 
 .file-input-group {
@@ -78,6 +81,8 @@ header p {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     margin-bottom: 1rem;
     box-shadow: var(--shadow-md);
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .path-input-wrapper {

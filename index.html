@@ -1261,9 +1261,9 @@
     <div id="tabContentSelection" class="tab-content active">
         <!-- New selection grid layout to conserve vertical space -->
         <div class="card selection-grid"
-            style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 1.1rem 1.3rem;">
+            style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; padding: 1.1rem 1.3rem; box-sizing: border-box; width: 100%;">
             <!-- Left Column: Source Excel files -->
-            <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0;">
                 <div class="file-input-group" style="margin-bottom: 0;">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -1432,7 +1432,7 @@
             </div><!-- End Left Column -->
 
             <!-- Right Column: Down/System files and DB -->
-            <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0;">
                 <div class="file-input-group" style="margin-bottom: 0;">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -1463,7 +1463,7 @@
                             style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #64748b; padding-left: 2px;">
                             <i class="fas fa-upload" style="color: #94a3b8;"></i> 직접:
                             <input type="file" id="fileDownload" accept=".xlsx, .xls, .xlsm"
-                                style="margin: 0; font-size: 0.75rem;">
+                                style="margin: 0; font-size: 0.75rem; min-width: 0; max-width: 100%;">
                         </div>
                     </div>
 
@@ -1483,18 +1483,20 @@
                     </div>
                 </div>
 
-                <div class="file-input-group" style="margin-bottom: 0; flex: 1; position: relative;">
-                    <div
-                        style="position: absolute; top: 10px; right: 15px; font-size: 0.7rem; color: #4361ee; background: #eff6ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #dbeafe;">
-                        <i class="fas fa-cloud"></i> 실시간 연동 중
+                <div class="file-input-group" style="margin-bottom: 0; flex: 1; min-width: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                        <h3 style="margin: 0; display:flex; align-items:center;">
+                            <span
+                                style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; background:#dbeafe; color:#3b82f6; border-radius:50%; margin-right:6px; font-size:0.8rem;"><i
+                                    class="fas fa-database"></i></span>
+                            3. 제품 마스터 데이터 <span class="sub-desc">(클라우드 DB 우선)</span>
+                        </h3>
+                        <div
+                            style="font-size: 0.7rem; color: #4361ee; background: #eff6ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #dbeafe; white-space: nowrap; flex-shrink: 0;">
+                            <i class="fas fa-cloud"></i> 실시간 연동 중
+                        </div>
                     </div>
-                    <h3 style="margin-top: 0; display:flex; align-items:center;">
-                        <span
-                            style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; background:#dbeafe; color:#3b82f6; border-radius:50%; margin-right:6px; font-size:0.8rem;"><i
-                                class="fas fa-database"></i></span>
-                        3. 제품 마스터 데이터 <span class="sub-desc">(클라우드 DB 우선)</span>
-                    </h3>
-                    <p style="color: #475569; font-size: 0.9rem; margin-bottom: 8px;">
+                    <p style="color: #475569; font-size: 0.85rem; margin-bottom: 8px;">
                         <i class="fas fa-database" style="color: #4361ee; margin-right: 4px;"></i>
                         제품 중량 및 CBM 정보를 <strong>클라우드 데이터베이스</strong>에서 실시간으로 불러옵니다.
                     </p>
@@ -1502,23 +1504,23 @@
                     <!-- 커스텀 마스터 데이터 업로드 UI -->
                     <div
                         style="margin-top: 8px; padding: 8px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <strong style="font-size: 0.85rem; color: #475569; display: block; margin-bottom: 8px;">신규
+                        <strong style="font-size: 0.82rem; color: #475569; display: block; margin-bottom: 6px;">신규
                             제품 등록
                             및 기존 정보 수정:</strong>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <input type="file" id="fileMasterUpload" accept=".xlsx, .xls" style="font-size: 0.85rem;">
+                        <div style="display: flex; gap: 8px; align-items: center; min-width: 0;">
+                            <input type="file" id="fileMasterUpload" accept=".xlsx, .xls" style="font-size: 0.8rem; min-width: 0; flex: 1;">
                             <button id="btnUploadMaster" class="btn btn-primary-soft"
-                                style="padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 6px;">
+                                style="padding: 0.35rem 0.65rem; font-size: 0.78rem; border-radius: 6px; white-space: nowrap; flex-shrink: 0;">
                                 <i class="fas fa-upload"></i> 일괄 업로드 (Upsert)
                             </button>
                         </div>
-                        <p style="color: #64748b; font-size: 0.8rem; margin: 5px 0 0 0;">* 동일 이름 제품은
+                        <p style="color: #64748b; font-size: 0.76rem; margin: 4px 0 0 0;">* 동일 이름 제품은
                             <strong>업데이트</strong>, 새 제품은 <strong>추가</strong>됩니다.
                         </p>
                     </div>
 
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
-                        <p class="file-status" id="statusMaster" style="margin: 0; font-weight: bold; color: #1e293b;">
+                        <p class="file-status" id="statusMaster" style="margin: 0; font-weight: bold; color: #1e293b; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                             <i class="fas fa-sync fa-spin" style="color: #4361ee; margin-right:4px;"></i>상태: DB 연동
                             확인
                             중...
@@ -3559,7 +3561,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260828-clearselection"></script>
+    <script src="app_main.js?v=20260828-layoutfix"></script>
 </body>
 
 </html>
