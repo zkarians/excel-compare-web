@@ -4827,9 +4827,9 @@ tr.border-group td {
 }
 
 .report-modal-container {
-    width: 96vw !important;
-    max-width: 1440px !important;
-    height: 92vh !important;
+    width: 98vw !important;
+    max-width: 1680px !important;
+    height: 96vh !important;
     background: #f8fafc !important;
     border-radius: 16px !important;
     overflow: hidden !important;
@@ -4845,7 +4845,7 @@ tr.border-group td {
 .report-header {
     background: #ffffff;
     border-bottom: 1px solid #e2e8f0;
-    padding: 10px 16px;
+    padding: 6px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -4860,19 +4860,19 @@ tr.border-group td {
 }
 
 .report-title-badge {
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
     background: rgba(16, 185, 129, 0.1);
     color: #059669;
-    border-radius: 12px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
 }
 
 .report-title {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     font-weight: 900;
     color: #0f172a;
     margin: 0;
@@ -4883,7 +4883,7 @@ tr.border-group td {
     font-size: 0.65rem;
     font-weight: 800;
     color: #94a3b8;
-    margin: 2px 0 0 0;
+    margin: 1px 0 0 0;
     text-transform: uppercase;
     letter-spacing: 0.12em;
 }
@@ -4895,8 +4895,8 @@ tr.border-group td {
 }
 
 .report-top-icon-btn {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     background: transparent;
     border: none;
     border-radius: 50%;
@@ -4905,7 +4905,7 @@ tr.border-group td {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.95rem;
     transition: all 0.15s ease;
 }
 .report-top-icon-btn:hover {
@@ -4917,7 +4917,7 @@ tr.border-group td {
 .report-control-panel {
     background: rgba(241, 245, 249, 0.95);
     border-bottom: 1px solid #e2e8f0;
-    padding: 8px 16px;
+    padding: 6px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -5221,17 +5221,17 @@ tr.border-group td {
 
 .report-team-columns {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 12px;
     align-items: start;
 }
 
 .report-team-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 14px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
 }
 
 .report-team-header {
@@ -5239,8 +5239,8 @@ tr.border-group td {
     font-weight: 900;
     color: #0f172a;
     border-bottom: 1px solid #e2e8f0;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
+    padding-bottom: 5px;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -5270,9 +5270,9 @@ tr.border-group td {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
-    padding: 12px 14px;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     transition: all 0.15s ease;
 }
 .report-cntr-card:hover {
@@ -5395,8 +5395,8 @@ tr.border-group td {
     font-size: 0.88rem;
     font-weight: 800;
     color: #0f172a;
-    margin-top: 4px;
-    margin-bottom: 8px;
+    margin-top: 2px;
+    margin-bottom: 5px;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -5411,16 +5411,16 @@ tr.border-group td {
 .report-delay-box {
     background: #fefce8;
     border: 1px solid #fef08a;
-    padding: 8px 12px;
-    border-radius: 10px;
-    margin: 8px 0;
+    padding: 6px 10px;
+    border-radius: 9px;
+    margin: 5px 0;
     display: flex;
     align-items: flex-start;
     gap: 6px;
     font-size: 0.82rem;
     font-weight: 700;
     color: #713f12;
-    line-height: 1.45;
+    line-height: 1.4;
     word-break: keep-all;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
@@ -5444,17 +5444,17 @@ tr.border-group td {
 .report-prod-list {
     font-size: 0.84rem;
     color: #334155;
-    line-height: 1.4;
-    margin-top: 4px;
+    line-height: 1.35;
+    margin-top: 3px;
     border-top: 1px dashed #f1f5f9;
-    padding-top: 4px;
+    padding-top: 3px;
 }
 
 .report-prod-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 3px 0;
+    padding: 2px 0;
 }
 
 .report-prod-name {
@@ -5477,7 +5477,7 @@ tr.border-group td {
 .report-footer {
     background: #ffffff;
     border-top: 1px solid #e2e8f0;
-    padding: 10px 16px;
+    padding: 6px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
