@@ -3089,7 +3089,7 @@ tr.border-group td {
     width: 100vw !important;
     height: 100vh !important;
     background: #0b1120 !important;
-    z-index: 100000 !important;
+    z-index: 100040 !important;
     display: none;
     flex-direction: column;
     overflow: hidden;
