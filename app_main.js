@@ -12417,8 +12417,9 @@ window.sortPhotoList = function(photoArray, sortBy) {
     });
 };
 
-// 정렬 변경
+// 정렬 변경 (사용자 수동 변경 시 플래그 설정)
 window.setGallerySort = function(sortBy) {
+    window.userCustomGallerySort = true;
     window.gallerySortBy = sortBy;
     const sortSelect = document.getElementById('gallerySortSelect');
     if (sortSelect) sortSelect.value = sortBy;
@@ -13643,7 +13644,9 @@ window.openPhotoGalleryModal = function(initialCntrNo = '') {
     const modal = document.getElementById('photoGalleryModal');
     if (!modal) return;
 
-    // 사진함 열릴 때 이전 선택 상태(폴더 및 사진 선택) 완벽 초기화
+    // 사진함 열릴 때 이전 선택 상태(폴더 및 사진 선택) 및 수동 정렬 플래그 완벽 초기화
+    window.userCustomGallerySort = false;
+
     if (typeof window.clearAllGallerySelection === 'function') {
         window.clearAllGallerySelection();
     } else {
@@ -13681,6 +13684,8 @@ window.openContainerPhotoModal = function(cntrNo, event) {
     if (event) event.stopPropagation();
     if (!cntrNo) return;
     const cleanNo = cntrNo.trim().toUpperCase();
+
+    window.userCustomGallerySort = false;
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(cleanNo).catch(() => {});
@@ -14228,7 +14233,18 @@ window.renderGalleryPhotos = function() {
     if (window.currentGalleryTargetCntr) {
         const targetCntrUpper = window.currentGalleryTargetCntr.toUpperCase().trim();
         const matchedPhotos = allPhotos.filter(p => (p.cntr_no || '').toUpperCase().trim() === targetCntrUpper);
-        const photos = window.sortPhotoList(matchedPhotos);
+
+        // 씰 사진 유무에 따른 스마트 기본 정렬:
+        // 씰 사진이 있을 경우 -> 파일이름 내림차순 (NAME_DESC, 씰 사진 및 마지막 번호 사진이 상단에 노출)
+        // 씰 사진이 없을 경우 -> 파일이름 오름차순 (NAME_ASC, 01번부터 순차 노출)
+        const hasSeal = matchedPhotos.some(p => p.photo_type === 'seal');
+        if (!window.userCustomGallerySort) {
+            window.gallerySortBy = hasSeal ? 'NAME_DESC' : 'NAME_ASC';
+            const sortSelect = document.getElementById('gallerySortSelect');
+            if (sortSelect) sortSelect.value = window.gallerySortBy;
+        }
+
+        const photos = window.sortPhotoList(matchedPhotos, window.gallerySortBy);
 
         // 단일 컨테이너 진입 시 중복 사진 자동 검사 트리거 및 제품 품목 요약 업데이트
         window.fetchFolderDuplicates(targetCntrUpper);
