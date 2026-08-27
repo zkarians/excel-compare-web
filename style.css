@@ -5261,23 +5261,23 @@ tr.border-group td {
 }
 
 .report-team-count-badge {
-    font-size: 0.78rem;
-    font-weight: 800;
+    font-size: 0.82rem;
+    font-weight: 700;
     color: #64748b;
 }
 
 .report-cntr-card {
-    background: #f8fafc;
+    background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
-    padding: 10px 12px;
-    margin-bottom: 10px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     transition: all 0.15s ease;
 }
 .report-cntr-card:hover {
     border-color: #cbd5e1;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 .report-cntr-card.is-cancelled {
     background: #fff1f2 !important;
@@ -5292,20 +5292,26 @@ tr.border-group td {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 6px;
-    gap: 8px;
+    margin-bottom: 8px;
+    gap: 6px;
+    flex-wrap: nowrap;
 }
 
 .report-cntr-title-group {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
+    flex-wrap: nowrap;
+    min-width: 0;
+    flex-shrink: 1;
 }
 
 .report-cntr-no {
-    font-size: 0.92rem;
-    font-weight: 900;
-    letter-spacing: 0.3px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 .report-cntr-no.carrier-chunma {
     color: #ef4444 !important;
@@ -5317,7 +5323,7 @@ tr.border-group td {
     color: #d97706 !important;
 }
 .report-cntr-no.carrier-default {
-    color: #1e293b !important;
+    color: #0f172a !important;
 }
 
 .report-carrier-rework {
@@ -5325,12 +5331,23 @@ tr.border-group td {
     font-weight: 900;
 }
 
+.report-status-tag {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    display: inline-block !important;
+    line-height: 1.2 !important;
+    font-size: 0.72rem !important;
+    padding: 2px 6px !important;
+    border-radius: 5px !important;
+    font-weight: 800 !important;
+}
+
 .report-card-action-btn {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     color: #f97316;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     padding: 3px 6px;
     border-radius: 6px;
     transition: all 0.15s ease;
@@ -5338,6 +5355,8 @@ tr.border-group td {
     align-items: center;
     justify-content: center;
     line-height: 1;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 .report-card-action-btn:hover {
     background: #ffedd5;
@@ -5363,19 +5382,25 @@ tr.border-group td {
 .report-timeline-badge {
     background: #e0f2fe;
     border: 1px solid #bae6fd;
-    padding: 2px 7px;
+    padding: 3px 8px;
     border-radius: 6px;
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     font-weight: 800;
-    color: #0369a1;
+    color: #0284c7;
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .report-cntr-summary-line {
-    font-size: 0.8rem;
+    font-size: 0.88rem;
     font-weight: 800;
-    color: #1e293b;
-    margin-bottom: 6px;
+    color: #0f172a;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2px;
 }
 
 .job-type-red, .job-type-black {
@@ -5384,30 +5409,31 @@ tr.border-group td {
 }
 
 .report-delay-box {
-    background: rgba(254, 252, 232, 0.95);
-    border: 1px solid rgba(254, 240, 138, 0.85);
-    padding: 7px 10px;
+    background: #fefce8;
+    border: 1px solid #fef08a;
+    padding: 8px 12px;
     border-radius: 10px;
-    margin: 6px 0;
+    margin: 8px 0;
     display: flex;
     align-items: flex-start;
     gap: 6px;
-    font-size: 0.75rem;
+    font-size: 0.82rem;
     font-weight: 700;
-    color: #854d0e;
+    color: #713f12;
     line-height: 1.45;
+    word-break: keep-all;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .report-delay-icon {
     flex-shrink: 0;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     margin-top: 1px;
 }
 
 .report-delay-text {
     flex: 1;
-    word-break: break-word;
+    word-break: keep-all;
 }
 
 .report-delay-label {
@@ -5416,16 +5442,19 @@ tr.border-group td {
 }
 
 .report-prod-list {
-    font-size: 0.76rem;
+    font-size: 0.84rem;
     color: #334155;
-    line-height: 1.5;
+    line-height: 1.4;
+    margin-top: 4px;
+    border-top: 1px dashed #f1f5f9;
+    padding-top: 4px;
 }
 
 .report-prod-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 2px 0;
+    padding: 3px 0;
 }
 
 .report-prod-name {
@@ -5434,11 +5463,12 @@ tr.border-group td {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 210px;
+    max-width: 230px;
 }
 
 .report-prod-qty {
     font-weight: 800;
+    font-size: 0.88rem;
     color: #0f172a;
     white-space: nowrap;
 }
