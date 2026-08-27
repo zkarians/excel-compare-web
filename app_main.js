@@ -15006,6 +15006,7 @@ window.lightboxDownload = function() {
 
             window.currentReportData = data.reportData;
             window.currentReportText = data.reportText || '';
+            window.upcomingRosterText = data.upcomingRosterText || '';
             window.renderReportUI(data.reportData);
 
             // 저장된 보고서 상태 확인
@@ -16451,7 +16452,7 @@ window.lightboxDownload = function() {
         window.updateTeamSummaryKakaoText();
     };
 
-    window.updateTeamSummaryKakaoText = function() {
+    window.updateTeamSummaryKakaoText = async function() {
         const textarea = document.getElementById('teamSummaryKakaoText');
         const dayShiftInput = document.getElementById('teamSummaryDayShiftInput');
         if (!textarea) return;
@@ -16507,7 +16508,27 @@ window.lightboxDownload = function() {
             emptyBoxSuffix = `\n\n${emptyBoxLines.join('\n')}`;
         }
 
-        const generatedText = `웅동 야간출하\n\n${carrierStr}\n${categoryStr}\n주간${dayTotalStr} 야간${nightTotal} 장입 이상무${emptyBoxSuffix}`;
+        // 조 운영계획 (CTNR 동일 CockroachDB 근무편성 연동)
+        let rosterSuffix = '';
+        let rosterText = window.upcomingRosterText;
+        if (rosterText === undefined || rosterText === null) {
+            try {
+                const rRes = await fetch(`${API_BASE}/api/reports/roster-status?date=${encodeURIComponent(targetDate)}`);
+                const rData = await rRes.json();
+                if (rData && rData.success && rData.formattedText) {
+                    window.upcomingRosterText = rData.formattedText;
+                    rosterText = rData.formattedText;
+                }
+            } catch (rErr) {
+                console.warn("Failed to fetch roster status:", rErr);
+            }
+        }
+
+        if (rosterText && rosterText.trim()) {
+            rosterSuffix = `\n\n${rosterText.trim()}`;
+        }
+
+        const generatedText = `웅동 야간출하\n\n${carrierStr}\n${categoryStr}\n주간${dayTotalStr} 야간${nightTotal} 장입 이상무${emptyBoxSuffix}${rosterSuffix}`;
         textarea.value = generatedText;
     };
 
