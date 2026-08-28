@@ -11774,6 +11774,7 @@ window.handleBatchToggleSealPhoto = async function() {
         });
         const data = await res.json();
         if (data.success) {
+            if (typeof window.clearAllGallerySelection === 'function') window.clearAllGallerySelection();
             await window.loadPhotoGallery(window.currentGalleryTargetCntr);
         } else {
             alert(`씰 상태 변경 실패: ${data.error || data.message}`);
@@ -12251,6 +12252,7 @@ window.executeLocalCopy = async function() {
         const data = await res.json();
         if (data.success) {
             window.closeLocalCopyModal();
+            if (typeof window.clearAllGallerySelection === 'function') window.clearAllGallerySelection();
             alert(`✅ ${data.message}`);
         } else {
             alert(`❌ 로컬 복사 실패: ${data.error || data.message}`);
@@ -13006,6 +13008,7 @@ window.handleBatchToggleSealPhoto = async function() {
         });
         const data = await res.json();
         if (data.success) {
+            if (typeof window.clearAllGallerySelection === 'function') window.clearAllGallerySelection();
             await window.loadPhotoGallery(window.currentGalleryTargetCntr);
         } else {
             alert(`씰 상태 변경 실패: ${data.error || data.message}`);
@@ -13122,6 +13125,7 @@ window.executeChangeTeam = async function() {
         const data = await res.json();
         if (data.success) {
             window.closeChangeTeamModal();
+            if (typeof window.clearAllGallerySelection === 'function') window.clearAllGallerySelection();
             await window.loadPhotoGallery(window.currentGalleryTargetCntr);
         } else {
             alert(`조 변경 실패: ${data.error || data.message}`);
@@ -13201,6 +13205,9 @@ window.handleDownloadSelectedPhotos = function() {
     document.body.appendChild(a);
     a.click();
     a.remove();
+    if (typeof window.clearAllGallerySelection === 'function') {
+        window.clearAllGallerySelection();
+    }
 };
 
 // 7. 구글드라이브 백업 & 로컬 용량 정리 (CTNR 100% 동일 NDJSON 스트리밍)
@@ -13555,6 +13562,11 @@ window.handleRotatePhotos = async function(degrees, singlePhotoId) {
             }
         });
     });
+
+    // 사진 선택 즉시 해제 (회전 완료 후 선택 상태 자동 해제)
+    if (!singlePhotoId && typeof window.clearAllGallerySelection === 'function') {
+        window.clearAllGallerySelection();
+    }
 
     // 2. 백그라운드 비동기 서버 저장
     try {
