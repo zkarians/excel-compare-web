@@ -12178,8 +12178,8 @@ window.handleBrowseLocalFolder = async function() {
 window.localCopyAbortController = null;
 window.isLocalCopying = false;
 
-window.closeLocalCopyModal = function() {
-    if (window.isLocalCopying && window.localCopyAbortController) {
+window.closeLocalCopyModal = function(force = false) {
+    if (!force && window.isLocalCopying && window.localCopyAbortController) {
         if (confirm("현재 진행 중인 로컬 복사 작업을 취소(중단)하시겠습니까?")) {
             try {
                 window.localCopyAbortController.abort();
@@ -12190,6 +12190,9 @@ window.closeLocalCopyModal = function() {
             return;
         }
     }
+
+    window.isLocalCopying = false;
+    window.localCopyAbortController = null;
 
     const btnExec = document.getElementById('btnExecuteLocalCopy');
     if (btnExec) {
@@ -12250,8 +12253,10 @@ window.executeLocalCopy = async function() {
             })
         });
         const data = await res.json();
+        window.isLocalCopying = false;
+        window.localCopyAbortController = null;
         if (data.success) {
-            window.closeLocalCopyModal();
+            window.closeLocalCopyModal(true);
             if (typeof window.clearAllGallerySelection === 'function') window.clearAllGallerySelection();
             alert(`✅ ${data.message}`);
         } else {
