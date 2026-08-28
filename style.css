@@ -4886,7 +4886,7 @@ tr.border-group td {
 
 .report-modal-container {
     width: 98vw !important;
-    max-width: 1680px !important;
+    max-width: 1680px;
     height: 96vh !important;
     background: #f8fafc !important;
     border-radius: 16px !important;
@@ -4895,6 +4895,7 @@ tr.border-group td {
     flex-direction: column !important;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    transition: max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ========================================== */

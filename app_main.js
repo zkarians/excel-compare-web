@@ -15140,6 +15140,19 @@ window.lightboxDownload = function() {
         const carrierCountsEl = document.getElementById('reportCarrierCounts');
         if (!contentEl) return;
 
+        // 조(Team) 개수에 맞춘 보고서 모달 너비 동적 최적화 (1개조: 680px, 2개조: 1120px, 3개조 이상: 1640px)
+        const maxTeams = Math.max(1, ...(reportData || []).map(d => (d.uploaders || []).length));
+        const modalContainer = document.querySelector('.report-modal-container');
+        if (modalContainer) {
+            if (maxTeams === 1) {
+                modalContainer.style.maxWidth = '680px';
+            } else if (maxTeams === 2) {
+                modalContainer.style.maxWidth = '1120px';
+            } else {
+                modalContainer.style.maxWidth = '1640px';
+            }
+        }
+
         let totalContainers = 0;
         const globalCarrierMap = {};
 
