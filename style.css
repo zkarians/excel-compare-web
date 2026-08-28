@@ -4872,6 +4872,59 @@ tr.border-group td {
 }
 
 /* ========================================== */
+/* [SCREEN NAV SWITCHER (화면 전환 네비게이터)] */
+/* ========================================== */
+.screen-nav-switcher {
+    display: inline-flex;
+    align-items: center;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    gap: 3px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.screen-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #64748b;
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    height: 30px;
+}
+
+.screen-nav-btn:hover {
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.screen-nav-btn.active {
+    background: #ffffff;
+    color: #0284c7;
+    font-weight: 800;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.screen-nav-btn.active i {
+    color: #0284c7;
+}
+
+.screen-nav-btn i {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    transition: color 0.18s ease;
+}
+
+/* ========================================== */
 /* [REPORT MODAL (작업 완료 보고서) STYLES] */
 /* ========================================== */
 #reportModal.ctnr-gallery-modal {

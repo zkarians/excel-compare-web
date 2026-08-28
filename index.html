@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/libs/fontawesome.min.css">
     <link rel="stylesheet" href="css/libs/animate.min.css">
-    <link rel="stylesheet" href="style.css?v=20260828-carrierfont">
+    <link rel="stylesheet" href="style.css?v=20260829-screenswitcher">
     <!-- Local JS Libraries -->
     <script src="js/libs/exceljs.min.js"></script>
     <script src="js/libs/FileSaver.min.js"></script>
@@ -2632,9 +2632,19 @@
                         <option value="UPLOAD_ASC">업로드순 (과거) &#9660;</option>
                     </select>
 
-                    <button type="button" class="ctnr-btn-report" onclick="window.openReportModal()" title="작업 완료 보고서 보기" style="background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.35); color: #0284c7; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; height: 34px; transition: all 0.2s;">
-                        <i class="fas fa-file-alt"></i> 보고서 보기
-                    </button>
+                    <!-- 3-Way 화면 전환 네비게이터 -->
+                    <div class="screen-nav-switcher">
+                        <button type="button" class="screen-nav-btn" onclick="window.switchAppScreen('results')" title="컨테이너 비교 결과 화면으로 전환">
+                            <i class="fas fa-table"></i> <span>비교 결과</span>
+                        </button>
+                        <button type="button" class="screen-nav-btn" onclick="window.switchAppScreen('report')" title="작업 완료 보고서 화면으로 전환">
+                            <i class="fas fa-file-alt"></i> <span>작업 보고서</span>
+                        </button>
+                        <button type="button" class="screen-nav-btn active" title="현재 화면: 사진 보관함">
+                            <i class="fas fa-camera"></i> <span>사진 보관함</span>
+                        </button>
+                    </div>
+
                     <button type="button" class="ctnr-btn-close" onclick="window.closePhotoGalleryModal()" title="닫기 (ESC)">
                         <i class="fas fa-times"></i> 닫기
                     </button>
@@ -3173,11 +3183,21 @@
                 </div>
 
                 <div class="report-header-right">
+                    <!-- 3-Way 화면 전환 네비게이터 -->
+                    <div class="screen-nav-switcher">
+                        <button type="button" class="screen-nav-btn" onclick="window.switchAppScreen('results')" title="컨테이너 비교 결과 화면으로 전환">
+                            <i class="fas fa-table"></i> <span>비교 결과</span>
+                        </button>
+                        <button type="button" class="screen-nav-btn active" title="현재 화면: 작업 완료 보고서">
+                            <i class="fas fa-file-alt"></i> <span>작업 보고서</span>
+                        </button>
+                        <button type="button" class="screen-nav-btn" onclick="window.switchAppScreen('gallery')" title="사진 보관함 화면으로 전환">
+                            <i class="fas fa-camera"></i> <span>사진 보관함</span>
+                        </button>
+                    </div>
+
                     <button type="button" class="report-top-icon-btn" onclick="window.openTeamSummaryModal()" title="조별 작업수량 요약 (차트/통계)">
                         <i class="fas fa-chart-bar"></i>
-                    </button>
-                    <button type="button" class="report-top-icon-btn" onclick="window.openPhotoGalleryModal()" title="사진 보관함 열기">
-                        <i class="fas fa-camera"></i>
                     </button>
                     <button type="button" class="ctnr-btn-close" onclick="window.closeReportModal()" title="닫기 (ESC)">
                         <i class="fas fa-times"></i>
@@ -3547,7 +3567,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260828-reportwidth"></script>
+    <script src="app_main.js?v=20260829-screenswitcher"></script>
 </body>
 
 </html>

@@ -14973,6 +14973,22 @@ window.lightboxDownload = function() {
         return `${year}-${month}-${day}`;
     }
 
+    // [화면 전환 네비게이터 공통 함수: 비교결과 / 보고서 / 사진함]
+    window.switchAppScreen = function(targetScreen) {
+        if (targetScreen === 'results') {
+            if (typeof window.closePhotoGalleryModal === 'function') window.closePhotoGalleryModal();
+            if (typeof window.closeReportModal === 'function') window.closeReportModal();
+            const btnResults = document.getElementById('mainTabBtnResults');
+            if (btnResults) btnResults.click();
+        } else if (targetScreen === 'report') {
+            if (typeof window.closePhotoGalleryModal === 'function') window.closePhotoGalleryModal();
+            if (typeof window.openReportModal === 'function') window.openReportModal();
+        } else if (targetScreen === 'gallery') {
+            if (typeof window.closeReportModal === 'function') window.closeReportModal();
+            if (typeof window.openPhotoGalleryModal === 'function') window.openPhotoGalleryModal();
+        }
+    };
+
     window.openReportModal = function(targetDate = null, event = null) {
         if (event) event.stopPropagation();
         const modal = document.getElementById('reportModal');
