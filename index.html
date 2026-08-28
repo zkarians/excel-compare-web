@@ -84,11 +84,11 @@
 
             <div class="header-actions"
                 style="display: flex; gap: 2px; align-items: center; background: #f8fafc; padding: 2px 4px; border-radius: 6px; border: 1px solid #e2e8f0; flex-wrap: nowrap; flex-shrink: 0; overflow-x: auto; max-width: 100%;">
-                <button id="btnOpenReportModal" class="btn" onclick="window.openReportModal()"
+                <button id="btnOpenReportModal" class="btn" onclick="window.switchAppScreen('report')"
                     style="padding: 0.15rem 0.35rem; font-size: 0.70rem; border-radius: 4px; font-weight: 800; background: #eff6ff; color: #1d4ed8; border: 1px solid #93c5fd; box-shadow: 0 1px 2px rgba(29,78,216,0.12); white-space: nowrap;">
                     <i class="fas fa-file-alt"></i> 보고서
                 </button>
-                <button id="btnOpenPhotoGallery" class="btn"
+                <button id="btnOpenPhotoGallery" class="btn" onclick="window.switchAppScreen('gallery')"
                     style="padding: 0.15rem 0.35rem; font-size: 0.70rem; border-radius: 4px; font-weight: 800; background: #ecfdf5; color: #059669; border: 1px solid #6ee7b7; box-shadow: 0 1px 2px rgba(5,150,105,0.12); white-space: nowrap;">
                     <i class="fas fa-camera"></i> 사진함
                 </button>
@@ -3567,7 +3567,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=202603121400"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260829-screenswitcher"></script>
+    <script src="app_main.js?v=20260829-resumestate"></script>
 </body>
 
 </html>

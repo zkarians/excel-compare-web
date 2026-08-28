@@ -13679,21 +13679,26 @@ window.resetGalleryFilters = function() {
     window.loadPhotoGallery('');
 };
 
-// 모달 닫기
-window.closePhotoGalleryModal = function() {
+// 모달 닫기 (isFullReset=true면 초기화, false면 상태 보존)
+window.closePhotoGalleryModal = function(isFullReset = true) {
     const modal = document.getElementById('photoGalleryModal');
     if (modal) modal.style.display = 'none';
+    if (isFullReset) {
+        window.currentGalleryTargetCntr = '';
+        const searchEl = document.getElementById('photoGallerySearchCntr');
+        if (searchEl) searchEl.value = '';
+    }
     if (typeof window.clearAllGallerySelection === 'function') {
         window.clearAllGallerySelection();
     }
 };
 
-// 1. 사진 보관함 모달 오픈
-window.openPhotoGalleryModal = function(initialCntrNo = '') {
+// 1. 사진 보관함 모달 오픈 (initialCntrNo === null 이면 기존 보던 화면 유지)
+window.openPhotoGalleryModal = function(initialCntrNo = null) {
     const modal = document.getElementById('photoGalleryModal');
     if (!modal) return;
 
-    // 사진함 열릴 때 이전 선택 상태(폴더 및 사진 선택) 및 수동 정렬 플래그 완벽 초기화
+    // 사진함 열릴 때 이전 선택 상태 초기화
     window.userCustomGallerySort = false;
 
     if (typeof window.clearAllGallerySelection === 'function') {
@@ -13722,10 +13727,21 @@ window.openPhotoGalleryModal = function(initialCntrNo = '') {
 
     if (startDateEl && !startDateEl.value) startDateEl.value = formatYMD(yesterday);
     if (endDateEl && !endDateEl.value) endDateEl.value = formatYMD(today);
-    if (searchEl) searchEl.value = initialCntrNo || '';
 
-    window.currentGalleryTargetCntr = (initialCntrNo || '').trim().toUpperCase();
-    window.loadPhotoGallery(window.currentGalleryTargetCntr);
+    // initialCntrNo가 null인 경우: 화면 전환(Resume)이므로 기존에 보던 컨테이너 상세 화면 유지!
+    if (initialCntrNo === null) {
+        const target = window.currentGalleryTargetCntr || '';
+        if (searchEl && target) searchEl.value = target;
+        if (!window.currentGalleryPhotos || window.currentGalleryPhotos.length === 0) {
+            window.loadPhotoGallery(target);
+        }
+    } else {
+        // 특정 컨테이너 명시 진입 또는 '' 리셋
+        const cleanNo = (initialCntrNo || '').trim().toUpperCase();
+        if (searchEl) searchEl.value = cleanNo;
+        window.currentGalleryTargetCntr = cleanNo;
+        window.loadPhotoGallery(cleanNo);
+    }
 };
 
 // 특정 컨테이너 전용 사진 퀵 오픈
@@ -14976,16 +14992,16 @@ window.lightboxDownload = function() {
     // [화면 전환 네비게이터 공통 함수: 비교결과 / 보고서 / 사진함]
     window.switchAppScreen = function(targetScreen) {
         if (targetScreen === 'results') {
-            if (typeof window.closePhotoGalleryModal === 'function') window.closePhotoGalleryModal();
-            if (typeof window.closeReportModal === 'function') window.closeReportModal();
+            if (typeof window.closePhotoGalleryModal === 'function') window.closePhotoGalleryModal(false); // 상태 보존
+            if (typeof window.closeReportModal === 'function') window.closeReportModal(false); // 상태 보존
             const btnResults = document.getElementById('mainTabBtnResults');
             if (btnResults) btnResults.click();
         } else if (targetScreen === 'report') {
-            if (typeof window.closePhotoGalleryModal === 'function') window.closePhotoGalleryModal();
-            if (typeof window.openReportModal === 'function') window.openReportModal();
+            if (typeof window.closePhotoGalleryModal === 'function') window.closePhotoGalleryModal(false); // 상태 보존
+            if (typeof window.openReportModal === 'function') window.openReportModal(null); // 상태 보존 (null)
         } else if (targetScreen === 'gallery') {
-            if (typeof window.closeReportModal === 'function') window.closeReportModal();
-            if (typeof window.openPhotoGalleryModal === 'function') window.openPhotoGalleryModal();
+            if (typeof window.closeReportModal === 'function') window.closeReportModal(false); // 상태 보존
+            if (typeof window.openPhotoGalleryModal === 'function') window.openPhotoGalleryModal(null); // 상태 보존 (null)
         }
     };
 
@@ -14994,24 +15010,33 @@ window.lightboxDownload = function() {
         const modal = document.getElementById('reportModal');
         if (!modal) return;
 
+        modal.style.display = 'flex';
+
         const dateInput = document.getElementById('reportTargetDate');
         if (targetDate) {
             if (dateInput) dateInput.value = targetDate;
+            window.loadReportData();
         } else if (!dateInput?.value) {
             const now = new Date();
             if (now.getHours() < 13) {
                 now.setDate(now.getDate() - 1);
             }
             if (dateInput) dateInput.value = formatReportYMD(now);
+            window.loadReportData();
+        } else {
+            // targetDate가 null이고 이미 날짜가 있으면: 화면 전환이므로 이미 로드된 데이터가 있다면 유지, 없으면 로드
+            if (!window.currentReportData || window.currentReportData.length === 0) {
+                window.loadReportData();
+            }
         }
-
-        modal.style.display = 'flex';
-        window.loadReportData();
     };
 
-    window.closeReportModal = function() {
+    window.closeReportModal = function(isFullReset = true) {
         const modal = document.getElementById('reportModal');
         if (modal) modal.style.display = 'none';
+        if (isFullReset) {
+            // 닫기 시 필요에 따라 초기화
+        }
     };
 
     window.navigateReportDate = function(dir) {
