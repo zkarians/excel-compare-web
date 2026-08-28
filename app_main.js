@@ -14466,7 +14466,7 @@ window.renderGalleryPhotos = function() {
 
                     return `
                         <div class="ctnr-team-card" data-date-group="${dateStr}" data-team-group="${tName}">
-                            <div class="ctnr-team-header" style="display:flex; justify-content:space-between; align-items:center;">
+                            <div class="ctnr-team-header">
                                 <div class="ctnr-team-title">
                                     <i class="fas fa-user-friends"></i>
                                     <span>${tName}</span>
@@ -14481,7 +14481,11 @@ window.renderGalleryPhotos = function() {
                                     const folderKey = `${f.cntrNo}|${f.workDateStr}`;
                                     const isFolderSelected = window.selectedFolderKeys && window.selectedFolderKeys.has(folderKey);
                                     const carrierInfo = getGalleryCarrierInfo(f.transporter, f.teamName);
-                                    const timeStr = f.lastUploadedAt ? new Date(f.lastUploadedAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+                                    
+                                    const dt = f.lastUploadedAt ? new Date(f.lastUploadedAt) : null;
+                                    const timeStr = dt && !isNaN(dt.getTime())
+                                        ? `${String(dt.getMonth() + 1).padStart(2, '0')}. ${String(dt.getDate()).padStart(2, '0')}. ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
+                                        : '';
                                     
                                     const hasSeal = f.photos && f.photos.some(p => p.photo_type === 'seal');
                                     const gdriveCnt = f.photos ? f.photos.filter(p => !!p.gdrive_file_id).length : 0;
@@ -14519,14 +14523,14 @@ window.renderGalleryPhotos = function() {
                                             <div class="ctnr-folder-top-row">
                                                 <div class="ctnr-folder-left-info">
                                                     <input type="checkbox" class="ctnr-folder-chk" ${isFolderSelected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="window.toggleFolderSelect('${folderKey}', event)">
-                                                    <i class="fas fa-folder" style="color:#38bdf8; font-size:1rem;"></i>
+                                                    <i class="fas fa-folder" style="color:#00c0fa; font-size:1rem; margin:0 4px 0 2px;"></i>
                                                     <strong class="ctnr-folder-name ${carrierInfo.colorClass}">${f.cntrNo}</strong>
                                                     ${carrierInfo.name ? `<span class="ctnr-folder-carrier-tag ${carrierInfo.colorClass}">[${carrierInfo.name}]</span>` : ''}
                                                 </div>
                                                 <div style="display:flex; align-items:center; gap:5px;">
                                                     ${isAllGDrive ? `<span style="font-size:0.75rem;" title="모든 사진이 구글드라이브에 안전 보관 중입니다 (로컬 용량 정리됨).">☁️</span>` : ''}
                                                     ${!hasSeal ? `<span title="씰(Seal) 사진이 등록되지 않았습니다." class="camera-pulse"><i class="fas fa-camera"></i></span>` : ''}
-                                                    <span class="ctnr-folder-count-badge">${f.photos.length}장</span>
+                                                    <span class="ctnr-folder-count-badge"><i class="far fa-image" style="font-size:0.72rem; opacity:0.75;"></i>${f.photos.length}장</span>
                                                 </div>
                                             </div>
                                             <div class="ctnr-folder-bottom-row">
