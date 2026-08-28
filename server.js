@@ -2958,11 +2958,11 @@ app.get('/api/photos', async (req, res) => {
 
         if (startDate) {
             whereConditions.push(`p.uploaded_at AT TIME ZONE 'Asia/Seoul' >= $${paramIdx++}::timestamp`);
-            params.push(`${startDate} 00:00:00`);
+            params.push(`${startDate} 13:00:00`);
         }
 
         if (endDate) {
-            whereConditions.push(`p.uploaded_at AT TIME ZONE 'Asia/Seoul' <= ($${paramIdx++}::date + INTERVAL '1 day')`);
+            whereConditions.push(`p.uploaded_at AT TIME ZONE 'Asia/Seoul' <= ($${paramIdx++}::date + INTERVAL '1 day 12 hours 59 minutes 59.999 seconds')`);
             params.push(endDate);
         }
 
