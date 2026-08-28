@@ -14342,7 +14342,8 @@ window.renderGalleryPhotos = function() {
             return;
         }
 
-        let html = '<div class="ctnr-grid-large">';
+        const gridClass = (window.galleryViewMode === 'GRID') ? 'ctnr-grid-thumbnails' : 'ctnr-grid-large';
+        let html = `<div class="${gridClass}">`;
         photos.forEach((p, idx) => {
             const isSeal = p.photo_type === 'seal';
             const isDuplicate = (window.currentDuplicatePhotoIds || []).includes(String(p.id)) || (window.currentDuplicatePhotoIds || []).includes(Number(p.id));

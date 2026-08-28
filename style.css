@@ -3453,6 +3453,42 @@ tr.border-group td {
     }
 }
 
+/* [바둑판] 뷰 모드 그리드 (다열 썸네일 바둑판 모드) */
+.ctnr-grid-thumbnails {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+    gap: 14px;
+    width: 100%;
+}
+
+.ctnr-grid-thumbnails .ctnr-card-large {
+    border-radius: 12px;
+}
+
+.ctnr-grid-thumbnails .ctnr-card-img-wrapper {
+    aspect-ratio: 4/5;
+    max-height: 240px;
+}
+
+.ctnr-grid-thumbnails .ctnr-card-bottom-info {
+    padding: 8px 10px;
+}
+
+.ctnr-grid-thumbnails .ctnr-card-title {
+    font-size: 0.78rem;
+    margin-bottom: 3px;
+}
+
+.ctnr-grid-thumbnails .ctnr-card-filename-box {
+    font-size: 0.65rem;
+    padding: 3px 6px;
+}
+
+.ctnr-grid-thumbnails .ctnr-card-footer-info {
+    font-size: 0.60rem;
+    margin-top: 4px;
+}
+
 .ctnr-card-large {
     position: relative;
     background: #11111a;
