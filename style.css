@@ -3841,7 +3841,7 @@ tr.border-group td {
 
 .ctnr-folders-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
     gap: 10px;
 }
 
@@ -3899,7 +3899,7 @@ tr.border-group td {
 }
 
 .ctnr-folder-name {
-    font-size: 0.88rem;
+    font-size: 0.76rem;
     font-weight: 800;
     letter-spacing: 0.2px;
     white-space: nowrap;
@@ -3910,7 +3910,7 @@ tr.border-group td {
 
 .ctnr-folder-name.carrier-chunma,
 .ctnr-folder-name-red {
-    font-size: 0.88rem;
+    font-size: 0.76rem;
     font-weight: 800;
     color: #ef4444;
     letter-spacing: 0.2px;
@@ -3920,7 +3920,7 @@ tr.border-group td {
 }
 
 .ctnr-folder-name.carrier-bni {
-    font-size: 0.88rem;
+    font-size: 0.76rem;
     font-weight: 800;
     color: #2563eb;
     letter-spacing: 0.2px;
@@ -3930,7 +3930,7 @@ tr.border-group td {
 }
 
 .ctnr-folder-name.carrier-default {
-    font-size: 0.88rem;
+    font-size: 0.76rem;
     font-weight: 800;
     color: #2563eb;
     letter-spacing: 0.2px;
@@ -3940,7 +3940,7 @@ tr.border-group td {
 }
 
 .ctnr-card-title {
-    font-size: 0.92rem;
+    font-size: 0.85rem;
     font-weight: 800;
     letter-spacing: 0.3px;
     text-transform: uppercase;
@@ -3948,7 +3948,7 @@ tr.border-group td {
 
 .ctnr-card-title.carrier-chunma,
 .ctnr-card-title-red {
-    font-size: 0.92rem;
+    font-size: 0.85rem;
     font-weight: 800;
     color: #ef4444;
     letter-spacing: 0.3px;
@@ -3956,7 +3956,7 @@ tr.border-group td {
 }
 
 .ctnr-card-title.carrier-bni {
-    font-size: 0.92rem;
+    font-size: 0.85rem;
     font-weight: 800;
     color: #2563eb;
     letter-spacing: 0.3px;
@@ -3964,7 +3964,7 @@ tr.border-group td {
 }
 
 .ctnr-card-title.carrier-default {
-    font-size: 0.92rem;
+    font-size: 0.85rem;
     font-weight: 800;
     color: #0f172a;
     letter-spacing: 0.3px;
@@ -3972,7 +3972,7 @@ tr.border-group td {
 }
 
 .ctnr-folder-carrier-tag {
-    font-size: 0.78rem;
+    font-size: 0.68rem;
     font-weight: 700;
     margin-left: 2px;
     white-space: nowrap;
@@ -3991,9 +3991,9 @@ tr.border-group td {
 }
 
 .ctnr-folder-count-badge {
-    font-size: 0.72rem;
+    font-size: 0.65rem;
     font-weight: 800;
-    padding: 2px 7px;
+    padding: 2px 6px;
     border-radius: 6px;
     background: #e0f2fe;
     color: #0284c7;
@@ -4008,7 +4008,7 @@ tr.border-group td {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.7rem;
+    font-size: 0.6rem;
     color: #64748b;
     font-weight: 600;
     padding-top: 6px;
@@ -4020,8 +4020,8 @@ tr.border-group td {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 135px;
-    font-size: 0.7rem;
+    max-width: 155px;
+    font-size: 0.58rem;
     color: #64748b;
     font-weight: 700;
     flex: 1;
@@ -4037,7 +4037,7 @@ tr.border-group td {
 }
 
 .ctnr-folder-bottom-right > span {
-    font-size: 0.7rem;
+    font-size: 0.58rem;
     color: #64748b;
     font-weight: 800;
     margin-right: 2px;
