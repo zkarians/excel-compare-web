@@ -14484,7 +14484,7 @@ window.renderGalleryPhotos = function() {
                                     
                                     const dt = f.lastUploadedAt ? new Date(f.lastUploadedAt) : null;
                                     const timeStr = dt && !isNaN(dt.getTime())
-                                        ? `${String(dt.getMonth() + 1).padStart(2, '0')}. ${String(dt.getDate()).padStart(2, '0')}. ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
+                                        ? `${String(dt.getMonth() + 1).padStart(2, '0')}.${String(dt.getDate()).padStart(2, '0')} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
                                         : '';
                                     
                                     const hasSeal = f.photos && f.photos.some(p => p.photo_type === 'seal');
@@ -14495,13 +14495,13 @@ window.renderGalleryPhotos = function() {
                                     if (isTrashTab) {
                                         actionBtnsHtml = `
                                             <button class="ctnr-folder-action-btn ctnr-btn-restore" onclick="window.restoreFolder('${f.cntrNo}', event)" title="폴더 복구">
-                                                <i class="fas fa-redo"></i> 복구
+                                                <i class="fas fa-redo"></i>
                                             </button>
                                         `;
                                     } else if (isCompletedTab) {
                                         actionBtnsHtml = `
                                             <button class="ctnr-folder-action-btn ctnr-btn-undo" onclick="window.toggleCompleteFolder('${f.cntrNo}', false, event)" title="진행 중인 작업으로 되돌리기">
-                                                <i class="fas fa-undo"></i> 되돌리기
+                                                <i class="fas fa-undo"></i>
                                             </button>
                                             <button class="ctnr-folder-action-btn ctnr-btn-trash" onclick="window.trashFolder('${f.cntrNo}', event)" title="휴지통으로 이동">
                                                 <i class="fas fa-trash-alt"></i>
@@ -14510,7 +14510,7 @@ window.renderGalleryPhotos = function() {
                                     } else {
                                         actionBtnsHtml = `
                                             <button class="ctnr-folder-action-btn ctnr-btn-complete" onclick="window.toggleCompleteFolder('${f.cntrNo}', true, event)" title="작업 완료 처리">
-                                                <i class="fas fa-check"></i> 완료
+                                                <i class="fas fa-check"></i>
                                             </button>
                                             <button class="ctnr-folder-action-btn ctnr-btn-trash" onclick="window.trashFolder('${f.cntrNo}', event)" title="휴지통으로 이동">
                                                 <i class="fas fa-trash-alt"></i>
@@ -14534,7 +14534,7 @@ window.renderGalleryPhotos = function() {
                                                 </div>
                                             </div>
                                             <div class="ctnr-folder-bottom-row">
-                                                <span>조: ${f.teamName} (${f.uploaderName})</span>
+                                                <span class="ctnr-folder-team-info" title="조: ${f.teamName} (${f.uploaderName})">조: ${f.teamName} (${f.uploaderName})</span>
                                                 <div class="ctnr-folder-bottom-right">
                                                     <span>${timeStr}</span>
                                                     ${actionBtnsHtml}

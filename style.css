@@ -3841,15 +3841,15 @@ tr.border-group td {
 
 .ctnr-folders-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 10px;
 }
 
 .ctnr-folder-item {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 10px 12px;
+    border-radius: 12px;
+    padding: 10px 13px;
     cursor: pointer;
     transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
@@ -3858,6 +3858,7 @@ tr.border-group td {
     justify-content: space-between;
     gap: 8px;
     user-select: none;
+    box-sizing: border-box;
 }
 
 .ctnr-folder-item:hover {
@@ -3884,6 +3885,7 @@ tr.border-group td {
     gap: 6px;
     min-width: 0;
     flex: 1;
+    overflow: hidden;
 }
 
 .ctnr-folder-chk {
@@ -3902,6 +3904,8 @@ tr.border-group td {
     letter-spacing: 0.2px;
     white-space: nowrap;
     color: #2563eb;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ctnr-folder-name.carrier-chunma,
@@ -3911,6 +3915,8 @@ tr.border-group td {
     color: #ef4444;
     letter-spacing: 0.2px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ctnr-folder-name.carrier-bni {
@@ -3919,6 +3925,8 @@ tr.border-group td {
     color: #2563eb;
     letter-spacing: 0.2px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ctnr-folder-name.carrier-default {
@@ -3927,6 +3935,8 @@ tr.border-group td {
     color: #2563eb;
     letter-spacing: 0.2px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ctnr-card-title {
@@ -3962,11 +3972,12 @@ tr.border-group td {
 }
 
 .ctnr-folder-carrier-tag {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 700;
     margin-left: 2px;
     white-space: nowrap;
     color: #64748b;
+    flex-shrink: 0;
 }
 
 .ctnr-folder-carrier-tag.carrier-chunma {
@@ -3980,7 +3991,7 @@ tr.border-group td {
 }
 
 .ctnr-folder-count-badge {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 800;
     padding: 2px 7px;
     border-radius: 6px;
@@ -3997,26 +4008,40 @@ tr.border-group td {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     color: #64748b;
     font-weight: 600;
-    padding-top: 7px;
+    padding-top: 6px;
     border-top: 1px solid #f1f5f9;
+    gap: 6px;
+}
+
+.ctnr-folder-team-info {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 135px;
+    font-size: 0.7rem;
+    color: #64748b;
+    font-weight: 700;
+    flex: 1;
+    min-width: 0;
 }
 
 .ctnr-folder-bottom-right {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     margin-left: auto;
     flex-shrink: 0;
 }
 
 .ctnr-folder-bottom-right > span {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     color: #64748b;
-    font-weight: 700;
-    margin-right: 4px;
+    font-weight: 800;
+    margin-right: 2px;
+    white-space: nowrap;
 }
 
 /* CTNR 작업 구분 3단 탭 (진행중 / 완료 / 휴지통) */
@@ -4075,18 +4100,22 @@ tr.border-group td {
     box-shadow: 0 1px 3px rgba(225, 29, 72, 0.3);
 }
 
-/* 폴더 액션 버튼 (완료 / 원복 / 삭제 / 복구) */
+/* 폴더 액션 버튼 (CTNR과 동일한 컴팩트 사각 아이콘 버튼) */
 .ctnr-folder-action-btn {
-    padding: 2px 7px;
-    font-size: 0.72rem;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    font-size: 0.68rem;
     font-weight: 800;
     border-radius: 4px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 3px;
+    justify-content: center;
     transition: all 0.15s ease;
     border: 1px solid transparent;
+    flex-shrink: 0;
+    box-sizing: border-box;
 }
 
 .ctnr-btn-complete {
@@ -4105,17 +4134,18 @@ tr.border-group td {
     border-color: #fde68a;
 }
 .ctnr-btn-undo:hover {
-    background: #fde68a;
+    background: #d97706;
+    color: #ffffff;
 }
 
 .ctnr-btn-trash {
     background: #fee2e2;
     color: #ef4444;
     border-color: #fecaca;
-    padding: 2px 6px;
 }
 .ctnr-btn-trash:hover {
-    background: #fecaca;
+    background: #ef4444;
+    color: #ffffff;
 }
 
 .ctnr-btn-restore {
