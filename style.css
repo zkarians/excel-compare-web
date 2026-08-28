@@ -6134,18 +6134,51 @@ tr.border-group td {
 }
 
 .btn-modal-primary {
-    padding: 8px 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 18px;
     background: #0284c7;
-    border: none;
+    border: 1px solid #0284c7;
     border-radius: 8px;
     color: #ffffff;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 800;
     cursor: pointer;
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.25);
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.btn-modal-primary:hover { background: #0369a1; }
+.btn-modal-primary:hover {
+    background: #0369a1;
+    border-color: #0369a1;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
+    transform: translateY(-1px);
+}
 
-.btn-modal-secondary:hover { background: #e2e8f0; }
+.btn-modal-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    color: #475569;
+    font-size: 0.82rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-modal-secondary:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+    color: #1e293b;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
 
 /* 사진보관함 & 라이트박스 컨테이너 적재 품목 실시간 인스펙터 팝오버 */
 .gallery-prod-popover {

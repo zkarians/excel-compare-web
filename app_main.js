@@ -16055,7 +16055,6 @@ window.lightboxDownload = function() {
 
             window.closeAddManualModal();
             await window.loadReportData();
-            alert("✅ 보고서 항목이 성공적으로 저장되었습니다!");
 
         } catch (err) {
             console.error("submitManualReportItem error:", err);
