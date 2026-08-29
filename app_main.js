@@ -7583,52 +7583,128 @@ function generateEntryMailHtml(transporterName) {
     }
 }
 
+// --- 메일 텍스트 서식 생성 유틸리티 ---
+function generateEntryMailPlainText(targetData, transporterName) {
+    if (!targetData || targetData.length === 0) return '';
+    const headers = ['선사', '규격', 'F.DEST', 'CTNR NO', 'SEAL', 'G/W', '모선항차 / 반입터미널', '출항일', '작업일', '운송사'];
+    const rows = [headers.join('\t')];
+
+    targetData.forEach(item => {
+        const carrier = item.carrierName ? (item.carrierName.val || item.carrierName) : '-';
+        const type = item.cntrType ? (item.cntrType.val || item.cntrType) : '-';
+        const dest = item.destination ? (item.destination.val || item.destination) : '-';
+        const cntrKeyMail = (item.cntrNo || '').trim().toUpperCase();
+        const popInfoMail = popWeightMap[cntrKeyMail];
+        const popWeightMail = popInfoMail ? (parseFloat(popInfoMail.weight) || 0) : 0;
+        const hasPopMail = popWeightMail > 0;
+
+        const choiceMail = userSelectedWeights[cntrKeyMail];
+        const baseWeightMail = item.selectedTotalWeight || (item.weights ? (parseFloat(item.weights.mixed) || 0) : 0);
+        const weight = (baseWeightMail + popWeightMail).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const choiceNoteMail = choiceMail ? ` (${choiceMail === 'orig' ? '원본' : '전산'}선택)` : '';
+
+        let remarkMail = (item.origRemark || '-').replace(/<[^>]+>/g, '');
+        if (hasPopMail) {
+            remarkMail = `(POP : ${popWeightMail.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}kg) ` + remarkMail;
+        }
+
+        let displayEtd = item.etd || '-';
+        if (displayEtd instanceof Date || (typeof displayEtd === 'string' && displayEtd.includes('GMT'))) {
+            try {
+                const d = new Date(displayEtd);
+                displayEtd = `${d.getMonth() + 1}월 ${d.getDate()}일`;
+            } catch (e) { }
+        }
+
+        const today = new Date();
+        const displayWorkDate = `${today.getMonth() + 1}월 ${today.getDate()}일`;
+
+        let displayTransporter = (item.transporter || '-').replace(/<[^>]+>/g, '');
+        if (hasPopMail) {
+            displayTransporter += ` (POP : ${popWeightMail.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}kg 포함)`;
+        }
+
+        rows.push([
+            carrier,
+            type,
+            dest,
+            item.cntrNo || '-',
+            item.sealNo || '-',
+            `${weight}${choiceNoteMail}`,
+            remarkMail,
+            displayEtd,
+            displayWorkDate,
+            displayTransporter
+        ].join('\t'));
+    });
+
+    return `[${transporterName} 반입정보]\n\n` + rows.join('\n') + `\n\n총 ${targetData.length}건`;
+}
+
 // --- HTML 이메일 복사 기능 ---
 async function copyEntryToClipboard(transporterName) {
     const result = generateEntryMailHtml(transporterName);
-    if (!result) {
-        // generateEntryMailHtml 내부에서 alert가 뜰 것이므로 여기선 그냥 리턴
-        return;
-    }
-    const htmlContent = result.html;
+    if (!result) return;
 
-    // Fallback 로직을 포함한 클립보드 복사
+    const htmlContent = result.html;
+    const plainText = generateEntryMailPlainText(result.targetData, transporterName);
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><!--StartFragment-->${htmlContent}<!--EndFragment--></body></html>`;
+
+    // 1. Electron 네이티브 클립보드 API 지원 (일렉트론 앱 환경)
+    if (window.isElectron && window.require) {
+        try {
+            const { clipboard } = window.require('electron');
+            if (clipboard && typeof clipboard.write === 'function') {
+                clipboard.write({
+                    html: fullHtml,
+                    text: plainText
+                });
+                alert(`${transporterName} 메일 서식이 복사되었습니다.\n아웃룩이나 이메일 본문에 붙여넣기(Ctrl + V) 하세요.`);
+                return;
+            }
+        } catch (e) {
+            console.warn("Electron clipboard error, falling back:", e);
+        }
+    }
+
+    // 2. 웹 표준 ClipboardItem API (text/html + text/plain 동시 작성)
     try {
         if (navigator.clipboard && window.ClipboardItem) {
             const clipboardItem = new ClipboardItem({
-                'text/html': new Blob([htmlContent], { type: 'text/html' }),
-                'text/plain': new Blob(['HTML 포맷으로 복사되었습니다.'], { type: 'text/plain' })
+                'text/html': new Blob([fullHtml], { type: 'text/html' }),
+                'text/plain': new Blob([plainText], { type: 'text/plain' })
             });
             await navigator.clipboard.write([clipboardItem]);
             alert(`${transporterName} 메일 서식이 복사되었습니다.\n아웃룩이나 이메일 본문에 붙여넣기(Ctrl + V) 하세요.`);
-        } else {
-            throw new Error("ClipboardItem API not supported");
+            return;
         }
     } catch (err) {
         console.warn('Modern clipboard API failed, trying fallback...', err);
-        const tempDiv = document.createElement('div');
-        tempDiv.contentEditable = true;
-        tempDiv.innerHTML = htmlContent;
-        tempDiv.style.position = 'fixed';
-        tempDiv.style.left = '-9999px';
-        document.body.appendChild(tempDiv);
+    }
 
-        const selection = window.getSelection();
-        const range = document.createRange();
-        range.selectNodeContents(tempDiv);
+    // 3. 브라우저 Selection Fallback
+    const tempDiv = document.createElement('div');
+    tempDiv.contentEditable = true;
+    tempDiv.innerHTML = htmlContent;
+    tempDiv.style.position = 'fixed';
+    tempDiv.style.left = '-9999px';
+    document.body.appendChild(tempDiv);
+
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(tempDiv);
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    try {
+        document.execCommand('copy');
+        alert(`${transporterName} 메일 서식이 복사되었습니다.\n아웃룩이나 이메일 본문에 붙여넣기(Ctrl + V) 하세요.`);
+    } catch (fallbackErr) {
+        console.error('Fallback clipboard copy failed:', fallbackErr);
+        alert('복사 중 오류가 발생했습니다.');
+    } finally {
+        document.body.removeChild(tempDiv);
         selection.removeAllRanges();
-        selection.addRange(range);
-
-        try {
-            document.execCommand('copy');
-            alert(`${transporterName} 메일 서식이 복사되었습니다. (Fallback Mode)`);
-        } catch (fallbackErr) {
-            console.error('Fallback clipboard copy failed:', fallbackErr);
-            alert('복사 중 오류가 발생했습니다.');
-        } finally {
-            document.body.removeChild(tempDiv);
-            selection.removeAllRanges();
-        }
     }
 }
 
