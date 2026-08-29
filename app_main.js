@@ -7667,7 +7667,32 @@ async function copyEntryToClipboard(transporterName) {
         }
     }
 
-    // 2. 웹 표준 ClipboardItem API (text/html + text/plain 동시 작성)
+    // 2. 동기식 Copy Event Listener 방식 (다음/네이버 웹메일 에디터, 아웃룩, 구글메일 100% 완벽 호환)
+    let copySuccessful = false;
+    const copyHandler = function(e) {
+        e.preventDefault();
+        if (e.clipboardData) {
+            e.clipboardData.setData('text/html', fullHtml);
+            e.clipboardData.setData('text/plain', plainText);
+            copySuccessful = true;
+        }
+    };
+
+    try {
+        document.addEventListener('copy', copyHandler);
+        document.execCommand('copy');
+        document.removeEventListener('copy', copyHandler);
+    } catch (e) {
+        console.warn("Synchronous copy handler failed:", e);
+        try { document.removeEventListener('copy', copyHandler); } catch(ex) {}
+    }
+
+    if (copySuccessful) {
+        alert(`${transporterName} 메일 서식이 복사되었습니다.\n아웃룩이나 이메일 본문에 붙여넣기(Ctrl + V) 하세요.`);
+        return;
+    }
+
+    // 3. Modern navigator.clipboard API Fallback
     try {
         if (navigator.clipboard && window.ClipboardItem) {
             const clipboardItem = new ClipboardItem({
@@ -7682,7 +7707,7 @@ async function copyEntryToClipboard(transporterName) {
         console.warn('Modern clipboard API failed, trying fallback...', err);
     }
 
-    // 3. 브라우저 Selection Fallback
+    // 4. DOM Selection Fallback
     const tempDiv = document.createElement('div');
     tempDiv.contentEditable = true;
     tempDiv.innerHTML = htmlContent;
@@ -7701,7 +7726,7 @@ async function copyEntryToClipboard(transporterName) {
         alert(`${transporterName} 메일 서식이 복사되었습니다.\n아웃룩이나 이메일 본문에 붙여넣기(Ctrl + V) 하세요.`);
     } catch (fallbackErr) {
         console.error('Fallback clipboard copy failed:', fallbackErr);
-        alert('복사 중 오류가 발생했습니다.');
+        alert('복사 중 오류가 발생했습니다: ' + fallbackErr.message);
     } finally {
         document.body.removeChild(tempDiv);
         selection.removeAllRanges();
