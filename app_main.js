@@ -7010,7 +7010,6 @@ window.handleViewResultDirectly = async function() {
     }
 
     const btn = document.getElementById('btnViewResult');
-    const originalText = btn ? btn.innerHTML : '';
     if (btn) {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 생성 중...';
         btn.disabled = true;
@@ -7055,15 +7054,11 @@ window.handleViewResultDirectly = async function() {
         alert(`엑셀을 생성/여는 중 오류가 발생했습니다: ${err.message}`);
     } finally {
         if (btn) {
-            btn.innerHTML = originalText;
+            btn.innerHTML = '<i class="fas fa-search" style="font-size: 0.82rem;"></i> 결과 바로보기';
             btn.disabled = false;
         }
     }
 };
-
-if (btnViewResult) {
-    btnViewResult.addEventListener('click', window.handleViewResultDirectly);
-}
 
 /**
  * [분리] 비교 결과 Workbook 생성 로직 (Download/View 중복 제거)
@@ -8648,7 +8643,7 @@ if (btnDbViewExcel) {
             console.error('❌ 바로보기 오류:', err);
             alert(`엑셀을 여는 중 오류가 발생했습니다: ${err.message}`);
         } finally {
-            btnDbViewExcel.innerHTML = originalText;
+            btnDbViewExcel.innerHTML = '<i class="fas fa-file-excel" style="margin-right: 4px;"></i> 엑셀 바로보기';
             btnDbViewExcel.disabled = false;
         }
     };
@@ -10331,7 +10326,7 @@ async function viewModalDbResultsInExcel() {
         console.error('❌ 바로보기 오류:', err);
         alert(`엑셀을 여는 중 오류가 발생했습니다: ${err.message}`);
     } finally {
-        btnView.innerHTML = originalText;
+        btnView.innerHTML = '<i class="fas fa-file-excel" style="margin-right: 4px;"></i> 엑셀 바로보기';
         btnView.disabled = false;
     }
 }
