@@ -6233,6 +6233,32 @@ function displayResults(results, isDbMode = false) {
     // 헤더 업데이트 함수 호출
     updateTableHeaders(currentFilter);
 
+    // --- 컨테이너별 총 합산 CBM 계산 (68 CBM 초과 여부 확인용) ---
+    const containerCbmMap = new Map();
+    const sourceDataForCbm = (comparisonResult && comparisonResult.length > 0) ? comparisonResult : (results || []);
+    sourceDataForCbm.forEach(item => {
+        if (!item.cntrNo) return;
+        const cleanCntr = item.cntrNo.trim().toUpperCase();
+        
+        let itemCbm = 0;
+        if (item.totalCBM !== undefined && item.totalCBM !== null && parseFloat(item.totalCBM) > 0) {
+            itemCbm = parseFloat(item.totalCBM);
+        } else if (item.unitCBM !== undefined && item.unitCBM !== null && parseFloat(item.unitCBM) > 0) {
+            const qty = item.qtyInfo ? (item.qtyInfo.plan || item.qtyInfo.origPlan || 0) : 0;
+            itemCbm = parseFloat(item.unitCBM) * qty;
+        } else if (item.dims && typeof item.dims === 'string' && item.dims !== '0x0x0') {
+            const parts = item.dims.split(/x|X|×/).map(v => parseFloat(v.trim()) || 0);
+            if (parts.length >= 3 && parts[0] > 0 && parts[1] > 0 && parts[2] > 0) {
+                const qty = item.qtyInfo ? (item.qtyInfo.plan || item.qtyInfo.origPlan || 0) : 0;
+                const unitCbm = (parts[0] * parts[1] * parts[2]) / 1000000000;
+                itemCbm = unitCbm * qty;
+            }
+        }
+
+        const currentTotal = containerCbmMap.get(cleanCntr) || 0;
+        containerCbmMap.set(cleanCntr, currentTotal + itemCbm);
+    });
+
     let prevCntr = null;
     let prevDetailRaw = null;
     let prevDetailCntr = null;
@@ -6253,6 +6279,13 @@ function displayResults(results, isDbMode = false) {
             const nameUpperForCaution = (res.prodName || '').toUpperCase().trim();
             const matchedCaution = cautionModels.find(item => nameUpperForCaution.includes((item.modelName || '').toUpperCase().trim()));
             const isCaution = !!matchedCaution;
+
+            const cntrCleanKey = (res.cntrNo || "").trim().toUpperCase();
+            const cntrTotalCbm = containerCbmMap.get(cntrCleanKey) || 0;
+            const isCbmOver = cntrTotalCbm > 68;
+            const cbmOverTagHtml = isCbmOver 
+                ? `<span style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:800; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2; cursor:help;" title="총 CBM: ${cntrTotalCbm.toFixed(2)} CBM (기준 68 CBM 초과)">(초)</span>` 
+                : '';
 
             let rowClasses = [];
             if (res.cssClass) rowClasses.push(res.cssClass);
@@ -6371,6 +6404,7 @@ function displayResults(results, isDbMode = false) {
                                     style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
                                     title="클릭하여 컨테이너 복사"
                                     class="copyable-item">${res.cntrNo}</strong>
+                            ${cbmOverTagHtml}
                             ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
                             ${hasPop ? `<span style="display:inline-block;font-size:0.65rem;background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;border-radius:4px;padding:0px 4px;vertical-align:middle;">POP</span>` : ''}
                         </div>
@@ -6473,6 +6507,7 @@ function displayResults(results, isDbMode = false) {
                                     style="cursor: pointer; text-decoration: underline dotted #cbd5e1; text-underline-offset: 3px;"
                                     class="copyable-item"
                                     title="클릭하여 컨테이너 복사">${res.cntrNo}</strong>
+                            ${cbmOverTagHtml}
                             ${isCaution ? `<span title="주의 비고: ${matchedCaution.remark || '사유 없음'}" style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#ef4444; color:#fff; border-radius:4px; padding:0px 4px; line-height:1.2; cursor:help; white-space:nowrap;">주의</span>` : ''}
                             ${reworkContainers.has((res.cntrNo || "").trim().toUpperCase()) ? `<span style="display:inline-flex; align-items:center; justify-content:center; margin-left:4px; font-size:0.7rem; font-weight:bold; background:#fdf2f8; color:#db2777; border:1px solid #fbcfe8; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2;" title="재작업 대상 컨테이너">재</span>` : ''}
                         </div>
