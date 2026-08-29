@@ -2891,6 +2891,24 @@ app.delete('/api/email/history/:id', async (req, res) => {
 // --- 컨테이너 사진 관련 API ---
 const CTNR_UPLOADS_DIR = process.env.CTNR_UPLOAD_DIR || 'C:\\Program Files (x86)\\CTNR\\uploads';
 
+// 파일시스템 절대 경로 안전 해결 헬퍼 (앞단 슬래시/uploads 접두어/쿼리스트링 제거)
+function resolveUploadPhotoFullPath(relPath) {
+    if (!relPath) return '';
+    let clean = relPath.split('?')[0].trim();
+    clean = clean.replace(/^[/\\]+/, '');
+    if (/^uploads[/\\]/i.test(clean)) {
+        clean = clean.replace(/^uploads[/\\]/i, '');
+    }
+
+    const p1 = path.join(CTNR_UPLOADS_DIR, clean);
+    if (fs.existsSync(p1)) return p1;
+
+    const p2 = path.join(CTNR_UPLOADS_DIR, 'uploads', clean);
+    if (fs.existsSync(p2)) return p2;
+
+    return p1;
+}
+
 // 0. 컨테이너별 등록된 사진 수 조회 API (카메라 아이콘 노출 및 씰/일반 구분용)
 app.get('/api/photos/counts', async (req, res) => {
     try {
@@ -3125,7 +3143,7 @@ app.patch('/api/photos', async (req, res) => {
             let skippedCount = 0;
 
             for (const row of pRes.rows) {
-                const localPath = path.resolve(CTNR_UPLOADS_DIR, row.photo_path);
+                const localPath = resolveUploadPhotoFullPath(row.photo_path);
                 if (fs.existsSync(localPath)) {
                     if (sharp) {
                         try {
@@ -3408,8 +3426,8 @@ app.patch('/api/photos', async (req, res) => {
             let currentIdx = 0;
             for (const photo of pRes.rows) {
                 currentIdx++;
-                const filename = path.basename(photo.photo_path);
-                const localPath = path.resolve(CTNR_UPLOADS_DIR, photo.photo_path);
+                const filename = path.basename(photo.photo_path.split('?')[0]);
+                const localPath = resolveUploadPhotoFullPath(photo.photo_path);
 
                 try {
                     // 이미 업로드 완료된 경우
@@ -3563,7 +3581,7 @@ app.delete('/api/photos', async (req, res) => {
             );
 
             for (const row of pRes.rows) {
-                const localPath = path.resolve(CTNR_UPLOADS_DIR, row.photo_path);
+                const localPath = resolveUploadPhotoFullPath(row.photo_path);
                 if (fs.existsSync(localPath)) {
                     try { fs.unlinkSync(localPath); } catch (e) {}
                 }
@@ -3647,9 +3665,9 @@ app.get('/api/photos/download', async (req, res) => {
         const zip = new JSZip();
 
         await Promise.all(photos.map(async (photo) => {
-            const localPath = path.resolve(CTNR_UPLOADS_DIR, photo.photo_path);
+            const localPath = resolveUploadPhotoFullPath(photo.photo_path);
             const folderName = photo.cntr_no || '기타';
-            const fileName = path.basename(photo.photo_path);
+            const fileName = path.basename(photo.photo_path.split('?')[0]);
             const zipEntryPath = `${folderName}/${fileName}`;
 
             if (fs.existsSync(localPath)) {
@@ -3852,7 +3870,7 @@ app.get('/api/photos/duplicates', async (req, res) => {
 
         const hashMap = {};
         for (const photo of photos) {
-            const fullPath = path.resolve(CTNR_UPLOADS_DIR, photo.photo_path);
+            const fullPath = resolveUploadPhotoFullPath(photo.photo_path);
             const hash = getFileMd5(fullPath);
             if (hash) {
                 if (!hashMap[hash]) hashMap[hash] = [];
@@ -3936,7 +3954,7 @@ app.post('/api/photos/duplicates', async (req, res) => {
         const seenHashMap = {};
 
         for (const row of pRes.rows) {
-            const fullPath = path.resolve(CTNR_UPLOADS_DIR, row.photo_path);
+            const fullPath = resolveUploadPhotoFullPath(row.photo_path);
             const hash = getFileMd5(fullPath);
             if (hash) {
                 const key = `${row.cntr_no}_${hash}`;
@@ -4019,8 +4037,9 @@ app.post('/api/photos/local-copy', async (req, res) => {
                 break;
             }
 
-            const srcPath = path.resolve(CTNR_UPLOADS_DIR, photo.photo_path);
-            const filename = path.basename(photo.photo_path);
+            const srcPath = resolveUploadPhotoFullPath(photo.photo_path);
+            const cleanPathNoQuery = (photo.photo_path || '').split('?')[0];
+            const filename = path.basename(cleanPathNoQuery);
 
             let cntrFolder;
             if (byTeamFolder) {
@@ -4048,9 +4067,11 @@ app.post('/api/photos/local-copy', async (req, res) => {
                         teamCopiedMap[teamFolderName] = (teamCopiedMap[teamFolderName] || 0) + 1;
                     }
                 } catch (e) {
+                    console.error(`Local copy file error for ${srcPath} -> ${destPath}:`, e);
                     skippedCount++;
                 }
             } else {
+                console.warn(`Local copy source file not found: ${srcPath} (DB path: ${photo.photo_path})`);
                 skippedCount++;
             }
         }
