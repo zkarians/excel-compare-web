@@ -4036,12 +4036,12 @@ app.post('/api/photos/local-copy', async (req, res) => {
         const teamCopiedMap = {};
 
         let isAborted = false;
-        req.on('close', () => {
+        req.on('aborted', () => {
             isAborted = true;
         });
 
         for (const photo of pRes.rows) {
-            if (isAborted || req.destroyed || (req.socket && req.socket.destroyed)) {
+            if (isAborted || req.aborted) {
                 console.log("🛑 [Local Copy] 클라이언트 취소로 인해 파일 복사가 중단되었습니다.");
                 break;
             }
