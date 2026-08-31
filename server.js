@@ -2891,8 +2891,8 @@ app.delete('/api/email/history/:id', async (req, res) => {
 // --- 컨테이너 사진 관련 API ---
 const CTNR_UPLOADS_DIR = process.env.CTNR_UPLOAD_DIR || 'C:\\Program Files (x86)\\CTNR\\uploads';
 
-// 파일시스템 절대 경로 안전 해결 헬퍼 (앞단 슬래시/uploads 접두어/쿼리스트링 제거)
-function resolveUploadPhotoFullPath(relPath) {
+// 파일시스템 절대 경로 안전 해결 헬퍼 (앞단 슬래시/uploads 접두어/쿼리스트링 제거/컨테이너폴더 자동 매핑)
+function resolveUploadPhotoFullPath(relPath, cntrNo = null) {
     if (!relPath) return '';
     let clean = relPath.split('?')[0].trim();
     clean = clean.replace(/^[/\\]+/, '');
@@ -2905,6 +2905,15 @@ function resolveUploadPhotoFullPath(relPath) {
 
     const p2 = path.join(CTNR_UPLOADS_DIR, 'uploads', clean);
     if (fs.existsSync(p2)) return p2;
+
+    if (cntrNo) {
+        const cleanCntr = String(cntrNo).trim().toUpperCase();
+        const pCntr = path.join(CTNR_UPLOADS_DIR, cleanCntr, path.basename(clean));
+        if (fs.existsSync(pCntr)) return pCntr;
+    }
+
+    const pBasename = path.join(CTNR_UPLOADS_DIR, path.basename(clean));
+    if (fs.existsSync(pBasename)) return pBasename;
 
     return p1;
 }
@@ -4037,7 +4046,7 @@ app.post('/api/photos/local-copy', async (req, res) => {
                 break;
             }
 
-            const srcPath = resolveUploadPhotoFullPath(photo.photo_path);
+            const srcPath = resolveUploadPhotoFullPath(photo.photo_path, photo.cntr_no);
             const cleanPathNoQuery = (photo.photo_path || '').split('?')[0];
             const filename = path.basename(cleanPathNoQuery);
 
