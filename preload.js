@@ -28,5 +28,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // 프론트엔드 에러 백엔드 로그로 전송
     logFrontendError: (errorMsg) => ipcRenderer.send('log-frontend-error', errorMsg),
     // 클립보드에 이미지 복사 (네이티브)
-    writeImageToClipboard: (base64Data) => ipcRenderer.invoke('write-image-to-clipboard', base64Data)
+    writeImageToClipboard: (base64Data) => ipcRenderer.invoke('write-image-to-clipboard', base64Data),
+    // SINGLEX 전산 자동화 API
+    getSinglexConfig: () => ipcRenderer.invoke('get-singlex-config'),
+    saveSinglexConfig: (config) => ipcRenderer.invoke('save-singlex-config', config),
+    startSinglexDownload: (options) => ipcRenderer.invoke('start-singlex-download', options),
+    submitSinglexOtp: (otp) => ipcRenderer.invoke('submit-singlex-otp', otp),
+    cancelSinglexDownload: () => ipcRenderer.invoke('cancel-singlex-download'),
+    onSinglexStatus: (callback) => {
+        ipcRenderer.on('singlex-status-update', (event, data) => callback(data));
+    }
 });

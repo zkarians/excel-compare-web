@@ -372,6 +372,16 @@ app.on('ready', () => {
     }
 
     createWindow();
+    
+    // SINGLEX 전산 자동화 IPC 등록
+    try {
+        const singlexAutomation = require('./singlex_automation.js');
+        singlexAutomation.registerSinglexIpc(ipcMain, mainWindow, masterRulePath);
+        logToFile('⚡ [SINGLEX] 전산 자동 다운로드 IPC 핸들러 등록 완료');
+    } catch (sErr) {
+        logToFile('⚠️ [SINGLEX] 자동화 모듈 로드 실패: ' + sErr.message);
+    }
+
     setupAutoUpdater();
 });
 

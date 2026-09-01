@@ -16844,4 +16844,281 @@ window.lightboxDownload = function() {
     }
 })();
 
+/* =========================================================================
+ *  SINGLEX 전산 파일 자동 다운로드 UI 컨트롤러 (LGE SSO / OTP / 검색 자동화)
+ * ========================================================================= */
+(function initSinglexController() {
+    // 1. 상태 알림 이벤트 리스너 등록
+    if (window.electronAPI && typeof window.electronAPI.onSinglexStatus === 'function') {
+        window.electronAPI.onSinglexStatus((data) => {
+            console.log('[SINGLEX UI Status]', data);
+            
+            if (data.step === 'WAITING_OTP') {
+                openSinglexOtpModal(data.message || 'OTP 6자리를 입력해주세요.');
+            } else if (data.step === 'ERROR') {
+                showToast(`❌ ${data.message}`);
+                const btn = document.getElementById('btnSinglexAutoDownload');
+                if (btn) btn.innerHTML = '<i class="fas fa-bolt"></i> ⚡ 전산 자동 다운로드';
+            } else {
+                showToast(`⚡ [전산 자동화] ${data.message}`);
+            }
+        });
+    }
+
+    // 2. 설정 모달 열기 & 로드
+    window.openSinglexConfigModal = async function() {
+        const modal = document.getElementById('singlexConfigModal');
+        if (!modal) return;
+
+        if (window.electronAPI && typeof window.electronAPI.getSinglexConfig === 'function') {
+            try {
+                const config = await window.electronAPI.getSinglexConfig();
+                if (config) {
+                    const u = document.getElementById('singlexUsername');
+                    const p = document.getElementById('singlexPassword');
+                    const s = document.getElementById('singlexStartDate');
+                    const df = document.getElementById('singlexDepFrom');
+                    const dt = document.getElementById('singlexDepTo');
+                    const sf = document.getElementById('singlexStatusFrom');
+                    const st = document.getElementById('singlexStatusTo');
+                    const sb = document.getElementById('singlexShowBrowser');
+
+                    if (u) u.value = config.username || '';
+                    if (p) p.value = config.password || '';
+                    if (s) s.value = config.startDate || '2026.08.21';
+                    if (df) df.value = config.departurePlaceFrom || 'UDW';
+                    if (dt) dt.value = config.departurePlaceTo || 'UDWCY';
+                    if (sf) sf.value = config.cntrStatusFrom || '01';
+                    if (st) st.value = config.cntrStatusTo || '07';
+                    if (sb) sb.checked = !!config.showBrowser;
+                }
+            } catch (err) {
+                console.warn('[SINGLEX] 설정 로드 실패:', err);
+            }
+        }
+        modal.style.display = 'flex';
+    };
+
+    window.closeSinglexConfigModal = function() {
+        const modal = document.getElementById('singlexConfigModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    // 3. 설정 저장
+    window.saveSinglexConfig = async function() {
+        const u = document.getElementById('singlexUsername')?.value?.trim() || '';
+        const p = document.getElementById('singlexPassword')?.value?.trim() || '';
+        const s = document.getElementById('singlexStartDate')?.value?.trim() || '2026.08.21';
+        const df = document.getElementById('singlexDepFrom')?.value?.trim() || 'UDW';
+        const dt = document.getElementById('singlexDepTo')?.value?.trim() || 'UDWCY';
+        const sf = document.getElementById('singlexStatusFrom')?.value?.trim() || '01';
+        const st = document.getElementById('singlexStatusTo')?.value?.trim() || '07';
+        const sb = document.getElementById('singlexShowBrowser')?.checked || false;
+
+        const config = {
+            username: u,
+            password: p,
+            startDate: s,
+            departurePlaceFrom: df,
+            departurePlaceTo: dt,
+            cntrStatusFrom: sf,
+            cntrStatusTo: st,
+            showBrowser: sb
+        };
+
+        if (window.electronAPI && typeof window.electronAPI.saveSinglexConfig === 'function') {
+            const ok = await window.electronAPI.saveSinglexConfig(config);
+            if (ok) {
+                showToast('✅ 전산(SINGLEX) 설정이 저장되었습니다.');
+                window.closeSinglexConfigModal();
+            } else {
+                alert('설정 저장 중 오류가 발생했습니다.');
+            }
+        } else {
+            localStorage.setItem('singlex_config_web', JSON.stringify(config));
+            showToast('✅ 브라우저에 설정이 저장되었습니다.');
+            window.closeSinglexConfigModal();
+        }
+    };
+
+    // 4. OTP 모달 제어
+    function openSinglexOtpModal(msg) {
+        const modal = document.getElementById('singlexOtpModal');
+        const input = document.getElementById('singlexOtpInput');
+        const statusText = document.getElementById('singlexOtpStatusText');
+        if (!modal) return;
+
+        if (statusText && msg) statusText.textContent = msg;
+        if (input) {
+            input.value = '';
+            setTimeout(() => input.focus(), 200);
+        }
+        modal.style.display = 'flex';
+    }
+
+    function closeSinglexOtpModal() {
+        const modal = document.getElementById('singlexOtpModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    window.submitSinglexOtpFromModal = async function() {
+        const input = document.getElementById('singlexOtpInput');
+        const otp = (input?.value || '').trim();
+        if (!otp || otp.length < 4) {
+            alert('올바른 OTP 번호를 입력해주세요.');
+            if (input) input.focus();
+            return;
+        }
+
+        closeSinglexOtpModal();
+        showToast('🔑 OTP 인증 번호를 제출하고 전산 다운로드를 계속합니다...');
+
+        if (window.electronAPI && typeof window.electronAPI.submitSinglexOtp === 'function') {
+            try {
+                const res = await window.electronAPI.submitSinglexOtp(otp);
+                handleSinglexDownloadResult(res);
+            } catch (err) {
+                showToast(`❌ 전산 다운로드 실패: ${err.message}`);
+            }
+        }
+    };
+
+    window.cancelSinglexOtpFromModal = function() {
+        closeSinglexOtpModal();
+        if (window.electronAPI && typeof window.electronAPI.cancelSinglexDownload === 'function') {
+            window.electronAPI.cancelSinglexDownload();
+        }
+        showToast('전산 자동 다운로드가 취소되었습니다.');
+        const btn = document.getElementById('btnSinglexAutoDownload');
+        if (btn) btn.innerHTML = '<i class="fas fa-bolt"></i> ⚡ 전산 자동 다운로드';
+    };
+
+    // 5. 다운로드 트리거
+    window.triggerSinglexAutoDownload = async function() {
+        if (!window.electronAPI || typeof window.electronAPI.startSinglexDownload !== 'function') {
+            alert('⚠️ 전산 자동 다운로드 기능은 PC 데스크톱 앱(Electron) 환경에서 지원됩니다.');
+            return;
+        }
+
+        const btn = document.getElementById('btnSinglexAutoDownload');
+        const origText = btn ? btn.innerHTML : '';
+        if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 다운로드 중...';
+
+        showToast('⚡ SINGLEX 물류 전산 자동 다운로드를 시작합니다...');
+
+        try {
+            const res = await window.electronAPI.startSinglexDownload();
+            handleSinglexDownloadResult(res);
+        } catch (err) {
+            console.error('[SINGLEX Error]', err);
+            showToast(`❌ 전산 다운로드 실패: ${err.message}`);
+        } finally {
+            if (btn) btn.innerHTML = origText || '<i class="fas fa-bolt"></i> ⚡ 전산 자동 다운로드';
+        }
+    };
+
+    // 6. 다운로드 완료 후 파일 자동 로드 및 비교
+    async function handleSinglexDownloadResult(result) {
+        if (!result || !result.success) {
+            if (result && result.error) {
+                showToast(`❌ 전산 다운로드 오류: ${result.error}`);
+            }
+            return;
+        }
+
+        try {
+            showToast(`📦 전산 파일(${result.fileName}) 분석을 시작합니다...`);
+
+            const uint8 = new Uint8Array(result.buffer.data || result.buffer);
+            const blob = new Blob([uint8], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const file = new File([blob], result.fileName, { type: blob.type });
+
+            window.savedRawFiles = window.savedRawFiles || {};
+            window.savedRawFiles['download'] = file;
+
+            const parsed = await readExcelFile(file, 'download');
+            downloadData = parsed;
+            downloadFile = { name: result.fileName, path: result.filePath, isAutoLoaded: true };
+
+            const statusEl = document.getElementById('statusDownload');
+            const pathEl = document.getElementById('pathDownload');
+            const lastEl = document.getElementById('lastDown');
+            const btnClearDown = document.getElementById('btnClearDown');
+
+            if (statusEl) {
+                statusEl.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; margin-right:4px;"></i>상태: 분석 완료 (${result.fileName})`;
+                statusEl.style.color = '#059669';
+            }
+            if (pathEl) pathEl.value = result.filePath || result.fileName;
+            if (lastEl) lastEl.textContent = `전산 자동 다운로드: ${result.fileName}`;
+            if (btnClearDown) btnClearDown.style.display = 'inline-block';
+
+            if (typeof checkReadyStatus === 'function') checkReadyStatus();
+
+            showToast(`🎉 전산 파일 '${result.fileName}' 다운로드 & 로드 완료!`);
+
+            // 원본 파일이 이미 로드되어 있다면 자동으로 즉시 비교 실행!
+            if (originalData && originalData.length > 0) {
+                showToast('🚀 원본 파일과 자동 비교를 시작합니다...');
+                setTimeout(() => {
+                    if (typeof compareFiles === 'function') {
+                        compareFiles();
+                        if (typeof switchMainTab === 'function') switchMainTab('results');
+                    }
+                }, 600);
+            }
+        } catch (err) {
+            console.error('[SINGLEX Parse Error]', err);
+            showToast(`❌ 전산 파일 파싱 오류: ${err.message}`);
+        }
+    }
+
+    // 7. 이벤트 바인딩
+    function bindSinglexEvents() {
+        const btnAuto = document.getElementById('btnSinglexAutoDownload');
+        const btnOpenCfg = document.getElementById('btnOpenSinglexConfig');
+        const btnCloseCfg = document.getElementById('closeSinglexConfigBtn');
+        const btnCloseCfgBtm = document.getElementById('closeSinglexConfigBtnBottom');
+        const btnSaveCfg = document.getElementById('btnSaveSinglexConfig');
+        const btnTest = document.getElementById('btnTestSinglexDownload');
+
+        const btnSubmitOtp = document.getElementById('btnSubmitSinglexOtp');
+        const btnCancelOtp = document.getElementById('btnCancelSinglexOtp');
+        const otpInput = document.getElementById('singlexOtpInput');
+
+        if (btnAuto) btnAuto.onclick = window.triggerSinglexAutoDownload;
+        if (btnOpenCfg) btnOpenCfg.onclick = window.openSinglexConfigModal;
+        if (btnCloseCfg) btnCloseCfg.onclick = window.closeSinglexConfigModal;
+        if (btnCloseCfgBtm) btnCloseCfgBtm.onclick = window.closeSinglexConfigModal;
+        if (btnSaveCfg) btnSaveCfg.onclick = window.saveSinglexConfig;
+        
+        if (btnTest) {
+            btnTest.onclick = async () => {
+                await window.saveSinglexConfig();
+                window.triggerSinglexAutoDownload();
+            };
+        }
+
+        if (btnSubmitOtp) btnSubmitOtp.onclick = window.submitSinglexOtpFromModal;
+        if (btnCancelOtp) btnCancelOtp.onclick = window.cancelSinglexOtpFromModal;
+        if (otpInput) {
+            otpInput.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    window.submitSinglexOtpFromModal();
+                } else if (e.key === 'Escape') {
+                    window.cancelSinglexOtpFromModal();
+                }
+            };
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindSinglexEvents);
+    } else {
+        bindSinglexEvents();
+    }
+})();
+
+
 
