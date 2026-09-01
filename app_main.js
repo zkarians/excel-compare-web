@@ -16870,31 +16870,39 @@ window.lightboxDownload = function() {
         const modal = document.getElementById('singlexConfigModal');
         if (!modal) return;
 
+        let config = null;
         if (window.electronAPI && typeof window.electronAPI.getSinglexConfig === 'function') {
             try {
-                const config = await window.electronAPI.getSinglexConfig();
-                if (config) {
-                    const u = document.getElementById('singlexUsername');
-                    const p = document.getElementById('singlexPassword');
-                    const s = document.getElementById('singlexStartDate');
-                    const df = document.getElementById('singlexDepFrom');
-                    const dt = document.getElementById('singlexDepTo');
-                    const sf = document.getElementById('singlexStatusFrom');
-                    const st = document.getElementById('singlexStatusTo');
-                    const sb = document.getElementById('singlexShowBrowser');
-
-                    if (u) u.value = config.username || '';
-                    if (p) p.value = config.password || '';
-                    if (s) s.value = config.startDate || '2026.08.21';
-                    if (df) df.value = config.departurePlaceFrom || 'UDW';
-                    if (dt) dt.value = config.departurePlaceTo || 'UDWCY';
-                    if (sf) sf.value = config.cntrStatusFrom || '01';
-                    if (st) st.value = config.cntrStatusTo || '07';
-                    if (sb) sb.checked = !!config.showBrowser;
-                }
+                config = await window.electronAPI.getSinglexConfig();
             } catch (err) {
                 console.warn('[SINGLEX] 설정 로드 실패:', err);
             }
+        }
+        if (!config || !config.username) {
+            try {
+                const saved = localStorage.getItem('singlex_config_saved');
+                if (saved) config = JSON.parse(saved);
+            } catch (e) {}
+        }
+
+        if (config) {
+            const u = document.getElementById('singlexUsername');
+            const p = document.getElementById('singlexPassword');
+            const s = document.getElementById('singlexStartDate');
+            const df = document.getElementById('singlexDepFrom');
+            const dt = document.getElementById('singlexDepTo');
+            const sf = document.getElementById('singlexStatusFrom');
+            const st = document.getElementById('singlexStatusTo');
+            const sb = document.getElementById('singlexShowBrowser');
+
+            if (u && config.username) u.value = config.username;
+            if (p && config.password) p.value = config.password;
+            if (s && config.startDate) s.value = config.startDate;
+            if (df && config.departurePlaceFrom) df.value = config.departurePlaceFrom;
+            if (dt && config.departurePlaceTo) dt.value = config.departurePlaceTo;
+            if (sf && config.cntrStatusFrom) sf.value = config.cntrStatusFrom;
+            if (st && config.cntrStatusTo) st.value = config.cntrStatusTo;
+            if (sb && config.showBrowser !== undefined) sb.checked = !!config.showBrowser;
         }
         modal.style.display = 'flex';
     };
@@ -16926,19 +16934,21 @@ window.lightboxDownload = function() {
             showBrowser: sb
         };
 
+        // 로컬스토리지에도 항상 백업 저장
+        try {
+            localStorage.setItem('singlex_config_saved', JSON.stringify(config));
+        } catch (e) {}
+
         if (window.electronAPI && typeof window.electronAPI.saveSinglexConfig === 'function') {
-            const ok = await window.electronAPI.saveSinglexConfig(config);
-            if (ok) {
-                showToast('✅ 전산(SINGLEX) 설정이 저장되었습니다.');
-                window.closeSinglexConfigModal();
-            } else {
-                alert('설정 저장 중 오류가 발생했습니다.');
+            try {
+                await window.electronAPI.saveSinglexConfig(config);
+            } catch (err) {
+                console.warn('[SINGLEX] IPC 저장 실패, 로컬 저장 유지:', err);
             }
-        } else {
-            localStorage.setItem('singlex_config_web', JSON.stringify(config));
-            showToast('✅ 브라우저에 설정이 저장되었습니다.');
-            window.closeSinglexConfigModal();
         }
+        
+        showToast('✅ 전산(SINGLEX) 설정이 성공적으로 저장되었습니다.');
+        window.closeSinglexConfigModal();
     };
 
     // 4. OTP 모달 제어
