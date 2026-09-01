@@ -1254,6 +1254,8 @@
                 <button class="btn btn-secondary" id="closeRulesBtnBottom">닫기</button>
             </div>
         </div>
+    </div>
+
     <!-- SINGLEX 전산 자동 다운로드 설정 Modal -->
     <div id="singlexConfigModal" class="modal">
         <div class="modal-content" style="max-width: 520px;">
@@ -1549,13 +1551,13 @@
                                     class="fas fa-download"></i></span>
                             2. 다운로드 파일 <span class="sub-desc">(전산 데이터)</span>
                         </h3>
-                        <div class="local-only-feature" style="display: flex; gap: 4px; align-items: center;">
+                        <div style="display: flex; gap: 4px; align-items: center;">
                             <button type="button" id="btnSinglexAutoDownload" class="btn"
                                 style="padding: 0.32rem 0.55rem; font-size: 0.74rem; border-radius: 6px; background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%); color: white; border: none; font-weight: 800; box-shadow: 0 2px 5px rgba(79,70,229,0.25); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
                                 <i class="fas fa-bolt"></i> ⚡ 전산 자동 다운로드
                             </button>
                             <button type="button" id="btnOpenSinglexConfig" class="btn btn-secondary-outline" title="전산(SINGLEX) 계정 및 검색 조건 설정"
-                                style="padding: 0.32rem 0.45rem; font-size: 0.74rem; border-radius: 6px;">
+                                style="padding: 0.32rem 0.45rem; font-size: 0.74rem; border-radius: 6px; cursor: pointer;">
                                 <i class="fas fa-cog"></i>
                             </button>
                             <button id="btnAutoLoadDown" class="btn btn-primary"
@@ -3699,7 +3701,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=20260901-dhzjebeon"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260902-singlex"></script>
+    <script src="app_main.js?v=20260902-singlex-v2"></script>
 </body>
 
 </html>
