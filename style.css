@@ -599,6 +599,7 @@ table {
     border-bottom: 1px solid #cbd5e1;
     padding: 6px 4px;
     font-weight: 700;
+    white-space: nowrap;
 }
 
 #resultTable td {

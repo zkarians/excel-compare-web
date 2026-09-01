@@ -6773,12 +6773,13 @@ function displayResults(results, isDbMode = false) {
                     tr.style.cursor = 'pointer';
                     tr.title = '클릭하면 원본 상세정보를 확인할 수 있습니다';
 
+                    const exactColSpan = tr.children.length || colSpanCount || 17;
                     const detailTr = document.createElement('tr');
                     detailTr.className = 'success-detail-row';
                     detailTr.style.cssText = 'display:none; background: #f0f9ff; border-left: 3px solid #0ea5e9;';
 
                     detailTr.innerHTML = `
-                    <td colspan="100" style="padding: 0; background-color: #f1f5f9;">
+                    <td colspan="${exactColSpan}" style="padding: 0; background-color: #f1f5f9;">
                         <div class="success-detail-container">
                             <div class="detail-card">
                                 <div class="detail-info-group">
