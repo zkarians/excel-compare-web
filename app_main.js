@@ -1073,11 +1073,11 @@ window.renderContainerPhotoBtn = function(cntrNo, options = {}) {
     const badgeColor = hasSeal ? '#059669' : '#e11d48';
     const iconClass = hasSeal ? 'fas fa-camera' : 'fas fa-camera camera-pulse';
     const titleText = hasSeal 
-        ? `${cleanNo} 등록된 사진 ${total}장 보기 (씰 포함)` 
-        : `${cleanNo} 등록된 사진 ${total}장 (⚠️ 씰 사진 미등록)`;
+        ? `${cleanNo} 등록된 사진 ${total}장 보기 (클릭 시 컨테이너 번호 복사)` 
+        : `${cleanNo} 등록된 사진 ${total}장 (⚠️ 씰 사진 미등록, 클릭 시 번호 복사)`;
 
     return `
-        <button type="button" class="btn-table-photo-badge" onclick="window.openPhotoGalleryModal('${cleanNo}', event)" title="${titleText}" style="background: ${hasSeal ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)'}; border: 1px solid ${hasSeal ? '#6ee7b7' : '#fda4af'}; color: ${badgeColor}; padding: 2px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; transition: all 0.15s;">
+        <button type="button" class="btn-table-photo-badge" onclick="event.stopPropagation(); window.copyToClipboard('${cleanNo}', '컨테이너 번호'); window.openPhotoGalleryModal('${cleanNo}', event)" title="${titleText}" style="background: ${hasSeal ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)'}; border: 1px solid ${hasSeal ? '#6ee7b7' : '#fda4af'}; color: ${badgeColor}; padding: 2px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; transition: all 0.15s;">
             <i class="${iconClass}" style="font-size: 0.75rem;"></i>
             <span>${total}</span>
         </button>
@@ -13853,6 +13853,11 @@ window.closePhotoGalleryModal = function(isFullReset = true) {
 window.openPhotoGalleryModal = function(initialCntrNo = null) {
     const modal = document.getElementById('photoGalleryModal');
     if (!modal) return;
+
+    if (initialCntrNo && typeof initialCntrNo === 'string' && initialCntrNo.trim() && initialCntrNo !== 'null') {
+        const cleanNo = initialCntrNo.trim().toUpperCase();
+        window.copyToClipboard(cleanNo, '컨테이너 번호');
+    }
 
     // 사진함 열릴 때 이전 선택 상태 초기화
     window.userCustomGallerySort = false;
