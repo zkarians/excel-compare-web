@@ -6781,31 +6781,31 @@ function displayResults(results, isDbMode = false) {
                     <td colspan="${colSpanCount}" style="padding: 0; background-color: #f1f5f9;">
                         <div class="success-detail-container">
                             <div class="detail-card">
-                                <div class="detail-grid">
-                                    <div class="detail-item">
+                                <div class="detail-info-group">
+                                    <div class="detail-item-compact">
                                         <span class="label"><i class="fas fa-tasks"></i> 작업명</span>
                                         <span class="value">${res.jobName || '-'}</span>
                                     </div>
-                                    <div class="detail-item">
+                                    <div class="detail-item-compact">
                                         <span class="label"><i class="fas fa-lock"></i> 씰정보</span>
                                         <span class="value">${res.sealNo || '-'}</span>
                                     </div>
-                                    <div class="detail-item">
+                                    <div class="detail-item-compact">
                                         <span class="label"><i class="fas fa-calendar-alt"></i> 선적일</span>
                                         <span class="value date-eta">${res.eta || '-'}</span>
                                     </div>
-                                    <div class="detail-item">
+                                    <div class="detail-item-compact">
                                         <span class="label"><i class="fas fa-ship"></i> 출항일</span>
                                         <span class="value date-etd">${res.etd || '-'}</span>
                                     </div>
-                                    <div class="detail-item">
+                                    <div class="detail-item-compact">
                                         <span class="label"><i class="fas fa-barcode"></i> 제번</span>
                                         <span class="value date-jebeon" style="font-weight: 700; color: #0284c7;">${res.jebeon || '-'}</span>
                                     </div>
-                                    <div class="detail-item" style="flex: 1; min-width: 600px;">
-                                        <span class="label"><i class="fas fa-comment-dots"></i> 리마크</span>
-                                        <div class="remark-content">${res.origRemark || '-'}</div>
-                                    </div>
+                                </div>
+                                <div class="detail-remark-group">
+                                    <span class="label"><i class="fas fa-comment-dots"></i> 리마크</span>
+                                    <div class="remark-content-compact" title="${(res.origRemark || '').replace(/"/g, '&quot;')}">${res.origRemark || '-'}</div>
                                 </div>
                             </div>
                         </div>
