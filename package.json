@@ -52,6 +52,7 @@
     "files": [
       "server.js",
       "main.js",
+      "singlex_automation.js",
       "preload.js",
       "index.html",
       "app_main.js",
