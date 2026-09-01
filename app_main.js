@@ -6452,11 +6452,11 @@ function displayResults(results, isDbMode = false) {
                     <td><span class="badge" style="background: ${res.transporter.includes('천마') ? '#fee2e2; color: #b91c1c' : '#dbeafe; color: #1d4ed8'}; border: none; padding: 4px 8px; font-weight: 600;">${res.transporter}</span></td>
                 `;
 
-                const hasMeaningfulError = res.isErrorRow && detailHtml && detailHtml !== '-';
-                if (hasMeaningfulError && !finalDetailHtml.includes('위와 동일')) {
+                if (res.isErrorRow && finalDetailHtml && finalDetailHtml.trim() !== '-' && !finalDetailHtml.includes('위와 동일')) {
                     const trError = document.createElement('tr');
+                    trError.className = 'error-detail-row';
                     trError.style.backgroundColor = '#fef2f2';
-                    trError.innerHTML = `<td colspan="11" style="padding: 4px 12px; font-size: 0.85rem; color: #b91c1c; border-bottom: 2px solid #fca5a5;">
+                    trError.innerHTML = `<td colspan="100" style="padding: 4px 12px; font-size: 0.85rem; color: #b91c1c; border-bottom: 2px solid #fca5a5;">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-exclamation-triangle"></i>
                             <span>${finalDetailHtml}</span>
@@ -6778,7 +6778,7 @@ function displayResults(results, isDbMode = false) {
                     detailTr.style.cssText = 'display:none; background: #f0f9ff; border-left: 3px solid #0ea5e9;';
 
                     detailTr.innerHTML = `
-                    <td colspan="${colSpanCount}" style="padding: 0; background-color: #f1f5f9;">
+                    <td colspan="100" style="padding: 0; background-color: #f1f5f9;">
                         <div class="success-detail-container">
                             <div class="detail-card">
                                 <div class="detail-info-group">

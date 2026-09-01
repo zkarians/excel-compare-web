@@ -1962,35 +1962,35 @@ tr.border-group td {
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
-    gap: 12px 20px;
+    gap: 16px 28px;
     flex-shrink: 0;
 }
 
 .detail-item-compact {
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 2px;
     white-space: nowrap;
 }
 
 .detail-item-compact .label {
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 700;
     color: #64748b;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
 }
 
 .detail-item-compact .label i {
     color: #4361ee;
-    font-size: 0.75rem;
+    font-size: 0.78rem;
 }
 
 .detail-item-compact .value {
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     font-weight: 700;
-    color: #1e293b;
+    color: #0f172a;
     padding-left: 1px;
 }
 
@@ -2004,14 +2004,14 @@ tr.border-group td {
 
 .detail-remark-group {
     flex: 1;
-    min-width: 250px;
+    min-width: 300px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    padding: 5px 12px;
+    padding: 6px 14px;
     box-sizing: border-box;
 }
 
@@ -2021,21 +2021,21 @@ tr.border-group td {
     color: #475569;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     white-space: nowrap;
     flex-shrink: 0;
 }
 
 .detail-remark-group .label i {
     color: #4361ee;
-    font-size: 0.75rem;
+    font-size: 0.78rem;
 }
 
 .remark-content-compact {
-    font-size: 0.83rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: #334155;
-    line-height: 1.35;
+    line-height: 1.4;
     word-break: break-all;
     white-space: normal;
     flex: 1;
