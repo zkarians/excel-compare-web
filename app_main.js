@@ -14471,7 +14471,7 @@ window.renderGalleryPhotos = function() {
         window.fetchFolderDuplicates(targetCntrUpper);
         window.updateGalleryProductSummary(targetCntrUpper);
 
-        if (summaryEl) summaryEl.textContent = `조회된 사진: ${photos.length}장 (컨테이너 ${targetCntrUpper})`;
+        if (summaryEl) summaryEl.innerHTML = `조회된 사진: ${photos.length}장 (컨테이너 <strong class="copyable-item" style="cursor:pointer; color:#0284c7; text-decoration:underline dotted #0284c7;" onclick="window.copyToClipboard('${targetCntrUpper}', '컨테이너 번호')" title="클릭하여 컨테이너 번호 복사">${targetCntrUpper}</strong>)`;
         if (badgeBox) badgeBox.style.display = 'inline-flex';
         if (badgeCntrText) badgeCntrText.textContent = targetCntrUpper;
         if (badgeCount) badgeCount.textContent = `${photos.length}장`;
@@ -14709,7 +14709,7 @@ window.renderGalleryPhotos = function() {
                                                 <div class="ctnr-folder-left-info">
                                                     <input type="checkbox" class="ctnr-folder-chk" ${isFolderSelected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="window.toggleFolderSelect('${folderKey}', event)">
                                                     <i class="fas fa-folder" style="color:#00c0fa; font-size:1rem; margin:0 4px 0 2px;"></i>
-                                                    <strong class="ctnr-folder-name ${carrierInfo.colorClass}">${f.cntrNo}</strong>
+                                                    <strong class="ctnr-folder-name ${carrierInfo.colorClass}" onclick="event.stopPropagation(); window.copyToClipboard('${f.cntrNo}', '컨테이너 번호')" title="클릭하여 컨테이너 번호 복사" style="cursor: pointer; text-decoration: underline dotted transparent; transition: text-decoration-color 0.2s;" onmouseenter="this.style.textDecorationColor='#0284c7'" onmouseleave="this.style.textDecorationColor='transparent'">${f.cntrNo}</strong>
                                                     ${carrierInfo.name ? `<span class="ctnr-folder-carrier-tag ${carrierInfo.colorClass}">[${carrierInfo.name}]</span>` : ''}
                                                 </div>
                                                 <div style="display:flex; align-items:center; gap:5px;">

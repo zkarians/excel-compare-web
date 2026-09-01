@@ -2573,9 +2573,12 @@
 
                 <!-- 현재 선택된 컨테이너 배지 (컨테이너 상세 모드일 때 표시) -->
                 <div id="galleryCntrBadgeBox" class="ctnr-cntr-badge-box" style="display: none; align-items: center; gap: 8px;">
-                    <div style="display: flex; align-items: center; gap: 6px; background: #e0f2fe; padding: 4px 10px; border-radius: 8px; border: 1px solid #bae6fd;">
+                    <div style="display: flex; align-items: center; gap: 6px; background: #e0f2fe; padding: 4px 10px; border-radius: 8px; border: 1px solid #bae6fd; cursor: pointer; transition: all 0.2s;" 
+                         onclick="window.copyToClipboard(window.currentGalleryTargetCntr || document.getElementById('galleryCurrentCntrText').textContent, '컨테이너 번호')"
+                         title="클릭하여 컨테이너 번호 복사"
+                         class="copyable-item">
                         <i class="fas fa-folder-open" style="color: #0284c7;"></i>
-                        <span id="galleryCurrentCntrText" class="ctnr-badge-cntr-text" style="font-weight: 800; color: #0369a1;">-</span>
+                        <span id="galleryCurrentCntrText" class="ctnr-badge-cntr-text" style="font-weight: 800; color: #0369a1; text-decoration: underline dotted #38bdf8; text-underline-offset: 3px;">-</span>
                         <span id="galleryCurrentCountBadge" class="ctnr-badge-count" style="background: #0284c7; color: white; border-radius: 12px; padding: 1px 7px; font-size: 0.72rem; font-weight: 800;">0장</span>
                     </div>
 
@@ -3567,7 +3570,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=20260901-dhzjebeon"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260901-fixnowrap"></script>
+    <script src="app_main.js?v=20260901-cntrcopy"></script>
 </body>
 
 </html>
