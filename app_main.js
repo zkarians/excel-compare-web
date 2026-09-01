@@ -6798,6 +6798,10 @@ function displayResults(results, isDbMode = false) {
                                         <span class="label"><i class="fas fa-ship"></i> 출항일</span>
                                         <span class="value date-etd">${res.etd || '-'}</span>
                                     </div>
+                                    <div class="detail-item">
+                                        <span class="label"><i class="fas fa-barcode"></i> 제번</span>
+                                        <span class="value date-jebeon" style="font-weight: 700; color: #0284c7;">${res.jebeon || '-'}</span>
+                                    </div>
                                     <div class="detail-item" style="flex: 1; min-width: 600px;">
                                         <span class="label"><i class="fas fa-comment-dots"></i> 리마크</span>
                                         <div class="remark-content">${res.origRemark || '-'}</div>

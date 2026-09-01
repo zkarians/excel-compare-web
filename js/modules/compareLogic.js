@@ -135,6 +135,21 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
         downGrouped[key].weightSum += (Number(down.grossWeight) || 0);
     });
 
+    // --- DHZ 사업부 제번(H열) 컨테이너별 수집 ---
+    const origCntrJebeonMap = new Map();
+    const isDhzProduct = (orig) => {
+        if (!orig) return false;
+        const origG = (orig.prodType || "").trim().toUpperCase();
+        if (origG === 'DHZ') return true;
+        const prodNameClean = (orig.prodName || "").trim().toUpperCase();
+        const pm = productMap.get(prodNameClean);
+        if (pm) {
+            const pmDiv = (pm.division || pm.ba || pm.prodType || "").trim().toUpperCase();
+            if (pmDiv === 'DHZ') return true;
+        }
+        return false;
+    };
+
     const origCntrMap = new Map();
     origList.forEach(o => {
         let cleanCntr = (o.cntrNo || "").trim().toUpperCase();
@@ -146,6 +161,15 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
             if (rowRemark && !entry.combinedRemark.includes(rowRemark)) {
                 entry.combinedRemark += " " + rowRemark;
             }
+        }
+
+        // DHZ 제번 수집 (G열 또는 제품DB 사업부가 DHZ인 경우 H열 값 수집)
+        const jVal = (o.jebeon || "").trim();
+        if (cleanCntr && isDhzProduct(o) && jVal) {
+            if (!origCntrJebeonMap.has(cleanCntr)) {
+                origCntrJebeonMap.set(cleanCntr, new Set());
+            }
+            origCntrJebeonMap.get(cleanCntr).add(jVal);
         }
     });
 
@@ -586,6 +610,12 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
             sealNo: down.sealNo || "",
             eta: matchedOrig ? (matchedOrig.eta || "") : "",
             etd: matchedOrig ? matchedOrig.etd : "",
+            jebeon: (() => {
+                const jSet = origCntrJebeonMap.get(cleanCntr);
+                if (jSet && jSet.size > 0) return Array.from(jSet).join(', ');
+                if (matchedOrig && matchedOrig.jebeon) return matchedOrig.jebeon;
+                return '-';
+            })(),
             jobName: matchedOrig ? (matchedOrig.jobName || "") : "",
             workDate: (matchedOrig && matchedOrig.workDate) ? matchedOrig.workDate : workDateStr,
             loadPlanNo: down.loadPlanNo || (matchedOrig ? matchedOrig.loadPlanNo : ""),
@@ -837,6 +867,12 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
                 dims: `${prod?.width || 0}x${prod?.depth || 0}x${prod?.height || 0}`,
                 eta: orig.eta || "",
                 etd: orig.etd || "",
+                jebeon: (() => {
+                    const cKey = (orig.cntrNo || '').trim().toUpperCase();
+                    const jSet = origCntrJebeonMap.get(cKey);
+                    if (jSet && jSet.size > 0) return Array.from(jSet).join(', ');
+                    return orig.jebeon || '-';
+                })(),
                 jobName: orig.jobName || ""
             });
         }
