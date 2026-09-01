@@ -4104,7 +4104,10 @@ app.post('/api/photos/local-copy', async (req, res) => {
     }
 });
 
-// 2. 사진 스트리밍 서빙 API (CTNR 호환 + Google Drive 자동 다운로드 & 캐싱)
+// 전역 원격 호스트 캐시 (성공한 호스트 기억하여 0초 만에 직행)
+let lastWorkingRemoteHost = 'http://ungdong.iptime.org:4000';
+
+// 2. 사진 스트리밍 서빙 API (CTNR 호환 + 초고속 원격 동기화 & 브라우저/로컬 2중 캐싱)
 app.get('/api/photos/view', async (req, res) => {
     try {
         const rawFilename = req.query.filename;
@@ -4115,30 +4118,84 @@ app.get('/api/photos/view', async (req, res) => {
         }
 
         const filename = rawFilename.split('?')[0];
-        const filePath = path.resolve(CTNR_UPLOADS_DIR, filename);
 
-        // Directory traversal 방지
-        const relPath = path.relative(CTNR_UPLOADS_DIR, filePath);
-        if (relPath.startsWith('..') || path.isAbsolute(relPath)) {
-            return res.status(403).send('Forbidden');
-        }
-
-        // 1. 로컬 디스크에 파일이 존재하는 경우 즉시 전송
-        if (fs.existsSync(filePath)) {
+        // 1. [초고속] 로컬 디스크에 파일이 존재하는 경우 0.001초 즉시 전송
+        const localPath = resolveUploadPhotoFullPath(filename);
+        if (localPath && fs.existsSync(localPath)) {
             let contentType = 'image/jpeg';
-            if (filePath.toLowerCase().endsWith('.png')) contentType = 'image/png';
-            else if (filePath.toLowerCase().endsWith('.webp')) contentType = 'image/webp';
-            else if (filePath.toLowerCase().endsWith('.gif')) contentType = 'image/gif';
+            if (localPath.toLowerCase().endsWith('.png')) contentType = 'image/png';
+            else if (localPath.toLowerCase().endsWith('.webp')) contentType = 'image/webp';
+            else if (localPath.toLowerCase().endsWith('.gif')) contentType = 'image/gif';
 
             res.setHeader('Content-Type', contentType);
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
             if (isDownloadMode) {
-                res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(path.basename(filePath))}"`);
+                res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(path.basename(localPath))}"`);
             }
-            return res.sendFile(filePath);
+            return res.sendFile(localPath);
         }
 
-        // 2. 로컬 디스크에 없는 경우: Google Drive에서 다운로드 시도 (완료된 작업 사진 백업)
+        // 2. 다른 PC에서 접속 시: 메인 서버(ungdong.iptime.org:4000)로부터 즉시 스트리밍 & 로컬 캐싱
+        let customMainHost = null;
+        try {
+            const hostConfigFile = path.join(DATA_DIR, 'main_server_config.json');
+            if (fs.existsSync(hostConfigFile)) {
+                const parsed = JSON.parse(fs.readFileSync(hostConfigFile, 'utf8'));
+                if (parsed.mainServerHost) customMainHost = parsed.mainServerHost.trim();
+            }
+        } catch (e) {}
+
+        const adminSessionCookie = Buffer.from(JSON.stringify({ id: '1', username: 'admin', name: '관리자', role: 'ADMIN' })).toString('base64');
+
+        // ungdong.iptime.org:4000을 최우선으로 배치
+        const remoteHosts = Array.from(new Set([
+            lastWorkingRemoteHost,
+            customMainHost,
+            'http://ungdong.iptime.org:4000',
+            'http://ungdong.iptime.org:4001',
+            'http://ungdong.iptime.org:3000',
+            'http://192.168.10.152:3000',
+            'http://10.162.39.58:3000',
+            'http://idlezero.iptime.org:4000',
+            'http://idlezero.iptime.org:3000'
+        ].filter(Boolean)));
+
+        for (const host of remoteHosts) {
+            try {
+                const remoteUrl = `${host}/api/photos/view?filename=${encodeURIComponent(filename)}`;
+                const headers = {
+                    'Cookie': `ctnr_session=${adminSessionCookie}`,
+                    'User-Agent': 'ExcelCompareClient/1.2.4'
+                };
+                const remoteRes = await fetch(remoteUrl, { headers, signal: AbortSignal.timeout(2500) });
+                if (remoteRes.ok) {
+                    const arrayBuffer = await remoteRes.arrayBuffer();
+                    const buffer = Buffer.from(arrayBuffer);
+                    const fetchedType = remoteRes.headers.get('content-type') || 'image/jpeg';
+
+                    if (fetchedType.toLowerCase().includes('image') && buffer.length > 0) {
+                        lastWorkingRemoteHost = host; // 성공한 호스트 즉시 기억
+
+                        // 로컬 디스크에 자동 저장 (다음번 조회 시 0초 즉시 로딩)
+                        try {
+                            const saveTarget = localPath || path.join(CTNR_UPLOADS_DIR, filename.replace(/^[/\\]+/, ''));
+                            const dir = path.dirname(saveTarget);
+                            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+                            fs.writeFileSync(saveTarget, buffer);
+                        } catch (saveErr) {}
+
+                        res.setHeader('Content-Type', fetchedType);
+                        res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+                        if (isDownloadMode) {
+                            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(path.basename(filename))}"`);
+                        }
+                        return res.send(buffer);
+                    }
+                }
+            } catch (remoteErr) {}
+        }
+
+        // 3. Google Drive에서 다운로드 시도 (완료된 작업 사진 클라우드 백업)
         try {
             const pool = await getPool();
             let gdriveFileId = null;
@@ -4151,7 +4208,6 @@ app.get('/api/photos/view', async (req, res) => {
                 gdriveFileId = gRes.rows[0].gdrive_file_id;
             }
 
-            // DB에 gdrive_file_id가 없으면 파일명으로 검색
             if (!gdriveFileId) {
                 const baseName = path.basename(filename);
                 const found = await findGoogleDriveFileByName(baseName);
@@ -4161,83 +4217,23 @@ app.get('/api/photos/view', async (req, res) => {
             if (gdriveFileId) {
                 const gdriveBuffer = await downloadFromGoogleDrive(gdriveFileId);
                 if (gdriveBuffer && gdriveBuffer.length > 0) {
-                    // 로컬 디스크에 캐싱하여 다음 요청부터 즉시 서빙
                     try {
-                        const dir = path.dirname(filePath);
+                        const saveTarget = localPath || path.join(CTNR_UPLOADS_DIR, filename.replace(/^[/\\]+/, ''));
+                        const dir = path.dirname(saveTarget);
                         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-                        fs.writeFileSync(filePath, gdriveBuffer);
-                        console.log(`[Cache] Google Drive 사진 로컬 캐시 완료: ${filePath}`);
-                    } catch (cacheErr) {
-                        console.warn('[Cache Error]', cacheErr.message);
-                    }
+                        fs.writeFileSync(saveTarget, gdriveBuffer);
+                    } catch (cacheErr) {}
 
                     res.setHeader('Content-Type', 'image/jpeg');
-                    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+                    res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
                     if (isDownloadMode) {
                         res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(path.basename(filename))}"`);
                     }
                     return res.send(gdriveBuffer);
                 }
             }
-        } catch (gErr) {
-            console.warn('[GDrive Fallback Warning]', gErr.message);
-        }
+        } catch (gErr) {}
 
-        // 3. 메인 서버 / 원격 CTNR 서버에서 fetch 시도 (다른 PC에서 접속 시 메인 PC 사진 자동 동기화 & 로컬 캐싱)
-        let customMainHost = null;
-        try {
-            const hostConfigFile = path.join(DATA_DIR, 'main_server_config.json');
-            if (fs.existsSync(hostConfigFile)) {
-                const parsed = JSON.parse(fs.readFileSync(hostConfigFile, 'utf8'));
-                if (parsed.mainServerHost) customMainHost = parsed.mainServerHost.trim();
-            }
-        } catch (e) {}
-
-        const adminSessionCookie = Buffer.from(JSON.stringify({ id: '1', username: 'admin', name: '관리자', role: 'ADMIN' })).toString('base64');
-
-        const remoteHosts = [
-            customMainHost,
-            'http://192.168.10.152:3000',
-            'http://10.162.39.58:3000',
-            'http://ungdong.iptime.org:3000',
-            'http://ungdong.iptime.org:4001',
-            'http://idlezero.iptime.org:3000',
-            'http://idlezero.iptime.org:4001',
-            'http://ungdong.iptime.org:4000',
-            'http://idlezero.iptime.org:4000'
-        ].filter(Boolean);
-
-        for (const host of remoteHosts) {
-            try {
-                const remoteUrl = `${host}/api/photos/view?filename=${encodeURIComponent(filename)}`;
-                const headers = {
-                    'Cookie': `ctnr_session=${adminSessionCookie}`,
-                    'User-Agent': 'ExcelCompareClient/1.2.2'
-                };
-                const remoteRes = await fetch(remoteUrl, { headers, signal: AbortSignal.timeout(3500) });
-                if (remoteRes.ok) {
-                    const arrayBuffer = await remoteRes.arrayBuffer();
-                    const buffer = Buffer.from(arrayBuffer);
-                    const fetchedType = remoteRes.headers.get('content-type') || 'image/jpeg';
-
-                    if (fetchedType.toLowerCase().includes('image') && buffer.length > 0) {
-                        try {
-                            const dir = path.dirname(filePath);
-                            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-                            fs.writeFileSync(filePath, buffer);
-                            console.log(`[Sync] 원격 서버(${host})로부터 사진 로컬 캐시 성공: ${filePath}`);
-                        } catch (e) {}
-
-                        res.setHeader('Content-Type', fetchedType);
-                        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-                        if (isDownloadMode) {
-                            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(path.basename(filename))}"`);
-                        }
-                        return res.send(buffer);
-                    }
-                }
-            } catch (remoteErr) {}
-        }
         return res.status(404).send('Photo not found');
     } catch (err) {
         console.error("GET /api/photos/view error:", err);
