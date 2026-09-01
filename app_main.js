@@ -6233,7 +6233,7 @@ function displayResults(results, isDbMode = false) {
     // 헤더 업데이트 함수 호출
     updateTableHeaders(currentFilter);
 
-    // --- 컨테이너별 총 합산 CBM 계산 (68 CBM 초과 여부 확인용) ---
+    // --- 컨테이너별 총 합산 CBM 계산 (70 CBM 초과 여부 확인용) ---
     const containerCbmMap = new Map();
     const sourceDataForCbm = (comparisonResult && comparisonResult.length > 0) ? comparisonResult : (results || []);
     sourceDataForCbm.forEach(item => {
@@ -6282,9 +6282,9 @@ function displayResults(results, isDbMode = false) {
 
             const cntrCleanKey = (res.cntrNo || "").trim().toUpperCase();
             const cntrTotalCbm = containerCbmMap.get(cntrCleanKey) || 0;
-            const isCbmOver = cntrTotalCbm > 68;
+            const isCbmOver = cntrTotalCbm > 70;
             const cbmOverTagHtml = isCbmOver 
-                ? `<span style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:800; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2; cursor:help;" title="총 CBM: ${cntrTotalCbm.toFixed(2)} CBM (기준 68 CBM 초과)">(초)</span>` 
+                ? `<span style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:800; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; border-radius:4px; padding:0px 4px; vertical-align:middle; line-height:1.2; cursor:help;" title="총 CBM: ${cntrTotalCbm.toFixed(2)} CBM (기준 70 CBM 초과)">초</span>` 
                 : '';
 
             let rowClasses = [];
