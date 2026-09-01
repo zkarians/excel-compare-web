@@ -1073,11 +1073,11 @@ window.renderContainerPhotoBtn = function(cntrNo, options = {}) {
     const badgeColor = hasSeal ? '#059669' : '#e11d48';
     const iconClass = hasSeal ? 'fas fa-camera' : 'fas fa-camera camera-pulse';
     const titleText = hasSeal 
-        ? `${cleanNo} 등록된 사진 ${total}장 보기 (클릭 시 컨테이너 번호 복사)` 
-        : `${cleanNo} 등록된 사진 ${total}장 (⚠️ 씰 사진 미등록, 클릭 시 번호 복사)`;
+        ? `${cleanNo} 등록된 사진 ${total}장 보기 (씰 포함)` 
+        : `${cleanNo} 등록된 사진 ${total}장 (⚠️ 씰 사진 미등록)`;
 
     return `
-        <button type="button" class="btn-table-photo-badge" onclick="event.stopPropagation(); window.copyToClipboard('${cleanNo}', '컨테이너 번호'); window.openPhotoGalleryModal('${cleanNo}', event)" title="${titleText}" style="background: ${hasSeal ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)'}; border: 1px solid ${hasSeal ? '#6ee7b7' : '#fda4af'}; color: ${badgeColor}; padding: 2px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; transition: all 0.15s;">
+        <button type="button" class="btn-table-photo-badge" onclick="window.openPhotoGalleryModal('${cleanNo}', event)" title="${titleText}" style="background: ${hasSeal ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)'}; border: 1px solid ${hasSeal ? '#6ee7b7' : '#fda4af'}; color: ${badgeColor}; padding: 2px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; transition: all 0.15s;">
             <i class="${iconClass}" style="font-size: 0.75rem;"></i>
             <span>${total}</span>
         </button>
@@ -13854,11 +13854,6 @@ window.openPhotoGalleryModal = function(initialCntrNo = null) {
     const modal = document.getElementById('photoGalleryModal');
     if (!modal) return;
 
-    if (initialCntrNo && typeof initialCntrNo === 'string' && initialCntrNo.trim() && initialCntrNo !== 'null') {
-        const cleanNo = initialCntrNo.trim().toUpperCase();
-        window.copyToClipboard(cleanNo, '컨테이너 번호');
-    }
-
     // 사진함 열릴 때 이전 선택 상태 초기화
     window.userCustomGallerySort = false;
 
@@ -14529,7 +14524,7 @@ window.renderGalleryPhotos = function() {
                         ${(p.gdrive_file_id || p.gdrive_url) ? `<span class="ctnr-card-cloud-tag" title="구글드라이브 안전 보관 사진 (PC 용량 정리 완료)">☁️</span>` : ''}
                         ${isDuplicate ? `<span class="ctnr-card-duplicate-tag" title="완전히 동일한 중복 사진 (정리 대상)">중복</span>` : ''}
                         ${isSeal ? `<span class="ctnr-card-seal-tag"><i class="fas fa-camera"></i> 씰</span>` : ''}
-                        <img src="${photoUrl}" alt="${p.cntr_no}" style="${rotateStyle}" loading="lazy" onerror="if (!this._retried) { this._retried = 1; setTimeout(() => { this.src = '${photoUrl}&retry=' + Date.now(); }, 800); } else { this.src='https://placehold.co/600x800/11111a/94a3b8?text=Image+Load+Fail'; }">
+                        <img src="${photoUrl}" alt="${p.cntr_no}" style="${rotateStyle}" loading="lazy" onerror="this.src='https://placehold.co/600x800/11111a/94a3b8?text=Image+Load+Fail'">
                         <div class="ctnr-card-gradient-overlay"></div>
                     </div>
                     <div class="ctnr-card-bottom-info">

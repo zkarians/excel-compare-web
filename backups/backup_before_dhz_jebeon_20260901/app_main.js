@@ -1073,11 +1073,11 @@ window.renderContainerPhotoBtn = function(cntrNo, options = {}) {
     const badgeColor = hasSeal ? '#059669' : '#e11d48';
     const iconClass = hasSeal ? 'fas fa-camera' : 'fas fa-camera camera-pulse';
     const titleText = hasSeal 
-        ? `${cleanNo} 등록된 사진 ${total}장 보기 (클릭 시 컨테이너 번호 복사)` 
-        : `${cleanNo} 등록된 사진 ${total}장 (⚠️ 씰 사진 미등록, 클릭 시 번호 복사)`;
+        ? `${cleanNo} 등록된 사진 ${total}장 보기 (씰 포함)` 
+        : `${cleanNo} 등록된 사진 ${total}장 (⚠️ 씰 사진 미등록)`;
 
     return `
-        <button type="button" class="btn-table-photo-badge" onclick="event.stopPropagation(); window.copyToClipboard('${cleanNo}', '컨테이너 번호'); window.openPhotoGalleryModal('${cleanNo}', event)" title="${titleText}" style="background: ${hasSeal ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)'}; border: 1px solid ${hasSeal ? '#6ee7b7' : '#fda4af'}; color: ${badgeColor}; padding: 2px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; transition: all 0.15s;">
+        <button type="button" class="btn-table-photo-badge" onclick="window.openPhotoGalleryModal('${cleanNo}', event)" title="${titleText}" style="background: ${hasSeal ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)'}; border: 1px solid ${hasSeal ? '#6ee7b7' : '#fda4af'}; color: ${badgeColor}; padding: 2px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; transition: all 0.15s;">
             <i class="${iconClass}" style="font-size: 0.75rem;"></i>
             <span>${total}</span>
         </button>
@@ -6452,11 +6452,11 @@ function displayResults(results, isDbMode = false) {
                     <td><span class="badge" style="background: ${res.transporter.includes('천마') ? '#fee2e2; color: #b91c1c' : '#dbeafe; color: #1d4ed8'}; border: none; padding: 4px 8px; font-weight: 600;">${res.transporter}</span></td>
                 `;
 
-                if (res.isErrorRow && finalDetailHtml && finalDetailHtml.trim() !== '-' && !finalDetailHtml.includes('위와 동일')) {
+                const hasMeaningfulError = res.isErrorRow && detailHtml && detailHtml !== '-';
+                if (hasMeaningfulError && !finalDetailHtml.includes('위와 동일')) {
                     const trError = document.createElement('tr');
-                    trError.className = 'error-detail-row';
                     trError.style.backgroundColor = '#fef2f2';
-                    trError.innerHTML = `<td colspan="100" style="padding: 4px 12px; font-size: 0.85rem; color: #b91c1c; border-bottom: 2px solid #fca5a5;">
+                    trError.innerHTML = `<td colspan="11" style="padding: 4px 12px; font-size: 0.85rem; color: #b91c1c; border-bottom: 2px solid #fca5a5;">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-exclamation-triangle"></i>
                             <span>${finalDetailHtml}</span>
@@ -6773,40 +6773,35 @@ function displayResults(results, isDbMode = false) {
                     tr.style.cursor = 'pointer';
                     tr.title = '클릭하면 원본 상세정보를 확인할 수 있습니다';
 
-                    const exactColSpan = tr.children.length || colSpanCount || 17;
                     const detailTr = document.createElement('tr');
                     detailTr.className = 'success-detail-row';
                     detailTr.style.cssText = 'display:none; background: #f0f9ff; border-left: 3px solid #0ea5e9;';
 
                     detailTr.innerHTML = `
-                    <td colspan="${exactColSpan}" style="padding: 0; background-color: #f1f5f9;">
+                    <td colspan="${colSpanCount}" style="padding: 0; background-color: #f1f5f9;">
                         <div class="success-detail-container">
                             <div class="detail-card">
-                                <div class="detail-info-group">
-                                    <div class="detail-item-compact">
+                                <div class="detail-grid">
+                                    <div class="detail-item">
                                         <span class="label"><i class="fas fa-tasks"></i> 작업명</span>
                                         <span class="value">${res.jobName || '-'}</span>
                                     </div>
-                                    <div class="detail-item-compact">
+                                    <div class="detail-item">
                                         <span class="label"><i class="fas fa-lock"></i> 씰정보</span>
                                         <span class="value">${res.sealNo || '-'}</span>
                                     </div>
-                                    <div class="detail-item-compact">
+                                    <div class="detail-item">
                                         <span class="label"><i class="fas fa-calendar-alt"></i> 선적일</span>
                                         <span class="value date-eta">${res.eta || '-'}</span>
                                     </div>
-                                    <div class="detail-item-compact">
+                                    <div class="detail-item">
                                         <span class="label"><i class="fas fa-ship"></i> 출항일</span>
                                         <span class="value date-etd">${res.etd || '-'}</span>
                                     </div>
-                                    <div class="detail-item-compact">
-                                        <span class="label"><i class="fas fa-barcode"></i> 제번</span>
-                                        <span class="value date-jebeon" style="font-weight: 700; color: #0284c7;">${res.jebeon || '-'}</span>
+                                    <div class="detail-item" style="flex: 1; min-width: 600px;">
+                                        <span class="label"><i class="fas fa-comment-dots"></i> 리마크</span>
+                                        <div class="remark-content">${res.origRemark || '-'}</div>
                                     </div>
-                                </div>
-                                <div class="detail-remark-group">
-                                    <span class="label"><i class="fas fa-comment-dots"></i> 리마크</span>
-                                    <div class="remark-content-compact" title="${(res.origRemark || '').replace(/"/g, '&quot;')}">${res.origRemark || '-'}</div>
                                 </div>
                             </div>
                         </div>
@@ -6817,21 +6812,6 @@ function displayResults(results, isDbMode = false) {
                     tr.addEventListener('click', (e) => {
                         if (e.target.closest('.col-select') || e.target.closest('.col-manage')) return;
                         const isExpanded = detailTr.style.display !== 'none';
-
-                        // 기존에 열려 있던 다른 모든 세부사항 행 닫기 (단일 아코디언)
-                        const allDetailRows = document.querySelectorAll('.success-detail-row');
-                        allDetailRows.forEach(row => {
-                            if (row !== detailTr) {
-                                row.style.display = 'none';
-                            }
-                        });
-                        const allMainRows = document.querySelectorAll('#resultBody tr');
-                        allMainRows.forEach(mainRow => {
-                            if (mainRow !== tr && mainRow._detailTr) {
-                                mainRow.style.backgroundColor = '';
-                            }
-                        });
-
                         detailTr.style.display = isExpanded ? 'none' : 'table-row';
                         tr.style.backgroundColor = isExpanded ? '' : '#f0f9ff';
                     });
@@ -13854,11 +13834,6 @@ window.openPhotoGalleryModal = function(initialCntrNo = null) {
     const modal = document.getElementById('photoGalleryModal');
     if (!modal) return;
 
-    if (initialCntrNo && typeof initialCntrNo === 'string' && initialCntrNo.trim() && initialCntrNo !== 'null') {
-        const cleanNo = initialCntrNo.trim().toUpperCase();
-        window.copyToClipboard(cleanNo, '컨테이너 번호');
-    }
-
     // 사진함 열릴 때 이전 선택 상태 초기화
     window.userCustomGallerySort = false;
 
@@ -14476,7 +14451,7 @@ window.renderGalleryPhotos = function() {
         window.fetchFolderDuplicates(targetCntrUpper);
         window.updateGalleryProductSummary(targetCntrUpper);
 
-        if (summaryEl) summaryEl.innerHTML = `조회된 사진: ${photos.length}장 (컨테이너 <strong class="copyable-item" style="cursor:pointer; color:#0284c7; text-decoration:underline dotted #0284c7;" onclick="window.copyToClipboard('${targetCntrUpper}', '컨테이너 번호')" title="클릭하여 컨테이너 번호 복사">${targetCntrUpper}</strong>)`;
+        if (summaryEl) summaryEl.textContent = `조회된 사진: ${photos.length}장 (컨테이너 ${targetCntrUpper})`;
         if (badgeBox) badgeBox.style.display = 'inline-flex';
         if (badgeCntrText) badgeCntrText.textContent = targetCntrUpper;
         if (badgeCount) badgeCount.textContent = `${photos.length}장`;
@@ -14529,7 +14504,7 @@ window.renderGalleryPhotos = function() {
                         ${(p.gdrive_file_id || p.gdrive_url) ? `<span class="ctnr-card-cloud-tag" title="구글드라이브 안전 보관 사진 (PC 용량 정리 완료)">☁️</span>` : ''}
                         ${isDuplicate ? `<span class="ctnr-card-duplicate-tag" title="완전히 동일한 중복 사진 (정리 대상)">중복</span>` : ''}
                         ${isSeal ? `<span class="ctnr-card-seal-tag"><i class="fas fa-camera"></i> 씰</span>` : ''}
-                        <img src="${photoUrl}" alt="${p.cntr_no}" style="${rotateStyle}" loading="lazy" onerror="if (!this._retried) { this._retried = 1; setTimeout(() => { this.src = '${photoUrl}&retry=' + Date.now(); }, 800); } else { this.src='https://placehold.co/600x800/11111a/94a3b8?text=Image+Load+Fail'; }">
+                        <img src="${photoUrl}" alt="${p.cntr_no}" style="${rotateStyle}" loading="lazy" onerror="this.src='https://placehold.co/600x800/11111a/94a3b8?text=Image+Load+Fail'">
                         <div class="ctnr-card-gradient-overlay"></div>
                     </div>
                     <div class="ctnr-card-bottom-info">
@@ -14714,7 +14689,7 @@ window.renderGalleryPhotos = function() {
                                                 <div class="ctnr-folder-left-info">
                                                     <input type="checkbox" class="ctnr-folder-chk" ${isFolderSelected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="window.toggleFolderSelect('${folderKey}', event)">
                                                     <i class="fas fa-folder" style="color:#00c0fa; font-size:1rem; margin:0 4px 0 2px;"></i>
-                                                    <strong class="ctnr-folder-name ${carrierInfo.colorClass}" onclick="event.stopPropagation(); window.copyToClipboard('${f.cntrNo}', '컨테이너 번호')" title="클릭하여 컨테이너 번호 복사" style="cursor: pointer; text-decoration: underline dotted transparent; transition: text-decoration-color 0.2s;" onmouseenter="this.style.textDecorationColor='#0284c7'" onmouseleave="this.style.textDecorationColor='transparent'">${f.cntrNo}</strong>
+                                                    <strong class="ctnr-folder-name ${carrierInfo.colorClass}">${f.cntrNo}</strong>
                                                     ${carrierInfo.name ? `<span class="ctnr-folder-carrier-tag ${carrierInfo.colorClass}">[${carrierInfo.name}]</span>` : ''}
                                                 </div>
                                                 <div style="display:flex; align-items:center; gap:5px;">
