@@ -6816,6 +6816,21 @@ function displayResults(results, isDbMode = false) {
                     tr.addEventListener('click', (e) => {
                         if (e.target.closest('.col-select') || e.target.closest('.col-manage')) return;
                         const isExpanded = detailTr.style.display !== 'none';
+
+                        // 기존에 열려 있던 다른 모든 세부사항 행 닫기 (단일 아코디언)
+                        const allDetailRows = document.querySelectorAll('.success-detail-row');
+                        allDetailRows.forEach(row => {
+                            if (row !== detailTr) {
+                                row.style.display = 'none';
+                            }
+                        });
+                        const allMainRows = document.querySelectorAll('#resultBody tr');
+                        allMainRows.forEach(mainRow => {
+                            if (mainRow !== tr && mainRow._detailTr) {
+                                mainRow.style.backgroundColor = '';
+                            }
+                        });
+
                         detailTr.style.display = isExpanded ? 'none' : 'table-row';
                         tr.style.backgroundColor = isExpanded ? '' : '#f0f9ff';
                     });
