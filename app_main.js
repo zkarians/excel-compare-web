@@ -15083,22 +15083,6 @@ window.updateGalleryProductSummary = async function(cntrNo) {
     }
 };
 
-window.toggleGalleryProductPopover = function(e) {
-    if (e) e.stopPropagation();
-    const popover = document.getElementById('galleryProductPopover');
-    if (!popover) return;
-    if (popover.style.display === 'none' || !popover.style.display) {
-        popover.style.display = 'block';
-    } else {
-        popover.style.display = 'none';
-    }
-};
-
-window.closeGalleryProductPopover = function() {
-    const popover = document.getElementById('galleryProductPopover');
-    if (popover) popover.style.display = 'none';
-};
-
 window.updateLightboxProductSummary = async function(cntrNo) {
     const btn = document.getElementById('btnLightboxProductSummary');
     const popover = document.getElementById('lightboxProductPopover');
@@ -15203,12 +15187,207 @@ window.updateLightboxProductSummary = async function(cntrNo) {
     }
 };
 
-window.toggleLightboxProductPopover = function(e) {
+window.initDraggablePopover = function(popoverId, headerId, storageKey, anchorBtnId) {
+    const popoverEl = document.getElementById(popoverId);
+    const headerEl = document.getElementById(headerId);
+    const anchorBtnEl = document.getElementById(anchorBtnId);
+    if (!popoverEl || !headerEl) return null;
+
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let initialLeft = 0;
+    let initialTop = 0;
+
+    const applySavedPosition = () => {
+        try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) {
+                const pos = JSON.parse(saved);
+                if (pos && typeof pos.top === 'number' && typeof pos.left === 'number') {
+                    const maxLeft = Math.max(10, window.innerWidth - 80);
+                    const maxTop = Math.max(10, window.innerHeight - 80);
+                    const safeLeft = Math.max(10, Math.min(pos.left, maxLeft));
+                    const safeTop = Math.max(10, Math.min(pos.top, maxTop));
+                    popoverEl.style.position = 'fixed';
+                    popoverEl.style.left = safeLeft + 'px';
+                    popoverEl.style.top = safeTop + 'px';
+                    popoverEl.style.right = 'auto';
+                    popoverEl.style.bottom = 'auto';
+                    return true;
+                }
+            }
+        } catch (e) {}
+        return false;
+    };
+
+    const resetToAnchor = () => {
+        try {
+            localStorage.removeItem(storageKey);
+        } catch (e) {}
+        if (anchorBtnEl && anchorBtnEl.offsetParent !== null) {
+            const rect = anchorBtnEl.getBoundingClientRect();
+            popoverEl.style.position = 'fixed';
+            let left = rect.left;
+            if (left + 560 > window.innerWidth - 10) {
+                left = Math.max(10, window.innerWidth - 570);
+            }
+            let top = rect.bottom + 8;
+            if (top + 300 > window.innerHeight - 10) {
+                top = Math.max(10, rect.top - 310);
+            }
+            popoverEl.style.left = left + 'px';
+            popoverEl.style.top = top + 'px';
+            popoverEl.style.right = 'auto';
+            popoverEl.style.bottom = 'auto';
+        } else {
+            popoverEl.style.position = 'fixed';
+            popoverEl.style.left = '20px';
+            popoverEl.style.top = '70px';
+            popoverEl.style.right = 'auto';
+            popoverEl.style.bottom = 'auto';
+        }
+    };
+
+    headerEl.style.cursor = 'grab';
+
+    headerEl.addEventListener('dblclick', (e) => {
+        if (e.target.closest('button') || e.target.closest('input')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        resetToAnchor();
+    });
+
+    headerEl.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) {
+            return;
+        }
+        isDragging = true;
+        headerEl.style.cursor = 'grabbing';
+        document.body.style.userSelect = 'none';
+
+        const rect = popoverEl.getBoundingClientRect();
+        popoverEl.style.position = 'fixed';
+        popoverEl.style.left = rect.left + 'px';
+        popoverEl.style.top = rect.top + 'px';
+        popoverEl.style.right = 'auto';
+        popoverEl.style.bottom = 'auto';
+
+        startX = e.clientX;
+        startY = e.clientY;
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        const onMouseMove = (moveEvt) => {
+            if (!isDragging) return;
+            const dx = moveEvt.clientX - startX;
+            const dy = moveEvt.clientY - startY;
+
+            let newLeft = initialLeft + dx;
+            let newTop = initialTop + dy;
+
+            const maxLeft = window.innerWidth - popoverEl.offsetWidth - 10;
+            const maxTop = window.innerHeight - 50;
+            newLeft = Math.max(10, Math.min(newLeft, maxLeft));
+            newTop = Math.max(10, Math.min(newTop, maxTop));
+
+            popoverEl.style.left = newLeft + 'px';
+            popoverEl.style.top = newTop + 'px';
+        };
+
+        const onMouseUp = () => {
+            if (!isDragging) return;
+            isDragging = false;
+            headerEl.style.cursor = 'grab';
+            document.body.style.userSelect = '';
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+
+            const finalRect = popoverEl.getBoundingClientRect();
+            try {
+                localStorage.setItem(storageKey, JSON.stringify({
+                    left: Math.round(finalRect.left),
+                    top: Math.round(finalRect.top)
+                }));
+            } catch (err) {}
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    });
+
+    return {
+        applySavedPosition,
+        resetToAnchor
+    };
+};
+
+window.resetGalleryProductPopoverPos = function(e) {
     if (e) e.stopPropagation();
-    const popover = document.getElementById('lightboxProductPopover');
+    if (window.galleryPopoverDragHandler) {
+        window.galleryPopoverDragHandler.resetToAnchor();
+    }
+};
+
+window.resetLightboxProductPopoverPos = function(e) {
+    if (e) e.stopPropagation();
+    if (window.lightboxPopoverDragHandler) {
+        window.lightboxPopoverDragHandler.resetToAnchor();
+    }
+};
+
+window.toggleGalleryProductPopover = function(e) {
+    if (e) e.stopPropagation();
+    const popover = document.getElementById('galleryProductPopover');
+    const btn = document.getElementById('btnGalleryProductSummary');
     if (!popover) return;
     if (popover.style.display === 'none' || !popover.style.display) {
         popover.style.display = 'block';
+        if (!window.galleryPopoverDragHandler) {
+            window.galleryPopoverDragHandler = window.initDraggablePopover(
+                'galleryProductPopover',
+                'galleryProductPopoverHeader',
+                'gallery_prod_popover_pos',
+                'btnGalleryProductSummary'
+            );
+        }
+        if (window.galleryPopoverDragHandler) {
+            const hasSaved = window.galleryPopoverDragHandler.applySavedPosition();
+            if (!hasSaved && btn) {
+                window.galleryPopoverDragHandler.resetToAnchor();
+            }
+        }
+    } else {
+        popover.style.display = 'none';
+    }
+};
+
+window.closeGalleryProductPopover = function() {
+    const popover = document.getElementById('galleryProductPopover');
+    if (popover) popover.style.display = 'none';
+};
+
+window.toggleLightboxProductPopover = function(e) {
+    if (e) e.stopPropagation();
+    const popover = document.getElementById('lightboxProductPopover');
+    const btn = document.getElementById('btnLightboxProductSummary');
+    if (!popover) return;
+    if (popover.style.display === 'none' || !popover.style.display) {
+        popover.style.display = 'block';
+        if (!window.lightboxPopoverDragHandler) {
+            window.lightboxPopoverDragHandler = window.initDraggablePopover(
+                'lightboxProductPopover',
+                'lightboxProductPopoverHeader',
+                'lightbox_prod_popover_pos',
+                'btnLightboxProductSummary'
+            );
+        }
+        if (window.lightboxPopoverDragHandler) {
+            const hasSaved = window.lightboxPopoverDragHandler.applySavedPosition();
+            if (!hasSaved && btn) {
+                window.lightboxPopoverDragHandler.resetToAnchor();
+            }
+        }
     } else {
         popover.style.display = 'none';
     }

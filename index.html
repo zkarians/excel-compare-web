@@ -2694,13 +2694,17 @@
 
                         <!-- 품목 상세 드롭다운 팝오버 카드 -->
                         <div id="galleryProductPopover" class="gallery-prod-popover" style="display: none;">
-                            <div class="popover-header">
-                                <div style="display: flex; align-items: center; gap: 6px;">
+                            <div id="galleryProductPopoverHeader" class="popover-header" title="드래그하여 원하는 위치로 이동 (더블클릭 시 위치 초기화)">
+                                <div style="display: flex; align-items: center; gap: 6px; cursor: inherit;">
+                                    <i class="fas fa-grip-vertical" style="color: #94a3b8; font-size: 0.8rem; margin-right: 2px;" title="드래그 손잡이"></i>
                                     <i class="fas fa-clipboard-list" style="color: #0284c7;"></i>
                                     <strong id="popoverCntrNo">-</strong>
                                     <span id="popoverHeaderMeta" style="font-size: 0.75rem; color: #64748b; font-weight: 600;">-</span>
                                 </div>
-                                <button type="button" class="popover-close-btn" onclick="window.closeGalleryProductPopover()">&times;</button>
+                                <div class="popover-header-actions">
+                                    <button type="button" class="popover-action-btn" onclick="window.resetGalleryProductPopoverPos(event)" title="원래 위치로 초기화 (더블클릭해도 초기화됨)"><i class="fas fa-undo-alt"></i></button>
+                                    <button type="button" class="popover-close-btn" onclick="window.closeGalleryProductPopover()" title="닫기">&times;</button>
+                                </div>
                             </div>
                             <div id="popoverProductBody" class="popover-body">
                                 <!-- 동적 렌더링 -->
@@ -3230,13 +3234,17 @@
 
         <!-- 라이트박스 품목 상세 팝오버 -->
         <div id="lightboxProductPopover" class="lightbox-prod-popover" style="display: none;">
-            <div class="popover-header">
-                <div style="display: flex; align-items: center; gap: 6px;">
+            <div id="lightboxProductPopoverHeader" class="popover-header" title="드래그하여 원하는 위치로 이동 (더블클릭 시 위치 초기화)">
+                <div style="display: flex; align-items: center; gap: 6px; cursor: inherit;">
+                    <i class="fas fa-grip-vertical" style="color: #64748b; font-size: 0.8rem; margin-right: 2px;" title="드래그 손잡이"></i>
                     <i class="fas fa-clipboard-list" style="color: #38bdf8;"></i>
                     <strong id="lbPopoverCntrNo" style="color: #38bdf8;">-</strong>
                     <span id="lbPopoverHeaderMeta" style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">-</span>
                 </div>
-                <button type="button" class="popover-close-btn" onclick="window.closeLightboxProductPopover()">&times;</button>
+                <div class="popover-header-actions">
+                    <button type="button" class="popover-action-btn" onclick="window.resetLightboxProductPopoverPos(event)" title="원래 위치로 초기화 (더블클릭해도 초기화됨)"><i class="fas fa-undo-alt"></i></button>
+                    <button type="button" class="popover-close-btn" onclick="window.closeLightboxProductPopover()" title="닫기">&times;</button>
+                </div>
             </div>
             <div id="lbPopoverProductBody" class="popover-body">
                 <!-- 동적 렌더링 -->
@@ -3672,7 +3680,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=20260901-dhzjebeon"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260902-phototags"></script>
+    <script src="app_main.js?v=20260903-draggablepopover"></script>
 </body>
 
 </html>

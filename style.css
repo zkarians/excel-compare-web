@@ -6248,7 +6248,34 @@ tr.border-group td {
     letter-spacing: 0.5px;
 }
 
-.gallery-prod-popover .popover-close-btn {
+.popover-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.popover-action-btn {
+    background: transparent;
+    border: none;
+    font-size: 0.82rem;
+    line-height: 1;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 4px;
+    transition: all 0.15s;
+}
+.popover-action-btn:hover {
+    color: #0284c7;
+    background: #e0f2fe;
+}
+.lightbox-prod-popover .popover-action-btn:hover {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.15);
+}
+
+.gallery-prod-popover .popover-close-btn,
+.lightbox-prod-popover .popover-close-btn {
     background: transparent;
     border: none;
     font-size: 1.2rem;
@@ -6256,8 +6283,11 @@ tr.border-group td {
     color: #94a3b8;
     cursor: pointer;
     padding: 0 4px;
+    border-radius: 4px;
+    transition: all 0.15s;
 }
-.gallery-prod-popover .popover-close-btn:hover { color: #0f172a; }
+.gallery-prod-popover .popover-close-btn:hover { color: #ef4444; background: #fee2e2; }
+.lightbox-prod-popover .popover-close-btn:hover { color: #f87171; background: rgba(248, 113, 113, 0.15); }
 
 .gallery-prod-popover .popover-body {
     max-height: 280px;
