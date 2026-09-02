@@ -11995,13 +11995,29 @@ function renderAvailBlockReportTable() {
                 blockDetailHtml = `<span style="color: #b91c1c; font-weight: 600;">${parts.join(', ') || '블록 재고 감지'}</span>`;
             }
 
-            // 정상 피킹 위치 구성
-            const normalLoc = item.adj2 || item.location || (item.stockLocs && item.stockLocs.length > 0 ? item.stockLocs.join(', ') : '-');
-            const normalLocHtml = `
-                <div style="display: inline-flex; align-items: center; gap: 4px; background: #ecfdf5; color: #047857; font-weight: 700; padding: 2px 8px; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.8rem;">
-                    <i class="fas fa-check-circle" style="color: #10b981;"></i> <span>${normalLoc}</span>
-                </div>
-            `;
+            // 정상 피킹 위치 구성 (창고 정상 재고 로케이션 최우선)
+            let normalLocHtml = '';
+            if (item.stockLocs && item.stockLocs.length > 0) {
+                normalLocHtml = item.stockLocs.map(loc => `
+                    <div style="display: inline-flex; align-items: center; gap: 4px; background: #ecfdf5; color: #047857; font-weight: 700; padding: 2px 8px; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.78rem; margin: 1px 0; white-space: nowrap;">
+                        <i class="fas fa-check-circle" style="color: #10b981;"></i> <span>${loc}</span>
+                    </div>
+                `).join('<br>');
+            } else if (item.location && item.location !== '-') {
+                normalLocHtml = `
+                    <div style="display: inline-flex; align-items: center; gap: 4px; background: #ecfdf5; color: #047857; font-weight: 700; padding: 2px 8px; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.78rem;">
+                        <i class="fas fa-check-circle" style="color: #10b981;"></i> <span>${item.location}</span>
+                    </div>
+                `;
+            } else if (item.adj2 && item.adj2 !== '-') {
+                normalLocHtml = `
+                    <div style="display: inline-flex; align-items: center; gap: 4px; background: #f1f5f9; color: #475569; font-weight: 600; padding: 2px 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.75rem;">
+                        <span>구분2 (${item.adj2})</span>
+                    </div>
+                `;
+            } else {
+                normalLocHtml = `<span style="color: #94a3b8;">-</span>`;
+            }
 
             html += `
                 <td style="padding: 8px 8px; border: 1px solid #cbd5e1; text-align: left; vertical-align: middle; font-weight: 700; color: #0f172a; font-size: 0.82rem;">
@@ -12062,11 +12078,21 @@ window.copyAvailBlockReportText = function() {
                 if (item.longTerm > 0) blockDescList.push(`롱텀 ${item.longTerm}EA`);
                 if (item.bin > 0) blockDescList.push(`BIN ${item.bin}EA`);
             }
-            const normalLoc = item.adj2 || item.location || (item.stockLocs && item.stockLocs.length > 0 ? item.stockLocs.join(', ') : '-');
+            
+            let normalLocStr = '';
+            if (item.stockLocs && item.stockLocs.length > 0) {
+                normalLocStr = item.stockLocs.join(', ');
+            } else if (item.location && item.location !== '-') {
+                normalLocStr = item.location;
+            } else if (item.adj2 && item.adj2 !== '-') {
+                normalLocStr = `구분2(${item.adj2})`;
+            } else {
+                normalLocStr = '-';
+            }
 
             lines.push(` ▶ 주의모델 ${itIdx + 1}: ${item.prodName} (계획: ${item.qty}EA)`);
             lines.push(`    🚫 피할 위치: ${blockDescList.join(', ') || '블록 재고'}`);
-            lines.push(`    ✅ 정상 피킹: ${normalLoc}`);
+            lines.push(`    ✅ 정상 피킹: ${normalLocStr}`);
         });
         lines.push(``);
     });
@@ -12202,7 +12228,17 @@ window.exportAvailBlockReportExcel = function() {
             const blockLocStr = (item.blockLocs && item.blockLocs.length > 0) 
                 ? item.blockLocs.join(', ') 
                 : (`OQC:${item.oqc || 0} / 롱텀:${item.longTerm || 0} / BIN:${item.bin || 0}`);
-            const normalLoc = item.adj2 || item.location || (item.stockLocs && item.stockLocs.length > 0 ? item.stockLocs.join(', ') : '-');
+            
+            let normalLocStr = '';
+            if (item.stockLocs && item.stockLocs.length > 0) {
+                normalLocStr = item.stockLocs.join(', ');
+            } else if (item.location && item.location !== '-') {
+                normalLocStr = item.location;
+            } else if (item.adj2 && item.adj2 !== '-') {
+                normalLocStr = `구분2(${item.adj2})`;
+            } else {
+                normalLocStr = '-';
+            }
 
             rows.push([
                 group.cntrNo,
@@ -12215,7 +12251,7 @@ window.exportAvailBlockReportExcel = function() {
                 item.qty,
                 item.good,
                 blockLocStr,
-                normalLoc
+                normalLocStr
             ]);
         });
     });
