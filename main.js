@@ -37,7 +37,7 @@ try {
     }
 }
 
-const { app, BrowserWindow, dialog, ipcMain, clipboard, nativeImage, shell } = (typeof electron === 'object' && electron !== null) ? electron : {};
+const { app, BrowserWindow, dialog, ipcMain, clipboard, nativeImage, shell, Menu } = (typeof electron === 'object' && electron !== null) ? electron : {};
 
 // 백그라운드 실행 제한 해제를 위한 엔진 스위치 추가
 if (app) {
@@ -93,10 +93,16 @@ function logToFile(msg) {
 }
 
 function createWindow() {
+    // 기본 상단 메뉴바(File, Edit, View, Window, Help) 완전 제거
+    if (Menu && typeof Menu.setApplicationMenu === 'function') {
+        Menu.setApplicationMenu(null);
+    }
+
     mainWindow = new BrowserWindow({
         width: 1400,
         height: 1050,
         icon: path.join(__dirname, 'build', 'icon.png'),
+        autoHideMenuBar: true,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -106,6 +112,10 @@ function createWindow() {
         },
         title: "엑셀 데이터 비교 프로그램"
     });
+
+    if (mainWindow && typeof mainWindow.removeMenu === 'function') {
+        mainWindow.removeMenu();
+    }
 
     mainWindow.loadFile(path.join(__dirname, 'index.html'));
     mainWindow.on('focus', () => {
