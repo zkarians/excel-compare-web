@@ -2031,11 +2031,14 @@
                     <button id="btnAvailPickFile" class="btn" style="padding: 4px 9px; font-size: 0.76rem; border-radius: 6px; font-weight: 700; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; cursor: pointer; height: 30px;" onclick="document.getElementById('fileAvailDirect').click()">
                         <i class="fas fa-file-upload"></i> 원본 선택
                     </button>
+                    <button id="btnAvailBlockReport" class="btn" style="padding: 4px 10px; font-size: 0.76rem; border-radius: 6px; font-weight: 800; background: linear-gradient(135deg, #7e22ce 0%, #9333ea 100%); color: white; border: none; cursor: pointer; height: 30px; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(126, 34, 206, 0.25);" onclick="window.openAvailBlockReportModal()" title="컨테이너 번호가 지정된 블록주의 모델 공지 보고서">
+                        <i class="fas fa-bullhorn"></i> 🚨 블록주의 보고서
+                    </button>
                     <button id="btnExportAvailExcel" class="btn btn-success" style="padding: 4px 9px; font-size: 0.76rem; border-radius: 6px; height: 30px;" onclick="window.exportAvailabilityToExcel()">
                         <i class="fas fa-file-excel"></i> 엑셀
                     </button>
                     <button id="btnCopyAvailNotice" class="btn btn-primary" style="padding: 4px 9px; font-size: 0.76rem; border-radius: 6px; height: 30px;" onclick="window.copyAvailabilityNotice()">
-                        <i class="fas fa-clipboard"></i> 공지
+                        <i class="fas fa-clipboard"></i> 종합 공지
                     </button>
                     <button id="btnRefreshAvail" class="btn btn-secondary-outline" style="padding: 4px 7px; font-size: 0.76rem; border-radius: 6px; height: 30px;" onclick="window.runPreWorkAvailabilityCheck()" title="새로고침">
                         <i class="fas fa-sync-alt"></i>
@@ -2437,6 +2440,105 @@
                         <i class="far fa-copy"></i> 이미지 복사 (카톡 공지용)
                     </button>
                     <button class="btn" id="btnDownloadBlockWorkExcel" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 6px; padding: 8px 18px; font-weight: 700; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s; box-shadow: 0 3px 6px rgba(5, 150, 105, 0.25);">
+                        <i class="far fa-file-excel"></i> 엑셀 다운로드
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 작업분석 컨테이너 지정 블록주의 보고서 Modal -->
+    <div id="availBlockReportModal" class="modal">
+        <div class="modal-content" style="max-width: 1400px; width: 97%; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: none;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #4c1d95 0%, #7e22ce 100%); color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; color: white; font-size: 1.15rem; display: flex; align-items: center; gap: 8px; font-weight: 700;">
+                    <i class="fas fa-bullhorn" style="color: #fbbf24;"></i> 블록주의 상차 작업 공지 보고서 (컨테이너 지정 대상)
+                </h2>
+                <span class="close-btn" id="closeAvailBlockReportBtn" style="color: white; font-size: 1.6rem; cursor: pointer; line-height: 1; opacity: 0.9;">&times;</span>
+            </div>
+            <div class="modal-body" style="padding: 1.25rem 1.5rem; background: #f8fafc;">
+                <p style="color: #475569; font-size: 0.83rem; margin: 0 0 12px 0; line-height: 1.5;">
+                    작업분석 결과 중 **컨테이너 번호가 지정된 작업에서 OQC 홀드, 롱텀, BIN블록 재고가 감지된 모델**들의 목록입니다.<br>
+                    현장 근로자에게 피해야 할 블록 재고 위치와 정상 피킹 로케이션을 <strong>카카오톡 텍스트, 이미지(Ctrl+V), 또는 엑셀</strong>로 즉시 공지할 수 있습니다.
+                </p>
+
+                <!-- 검색창 및 요약 통계 -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; flex-wrap: wrap;">
+                    <div style="position: relative; flex: 1; max-width: 400px;">
+                        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.85rem;">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" id="searchAvailBlockReport" placeholder="컨테이너 번호, 작업명, 모델명 검색..."
+                            style="width: 100%; padding: 7px 12px 7px 34px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.82rem; outline: none; background: white;">
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <div style="font-size: 0.82rem; color: #334155; background: #f3e8ff; padding: 6px 14px; border-radius: 6px; font-weight: 700; display: flex; align-items: center; gap: 6px; border: 1px solid #d8b4fe;">
+                            <i class="fas fa-truck-loading" style="color: #7e22ce;"></i> 대상 컨테이너: <span id="availBlockReportCntrCount" style="color: #6b21a8; font-weight: 800; font-size: 0.95rem;">0</span> 대
+                            <span style="color: #cbd5e1; margin: 0 2px;">|</span>
+                            <i class="fas fa-exclamation-triangle" style="color: #d97706;"></i> 주의 모델: <span id="availBlockReportModelCount" style="color: #b45309; font-weight: 800; font-size: 0.95rem;">0</span> 건
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 캡처 대상 컨테이너 -->
+                <div id="availBlockReportCaptureContainer" style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                    <!-- 캡처 헤더 (이미지 복사 시 노출) -->
+                    <div id="availBlockReportCaptureHeader" style="display: none; justify-content: space-between; align-items: center; border-bottom: 3px solid #7e22ce; padding-bottom: 10px; margin-bottom: 12px;">
+                        <div>
+                            <span style="font-size: 1.15rem; font-weight: 800; color: #6b21a8; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-bullhorn" style="color: #7e22ce;"></i> 블록주의 상차 작업 공지 (컨테이너 지정 대상)
+                            </span>
+                            <span style="font-size: 0.75rem; color: #64748b; margin-top: 4px; display: block;">
+                                ※ 주의 태그: <span style="color:#ef4444; font-weight:700;">[OQC홀드]</span>, <span style="color:#8b5cf6; font-weight:700;">[롱텀]</span>, <span style="color:#e11d48; font-weight:700;">[BIN블록]</span>
+                            </span>
+                        </div>
+                        <span id="availBlockReportCaptureTime" style="font-size: 0.8rem; color: #64748b; font-weight: 600;"></span>
+                    </div>
+
+                    <!-- 테이블 스크롤 컨테이너 -->
+                    <div id="availBlockReportScrollWrapper" style="max-height: 480px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; background: white;">
+                        <table style="width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 0.8rem; text-align: center;">
+                            <colgroup>
+                                <col style="width: 13%;">
+                                <col style="width: 8%;">
+                                <col style="width: 14%;">
+                                <col style="width: 20%;">
+                                <col style="width: 8%;">
+                                <col style="width: 21%;">
+                                <col style="width: 16%;">
+                            </colgroup>
+                            <thead style="background: #f1f5f9; position: sticky; top: 0; z-index: 2;">
+                                <tr>
+                                    <th style="padding: 10px 6px; font-weight: 700; color: #1e293b; border: 1px solid #cbd5e1; background: #f1f5f9; vertical-align: middle;">컨테이너 번호</th>
+                                    <th style="padding: 10px 4px; font-weight: 700; color: #1e293b; border: 1px solid #cbd5e1; background: #f1f5f9; vertical-align: middle;">시트구분</th>
+                                    <th style="padding: 10px 6px; font-weight: 700; color: #1e293b; border: 1px solid #cbd5e1; background: #f1f5f9; vertical-align: middle;">작업명 / 도착지</th>
+                                    <th style="padding: 10px 8px; font-weight: 700; color: #1e293b; border: 1px solid #cbd5e1; background: #f1f5f9; text-align: left; vertical-align: middle;">제품모델명</th>
+                                    <th style="padding: 10px 4px; font-weight: 700; color: #1e293b; border: 1px solid #cbd5e1; background: #f1f5f9; vertical-align: middle;">계획수량</th>
+                                    <th style="padding: 10px 8px; font-weight: 700; color: #b91c1c; border: 1px solid #cbd5e1; background: #fef2f2; text-align: left; vertical-align: middle;">🚫 블록 재고 위치 (피할 곳)</th>
+                                    <th style="padding: 10px 8px; font-weight: 700; color: #047857; border: 1px solid #cbd5e1; background: #ecfdf5; text-align: left; vertical-align: middle;">✅ 정상 피킹 위치</th>
+                                </tr>
+                            </thead>
+                            <tbody id="availBlockReportTableBody">
+                                <tr>
+                                    <td colspan="7" style="padding: 40px; color: #94a3b8; text-align: center; font-size: 0.85rem; border: 1px solid #cbd5e1;">
+                                        조회된 블록주의 컨테이너 작업이 없습니다.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="text-align: right; padding: 14px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; border-radius: 0 0 12px 12px;">
+                <button class="btn btn-secondary" id="closeAvailBlockReportBottomBtn" style="padding: 7px 16px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer;">닫기</button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn" id="btnCopyAvailBlockReportText" style="background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 700; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 6px rgba(79, 70, 229, 0.25);">
+                        <i class="fas fa-clipboard"></i> 카톡 텍스트 복사
+                    </button>
+                    <button class="btn" id="btnCopyAvailBlockReportImage" style="background: linear-gradient(135deg, #7e22ce 0%, #6b21a8 100%); color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 700; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 6px rgba(126, 34, 206, 0.25);">
+                        <i class="far fa-copy"></i> 이미지 복사 (Ctrl+V)
+                    </button>
+                    <button class="btn" id="btnDownloadAvailBlockReportExcel" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 700; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 6px rgba(5, 150, 105, 0.25);">
                         <i class="far fa-file-excel"></i> 엑셀 다운로드
                     </button>
                 </div>
@@ -3570,7 +3672,7 @@
     <script src="js/modules/dynamicRules.js?v=20260528-fixed"></script>
     <script src="js/modules/compareLogic.js?v=20260901-dhzjebeon"></script>
     <script src="js/modules/destination.js?v=20260817"></script>
-    <script src="app_main.js?v=20260902-cameracopy"></script>
+    <script src="app_main.js?v=20260902-availblockreport"></script>
 </body>
 
 </html>

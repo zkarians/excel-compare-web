@@ -11849,6 +11849,446 @@ window.copyAvailabilityNotice = function() {
     });
 };
 
+/* =========================================================================
+ *  작업분석: 컨테이너 지정 블록주의 공지 보고서 (현장 근로자 전달용)
+ * ========================================================================= */
+window.availBlockReportFilteredGroups = [];
+
+// 1. 모달 열기 & 데이터 추출
+window.openAvailBlockReportModal = function() {
+    if (!processedAvailabilityData || processedAvailabilityData.length === 0) {
+        alert("작업 가용성 분석 데이터가 없습니다. 먼저 원본 파일을 로드해주세요.");
+        return;
+    }
+
+    // 컨테이너 번호가 유효하고 블록주의가 걸려있는 모델만 필터링
+    const targetItems = processedAvailabilityData.filter(item => {
+        const hasCntr = item.cntrNo && item.cntrNo !== '미지정' && item.cntrNo !== '-' && item.cntrNo.trim() !== '' && !item.cntrNo.includes('WAIT');
+        const isBlockWarn = item.status === 'BLOCK_WARN' || (item.block && item.block > 0) || (item.blockLocs && item.blockLocs.length > 0) || (item.bin && item.bin > 0) || (item.oqc && item.oqc > 0) || (item.longTerm && item.longTerm > 0);
+        return hasCntr && isBlockWarn;
+    });
+
+    if (targetItems.length === 0) {
+        alert("현재 분석된 작업 중 컨테이너 번호가 지정된 블록주의 모델이 없습니다.");
+    }
+
+    // 컨테이너/작업 단위로 그룹화
+    const groupMap = new Map();
+    targetItems.forEach(item => {
+        const groupKey = `${item.cntrNo}__${item.sheetName}__${item.jobName}__${item.dest}__${item.carrier}__${item.cntrType}`;
+        if (!groupMap.has(groupKey)) {
+            groupMap.set(groupKey, {
+                groupKey,
+                cntrNo: item.cntrNo,
+                sheetName: item.sheetName,
+                jobName: item.jobName,
+                dest: item.dest,
+                carrier: item.carrier,
+                cntrType: item.cntrType,
+                transporter: item.transporter || '',
+                items: []
+            });
+        }
+        groupMap.get(groupKey).items.push(item);
+    });
+
+    window.availBlockReportRawGroups = Array.from(groupMap.values());
+    window.availBlockReportFilteredGroups = [...window.availBlockReportRawGroups];
+
+    const searchInput = document.getElementById('searchAvailBlockReport');
+    if (searchInput) searchInput.value = '';
+
+    renderAvailBlockReportTable();
+
+    const modal = document.getElementById('availBlockReportModal');
+    if (modal) modal.style.display = 'flex';
+};
+
+window.closeAvailBlockReportModal = function() {
+    const modal = document.getElementById('availBlockReportModal');
+    if (modal) modal.style.display = 'none';
+};
+
+// 2. 테이블 렌더링
+function renderAvailBlockReportTable() {
+    const tbody = document.getElementById('availBlockReportTableBody');
+    const cntrCountEl = document.getElementById('availBlockReportCntrCount');
+    const modelCountEl = document.getElementById('availBlockReportModelCount');
+    if (!tbody) return;
+
+    const groups = window.availBlockReportFilteredGroups || [];
+    
+    // 통계 계산
+    const totalCntrs = groups.length;
+    const totalModels = groups.reduce((acc, g) => acc + g.items.length, 0);
+
+    if (cntrCountEl) cntrCountEl.textContent = totalCntrs.toLocaleString();
+    if (modelCountEl) modelCountEl.textContent = totalModels.toLocaleString();
+
+    if (groups.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="padding: 40px; text-align: center; color: #94a3b8; font-size: 0.85rem; border: 1px solid #cbd5e1;">
+                    <i class="fas fa-search" style="font-size: 1.5rem; margin-bottom: 8px; display: block; color: #cbd5e1;"></i>
+                    해당 조건의 블록주의 컨테이너 작업이 없습니다.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    groups.forEach((group, gIdx) => {
+        const N = group.items.length;
+        const zebraClass = (gIdx % 2 === 0) ? '#ffffff' : '#f8fafc';
+
+        // 컨테이너 번호 색상 (천마: 빨강, BNI: 파랑, 기본: #0f172a)
+        const trans = (group.transporter || '').trim();
+        let cntrColor = '#0f172a';
+        if (trans.includes('천마') || trans.includes('빨강')) cntrColor = '#dc2626';
+        else if (trans.includes('BNI') || trans.includes('파랑')) cntrColor = '#2563eb';
+
+        let sheetBadgeStyle = 'background: #e0e7ff; color: #4338ca;';
+        if (group.sheetName.includes('법인')) sheetBadgeStyle = 'background: #fef3c7; color: #b45309;';
+        else if (group.sheetName.includes('혼적')) sheetBadgeStyle = 'background: #fce7f3; color: #be185d;';
+        else if (group.sheetName.includes('재작업')) sheetBadgeStyle = 'background: #ffedd5; color: #c2410c;';
+
+        group.items.forEach((item, idx) => {
+            const tr = document.createElement('tr');
+            tr.style.background = zebraClass;
+
+            let html = '';
+
+            // 첫 번째 행에 공통 정보 병합 출력
+            if (idx === 0) {
+                html += `
+                    <td rowspan="${N}" style="padding: 8px 6px; font-weight: 800; font-size: 0.88rem; color: ${cntrColor}; border: 1px solid #cbd5e1; vertical-align: middle; text-align: center;">
+                        <strong onclick="window.copyToClipboard('${group.cntrNo}', '컨테이너')" style="cursor: pointer;" title="클릭하여 컨테이너번호 복사">${group.cntrNo}</strong>
+                        ${typeof window.renderContainerPhotoBtn === 'function' ? window.renderContainerPhotoBtn(group.cntrNo) : ''}
+                    </td>
+                    <td rowspan="${N}" style="padding: 8px 4px; border: 1px solid #cbd5e1; vertical-align: middle; text-align: center;">
+                        <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; ${sheetBadgeStyle}">${group.sheetName}</span>
+                    </td>
+                    <td rowspan="${N}" style="padding: 8px 6px; border: 1px solid #cbd5e1; vertical-align: middle; text-align: center;">
+                        <div style="font-weight: 700; color: #1e293b; font-size: 0.82rem;" title="${group.jobName}">${group.jobName}</div>
+                        <div style="font-size: 0.74rem; color: #64748b; margin-top: 3px;">
+                            <strong>${group.dest || '-'}</strong> / ${group.carrier || '-'} ${group.cntrType ? `(${group.cntrType})` : ''}
+                        </div>
+                    </td>
+                `;
+            }
+
+            // 블록 로케이션 및 태그 구성
+            let blockDetailHtml = '';
+            if (item.blockLocs && item.blockLocs.length > 0) {
+                blockDetailHtml = item.blockLocs.map(loc => `
+                    <div style="display: flex; align-items: center; gap: 4px; color: #b91c1c; font-weight: 600; font-size: 0.78rem; line-height: 1.4;">
+                        <i class="fas fa-ban" style="color: #ef4444; font-size: 0.75rem; flex-shrink: 0;"></i> <span>${loc}</span>
+                    </div>
+                `).join('');
+            } else {
+                const parts = [];
+                if (item.oqc > 0) parts.push(`OQC ${item.oqc}EA`);
+                if (item.longTerm > 0) parts.push(`롱텀 ${item.longTerm}EA`);
+                if (item.bin > 0) parts.push(`BIN블록 ${item.bin}EA`);
+                blockDetailHtml = `<span style="color: #b91c1c; font-weight: 600;">${parts.join(', ') || '블록 재고 감지'}</span>`;
+            }
+
+            // 정상 피킹 위치 구성
+            const normalLoc = item.adj2 || item.location || (item.stockLocs && item.stockLocs.length > 0 ? item.stockLocs.join(', ') : '-');
+            const normalLocHtml = `
+                <div style="display: inline-flex; align-items: center; gap: 4px; background: #ecfdf5; color: #047857; font-weight: 700; padding: 2px 8px; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.8rem;">
+                    <i class="fas fa-check-circle" style="color: #10b981;"></i> <span>${normalLoc}</span>
+                </div>
+            `;
+
+            html += `
+                <td style="padding: 8px 8px; border: 1px solid #cbd5e1; text-align: left; vertical-align: middle; font-weight: 700; color: #0f172a; font-size: 0.82rem;">
+                    ${item.prodName}
+                </td>
+                <td style="padding: 8px 4px; border: 1px solid #cbd5e1; text-align: center; vertical-align: middle; font-weight: 700; color: #334155;">
+                    ${item.qty ? item.qty.toLocaleString() : 0} EA
+                </td>
+                <td style="padding: 8px 8px; border: 1px solid #cbd5e1; text-align: left; vertical-align: middle; background: #fff5f5;">
+                    ${blockDetailHtml}
+                </td>
+                <td style="padding: 8px 8px; border: 1px solid #cbd5e1; text-align: center; vertical-align: middle; background: #f0fdf4;">
+                    ${normalLocHtml}
+                </td>
+            `;
+
+            tr.innerHTML = html;
+            fragment.appendChild(tr);
+        });
+    });
+
+    tbody.innerHTML = '';
+    tbody.appendChild(fragment);
+}
+
+// 3. 카카오톡/메신저 텍스트 복사
+window.copyAvailBlockReportText = function() {
+    const groups = window.availBlockReportFilteredGroups || [];
+    if (groups.length === 0) {
+        alert("복사할 블록주의 컨테이너 작업 데이터가 없습니다.");
+        return;
+    }
+
+    const now = new Date();
+    const timeStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const totalCntrs = groups.length;
+    const totalModels = groups.reduce((acc, g) => acc + g.items.length, 0);
+
+    const lines = [];
+    lines.push(`🚨 [블록주의 상차 작업 공지 - 컨테이너 지정]`);
+    lines.push(`※ 피해야 할 블록 재고 위치와 정상 피킹 로케이션을 반드시 확인하세요.`);
+    lines.push(`- 대상: 총 ${totalCntrs}대 컨테이너 / 주의 모델 ${totalModels}건`);
+    lines.push(`- 기준일시: ${timeStr}`);
+    lines.push(``);
+
+    groups.forEach((group, gIdx) => {
+        lines.push(`━━━━━━━━━━━━━━━━━━━━━━━━`);
+        lines.push(`📦 [${gIdx + 1}] 컨테이너: ${group.cntrNo} (${group.sheetName})`);
+        lines.push(`- 작업명: ${group.jobName}`);
+        lines.push(`- 도착지/선사: ${group.dest || '-'} / ${group.carrier || '-'} ${group.cntrType ? `(${group.cntrType})` : ''}`);
+        
+        group.items.forEach((item, itIdx) => {
+            const blockDescList = [];
+            if (item.blockLocs && item.blockLocs.length > 0) {
+                blockDescList.push(item.blockLocs.join(' / '));
+            } else {
+                if (item.oqc > 0) blockDescList.push(`OQC ${item.oqc}EA`);
+                if (item.longTerm > 0) blockDescList.push(`롱텀 ${item.longTerm}EA`);
+                if (item.bin > 0) blockDescList.push(`BIN ${item.bin}EA`);
+            }
+            const normalLoc = item.adj2 || item.location || (item.stockLocs && item.stockLocs.length > 0 ? item.stockLocs.join(', ') : '-');
+
+            lines.push(` ▶ 주의모델 ${itIdx + 1}: ${item.prodName} (계획: ${item.qty}EA)`);
+            lines.push(`    🚫 피할 위치: ${blockDescList.join(', ') || '블록 재고'}`);
+            lines.push(`    ✅ 정상 피킹: ${normalLoc}`);
+        });
+        lines.push(``);
+    });
+
+    lines.push(`━━━━━━━━━━━━━━━━━━━━━━━━`);
+    lines.push(`※ 문의사항이나 재고 위치 불일치 시 관리자에게 즉시 알려주시기 바랍니다.`);
+
+    const textToCopy = lines.join('\n');
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        alert("📋 블록주의 컨테이너 상차 작업 공지 텍스트가 클립보드에 복사되었습니다!\n사내 메신저나 카카오톡에 붙여넣어 근무자에게 공지하세요.");
+    }).catch(err => {
+        console.error("클립보드 복사 오류:", err);
+        alert("클립보드 복사 실패: " + err.message);
+    });
+};
+
+// 4. 카카오톡 이미지 복사 (html2canvas)
+window.copyAvailBlockReportImage = function() {
+    const captureContainer = document.getElementById('availBlockReportCaptureContainer');
+    const captureHeader = document.getElementById('availBlockReportCaptureHeader');
+    const captureTime = document.getElementById('availBlockReportCaptureTime');
+    const btn = document.getElementById('btnCopyAvailBlockReportImage');
+
+    const groups = window.availBlockReportFilteredGroups || [];
+    if (groups.length === 0) {
+        alert("공지할 블록주의 컨테이너 작업 데이터가 없습니다.");
+        return;
+    }
+
+    if (captureHeader && captureTime) {
+        captureHeader.style.display = 'flex';
+        const now = new Date();
+        captureTime.textContent = `발행일시: ${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+    }
+
+    const scrollWrapper = document.getElementById('availBlockReportScrollWrapper');
+    let originalMaxHeight = '';
+    let originalOverflowY = '';
+    if (scrollWrapper) {
+        originalMaxHeight = scrollWrapper.style.maxHeight;
+        originalOverflowY = scrollWrapper.style.overflowY;
+        scrollWrapper.style.maxHeight = 'none';
+        scrollWrapper.style.overflowY = 'visible';
+    }
+
+    const originalWidth = captureContainer.style.width;
+    captureContainer.style.width = '1300px';
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 복사 중...';
+    }
+
+    setTimeout(() => {
+        html2canvas(captureContainer, {
+            backgroundColor: '#ffffff',
+            scale: 2,
+            useCORS: true
+        }).then(canvas => {
+            if (captureHeader) captureHeader.style.display = 'none';
+            if (scrollWrapper) {
+                scrollWrapper.style.maxHeight = originalMaxHeight;
+                scrollWrapper.style.overflowY = originalOverflowY;
+            }
+            captureContainer.style.width = originalWidth;
+
+            (async () => {
+                try {
+                    const successMsg = "📋 블록주의 컨테이너 상차 작업 공지 이미지가 클립보드에 성공적으로 복사되었습니다!\n카카오톡 채팅방에 Ctrl+V로 바로 붙여넣어 공지하세요.";
+                    if (window.isElectron && window.electronAPI && typeof window.electronAPI.writeImageToClipboard === 'function') {
+                        const dataUrl = canvas.toDataURL('image/png');
+                        const res = await window.electronAPI.writeImageToClipboard(dataUrl);
+                        if (res && res.success) {
+                            alert(successMsg);
+                        } else {
+                            throw new Error(res ? res.error : '클립보드 복사 실패');
+                        }
+                    } else if (navigator.clipboard && window.ClipboardItem && canvas.toBlob) {
+                        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                        if (!blob) throw new Error("이미지 생성 실패");
+                        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                        alert(successMsg);
+                    } else {
+                        throw new Error("브라우저에서 이미지 클립보드 복사를 지원하지 않습니다.");
+                    }
+                } catch (err) {
+                    console.error("클립보드 이미지 복사 오류:", err);
+                    alert("이미지 클립보드 복사 실패: " + err.message);
+                } finally {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="far fa-copy"></i> 이미지 복사 (Ctrl+V)';
+                    }
+                }
+            })();
+        }).catch(err => {
+            if (captureHeader) captureHeader.style.display = 'none';
+            if (scrollWrapper) {
+                scrollWrapper.style.maxHeight = originalMaxHeight;
+                scrollWrapper.style.overflowY = originalOverflowY;
+            }
+            captureContainer.style.width = originalWidth;
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="far fa-copy"></i> 이미지 복사 (Ctrl+V)';
+            }
+            console.error("html2canvas 오류:", err);
+            alert("이미지 캡처 중 오류가 발생했습니다: " + err.message);
+        });
+    }, 100);
+};
+
+// 5. 엑셀 다운로드
+window.exportAvailBlockReportExcel = function() {
+    const groups = window.availBlockReportFilteredGroups || [];
+    if (groups.length === 0) {
+        alert("다운로드할 블록주의 컨테이너 작업 데이터가 없습니다.");
+        return;
+    }
+
+    if (typeof XLSX === 'undefined') {
+        alert("엑셀 라이브러리(SheetJS)가 로드되지 않았습니다.");
+        return;
+    }
+
+    const rows = [
+        ['컨테이너번호', '시트구분', '작업명', '도착지', '선사', '규격', '제품모델명', '계획수량', '가용수량', '피해야할_블록재고위치', '정상피킹위치']
+    ];
+
+    groups.forEach(group => {
+        group.items.forEach(item => {
+            const blockLocStr = (item.blockLocs && item.blockLocs.length > 0) 
+                ? item.blockLocs.join(', ') 
+                : (`OQC:${item.oqc || 0} / 롱텀:${item.longTerm || 0} / BIN:${item.bin || 0}`);
+            const normalLoc = item.adj2 || item.location || (item.stockLocs && item.stockLocs.length > 0 ? item.stockLocs.join(', ') : '-');
+
+            rows.push([
+                group.cntrNo,
+                group.sheetName,
+                group.jobName,
+                group.dest,
+                group.carrier,
+                group.cntrType,
+                item.prodName,
+                item.qty,
+                item.good,
+                blockLocStr,
+                normalLoc
+            ]);
+        });
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // 컬럼 너비 설정
+    ws['!cols'] = [
+        { wch: 16 }, // 컨테이너번호
+        { wch: 12 }, // 시트구분
+        { wch: 24 }, // 작업명
+        { wch: 10 }, // 도착지
+        { wch: 10 }, // 선사
+        { wch: 8 },  // 규격
+        { wch: 24 }, // 제품모델명
+        { wch: 10 }, // 계획수량
+        { wch: 10 }, // 가용수량
+        { wch: 35 }, // 블록재고위치
+        { wch: 20 }  // 정상피킹위치
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, "블록주의_컨테이너공지");
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    XLSX.writeFile(wb, `블록주의_컨테이너_상차작업공지_${today}.xlsx`);
+};
+
+// 6. 이벤트 바인딩
+(function initAvailBlockReportEvents() {
+    function bindEvents() {
+        const closeBtn = document.getElementById('closeAvailBlockReportBtn');
+        const closeBtmBtn = document.getElementById('closeAvailBlockReportBottomBtn');
+        const searchInput = document.getElementById('searchAvailBlockReport');
+        const btnText = document.getElementById('btnCopyAvailBlockReportText');
+        const btnImg = document.getElementById('btnCopyAvailBlockReportImage');
+        const btnExcel = document.getElementById('btnDownloadAvailBlockReportExcel');
+
+        if (closeBtn) closeBtn.onclick = window.closeAvailBlockReportModal;
+        if (closeBtmBtn) closeBtmBtn.onclick = window.closeAvailBlockReportModal;
+
+        if (searchInput) {
+            searchInput.oninput = function() {
+                const q = (this.value || '').trim().toLowerCase();
+                const rawGroups = window.availBlockReportRawGroups || [];
+                if (!q) {
+                    window.availBlockReportFilteredGroups = [...rawGroups];
+                } else {
+                    window.availBlockReportFilteredGroups = rawGroups.filter(g => {
+                        const inMeta = (g.cntrNo || '').toLowerCase().includes(q) ||
+                                       (g.jobName || '').toLowerCase().includes(q) ||
+                                       (g.sheetName || '').toLowerCase().includes(q) ||
+                                       (g.dest || '').toLowerCase().includes(q);
+                        const inItems = g.items.some(it => (it.prodName || '').toLowerCase().includes(q) ||
+                                                          (it.blockLocs && it.blockLocs.some(l => l.toLowerCase().includes(q))));
+                        return inMeta || inItems;
+                    });
+                }
+                renderAvailBlockReportTable();
+            };
+        }
+
+        if (btnText) btnText.onclick = window.copyAvailBlockReportText;
+        if (btnImg) btnImg.onclick = window.copyAvailBlockReportImage;
+        if (btnExcel) btnExcel.onclick = window.exportAvailBlockReportExcel;
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindEvents);
+    } else {
+        bindEvents();
+    }
+})();
+
 // [폴더 액션 6] 선택한 폴더 사진 ZIP 일괄 다운로드
 window.handleDownloadSelectedFolders = function() {
     const keys = Array.from(window.selectedFolderKeys);
