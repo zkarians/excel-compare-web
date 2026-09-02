@@ -12032,11 +12032,11 @@ function renderAvailBlockReportTable() {
                     const matchingBlock = blockMap.get(locName);
 
                     if (isMixed) {
-                        // 정상 재고와 블록 재고가 동일 로케이션에 공존하는 경우 (주황/혼재 강조)
+                        // 정상 재고와 블록 재고가 동일 로케이션에 공존하는 경우 (주황/혼재 강조 + 정상재고 녹색 표기)
                         return `
                             <div style="display: flex; align-items: center; gap: 5px; background: #fff7ed; color: #c2410c; font-weight: 700; padding: 3px 8px; border-radius: 5px; border: 1.5px solid #fb923c; font-size: 0.78rem; margin: 2px 0; box-shadow: 0 1px 2px rgba(251, 146, 60, 0.15); flex-wrap: wrap;">
                                 <i class="fas fa-exclamation-triangle" style="color: #ea580c; font-size: 0.8rem;"></i>
-                                <span>[${locName}] <strong>정상 ${st.qty.toLocaleString()} EA</strong></span>
+                                <span>[${locName}] <span style="color: #047857; font-weight: 800;">정상 ${st.qty.toLocaleString()} EA</span></span>
                                 <span style="color: #991b1b; background: #fee2e2; padding: 1px 5px; border-radius: 3px; font-size: 0.71rem; font-weight: 800; border: 1px solid #fca5a5;">
                                     🚫 ${matchingBlock.tagStr} (혼재주의!)
                                 </span>
@@ -12062,7 +12062,7 @@ function renderAvailBlockReportTable() {
                         return `
                             <div style="display: flex; align-items: center; gap: 5px; background: #fff7ed; color: #c2410c; font-weight: 700; padding: 3px 8px; border-radius: 5px; border: 1.5px solid #fb923c; font-size: 0.78rem; margin: 2px 0; flex-wrap: wrap;">
                                 <i class="fas fa-exclamation-triangle" style="color: #ea580c; font-size: 0.8rem;"></i>
-                                <span>[${locName}] <strong>${match ? match[2] : ''}</strong></span>
+                                <span>[${locName}] <span style="color: #047857; font-weight: 800;">${match ? match[2] : ''}</span></span>
                                 <span style="color: #991b1b; background: #fee2e2; padding: 1px 5px; border-radius: 3px; font-size: 0.71rem; font-weight: 800; border: 1px solid #fca5a5;">
                                     🚫 ${matchingBlock.tagStr} (혼재주의!)
                                 </span>
@@ -12092,6 +12092,34 @@ function renderAvailBlockReportTable() {
                 normalLocHtml = `<span style="color: #94a3b8;">-</span>`;
             }
 
+            // 현재 장입된 수량 및 계획 수량 추출
+            let loadedQty = 0;
+            let targetPlanQty = item.qty || 0;
+            if (typeof compareResults !== 'undefined' && Array.isArray(compareResults) && compareResults.length > 0) {
+                const matched = compareResults.find(cr => 
+                    (cr.cntrNo || '').trim().toUpperCase() === (group.cntrNo || '').trim().toUpperCase() &&
+                    (cr.prodName || '').trim().toUpperCase() === (item.cleanName || item.prodName || '').trim().toUpperCase()
+                );
+                if (matched && matched.qtyInfo) {
+                    loadedQty = matched.qtyInfo.load !== undefined ? matched.qtyInfo.load : (matched.qtyInfo.packing || 0);
+                    if (matched.qtyInfo.origPlan || matched.qtyInfo.plan) {
+                        targetPlanQty = matched.qtyInfo.origPlan || matched.qtyInfo.plan;
+                    }
+                }
+            } else if (typeof downData !== 'undefined' && Array.isArray(downData) && downData.length > 0) {
+                const matchedDown = downData.filter(d => 
+                    (d.cntrNo || '').trim().toUpperCase() === (group.cntrNo || '').trim().toUpperCase() &&
+                    (d.prodName || '').trim().toUpperCase() === (item.cleanName || item.prodName || '').trim().toUpperCase()
+                );
+                if (matchedDown.length > 0) {
+                    loadedQty = matchedDown.reduce((sum, d) => sum + (d.loadQty || d.qty_load || 0), 0);
+                    const pQty = matchedDown.reduce((sum, d) => sum + (d.planQty || d.qty_plan || 0), 0);
+                    if (pQty > 0) targetPlanQty = pQty;
+                }
+            } else if (item.rawRow && item.rawRow.qtyInfo) {
+                loadedQty = item.rawRow.qtyInfo.load || 0;
+            }
+
             html += `
                 <td style="padding: 8px 8px; border: 1px solid #cbd5e1; text-align: left; vertical-align: middle; font-weight: 700; color: #0f172a; font-size: 0.82rem;">
                     ${item.prodName}
@@ -12101,7 +12129,9 @@ function renderAvailBlockReportTable() {
                     <div style="font-size: 0.72rem; color: #047857; font-weight: 700; margin-top: 2px; background: #ecfdf5; padding: 1px 5px; border-radius: 4px; display: inline-block; border: 1px solid #a7f3d0;">
                         가용 ${item.good !== undefined ? item.good.toLocaleString() : 0} EA
                     </div>
-                    ${(item.physical && item.physical !== item.good) ? `<div style="font-size: 0.68rem; color: #64748b; margin-top: 1px;">(총 ${item.physical.toLocaleString()} EA)</div>` : ''}
+                    <div style="font-size: 0.72rem; color: #1d4ed8; font-weight: 700; margin-top: 2px; background: #eff6ff; padding: 1px 5px; border-radius: 4px; display: inline-block; border: 1px solid #bfdbfe;">
+                        장입 ${loadedQty.toLocaleString()} / ${targetPlanQty.toLocaleString()} EA
+                    </div>
                 </td>
                 <td style="padding: 8px 8px; border: 1px solid #cbd5e1; text-align: left; vertical-align: middle; background: #fff5f5;">
                     ${blockDetailHtml}
@@ -12194,7 +12224,23 @@ window.copyAvailBlockReportText = function() {
                 normalLocList = ['-'];
             }
 
-            lines.push(` ▶ 주의모델 ${itIdx + 1}: ${item.prodName} (계획: ${item.qty}EA | 가용재고: ${item.good}EA)`);
+            // 장입 수량 추출
+            let loadedQty = 0;
+            let targetPlanQty = item.qty || 0;
+            if (typeof compareResults !== 'undefined' && Array.isArray(compareResults) && compareResults.length > 0) {
+                const matched = compareResults.find(cr => 
+                    (cr.cntrNo || '').trim().toUpperCase() === (group.cntrNo || '').trim().toUpperCase() &&
+                    (cr.prodName || '').trim().toUpperCase() === (item.cleanName || item.prodName || '').trim().toUpperCase()
+                );
+                if (matched && matched.qtyInfo) {
+                    loadedQty = matched.qtyInfo.load !== undefined ? matched.qtyInfo.load : (matched.qtyInfo.packing || 0);
+                    if (matched.qtyInfo.origPlan || matched.qtyInfo.plan) {
+                        targetPlanQty = matched.qtyInfo.origPlan || matched.qtyInfo.plan;
+                    }
+                }
+            }
+
+            lines.push(` ▶ 주의모델 ${itIdx + 1}: ${item.prodName} (계획: ${item.qty}EA | 가용재고: ${item.good}EA | 장입: ${loadedQty}/${targetPlanQty}EA)`);
             lines.push(`    🚫 피할 위치: ${blockDescList.join(', ') || '블록 재고'}`);
             lines.push(`    ✅ 정상 피킹: ${normalLocList.join(' / ')}`);
         });
@@ -12324,7 +12370,7 @@ window.exportAvailBlockReportExcel = function() {
     }
 
     const rows = [
-        ['컨테이너번호', '시트구분', '작업명', '도착지', '선사', '규격', '제품모델명', '계획수량', '가용재고수량', '총재고수량', '피해야할_블록재고위치', '정상피킹위치']
+        ['컨테이너번호', '시트구분', '작업명', '도착지', '선사', '규격', '제품모델명', '계획수량', '가용재고수량', '장입수량_현황', '피해야할_블록재고위치', '정상피킹위치']
     ];
 
     groups.forEach(group => {
@@ -12370,6 +12416,22 @@ window.exportAvailBlockReportExcel = function() {
                 normalLocList = ['-'];
             }
 
+            // 장입 수량 추출
+            let loadedQty = 0;
+            let targetPlanQty = item.qty || 0;
+            if (typeof compareResults !== 'undefined' && Array.isArray(compareResults) && compareResults.length > 0) {
+                const matched = compareResults.find(cr => 
+                    (cr.cntrNo || '').trim().toUpperCase() === (group.cntrNo || '').trim().toUpperCase() &&
+                    (cr.prodName || '').trim().toUpperCase() === (item.cleanName || item.prodName || '').trim().toUpperCase()
+                );
+                if (matched && matched.qtyInfo) {
+                    loadedQty = matched.qtyInfo.load !== undefined ? matched.qtyInfo.load : (matched.qtyInfo.packing || 0);
+                    if (matched.qtyInfo.origPlan || matched.qtyInfo.plan) {
+                        targetPlanQty = matched.qtyInfo.origPlan || matched.qtyInfo.plan;
+                    }
+                }
+            }
+
             rows.push([
                 group.cntrNo,
                 group.sheetName,
@@ -12380,7 +12442,7 @@ window.exportAvailBlockReportExcel = function() {
                 item.prodName,
                 item.qty,
                 item.good,
-                item.physical,
+                `${loadedQty} / ${targetPlanQty}`,
                 blockLocStr,
                 normalLocList.join(', ')
             ]);
@@ -12401,7 +12463,7 @@ window.exportAvailBlockReportExcel = function() {
         { wch: 24 }, // 제품모델명
         { wch: 10 }, // 계획수량
         { wch: 12 }, // 가용재고수량
-        { wch: 12 }, // 총재고수량
+        { wch: 16 }, // 장입수량_현황
         { wch: 35 }, // 블록재고위치
         { wch: 38 }  // 정상피킹위치
     ];
