@@ -15490,7 +15490,22 @@ window.renderGalleryPhotos = function() {
                     </div>
                     <div class="ctnr-card-bottom-info">
                         <div class="ctnr-card-title ${pCarrierInfo.colorClass}">${p.cntr_no || '-'}</div>
-                        <div class="ctnr-card-filename-box" title="${fileName}">${fileName}</div>
+                        <div class="ctnr-card-filename-wrap" onclick="event.stopPropagation()">
+                            <input type="text" 
+                                   id="photoFilenameInput_${p.id}"
+                                   class="ctnr-card-filename-input" 
+                                   value="${fileName}" 
+                                   data-photo-id="${p.id}"
+                                   data-old-name="${fileName}"
+                                   title="파일명 직접 수정 (Enter/✓: 저장, Esc/✕: 취소)"
+                                   onfocus="window.handlePhotoInputFocus(this)"
+                                   oninput="window.handlePhotoInputChange(this)"
+                                   onkeydown="window.handlePhotoInputKeydown(event, this, '${p.id}')">
+                            <div id="photoFilenameActions_${p.id}" class="ctnr-filename-btn-group" style="display: none;">
+                                <button type="button" class="btn-filename-action confirm" onclick="event.stopPropagation(); window.handlePhotoConfirmRename('${p.id}')" title="이름 변경 승인 (Enter)"><i class="fas fa-check"></i></button>
+                                <button type="button" class="btn-filename-action cancel" onclick="event.stopPropagation(); window.handlePhotoCancelRename('${p.id}')" title="수정 취소 (Esc)"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
                         <div class="ctnr-card-footer-info">
                             <span><i class="fas fa-user" style="margin-right:4px;"></i>${uploader}</span>
                             <span>${uploadTimeStr}</span>
@@ -15831,6 +15846,133 @@ window.lightboxRotate = function(deg) {
     window.applyLightboxTransform();
 };
 
+window.handlePhotoInputFocus = function(inputEl) {
+    const wrap = inputEl.closest('.ctnr-card-filename-wrap');
+    if (wrap) wrap.classList.add('is-editing');
+    const actions = wrap ? wrap.querySelector('.ctnr-filename-btn-group') : null;
+    if (actions) actions.style.display = 'flex';
+
+    // 확장자를 제외한 파일명 본문 자동 선택
+    const val = inputEl.value || '';
+    const lastDot = val.lastIndexOf('.');
+    if (lastDot > 0) {
+        inputEl.setSelectionRange(0, lastDot);
+    } else {
+        inputEl.select();
+    }
+};
+
+window.handlePhotoInputChange = function(inputEl) {
+    const wrap = inputEl.closest('.ctnr-card-filename-wrap');
+    const actions = wrap ? wrap.querySelector('.ctnr-filename-btn-group') : null;
+    if (actions) actions.style.display = 'flex';
+};
+
+window.handlePhotoInputKeydown = function(event, inputEl, photoId) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        event.stopPropagation();
+        window.handlePhotoConfirmRename(photoId);
+    } else if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        window.handlePhotoCancelRename(photoId);
+    }
+};
+
+window.handlePhotoConfirmRename = async function(photoId) {
+    const inputEl = document.getElementById(`photoFilenameInput_${photoId}`);
+    if (!inputEl) return;
+    const oldName = inputEl.dataset.oldName || '';
+    const rawNewName = (inputEl.value || '').trim();
+    const wrap = inputEl.closest('.ctnr-card-filename-wrap');
+    const actions = document.getElementById(`photoFilenameActions_${photoId}`);
+
+    if (!rawNewName || rawNewName === oldName) {
+        inputEl.value = oldName;
+        if (actions) actions.style.display = 'none';
+        if (wrap) wrap.classList.remove('is-editing');
+        inputEl.blur();
+        return;
+    }
+
+    // 확장자 누락 시 기존 확장자 자동 보존
+    const oldExt = oldName.includes('.') ? oldName.substring(oldName.lastIndexOf('.')) : '';
+    let finalName = rawNewName;
+    if (oldExt && !finalName.toLowerCase().endsWith(oldExt.toLowerCase())) {
+        finalName += oldExt;
+    }
+
+    try {
+        inputEl.disabled = true;
+        const res = await fetch(`${API_BASE}/api/photos/rename`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ photoId: Number(photoId), newFilename: finalName })
+        });
+        const data = await res.json();
+        inputEl.disabled = false;
+
+        if (data.success) {
+            const actualNewName = (data.photoPath || '').split('/').pop() || finalName;
+            inputEl.value = actualNewName;
+            inputEl.dataset.oldName = actualNewName;
+
+            // 메모리 내 photo_path 갱신
+            const p = (window.currentGalleryPhotos || []).find(item => String(item.id) === String(photoId));
+            if (p) {
+                p.photo_path = data.photoPath;
+            }
+
+            // 카드 이미지 미리보기 주소도 즉시 갱신
+            const cardEl = inputEl.closest('.ctnr-card-large');
+            if (cardEl) {
+                const imgEl = cardEl.querySelector('img');
+                if (imgEl) {
+                    const rawPath = (data.photoPath || '').split('?')[0];
+                    imgEl.src = `${API_BASE}/api/photos/view?filename=${encodeURIComponent(rawPath)}&cb=${Date.now()}`;
+                }
+            }
+
+            // 성공 피드백: 초록색 반짝임 효과
+            if (wrap) {
+                wrap.style.borderColor = '#10b981';
+                wrap.style.boxShadow = '0 0 10px rgba(16,185,129,0.5)';
+                setTimeout(() => {
+                    wrap.style.borderColor = '';
+                    wrap.style.boxShadow = '';
+                    wrap.classList.remove('is-editing');
+                }, 1200);
+            }
+            if (actions) actions.style.display = 'none';
+            inputEl.blur();
+        } else {
+            alert(`파일명 변경 실패: ${data.error}`);
+            inputEl.value = oldName;
+            if (actions) actions.style.display = 'none';
+            if (wrap) wrap.classList.remove('is-editing');
+        }
+    } catch (e) {
+        inputEl.disabled = false;
+        alert(`파일명 변경 중 오류 발생: ${e.message}`);
+        inputEl.value = oldName;
+        if (actions) actions.style.display = 'none';
+        if (wrap) wrap.classList.remove('is-editing');
+    }
+};
+
+window.handlePhotoCancelRename = function(photoId) {
+    const inputEl = document.getElementById(`photoFilenameInput_${photoId}`);
+    if (!inputEl) return;
+    const oldName = inputEl.dataset.oldName || '';
+    inputEl.value = oldName;
+    const wrap = inputEl.closest('.ctnr-card-filename-wrap');
+    if (wrap) wrap.classList.remove('is-editing');
+    const actions = document.getElementById(`photoFilenameActions_${photoId}`);
+    if (actions) actions.style.display = 'none';
+    inputEl.blur();
+};
+
 window.lightboxRename = async function() {
     const photo = lightboxPhotos[currentLightboxIndex];
     if (!photo) return;
@@ -16072,6 +16214,19 @@ window.lightboxDownload = function() {
                 if (!lbPop.contains(e.target) && (!lbBtn || !lbBtn.contains(e.target))) {
                     lbPop.style.display = 'none';
                 }
+            }
+
+            // 사진 카드 파일명 수정 상자 외부 클릭 시 편집 모드 정리
+            if (!e.target.closest('.ctnr-card-filename-wrap')) {
+                document.querySelectorAll('.ctnr-card-filename-wrap.is-editing').forEach(wrap => {
+                    wrap.classList.remove('is-editing');
+                    const actions = wrap.querySelector('.ctnr-filename-btn-group');
+                    if (actions) actions.style.display = 'none';
+                    const input = wrap.querySelector('.ctnr-card-filename-input');
+                    if (input && input.dataset.oldName) {
+                        input.value = input.dataset.oldName;
+                    }
+                });
             }
         });
     };

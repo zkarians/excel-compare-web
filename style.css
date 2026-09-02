@@ -3654,17 +3654,98 @@ tr.border-group td {
     text-transform: uppercase;
 }
 
-.ctnr-card-filename-box {
+.ctnr-card-filename-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
     background: #1a1a24;
     border-radius: 6px;
-    padding: 4px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    padding-right: 2px;
+}
+
+.ctnr-card-filename-wrap:hover {
+    border-color: rgba(56, 189, 248, 0.4);
+    background: #20202e;
+}
+
+.ctnr-card-filename-wrap.is-editing,
+.ctnr-card-filename-wrap:focus-within {
+    border-color: #38bdf8;
+    background: #0f172a;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+}
+
+.ctnr-card-filename-input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 5px 8px;
     font-size: 0.72rem;
-    color: #94a3b8;
+    color: #cbd5e1;
     font-family: Consolas, monospace;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    cursor: text;
+}
+
+.ctnr-card-filename-input:focus {
+    color: #ffffff;
+}
+
+.ctnr-filename-btn-group {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding-right: 4px;
+}
+
+.btn-filename-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: none;
+    font-size: 0.68rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-filename-action.confirm {
+    background: #059669;
+    color: #ffffff;
+}
+.btn-filename-action.confirm:hover {
+    background: #10b981;
+    transform: scale(1.1);
+}
+
+.btn-filename-action.cancel {
+    background: #475569;
+    color: #e2e8f0;
+}
+.btn-filename-action.cancel:hover {
+    background: #ef4444;
+    color: #ffffff;
+    transform: scale(1.1);
+}
+
+.ctnr-grid-thumbnails .ctnr-card-filename-input {
+    font-size: 0.65rem;
+    padding: 3px 6px;
+}
+.ctnr-grid-thumbnails .btn-filename-action {
+    width: 18px;
+    height: 18px;
+    font-size: 0.6rem;
 }
 
 .ctnr-card-footer-info {
