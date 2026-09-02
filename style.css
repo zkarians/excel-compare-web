@@ -6208,7 +6208,7 @@ tr.border-group td {
     position: absolute;
     top: calc(100% + 8px);
     left: 0;
-    width: 500px;
+    width: 560px;
     max-width: 95vw;
     background: #ffffff;
     border: 1px solid #cbd5e1;
@@ -6407,7 +6407,7 @@ tr.border-group td {
     position: absolute;
     top: 56px;
     left: 20px;
-    width: 500px;
+    width: 560px;
     max-width: 95vw;
     background: rgba(15, 23, 42, 0.96);
     border: 1px solid rgba(255, 255, 255, 0.2);

@@ -5679,6 +5679,9 @@ function getStockShortageBadge(prodName, rowRemain) {
 }
 
 function displayResults(results, isDbMode = false) {
+    if (window.containerProductInfoCache) {
+        window.containerProductInfoCache.clear();
+    }
     if (typeof window.fetchContainerPhotoCounts === 'function') {
         window.fetchContainerPhotoCounts();
     }
@@ -14854,9 +14857,14 @@ window.getContainerProductsInfo = async function(cntrNo) {
         return window.containerProductInfoCache.get(key);
     }
 
-    // 1. 현재 로드된 클라이언트 데이터에서 검색
+    // 1. 현재 로드된 클라이언트 데이터에서 검색 (비교결과 > 원본가공데이터 > 컨테이너테이블 > 작업가용성)
     let foundRows = [];
-    if (Array.isArray(window.processedData) && window.processedData.length > 0) {
+    if (typeof comparisonResult !== 'undefined' && Array.isArray(comparisonResult) && comparisonResult.length > 0) {
+        foundRows = comparisonResult.filter(r => (r.cntrNo || '').toUpperCase().trim() === key);
+    } else if (Array.isArray(window.comparisonResult) && window.comparisonResult.length > 0) {
+        foundRows = window.comparisonResult.filter(r => (r.cntrNo || '').toUpperCase().trim() === key);
+    }
+    if (foundRows.length === 0 && Array.isArray(window.processedData) && window.processedData.length > 0) {
         foundRows = window.processedData.filter(r => (r.cntrNo || r.cntr_no || '').toUpperCase().trim() === key);
     }
     if (foundRows.length === 0 && Array.isArray(window.containerTableData) && window.containerTableData.length > 0) {
@@ -14868,31 +14876,54 @@ window.getContainerProductsInfo = async function(cntrNo) {
 
     if (foundRows.length > 0) {
         const first = foundRows[0];
-        const totalQty = foundRows.reduce((sum, r) => sum + (Number(r.qty || r.qty_plan || r.qty_load || 0) || 0), 0);
+        const totalQty = foundRows.reduce((sum, r) => sum + (Number((r.qtyInfo ? (r.qtyInfo.plan || r.qtyInfo.origPlan || r.qtyInfo.load) : 0) || r.qty || r.qty_plan || r.qty_load || 0) || 0), 0);
+        
+        // 컨테이너 전체의 특이사항 태그 수집
+        const containerTagsMap = new Map();
+        foundRows.forEach(r => {
+            if (r.tags && Array.isArray(r.tags)) {
+                r.tags.forEach(t => {
+                    const txt = typeof t === 'object' ? t.text : t;
+                    if (txt && !containerTagsMap.has(txt)) {
+                        containerTagsMap.set(txt, t);
+                    }
+                });
+            }
+        });
+        const containerTags = Array.from(containerTagsMap.values());
+
         const info = {
             cntrNo: key,
-            carrier: first.carrier || first.shipping_line || '-',
-            dest: first.dest || first.destination || '-',
-            cntrType: first.cntrType || first.cntr_type || first.spec || '-',
-            remark: first.remark || first.admin_comment || first.specialNotes || '',
+            carrier: (first.carrierName && typeof first.carrierName === 'object') ? (first.carrierName.orig || first.carrierName.val || '-') : (first.carrier || first.shipping_line || '-'),
+            dest: (first.destination && typeof first.destination === 'object') ? (first.destination.orig || first.destination.val || '-') : (first.dest || first.destination || '-'),
+            cntrType: (first.cntrType && typeof first.cntrType === 'object') ? (first.cntrType.orig || first.cntrType.val || '-') : (first.cntr_type || first.spec || '-'),
+            remark: first.origRemark || first.remark || first.admin_comment || first.specialNotes || '',
             transporter: first.transporter || '',
             modelCount: foundRows.length,
             totalQty: totalQty,
+            containerTags: containerTags,
             products: foundRows.map(r => {
                 let dims = r.dims || r.dimensions || '';
                 if ((!dims || dims === '-' || dims === '0x0x0') && Array.isArray(productMaster) && productMaster.length > 0) {
                     const cleanName = (r.prodName || r.prod_name || r.model || '').toUpperCase().trim();
-                    const m = productMaster.find(pm => (pm.prod_name || pm.model || '').toUpperCase().trim() === cleanName);
+                    const m = productMaster.find(pm => (pm.prod_name || pm.model || pm.name || '').toUpperCase().trim() === cleanName);
                     if (m && m.dims) dims = m.dims;
                 }
+                const prodName = r.prodName || r.prod_name || r.model || '-';
+                const prodType = r.prodType || r.prod_type || r.jobType || r.job_type || '-';
+                const qty = Number((r.qtyInfo ? (r.qtyInfo.plan || r.qtyInfo.origPlan || r.qtyInfo.load) : 0) || r.qty || r.qty_plan || r.qty_load || 0) || 0;
+                
                 return {
-                    prodName: r.prodName || r.prod_name || r.model || '-',
-                    qty: Number(r.qty || r.qty_plan || r.qty_load || 0) || 0,
+                    prodName: prodName,
+                    qty: qty,
                     division: r.division || '-',
-                    prodType: r.prodType || r.prod_type || r.jobType || r.job_type || '-',
+                    prodType: prodType,
                     dims: dims || '',
                     weight: r.weight || 0,
-                    status: r.status || 'OK'
+                    status: r.status || r.type || 'OK',
+                    tags: r.tags || [],
+                    isCaution: r.isCaution || false,
+                    cautionRemark: r.matchedCaution ? r.matchedCaution.remark : ''
                 };
             })
         };
@@ -14916,6 +14947,7 @@ window.getContainerProductsInfo = async function(cntrNo) {
                 transporter: first.transporter || '',
                 modelCount: data.products.length,
                 totalQty: totalQty,
+                containerTags: [],
                 products: data.products.map(r => {
                     let dims = r.dims || '';
                     if ((!dims || dims === '-' || dims === '0x0x0') && Array.isArray(productMaster) && productMaster.length > 0) {
@@ -14930,7 +14962,10 @@ window.getContainerProductsInfo = async function(cntrNo) {
                         prodType: r.prod_type || r.prodType || r.job_type || '-',
                         dims: dims || '',
                         weight: r.weight || 0,
-                        status: 'OK'
+                        status: 'OK',
+                        tags: [],
+                        isCaution: false,
+                        cautionRemark: ''
                     };
                 })
             };
@@ -14977,7 +15012,18 @@ window.updateGalleryProductSummary = async function(cntrNo) {
         if (info.cntrType && info.cntrType !== '-') metaParts.push(info.cntrType);
         if (info.carrier && info.carrier !== '-') metaParts.push(info.carrier);
         if (info.dest && info.dest !== '-') metaParts.push(info.dest);
-        popMeta.textContent = metaParts.length > 0 ? `(${metaParts.join(' / ')})` : '';
+        
+        let containerTagsHtml = '';
+        if (info.containerTags && info.containerTags.length > 0) {
+            containerTagsHtml = info.containerTags.map(tag => {
+                const fullText = typeof tag === 'object' ? tag.text : tag;
+                const displayChars = (fullText || "").substring(0, 4);
+                const type = typeof tag === 'object' ? (tag.type || '') : '';
+                return `<span class="tag-badge ${type}" style="margin: 0 2px; font-size: 0.68rem; padding: 1px 5px; vertical-align: middle;" title="${fullText}">${displayChars}</span>`;
+            }).join('');
+        }
+
+        popMeta.innerHTML = (metaParts.length > 0 ? `(${metaParts.join(' / ')})` : '') + (containerTagsHtml ? ` <span style="margin-left:4px;">${containerTagsHtml}</span>` : '');
     }
 
     if (popBody) {
@@ -14988,12 +15034,37 @@ window.updateGalleryProductSummary = async function(cntrNo) {
             const typeTag = (p.prodType && p.prodType !== '-') ? `<span class="popover-prod-type ${typeClass}">${p.prodType}</span>` : '<span class="popover-prod-type" style="visibility:hidden;">-</span>';
             const divTag = (p.division && p.division !== '-') ? `<span class="popover-prod-div">${p.division}</span>` : '<span class="popover-prod-div" style="visibility:hidden;">-</span>';
             const dimsTag = (p.dims && p.dims !== '-' && p.dims !== '0x0x0' && p.dims.trim()) ? `<span class="popover-prod-dims" title="제품 규격">${p.dims}</span>` : '';
+            
+            // 비교결과와 동일한 제품명 옆 특이사항 뱃지들 (동, 유, H/L/B, 주의)
+            const dongTag = typeof getDongTag === 'function' ? getDongTag(p.prodName, p.prodType) : '';
+            const yuTag = typeof getYuTag === 'function' ? getYuTag(p.prodName, p.prodType) : '';
+            const blockTag = typeof getBlockHoldTag === 'function' ? getBlockHoldTag(p.prodName) : '';
+            const cautionTag = p.isCaution ? `<span title="주의: ${p.cautionRemark || '사유 없음'}" style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#ef4444; color:#fff; border-radius:4px; padding:0px 4px; line-height:1.2; cursor:help; white-space:nowrap;">주의</span>` : '';
+            
+            // 제품별 특이사항 태그
+            let prodTagsHtml = '';
+            if (p.tags && p.tags.length > 0) {
+                prodTagsHtml = p.tags.map(tag => {
+                    const fullText = typeof tag === 'object' ? tag.text : tag;
+                    const displayChars = (fullText || "").substring(0, 3);
+                    const type = typeof tag === 'object' ? (tag.type || '') : '';
+                    return `<span class="tag-badge ${type}" style="margin-left: 2px; font-size: 0.68rem; padding: 0 4px; vertical-align: middle;" title="${fullText}">${displayChars}</span>`;
+                }).join('');
+            }
+
             phtml += `
                 <div class="popover-prod-item">
                     <span class="popover-prod-idx">${idx + 1}.</span>
                     ${typeTag}
                     ${divTag}
-                    <span class="popover-prod-title ${typeClass}" title="${p.prodName}">${p.prodName}</span>
+                    <div style="display: inline-flex; align-items: center; gap: 4px; flex: 1; min-width: 0; flex-wrap: wrap;">
+                        <span class="popover-prod-title ${typeClass}" title="${p.prodName}">${p.prodName}</span>
+                        ${cautionTag}
+                        ${dongTag}
+                        ${yuTag}
+                        ${blockTag}
+                        ${prodTagsHtml}
+                    </div>
                     ${dimsTag}
                     <span class="popover-prod-qty">${p.qty.toLocaleString()}개</span>
                 </div>
@@ -15061,7 +15132,18 @@ window.updateLightboxProductSummary = async function(cntrNo) {
         if (info.cntrType && info.cntrType !== '-') metaParts.push(info.cntrType);
         if (info.carrier && info.carrier !== '-') metaParts.push(info.carrier);
         if (info.dest && info.dest !== '-') metaParts.push(info.dest);
-        popMeta.textContent = metaParts.length > 0 ? `(${metaParts.join(' / ')})` : '';
+        
+        let containerTagsHtml = '';
+        if (info.containerTags && info.containerTags.length > 0) {
+            containerTagsHtml = info.containerTags.map(tag => {
+                const fullText = typeof tag === 'object' ? tag.text : tag;
+                const displayChars = (fullText || "").substring(0, 4);
+                const type = typeof tag === 'object' ? (tag.type || '') : '';
+                return `<span class="tag-badge ${type}" style="margin: 0 2px; font-size: 0.68rem; padding: 1px 5px; vertical-align: middle;" title="${fullText}">${displayChars}</span>`;
+            }).join('');
+        }
+
+        popMeta.innerHTML = (metaParts.length > 0 ? `(${metaParts.join(' / ')})` : '') + (containerTagsHtml ? ` <span style="margin-left:4px;">${containerTagsHtml}</span>` : '');
     }
 
     if (popBody) {
@@ -15072,12 +15154,37 @@ window.updateLightboxProductSummary = async function(cntrNo) {
             const typeTag = (p.prodType && p.prodType !== '-') ? `<span class="popover-prod-type ${typeClass}">${p.prodType}</span>` : '<span class="popover-prod-type" style="visibility:hidden;">-</span>';
             const divTag = (p.division && p.division !== '-') ? `<span class="popover-prod-div">${p.division}</span>` : '<span class="popover-prod-div" style="visibility:hidden;">-</span>';
             const dimsTag = (p.dims && p.dims !== '-' && p.dims !== '0x0x0' && p.dims.trim()) ? `<span class="popover-prod-dims" title="제품 규격">${p.dims}</span>` : '';
+            
+            // 비교결과와 동일한 제품명 옆 특이사항 뱃지들 (동, 유, H/L/B, 주의)
+            const dongTag = typeof getDongTag === 'function' ? getDongTag(p.prodName, p.prodType) : '';
+            const yuTag = typeof getYuTag === 'function' ? getYuTag(p.prodName, p.prodType) : '';
+            const blockTag = typeof getBlockHoldTag === 'function' ? getBlockHoldTag(p.prodName) : '';
+            const cautionTag = p.isCaution ? `<span title="주의: ${p.cautionRemark || '사유 없음'}" style="display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; background:#ef4444; color:#fff; border-radius:4px; padding:0px 4px; line-height:1.2; cursor:help; white-space:nowrap;">주의</span>` : '';
+            
+            // 제품별 특이사항 태그
+            let prodTagsHtml = '';
+            if (p.tags && p.tags.length > 0) {
+                prodTagsHtml = p.tags.map(tag => {
+                    const fullText = typeof tag === 'object' ? tag.text : tag;
+                    const displayChars = (fullText || "").substring(0, 3);
+                    const type = typeof tag === 'object' ? (tag.type || '') : '';
+                    return `<span class="tag-badge ${type}" style="margin-left: 2px; font-size: 0.68rem; padding: 0 4px; vertical-align: middle;" title="${fullText}">${displayChars}</span>`;
+                }).join('');
+            }
+
             phtml += `
                 <div class="popover-prod-item">
                     <span class="popover-prod-idx">${idx + 1}.</span>
                     ${typeTag}
                     ${divTag}
-                    <span class="popover-prod-title ${typeClass}" title="${p.prodName}">${p.prodName}</span>
+                    <div style="display: inline-flex; align-items: center; gap: 4px; flex: 1; min-width: 0; flex-wrap: wrap;">
+                        <span class="popover-prod-title ${typeClass}" title="${p.prodName}">${p.prodName}</span>
+                        ${cautionTag}
+                        ${dongTag}
+                        ${yuTag}
+                        ${blockTag}
+                        ${prodTagsHtml}
+                    </div>
                     ${dimsTag}
                     <span class="popover-prod-qty">${p.qty.toLocaleString()}개</span>
                 </div>
