@@ -11035,6 +11035,7 @@ function processAvailabilityData(rows) {
 
         // 1. 정상/가용 재고 로케이션 목록 수집 (창고 전체 재고에서 추출)
         let stockLocs = [];
+        let stockLocItems = [];
         if (warehouseAllStockList && Array.isArray(warehouseAllStockList)) {
             const locMatches = warehouseAllStockList.filter(item => (item.modelName || '').trim().toUpperCase() === cleanName);
             locMatches.forEach(item => {
@@ -11045,21 +11046,32 @@ function processAvailabilityData(rows) {
                 const finalQty = totalWork > 0 ? totalWork : (item.physicalQty || 0);
                 if (finalQty > 0) {
                     stockLocs.push(`[${locName}] ${finalQty.toLocaleString()} EA`);
+                    stockLocItems.push({ locName, qty: finalQty });
                 }
             });
         }
 
         // 2. 블록 로케이션 상세 목록 수집
         let blockLocs = [];
+        let blockLocItems = [];
         if (warehouseHoldStockList && Array.isArray(warehouseHoldStockList)) {
             const locList = warehouseHoldStockList.filter(h => (h.modelName || "").trim().toUpperCase() === cleanName);
             locList.forEach(loc => {
+                const locName = (loc.location || '-').trim();
                 let tags = [];
                 if (loc.oqcHold > 0) tags.push(`OQC ${loc.oqcHold}EA`);
                 if (loc.longTermHold > 0) tags.push(`롱텀 ${loc.longTermHold}EA`);
                 if (loc.binBlock > 0) tags.push(`BIN ${loc.binBlock}EA`);
                 if (tags.length > 0) {
-                    blockLocs.push(`[${loc.location || '-'}] ${tags.join(', ')}`);
+                    const tagStr = tags.join(', ');
+                    blockLocs.push(`[${locName}] ${tagStr}`);
+                    blockLocItems.push({
+                        locName,
+                        oqc: loc.oqcHold || 0,
+                        longTerm: loc.longTermHold || 0,
+                        bin: loc.binBlock || 0,
+                        tagStr
+                    });
                 }
             });
         }
@@ -11136,7 +11148,9 @@ function processAvailabilityData(rows) {
             statusClass,
             isNonAsset,
             stockLocs,
+            stockLocItems,
             blockLocs,
+            blockLocItems,
             adj1,
             adj2,
             remark,
@@ -11995,14 +12009,73 @@ function renderAvailBlockReportTable() {
                 blockDetailHtml = `<span style="color: #b91c1c; font-weight: 600;">${parts.join(', ') || '블록 재고 감지'}</span>`;
             }
 
-            // 정상 피킹 위치 구성 (창고 정상 재고 로케이션 최우선)
+            // 정상 피킹 위치 구성 (정상 재고 + 블록 재고 혼재 여부 판별)
             let normalLocHtml = '';
-            if (item.stockLocs && item.stockLocs.length > 0) {
-                normalLocHtml = item.stockLocs.map(loc => `
-                    <div style="display: inline-flex; align-items: center; gap: 4px; background: #ecfdf5; color: #047857; font-weight: 700; padding: 2px 8px; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.78rem; margin: 1px 0; white-space: nowrap;">
-                        <i class="fas fa-check-circle" style="color: #10b981;"></i> <span>${loc}</span>
-                    </div>
-                `).join('<br>');
+            
+            // 현재 모델의 블록 로케이션 맵 구성 (locName -> blockInfo)
+            const blockMap = new Map();
+            if (item.blockLocItems && Array.isArray(item.blockLocItems)) {
+                item.blockLocItems.forEach(b => blockMap.set(b.locName, b));
+            } else if (item.blockLocs && Array.isArray(item.blockLocs)) {
+                item.blockLocs.forEach(bStr => {
+                    const match = bStr.match(/\[(.*?)\]\s*(.*)/);
+                    if (match) {
+                        blockMap.set(match[1].trim(), { locName: match[1].trim(), tagStr: match[2].trim() });
+                    }
+                });
+            }
+
+            if (item.stockLocItems && item.stockLocItems.length > 0) {
+                normalLocHtml = item.stockLocItems.map(st => {
+                    const locName = st.locName;
+                    const isMixed = blockMap.has(locName);
+                    const matchingBlock = blockMap.get(locName);
+
+                    if (isMixed) {
+                        // 정상 재고와 블록 재고가 동일 로케이션에 공존하는 경우 (주황/혼재 강조)
+                        return `
+                            <div style="display: flex; align-items: center; gap: 5px; background: #fff7ed; color: #c2410c; font-weight: 700; padding: 3px 8px; border-radius: 5px; border: 1.5px solid #fb923c; font-size: 0.78rem; margin: 2px 0; box-shadow: 0 1px 2px rgba(251, 146, 60, 0.15); flex-wrap: wrap;">
+                                <i class="fas fa-exclamation-triangle" style="color: #ea580c; font-size: 0.8rem;"></i>
+                                <span>[${locName}] <strong>정상 ${st.qty.toLocaleString()} EA</strong></span>
+                                <span style="color: #991b1b; background: #fee2e2; padding: 1px 5px; border-radius: 3px; font-size: 0.71rem; font-weight: 800; border: 1px solid #fca5a5;">
+                                    🚫 ${matchingBlock.tagStr} (혼재주의!)
+                                </span>
+                            </div>
+                        `;
+                    } else {
+                        // 정상 재고만 단독으로 있는 경우 (기본 녹색)
+                        return `
+                            <div style="display: inline-flex; align-items: center; gap: 4px; background: #ecfdf5; color: #047857; font-weight: 700; padding: 2px 8px; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.78rem; margin: 1px 0; white-space: nowrap;">
+                                <i class="fas fa-check-circle" style="color: #10b981;"></i> <span>[${locName}] ${st.qty.toLocaleString()} EA</span>
+                            </div>
+                        `;
+                    }
+                }).join('<br>');
+            } else if (item.stockLocs && item.stockLocs.length > 0) {
+                normalLocHtml = item.stockLocs.map(locStr => {
+                    const match = locStr.match(/\[(.*?)\]\s*(.*)/);
+                    const locName = match ? match[1].trim() : locStr;
+                    const isMixed = blockMap.has(locName);
+                    const matchingBlock = blockMap.get(locName);
+
+                    if (isMixed) {
+                        return `
+                            <div style="display: flex; align-items: center; gap: 5px; background: #fff7ed; color: #c2410c; font-weight: 700; padding: 3px 8px; border-radius: 5px; border: 1.5px solid #fb923c; font-size: 0.78rem; margin: 2px 0; flex-wrap: wrap;">
+                                <i class="fas fa-exclamation-triangle" style="color: #ea580c; font-size: 0.8rem;"></i>
+                                <span>[${locName}] <strong>${match ? match[2] : ''}</strong></span>
+                                <span style="color: #991b1b; background: #fee2e2; padding: 1px 5px; border-radius: 3px; font-size: 0.71rem; font-weight: 800; border: 1px solid #fca5a5;">
+                                    🚫 ${matchingBlock.tagStr} (혼재주의!)
+                                </span>
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div style="display: inline-flex; align-items: center; gap: 4px; background: #ecfdf5; color: #047857; font-weight: 700; padding: 2px 8px; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.78rem; margin: 1px 0; white-space: nowrap;">
+                                <i class="fas fa-check-circle" style="color: #10b981;"></i> <span>${locStr}</span>
+                            </div>
+                        `;
+                    }
+                }).join('<br>');
             } else if (item.location && item.location !== '-') {
                 normalLocHtml = `
                     <div style="display: inline-flex; align-items: center; gap: 4px; background: #ecfdf5; color: #047857; font-weight: 700; padding: 2px 8px; border-radius: 4px; border: 1px solid #a7f3d0; font-size: 0.78rem;">
@@ -12023,13 +12096,17 @@ function renderAvailBlockReportTable() {
                 <td style="padding: 8px 8px; border: 1px solid #cbd5e1; text-align: left; vertical-align: middle; font-weight: 700; color: #0f172a; font-size: 0.82rem;">
                     ${item.prodName}
                 </td>
-                <td style="padding: 8px 4px; border: 1px solid #cbd5e1; text-align: center; vertical-align: middle; font-weight: 700; color: #334155;">
-                    ${item.qty ? item.qty.toLocaleString() : 0} EA
+                <td style="padding: 8px 4px; border: 1px solid #cbd5e1; text-align: center; vertical-align: middle;">
+                    <div style="font-weight: 800; color: #0f172a; font-size: 0.85rem;">${item.qty ? item.qty.toLocaleString() : 0} EA</div>
+                    <div style="font-size: 0.72rem; color: #047857; font-weight: 700; margin-top: 2px; background: #ecfdf5; padding: 1px 5px; border-radius: 4px; display: inline-block; border: 1px solid #a7f3d0;">
+                        가용 ${item.good !== undefined ? item.good.toLocaleString() : 0} EA
+                    </div>
+                    ${(item.physical && item.physical !== item.good) ? `<div style="font-size: 0.68rem; color: #64748b; margin-top: 1px;">(총 ${item.physical.toLocaleString()} EA)</div>` : ''}
                 </td>
                 <td style="padding: 8px 8px; border: 1px solid #cbd5e1; text-align: left; vertical-align: middle; background: #fff5f5;">
                     ${blockDetailHtml}
                 </td>
-                <td style="padding: 8px 8px; border: 1px solid #cbd5e1; text-align: center; vertical-align: middle; background: #f0fdf4;">
+                <td style="padding: 8px 8px; border: 1px solid #cbd5e1; text-align: left; vertical-align: middle; background: #f0fdf4;">
                     ${normalLocHtml}
                 </td>
             `;
@@ -12079,20 +12156,47 @@ window.copyAvailBlockReportText = function() {
                 if (item.bin > 0) blockDescList.push(`BIN ${item.bin}EA`);
             }
             
-            let normalLocStr = '';
-            if (item.stockLocs && item.stockLocs.length > 0) {
-                normalLocStr = item.stockLocs.join(', ');
-            } else if (item.location && item.location !== '-') {
-                normalLocStr = item.location;
-            } else if (item.adj2 && item.adj2 !== '-') {
-                normalLocStr = `구분2(${item.adj2})`;
-            } else {
-                normalLocStr = '-';
+            // 블록 로케이션 맵 구성
+            const blockMap = new Map();
+            if (item.blockLocItems && Array.isArray(item.blockLocItems)) {
+                item.blockLocItems.forEach(b => blockMap.set(b.locName, b));
+            } else if (item.blockLocs && Array.isArray(item.blockLocs)) {
+                item.blockLocs.forEach(bStr => {
+                    const match = bStr.match(/\[(.*?)\]\s*(.*)/);
+                    if (match) blockMap.set(match[1].trim(), { locName: match[1].trim(), tagStr: match[2].trim() });
+                });
             }
 
-            lines.push(` ▶ 주의모델 ${itIdx + 1}: ${item.prodName} (계획: ${item.qty}EA)`);
+            let normalLocList = [];
+            if (item.stockLocItems && item.stockLocItems.length > 0) {
+                normalLocList = item.stockLocItems.map(st => {
+                    if (blockMap.has(st.locName)) {
+                        const mb = blockMap.get(st.locName);
+                        return `⚠️ [${st.locName}] 정상 ${st.qty}EA + 🚫${mb.tagStr} (혼재주의!)`;
+                    }
+                    return `[${st.locName}] ${st.qty}EA`;
+                });
+            } else if (item.stockLocs && item.stockLocs.length > 0) {
+                normalLocList = item.stockLocs.map(lStr => {
+                    const match = lStr.match(/\[(.*?)\]\s*(.*)/);
+                    const locName = match ? match[1].trim() : lStr;
+                    if (blockMap.has(locName)) {
+                        const mb = blockMap.get(locName);
+                        return `⚠️ [${locName}] 정상 ${match ? match[2] : ''} + 🚫${mb.tagStr} (혼재주의!)`;
+                    }
+                    return lStr;
+                });
+            } else if (item.location && item.location !== '-') {
+                normalLocList = [item.location];
+            } else if (item.adj2 && item.adj2 !== '-') {
+                normalLocList = [`구분2(${item.adj2})`];
+            } else {
+                normalLocList = ['-'];
+            }
+
+            lines.push(` ▶ 주의모델 ${itIdx + 1}: ${item.prodName} (계획: ${item.qty}EA | 가용재고: ${item.good}EA)`);
             lines.push(`    🚫 피할 위치: ${blockDescList.join(', ') || '블록 재고'}`);
-            lines.push(`    ✅ 정상 피킹: ${normalLocStr}`);
+            lines.push(`    ✅ 정상 피킹: ${normalLocList.join(' / ')}`);
         });
         lines.push(``);
     });
@@ -12220,7 +12324,7 @@ window.exportAvailBlockReportExcel = function() {
     }
 
     const rows = [
-        ['컨테이너번호', '시트구분', '작업명', '도착지', '선사', '규격', '제품모델명', '계획수량', '가용수량', '피해야할_블록재고위치', '정상피킹위치']
+        ['컨테이너번호', '시트구분', '작업명', '도착지', '선사', '규격', '제품모델명', '계획수량', '가용재고수량', '총재고수량', '피해야할_블록재고위치', '정상피킹위치']
     ];
 
     groups.forEach(group => {
@@ -12229,15 +12333,41 @@ window.exportAvailBlockReportExcel = function() {
                 ? item.blockLocs.join(', ') 
                 : (`OQC:${item.oqc || 0} / 롱텀:${item.longTerm || 0} / BIN:${item.bin || 0}`);
             
-            let normalLocStr = '';
-            if (item.stockLocs && item.stockLocs.length > 0) {
-                normalLocStr = item.stockLocs.join(', ');
+            const blockMap = new Map();
+            if (item.blockLocItems && Array.isArray(item.blockLocItems)) {
+                item.blockLocItems.forEach(b => blockMap.set(b.locName, b));
+            } else if (item.blockLocs && Array.isArray(item.blockLocs)) {
+                item.blockLocs.forEach(bStr => {
+                    const match = bStr.match(/\[(.*?)\]\s*(.*)/);
+                    if (match) blockMap.set(match[1].trim(), { locName: match[1].trim(), tagStr: match[2].trim() });
+                });
+            }
+
+            let normalLocList = [];
+            if (item.stockLocItems && item.stockLocItems.length > 0) {
+                normalLocList = item.stockLocItems.map(st => {
+                    if (blockMap.has(st.locName)) {
+                        const mb = blockMap.get(st.locName);
+                        return `⚠️[${st.locName}] 정상 ${st.qty}EA + 🚫${mb.tagStr} (혼재주의)`;
+                    }
+                    return `[${st.locName}] ${st.qty}EA`;
+                });
+            } else if (item.stockLocs && item.stockLocs.length > 0) {
+                normalLocList = item.stockLocs.map(lStr => {
+                    const match = lStr.match(/\[(.*?)\]\s*(.*)/);
+                    const locName = match ? match[1].trim() : lStr;
+                    if (blockMap.has(locName)) {
+                        const mb = blockMap.get(locName);
+                        return `⚠️[${locName}] 정상 ${match ? match[2] : ''} + 🚫${mb.tagStr} (혼재주의)`;
+                    }
+                    return lStr;
+                });
             } else if (item.location && item.location !== '-') {
-                normalLocStr = item.location;
+                normalLocList = [item.location];
             } else if (item.adj2 && item.adj2 !== '-') {
-                normalLocStr = `구분2(${item.adj2})`;
+                normalLocList = [`구분2(${item.adj2})`];
             } else {
-                normalLocStr = '-';
+                normalLocList = ['-'];
             }
 
             rows.push([
@@ -12250,8 +12380,9 @@ window.exportAvailBlockReportExcel = function() {
                 item.prodName,
                 item.qty,
                 item.good,
+                item.physical,
                 blockLocStr,
-                normalLocStr
+                normalLocList.join(', ')
             ]);
         });
     });
@@ -12269,9 +12400,10 @@ window.exportAvailBlockReportExcel = function() {
         { wch: 8 },  // 규격
         { wch: 24 }, // 제품모델명
         { wch: 10 }, // 계획수량
-        { wch: 10 }, // 가용수량
+        { wch: 12 }, // 가용재고수량
+        { wch: 12 }, // 총재고수량
         { wch: 35 }, // 블록재고위치
-        { wch: 20 }  // 정상피킹위치
+        { wch: 38 }  // 정상피킹위치
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, "블록주의_컨테이너공지");
