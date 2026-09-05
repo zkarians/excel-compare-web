@@ -15769,9 +15769,9 @@ window.getFolderSealTagHtml = function(folder) {
         if (mRes.status === 'MOUNTED') {
             return `<span class="ctnr-folder-seal-badge mounted" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="[씰 체결 확인] 볼트 씰이 정상 체결되었습니다. (색상: ${mRes.detectedColor || '확인'}, 클릭 시 사진 확인)"><i class="fas fa-lock"></i></span>`;
         } else if (mRes.status === 'NO_SEAL_PHOTO') {
-            return `<span class="ctnr-folder-seal-badge none" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="씰 사진 미등록/누락"><i class="fas fa-camera"></i> 씰사진없음</span>`;
+            return `<span class="ctnr-folder-seal-badge unmounted-grey" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="[씰 미체결/사진 확인 필요] 씰 사진이 확인되지 않았습니다. (클릭 시 사진 확인)"><i class="fas fa-lock-open"></i></span>`;
         } else {
-            return `<span class="ctnr-folder-seal-badge unmounted" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="[씰 미체결/확인필요] 볼트 씰 체결이 감지되지 않았습니다. (클릭 시 사진 확인)"><i class="fas fa-lock-open"></i> 씰미체결</span>`;
+            return `<span class="ctnr-folder-seal-badge unmounted-grey" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="[씰 미체결/확인필요] 볼트 씰 체결이 감지되지 않았습니다. (클릭 시 사진 확인)"><i class="fas fa-lock-open"></i></span>`;
         }
     }
 
