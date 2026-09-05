@@ -312,7 +312,7 @@ export function ResultsTable() {
       <section className="flex flex-col items-center gap-3 py-2">
         <div className="flex items-center gap-2 bg-sky-50 px-4 py-2 rounded-full border border-sky-200 shadow-sm">
           <Database className="w-4 h-4 text-sky-500" />
-          <span className="text-sm font-bold text-slate-700">원격 DB 동시저장 <span className="text-sky-600">(ungdong)</span></span>
+          <span className="text-sm font-bold text-slate-700">원격 DB 동시저장 <span className="text-sky-600">(idlezero)</span></span>
           <div className="ml-2 relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 cursor-pointer transition-colors"
                style={{ backgroundColor: syncRemote ? '#0ea5e9' : '#cbd5e1' }}
                onClick={() => setSyncRemote(!syncRemote)}>

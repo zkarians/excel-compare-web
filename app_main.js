@@ -15740,31 +15740,47 @@ window.getSealBadgeHtml = function(photoItem, isSeal) {
     }
 };
 
-// 4-1. 메인 화면 폴더 카드에 표시할 씰 배지 HTML 생성 (OCR 대조 배지 완전 제거 & 체결 상태 전용)
-window.getFolderSealBadgeHtml = function(folder) {
+// 4-1. 상단 행에 표시할 카메라 아이콘 (씰 사진 미등록 시 빨간색 카메라 표시, 씰 사진 등록 시 사라짐)
+window.getFolderTopCameraHtml = function(folder) {
+    if (!folder) return '';
+    const hasSealPhoto = folder.photos && folder.photos.some(p => p.photo_type === 'seal');
+    if (!hasSealPhoto) {
+        return `<span title="씰(Seal) 사진이 등록되지 않았습니다." class="camera-pulse"><i class="fas fa-camera"></i></span>`;
+    }
+    return '';
+};
+
+// 4-2. 하단 삭제버튼 옆에 표시할 씰 상태 태그 HTML 생성
+window.getFolderSealTagHtml = function(folder) {
     if (!folder) return '';
     const cntrNo = (folder.cntrNo || '').toUpperCase().trim();
+    const hasSealPhoto = folder.photos && folder.photos.some(p => p.photo_type === 'seal');
     const mRes = window.sealMountedResults ? window.sealMountedResults[cntrNo] : null;
 
-    // 1. 씰 체결 상태 검사 결과가 있는 경우
+    // 1. 씰사진을 올리지 않아서 빨간색 카메라가 남아있는 경우:
+    // 씰사진이 없더라도 씰사진없음으로 표기하지 않고 태그는 미표시 (상단에 빨간색 카메라가 계속 표시됨)
+    if (!hasSealPhoto) {
+        return '';
+    }
+
+    // 2. 씰사진을 올려서 빨간색 카메라가 사라진 경우:
+    // A. 체결 검사 결과가 있는 경우
     if (mRes) {
         if (mRes.status === 'MOUNTED') {
             return `<span class="ctnr-folder-seal-badge mounted" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="[씰 체결 확인] 볼트 씰이 정상 체결되었습니다. (색상: ${mRes.detectedColor || '확인'}, 클릭 시 사진 확인)"><i class="fas fa-lock"></i> 씰체결됨</span>`;
         } else if (mRes.status === 'NO_SEAL_PHOTO') {
-            return `<span class="ctnr-folder-seal-badge none" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="씰 사진 미등록"><i class="fas fa-camera"></i> 씰사진없음</span>`;
+            return `<span class="ctnr-folder-seal-badge none" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="씰 사진 미등록/누락"><i class="fas fa-camera"></i> 씰사진없음</span>`;
         } else {
             return `<span class="ctnr-folder-seal-badge unmounted" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="[씰 미체결/확인필요] 볼트 씰 체결이 감지되지 않았습니다. (클릭 시 사진 확인)"><i class="fas fa-lock-open"></i> 씰미체결</span>`;
         }
     }
 
-    // 2. 아직 체결 검사를 실시하지 않은 경우
-    const hasSeal = folder.photos && folder.photos.some(p => p.photo_type === 'seal');
-    if (hasSeal) {
-        return `<span class="ctnr-folder-seal-badge" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0;" title="씰 사진 등록됨 (체결검사 미실시)"><i class="fas fa-camera"></i> 씰</span>`;
-    } else {
-        return `<span title="씰(Seal) 사진이 등록되지 않았습니다." class="camera-pulse"><i class="fas fa-camera"></i></span>`;
-    }
+    // B. 체결 검사 미실시 상태이지만 씰 사진은 등록되어 있는 경우
+    return `<span class="ctnr-folder-seal-badge" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0;" title="씰 사진 등록됨 (체결검사 미실시)"><i class="fas fa-camera"></i> 씰</span>`;
 };
+
+// 호환성 유지용
+window.getFolderSealBadgeHtml = window.getFolderSealTagHtml;
 
 // 4-2. 씰 검증 상세 팝업 모달
 window.showSealResultDetail = function(cntrNo) {
@@ -17271,7 +17287,7 @@ window.renderGalleryPhotos = function() {
                                                 </div>
                                                 <div style="display:flex; align-items:center; gap:5px;">
                                                     ${isAllGDrive ? `<span style="font-size:0.75rem;" title="모든 사진이 구글드라이브에 안전 보관 중입니다 (로컬 용량 정리됨).">☁️</span>` : ''}
-                                                    ${window.getFolderSealBadgeHtml(f)}
+                                                    ${window.getFolderTopCameraHtml(f)}
                                                     <span class="ctnr-folder-count-badge"><i class="far fa-image" style="font-size:0.72rem; opacity:0.75;"></i>${f.photos.length}장</span>
                                                 </div>
                                             </div>
@@ -17279,6 +17295,7 @@ window.renderGalleryPhotos = function() {
                                                 <span class="ctnr-folder-team-info" title="조: ${f.teamName} (${f.uploaderName})">조: ${f.teamName} (${f.uploaderName})</span>
                                                 <div class="ctnr-folder-bottom-right">
                                                     <span>${timeStr}</span>
+                                                    ${window.getFolderSealTagHtml(f)}
                                                     ${actionBtnsHtml}
                                                 </div>
                                             </div>

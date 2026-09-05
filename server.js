@@ -229,7 +229,7 @@ let currentDbConfig = {
 
 const REMOTE_DB_CONFIG = {
     user: 'postgres',
-    host: 'ungdong.iptime.org',
+    host: 'idlezero.iptime.org',
     database: 'excel',
     password: 'z456qwe12!@',
     port: 5432,
