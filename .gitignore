@@ -23,6 +23,8 @@ masterrule/startup_error.log
 .env
 .DS_Store
 gdrive-*.json
-credentials*.json
+backups/
+*.traineddata
+masterrule/seal_mounted_cache.json
 # package-lock.json (Keep in Git for consistent dependencies)
 # package-lock.json

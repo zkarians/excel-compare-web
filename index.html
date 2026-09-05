@@ -68,22 +68,22 @@
                     </button>
                 </div>
             </div>
-            <div id="cloudStatsBadge" class="header-actions"
-                style="display: flex; gap: 4px; align-items: center; background: #f0fdf4; padding: 2px 6px; border-radius: 6px; border: 1px solid #bbf7d0; font-size: 0.69rem; color: #166534; flex-shrink: 0; white-space: nowrap;">
-                <div title="선사 매핑 수">🚢선사: <strong id="cloudCarrierCnt">0</strong></div>
-                <div style="width: 1px; height: 9px; background: #bbf7d0;"></div>
-                <div title="자동분류 규칙 수">📋규칙: <strong id="cloudRuleCnt">0</strong></div>
-                <div style="width: 1px; height: 9px; background: #bbf7d0;"></div>
-                <div title="제품 마스터 수">📦마스터: <strong id="cloudMasterCnt">0</strong></div>
-                <button id="btnRefreshCloudStats"
-                    style="background: none; border: none; cursor: pointer; color: #10b981; padding: 1px;"
-                    title="클라우드 상태 새로고침">
-                    <i class="fas fa-sync-alt" style="font-size: 0.65rem;"></i>
-                </button>
-            </div>
 
             <div class="header-actions"
-                style="display: flex; gap: 2px; align-items: center; background: #f8fafc; padding: 2px 4px; border-radius: 6px; border: 1px solid #e2e8f0; flex-wrap: nowrap; flex-shrink: 0; overflow-x: auto; max-width: 100%;">
+                style="display: flex; gap: 3px; align-items: center; background: #f8fafc; padding: 2px 4px; border-radius: 6px; border: 1px solid #e2e8f0; flex-wrap: nowrap; flex-shrink: 0; overflow-x: auto; max-width: 100%;">
+                <div id="cloudStatsBadge"
+                    style="display: flex; gap: 4px; align-items: center; background: #f0fdf4; padding: 2px 6px; border-radius: 4px; border: 1px solid #bbf7d0; font-size: 0.69rem; color: #166534; flex-shrink: 0; white-space: nowrap; margin-right: 2px;">
+                    <div title="선사 매핑 수">🚢선사: <strong id="cloudCarrierCnt">0</strong></div>
+                    <div style="width: 1px; height: 9px; background: #bbf7d0;"></div>
+                    <div title="자동분류 규칙 수">📋규칙: <strong id="cloudRuleCnt">0</strong></div>
+                    <div style="width: 1px; height: 9px; background: #bbf7d0;"></div>
+                    <div title="제품 마스터 수">📦마스터: <strong id="cloudMasterCnt">0</strong></div>
+                    <button id="btnRefreshCloudStats"
+                        style="background: none; border: none; cursor: pointer; color: #10b981; padding: 1px;"
+                        title="클라우드 상태 새로고침">
+                        <i class="fas fa-sync-alt" style="font-size: 0.65rem;"></i>
+                    </button>
+                </div>
                 <button id="btnOpenReportModal" class="btn" onclick="window.switchAppScreen('report')"
                     style="padding: 0.15rem 0.35rem; font-size: 0.70rem; border-radius: 4px; font-weight: 800; background: #eff6ff; color: #1d4ed8; border: 1px solid #93c5fd; box-shadow: 0 1px 2px rgba(29,78,216,0.12); white-space: nowrap;">
                     <i class="fas fa-file-alt"></i> 보고서
@@ -1682,8 +1682,14 @@
                         class="fas fa-question-circle"></i> 반입정보 미분류</button>
                 <button class="tab-btn tab-db-search" id="tabDbSearch"><i class="fas fa-database"></i> DB
                     조회</button>
+                <button class="tab-btn tab-scheduled-only" id="tabScheduled" data-filter="scheduled"><i
+                        class="fas fa-calendar-alt"></i> 예정작업 <span id="scheduledCount" class="tab-badge"
+                        style="background: #2563eb; color: white; padding: 1px 6px; border-radius: 10px; font-size: 0.7rem; margin-left: 4px;">0</span></button>
 
-                <div style="flex: 1;"></div>
+                <!-- 최신 전산/원본 불러오기 및 재대조 원클릭 버튼 -->
+                <button type="button" class="tab-btn btn-quick-reload-compare" id="btnQuickReloadCompare" onclick="window.handleQuickReloadAndCompare(event)" title="다운로드 폴더의 최신 전산 파일과 원본 파일을 불러와 즉시 대조를 다시 실행합니다.">
+                    <i class="fas fa-sync-alt" id="iconQuickReloadCompare"></i> <span id="textQuickReloadCompare">최신 전산 대조</span>
+                </button>
             </div>
 
             <!-- DB 조회 전용 검색 다중 필터 (DB 탭에서만 보임) -->
@@ -1807,8 +1813,8 @@
 
             <!-- 선택 항목 관리 바 (DB 저장 등) -->
             <div id="selectionBar"
-                style="display: none; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 6px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                <div style="display: flex; align-items: center; gap: 15px;">
+                style="display: none; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 6px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 500;">
                         <input type="checkbox" id="selectAll" style="width: 16px; height: 16px; cursor: pointer;">
                         <span>전체 선택</span>
@@ -2136,7 +2142,7 @@
 
     <!-- Excluded Containers Modal -->
     <div id="excludedModal" class="modal">
-        <div class="modal-content" style="max-width: 800px; width: 95%; max-height: 85vh; display: flex; flex-direction: column;">
+        <div class="modal-content" style="max-width: 1200px; width: 95%; max-height: 85vh; display: flex; flex-direction: column;">
             <div class="modal-header">
                 <h2 style="margin: 0; color: #475569;">
                     <i class="fas fa-exclamation-circle"></i> 제외된 컨테이너 목록 (작업일 없음)
@@ -2151,16 +2157,20 @@
                     <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                         <thead style="background: #f8fafc; border-bottom: 2px solid #cbd5e1;">
                             <tr>
-                                <th style="padding: 10px 8px; text-align: center; border-bottom: 1px solid #e2e8f0; width: 140px;">컨테이너 번호</th>
-                                <th style="padding: 10px 8px; text-align: center; border-bottom: 1px solid #e2e8f0; width: 100px;">시트명</th>
-                                <th style="padding: 10px 8px; text-align: center; border-bottom: 1px solid #e2e8f0; width: 80px;">행 번호</th>
-                                <th style="padding: 10px 8px; text-align: center; border-bottom: 1px solid #e2e8f0; width: 60px;">수량</th>
-                                <th style="padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0;">품목명</th>
+                                <th style="padding: 10px 8px; text-align: center; border-bottom: 1px solid #e2e8f0; width: 130px;">컨테이너 번호</th>
+                                <th style="padding: 10px 8px; text-align: center; border-bottom: 1px solid #e2e8f0; width: 120px;">작업명</th>
+                                <th style="padding: 10px 8px; text-align: center; border-bottom: 1px solid #e2e8f0; width: 90px;">시트명</th>
+                                <th style="padding: 10px 8px; text-align: center; border-bottom: 1px solid #e2e8f0; width: 60px;">행 번호</th>
+                                <th style="padding: 10px 8px; text-align: center; border-bottom: 1px solid #e2e8f0; width: 80px;">제품구분</th>
+                                <th style="padding: 10px 8px; text-align: center; border-bottom: 1px solid #e2e8f0; width: 80px;">사업부</th>
+                                <th style="padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0;">제품명</th>
+                                <th style="padding: 10px 8px; text-align: center; border-bottom: 1px solid #e2e8f0; width: 75px;">제품수량</th>
+                                <th style="padding: 10px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; width: 160px;">리마크</th>
                             </tr>
                         </thead>
                         <tbody id="excludedContainersBody">
                             <tr>
-                                <td colspan="5" style="padding: 20px; text-align: center; color: #94a3b8;">제외된 컨테이너가 없습니다.</td>
+                                <td colspan="9" style="padding: 20px; text-align: center; color: #94a3b8;">제외된 컨테이너가 없습니다.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -2686,10 +2696,10 @@
 
                     <!-- [신규] 컨테이너 적재 품목 실시간 확인 버튼 & 팝오버 컨테이너 -->
                     <div style="position: relative; display: inline-block;">
-                        <button type="button" id="btnGalleryProductSummary" onclick="window.toggleGalleryProductPopover(event)" class="btn-gallery-prod-summary" style="display: none; align-items: center; gap: 6px; padding: 4px 10px; height: 32px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; border-radius: 8px; font-size: 0.8rem; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                            <i class="fas fa-boxes" style="color: #10b981;"></i>
+                        <button type="button" id="btnGalleryProductSummary" onclick="window.toggleGalleryProductPopover(event)" class="btn-gallery-prod-summary" style="display: none; align-items: center; gap: 6px; padding: 4px 10px; height: 32px; border-radius: 8px; font-size: 0.8rem; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                            <i class="fas fa-boxes" id="galleryProductSummaryIcon"></i>
                             <span id="galleryProductSummaryText">품목 정보</span>
-                            <i class="fas fa-chevron-down" style="font-size: 0.7rem; color: #059669;"></i>
+                            <i class="fas fa-chevron-down" id="galleryProductSummaryChevron" style="font-size: 0.7rem;"></i>
                         </button>
 
                         <!-- 품목 상세 드롭다운 팝오버 카드 -->
@@ -2754,7 +2764,7 @@
                         </button>
                     </div>
 
-                    <button type="button" class="ctnr-btn-close" onclick="window.closePhotoGalleryModal()" title="닫기 (ESC)">
+                    <button type="button" class="ctnr-btn-close" onclick="window.closePhotoGalleryModal(true)" title="닫기 (ESC)">
                         <i class="fas fa-times"></i> 닫기
                     </button>
                 </div>
@@ -2774,12 +2784,12 @@
                         <input type="date" id="photoGalleryEndDate" onchange="window.loadPhotoGallery()">
                     </div>
                     <!-- 컨테이너 번호 검색 -->
-                    <div class="ctnr-input-wrapper" style="min-width: 180px;">
+                    <div class="ctnr-input-wrapper" style="min-width: 130px; max-width: 150px;">
                         <label><i class="fas fa-box"></i> 컨테이너 번호</label>
-                        <input type="text" id="photoGallerySearchCntr" placeholder="컨테이너 번호 입력" oninput="window.filterPhotoGallery()" style="text-transform: uppercase;">
+                        <input type="text" id="photoGallerySearchCntr" placeholder="번호 입력" oninput="window.filterPhotoGallery()" style="text-transform: uppercase;">
                     </div>
                     <!-- 작업 조 필터 -->
-                    <div class="ctnr-input-wrapper" style="min-width: 110px;">
+                    <div class="ctnr-input-wrapper" style="min-width: 90px;">
                         <label><i class="fas fa-user-friends" style="color: #059669;"></i> 작업 조</label>
                         <select id="photoGalleryTeamFilter" onchange="window.filterPhotoGallery()">
                             <option value="all">전체 조</option>
@@ -2796,7 +2806,9 @@
                         <select id="photoGalleryTypeFilter" onchange="window.filterPhotoGallery()">
                             <option value="all">전체 사진</option>
                             <option value="normal">일반 적재 사진만</option>
-                            <option value="seal">🔴 씰(Seal) 사진만</option>
+                            <option value="seal">🔴 씰(Seal) 사진 전체</option>
+                            <option value="seal_verified">🟢 씰 일치 확인</option>
+                            <option value="seal_suspicious">⚠️ 미확인/의심 씰</option>
                         </select>
                     </div>
                     <!-- 초기화 버튼 -->
@@ -2820,15 +2832,41 @@
 
                 <div class="ctnr-filter-group-right">
                     <!-- 요약 텍스트 -->
-                    <div id="photoGallerySummary" style="font-size: 0.8rem; font-weight: 700; color: #0284c7;">
-                        조회된 사진: 0장 (0개 컨테이너)
+                    <div id="photoGallerySummary" style="font-size: 0.74rem; font-weight: 700; color: #0284c7; white-space: nowrap;">
+                        조회된 사진: 0장
                     </div>
+
+                    <!-- 신규: 씰 체결 상태 3단 분리 탭 -->
+                    <div id="sealFilterTabGroup" class="ctnr-seal-filter-tabs">
+                        <button type="button" class="seal-tab-btn active" id="sealTabAll" onclick="window.setSealFilterMode('ALL')" title="전체 컨테이너 표시">
+                            전체 <span class="seal-tab-count" id="cntSealAll">0</span>
+                        </button>
+                        <button type="button" class="seal-tab-btn mounted" id="sealTabMounted" onclick="window.setSealFilterMode('MOUNTED')" title="정상 씰 체결된 컨테이너만 모아보기">
+                            <i class="fas fa-lock"></i> 체결 <span class="seal-tab-count" id="cntSealMounted">0</span>
+                        </button>
+                        <button type="button" class="seal-tab-btn unmounted" id="sealTabUnmounted" onclick="window.setSealFilterMode('UNMOUNTED')" title="씰 미체결 / 확인필요 컨테이너만 모아보기">
+                            <i class="fas fa-lock-open"></i> 미체결 <span class="seal-tab-count" id="cntSealUnmounted">0</span>
+                        </button>
+                    </div>
+
+                    <!-- 조회기간 전체 선택 체크박스 -->
+                    <label class="ctnr-all-select-wrap" style="display: inline-flex; align-items: center; gap: 5px; font-size: 0.74rem; font-weight: 800; color: #cbd5e1; cursor: pointer; padding: 0 8px; height: 30px; background: rgba(30,41,59,0.85); border: 1px solid #475569; border-radius: 6px; white-space: nowrap;" title="현재 화면에 표시된 컨테이너 폴더 전체 선택 / 해제">
+                        <input type="checkbox" id="chkSelectAllGalleryFolders" style="cursor: pointer; width: 13px; height: 13px; accent-color: #6366f1;" onchange="window.toggleAllGalleryFolders(this.checked)">
+                        <span id="lblSelectAllGalleryFolders">전체 선택</span>
+                    </label>
+
                     <!-- 뒤로가기 (상세 뷰일 때 활성화) -->
-                    <button type="button" id="btnGalleryBack" class="ctnr-btn-back" onclick="window.goBackToFolderList()" style="display: none;">
+                    <button type="button" id="btnGalleryBack" class="ctnr-btn-back" onclick="window.goBackToFolderList()" style="display: none; height: 30px; padding: 0 8px; font-size: 0.74rem;">
                         <i class="fas fa-arrow-left"></i> 뒤로가기
                     </button>
+
+                    <!-- 신규: 조회기간 씰 체결(장착) 상태 체크 버튼 -->
+                    <button type="button" id="btnCheckAllSealMounted" class="ctnr-btn-seal-mounted" onclick="window.runAllVisibleSealMountedCheck()" title="현재 화면에 표시된 컨테이너 씰 체결 상태 체크" style="height: 30px; padding: 0 10px; font-size: 0.74rem; border-radius: 6px;">
+                        <i class="fas fa-lock"></i> <span id="btnCheckAllSealMountedText">체결 체크</span>
+                    </button>
+
                     <!-- 새로고침 -->
-                    <button type="button" class="ctnr-btn-refresh" onclick="window.loadPhotoGallery()" title="새로고침">
+                    <button type="button" class="ctnr-btn-refresh" onclick="window.loadPhotoGallery()" title="새로고침" style="height: 30px; padding: 0 8px; font-size: 0.74rem; border-radius: 6px;">
                         <i class="fas fa-sync-alt"></i> 새로고침
                     </button>
                 </div>
@@ -2876,9 +2914,19 @@
                             <i class="fas fa-trash-alt"></i> 삭제
                         </button>
 
-                        <!-- 2. 씰 지정 / 씰 해제 (동적 토글) -->
-                        <button type="button" id="btnActionSealToggle" class="ctnr-act-btn btn-rose-seal" onclick="window.handleBatchToggleSealPhoto()" title="씰 지정 / 해제">
-                            <i class="fas fa-camera"></i> <span id="btnActionSealText">씰 해제</span>
+                        <!-- 2-1. 씰 지정 -->
+                        <button type="button" id="btnActionSealSet" class="ctnr-act-btn btn-rose-seal" onclick="window.handleBatchSetSealPhoto('seal')" title="선택한 사진을 씰(Seal) 사진으로 지정" style="display: none;">
+                            <i class="fas fa-camera"></i> <span id="btnActionSealSetText">씰지정</span>
+                        </button>
+
+                        <!-- 2-2. 씰 해제 -->
+                        <button type="button" id="btnActionSealUnset" class="ctnr-act-btn btn-rose-unseal" onclick="window.handleBatchSetSealPhoto('normal')" title="선택한 사진의 씰(Seal) 지정 해제" style="display: none;">
+                            <i class="fas fa-camera"></i> <span id="btnActionSealUnsetText">씰해제</span>
+                        </button>
+
+                        <!-- 기존 호환성용 숨김 버튼 -->
+                        <button type="button" id="btnActionSealToggle" style="display: none;" onclick="window.handleBatchToggleSealPhoto()">
+                            <span id="btnActionSealText"></span>
                         </button>
 
                         <!-- 3. 조 변경 -->
@@ -2947,6 +2995,11 @@
                         <!-- 5. 로컬 복사 -->
                         <button type="button" class="ctnr-act-btn btn-emerald" onclick="window.handleOpenLocalCopyModalForFolders()" title="선택한 폴더들의 사진을 로컬 폴더로 직접 복사">
                             <i class="fas fa-folder-plus"></i> 로컬 복사
+                        </button>
+
+                        <!-- 5-1. 신규: 선택 컨테이너 씰 체결 상태 일괄 체크 -->
+                        <button type="button" id="btnFolderActionCheckSealMounted" class="ctnr-act-btn btn-indigo" onclick="window.handleBatchCheckSelectedSealMounted()" title="선택한 컨테이너들의 씰 체결 상태 체크">
+                            <i class="fas fa-lock"></i> <span>체결 체크</span>
                         </button>
 
                         <!-- 6. ZIP 다운로드 -->
@@ -3040,7 +3093,10 @@
             <div style="margin-bottom: 12px;">
                 <div style="font-size: 0.78rem; font-weight: 800; color: #94a3b8; margin-bottom: 6px;">대상 폴더 기준 경로 (PC 경로)</div>
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="inputLocalCopyPath" placeholder="예: X:\26.08\27\야간" oninput="window.updateLocalCopyPreview()" style="flex: 1; height: 42px; background: #090e17; border: 1px solid #10b981; color: #38bdf8; font-weight: 800; font-family: monospace; font-size: 0.9rem; padding: 0 12px; border-radius: 8px; outline: none; box-shadow: 0 0 10px rgba(16,185,129,0.15);">
+                    <input type="text" id="inputLocalCopyPath" placeholder="예: X:\26.09\04\야간" oninput="window.updateLocalCopyPreview()" style="flex: 1; height: 42px; background: #090e17; border: 1px solid #10b981; color: #38bdf8; font-weight: 800; font-family: monospace; font-size: 0.9rem; padding: 0 12px; border-radius: 8px; outline: none; box-shadow: 0 0 10px rgba(16,185,129,0.15);">
+                    <button type="button" id="btnApplyTodayWorkDate" onclick="window.applyTodayWorkDateToInput()" title="현재 작업시간(오후 1시 기준)의 작업일 경로로 즉시 갱신" style="height: 42px; padding: 0 12px; font-size: 0.8rem; font-weight: 800; white-space: nowrap; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.2s;">
+                        <i class="fas fa-calendar-day"></i> 오늘작업일
+                    </button>
                     <button type="button" id="btnBrowseLocalFolder" onclick="window.handleBrowseLocalFolder()" style="height: 42px; padding: 0 16px; font-size: 0.82rem; font-weight: 800; white-space: nowrap; background: #1e293b; color: #f8fafc; border: 1px solid #475569; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
                         <i class="fas fa-folder-open"></i> 찾아보기...
                     </button>
@@ -3312,7 +3368,7 @@
                     <button type="button" class="report-top-icon-btn" onclick="window.openTeamSummaryModal()" title="조별 작업수량 요약 (차트/통계)">
                         <i class="fas fa-chart-bar"></i>
                     </button>
-                    <button type="button" class="ctnr-btn-close" onclick="window.closeReportModal()" title="닫기 (ESC)">
+                    <button type="button" class="ctnr-btn-close" onclick="window.closeReportModal(true)" title="닫기 (ESC)">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -3409,7 +3465,7 @@
                         <i class="fas fa-download"></i> <span>이미지 저장</span>
                     </button>
 
-                    <button type="button" class="btn-footer-close" onclick="window.closeReportModal()">
+                    <button type="button" class="btn-footer-close" onclick="window.closeReportModal(true)">
                         닫기
                     </button>
                 </div>
@@ -3672,6 +3728,7 @@
         </div>
     </div>
 
+    <script src="js/libs/zxing.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="js/modules/excelParser.js?v=20260901-dhzjebeon"></script>
     <script src="js/modules/mappingManager.js?v=20260528-fixed"></script>

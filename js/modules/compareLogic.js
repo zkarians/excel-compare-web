@@ -65,6 +65,10 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
 
     origList.forEach(orig => {
         let cleanCntr = (orig.cntrNo || "").trim().toUpperCase();
+        // [사용자 요청] 컨테이너 번호가 유효하지 않은 경우(미지정, 빈값, WAIT, - 등) 대조 대상 제외
+        if (!cleanCntr || cleanCntr === '미지정' || cleanCntr === '-' || cleanCntr.includes('WAIT')) {
+            return;
+        }
         let effectiveProdName = (orig.prodName || "").trim().toUpperCase();
         const isNumeric = /^\d+$/.test(effectiveProdName);
         if (isNumeric) {
@@ -812,6 +816,10 @@ function compareData(origList, downList, productMaster, dynamicRules, customFiel
         if (!downGrouped[key]) {
             const orig = origGrouped[key];
             const cleanCntr = (orig.cntrNo || "").trim().toUpperCase();
+            // [사용자 요청] 컨테이너 번호가 유효하지 않은 경우(미지정, 빈값, WAIT, - 등) 전산누락으로 생성하지 않음
+            if (!cleanCntr || cleanCntr === '미지정' || cleanCntr === '-' || cleanCntr.includes('WAIT')) {
+                return;
+            }
             const prodNameUpper = (orig.prodName || "").trim().toUpperCase();
             const prod = productMap.get(prodNameUpper);
             const isNonAsset = checkIsNonAsset(orig.prodName, productMap);

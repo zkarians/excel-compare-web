@@ -39,6 +39,75 @@ try {
     }
 }
 
+let tesseract = null;
+try {
+    tesseract = require('tesseract.js');
+} catch (e) {
+    try {
+        tesseract = require(path.join(__dirname, 'node_modules', 'tesseract.js'));
+    } catch (e2) {
+        console.warn('⚠️ [Server] tesseract.js 모듈 로드 실패:', e2.message);
+    }
+}
+
+let tesseractWorkerPool = [];
+let tesseractWaitingResolvers = [];
+let isInitializingWorkerPool = false;
+
+async function createSingleTesseractWorker() {
+    if (!tesseract) return null;
+    try {
+        const worker = await tesseract.createWorker('eng');
+        await worker.setParameters({
+            tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        });
+        return worker;
+    } catch (err) {
+        console.error('⚠️ [Server] Tesseract Worker 생성 실패:', err.message);
+        return null;
+    }
+}
+
+async function acquireTesseractWorker() {
+    if (!tesseract) return null;
+    if (tesseractWorkerPool.length > 0) {
+        return tesseractWorkerPool.pop();
+    }
+    if (!isInitializingWorkerPool && tesseractWorkerPool.length === 0) {
+        isInitializingWorkerPool = true;
+        const w1 = await createSingleTesseractWorker();
+        isInitializingWorkerPool = false;
+        if (w1) return w1;
+    }
+    return new Promise(resolve => {
+        tesseractWaitingResolvers.push(resolve);
+    });
+}
+
+function releaseTesseractWorker(worker) {
+    if (!worker) return;
+    if (tesseractWaitingResolvers.length > 0) {
+        const next = tesseractWaitingResolvers.shift();
+        next(worker);
+    } else {
+        tesseractWorkerPool.push(worker);
+    }
+}
+
+// 비동기 듀얼 워커 사전 초기화
+(async () => {
+    try {
+        const [w1, w2] = await Promise.all([createSingleTesseractWorker(), createSingleTesseractWorker()]);
+        if (w1) tesseractWorkerPool.push(w1);
+        if (w2) tesseractWorkerPool.push(w2);
+        if (tesseractWorkerPool.length > 0) {
+            console.log(`✅ [Server] Tesseract Dual Worker Pool 준비 완료 (${tesseractWorkerPool.length}개 가동)`);
+        }
+    } catch (e) {}
+})();
+
+// (checkSealMatch, loadPhotoBufferForOCR, verifyPhotoSealOCR moved below near photo endpoints)
+
 // Google Drive OAuth 설정 (CTNR 앱 호환)
 const GDRIVE_OAUTH_PATH = 'C:\\Program Files (x86)\\CTNR\\gdrive-oauth-client.json';
 const GDRIVE_TOKEN_PATH = 'C:\\Program Files (x86)\\CTNR\\gdrive-token.json';
@@ -3129,6 +3198,754 @@ app.get('/api/teams', async (req, res) => {
                 { id: 5, name: '야간조' }
             ]
         });
+    }
+});
+
+// ==========================================
+// [SEAL PHOTO OCR & VERIFICATION ENGINE]
+// ==========================================
+
+// 씰 번호 지능형 대조 함수 (끝 4~5자리 유연 대조, 부분 일치, 연속 숫자 윈도우, 접두사+숫자 복합 대조, OCR 유사 문자 치환)
+function checkSealMatch(detectedText, normTarget) {
+    if (!normTarget || !detectedText) return { matched: false, matchedText: '' };
+    const txt = detectedText.replace(/[^A-Z0-9]/g, '').toUpperCase();
+    if (txt.length < 3) return { matched: false, matchedText: '' };
+
+    // 0. 사용자 요청: 전산 씰 번호의 "뒤 5자리" 또는 "뒤 4자리"가 OCR 결과에 포함되어 있으면 즉시 일치 판정!
+    if (normTarget.length >= 5) {
+        const tail5 = normTarget.slice(-5);
+        if (txt.includes(tail5)) {
+            return { matched: true, matchedText: tail5, type: 'tail_5' };
+        }
+    }
+    if (normTarget.length >= 4) {
+        const tail4 = normTarget.slice(-4);
+        if (txt.includes(tail4)) {
+            return { matched: true, matchedText: tail4, type: 'tail_4' };
+        }
+    }
+
+    // 1. 전체 포함 대조
+    if (txt.includes(normTarget)) {
+        return { matched: true, matchedText: normTarget, type: 'exact' };
+    }
+    if (normTarget.includes(txt) && txt.length >= 5) {
+        return { matched: true, matchedText: txt, type: 'target_contains_txt' };
+    }
+
+    // 2. 씰 번호 내 연속 숫자 대조 (4자리 이상 일치)
+    const targetDigits = normTarget.replace(/[^0-9]/g, '');
+    if (targetDigits.length >= 4) {
+        if (txt.includes(targetDigits)) {
+            return { matched: true, matchedText: targetDigits, type: 'full_digits' };
+        }
+        for (let w = Math.min(targetDigits.length - 1, 7); w >= 4; w--) {
+            for (let i = 0; i <= targetDigits.length - w; i++) {
+                const sub = targetDigits.substring(i, i + w);
+                if (txt.includes(sub)) {
+                    return { matched: true, matchedText: sub, type: `digits_window_${w}` };
+                }
+            }
+        }
+    }
+
+    // 3. 영문 접두사(3자 이상) + 고유 숫자(3자 이상) 복합 일치 (예: KRAY35808 -> KRA + 3580)
+    const targetLetters = normTarget.replace(/[^A-Z]/g, '');
+    if (targetLetters.length >= 3 && targetDigits.length >= 4) {
+        const prefix3 = targetLetters.slice(0, 3);
+        const digits3 = targetDigits.slice(0, 3);
+        const digits4 = targetDigits.slice(0, 4);
+        if (txt.includes(prefix3) && (txt.includes(digits4) || txt.includes(digits3))) {
+            return { matched: true, matchedText: `${prefix3}${digits4 || digits3}`, type: 'prefix_and_digits' };
+        }
+    }
+
+    // 4. 끝자리부터 역순 슬라이딩 윈도우 (6자리, 5자리, 4자리)
+    for (let len = Math.min(normTarget.length - 1, 8); len >= 4; len--) {
+        const suffix = normTarget.slice(normTarget.length - len);
+        if (txt.includes(suffix)) return { matched: true, matchedText: suffix, type: `suffix_${len}` };
+        const prefix = normTarget.slice(0, len);
+        if (txt.includes(prefix)) return { matched: true, matchedText: prefix, type: `prefix_${len}` };
+    }
+
+    // 5. OCR 유사 문자 정규화 치환 (I/J/L -> 1, O/0/D/Q -> 0, S/B -> 5/8, Z -> 2)
+    function normalizeOCR(str) {
+        return str
+            .replace(/[JIL]/g, '1')
+            .replace(/[ODQ]/g, '0')
+            .replace(/S/g, '5')
+            .replace(/B/g, '8')
+            .replace(/Z/g, '2');
+    }
+
+    const normOcrTxt = normalizeOCR(txt);
+    const normOcrTarget = normalizeOCR(normTarget);
+
+    if (normTarget.length >= 5) {
+        const normTail5 = normOcrTarget.slice(-5);
+        if (normOcrTxt.includes(normTail5)) {
+            return { matched: true, matchedText: normTarget.slice(-5), type: 'norm_tail_5' };
+        }
+    }
+    if (normTarget.length >= 4) {
+        const normTail4 = normOcrTarget.slice(-4);
+        if (normOcrTxt.includes(normTail4)) {
+            return { matched: true, matchedText: normTarget.slice(-4), type: 'norm_tail_4' };
+        }
+    }
+
+    if (normOcrTxt.includes(normOcrTarget)) {
+        return { matched: true, matchedText: normTarget, type: 'norm_exact' };
+    }
+
+    for (let len = normOcrTarget.length - 1; len >= 4; len--) {
+        const suffix = normOcrTarget.slice(normOcrTarget.length - len);
+        if (normOcrTxt.includes(suffix)) return { matched: true, matchedText: normTarget.slice(-len), type: 'norm_suffix' };
+        const prefix = normOcrTarget.slice(0, len);
+        if (normOcrTxt.includes(prefix)) return { matched: true, matchedText: normTarget.slice(0, len), type: 'norm_prefix' };
+    }
+
+    return { matched: false, matchedText: '' };
+}
+
+// 씰 사진 버퍼 로더 (로컬 파일 우선 조회 -> 없으면 Google Drive에서 다운로드 및 로컬 캐싱)
+async function loadPhotoBufferForOCR(photoPath, gdriveFileId, cntrNo) {
+    // 1. 로컬 파일시스템 우선 확인
+    const resolvedPath = resolveUploadPhotoFullPath(photoPath, cntrNo);
+    if (resolvedPath && fs.existsSync(resolvedPath)) {
+        try {
+            return { buffer: fs.readFileSync(resolvedPath), source: 'local', path: resolvedPath };
+        } catch (e) {}
+    }
+
+    // 2. Google Drive 파일 ID 확인 (파라미터 없으면 DB 조회)
+    let targetGdriveId = gdriveFileId;
+    if (!targetGdriveId) {
+        try {
+            const p = await getPool();
+            const cleanPath = (photoPath || '').split('?')[0].replace(/^[/\\]+/, '');
+            const baseName = path.basename(cleanPath);
+            const r = await p.query(
+                `SELECT gdrive_file_id FROM container_photos 
+                 WHERE (photo_path ILIKE $1 OR photo_path ILIKE $2) 
+                   AND gdrive_file_id IS NOT NULL 
+                 LIMIT 1`,
+                [`%${cleanPath}%`, `%${baseName}%`]
+            );
+            if (r.rows.length > 0 && r.rows[0].gdrive_file_id) {
+                targetGdriveId = r.rows[0].gdrive_file_id;
+            }
+        } catch (dbErr) {}
+    }
+
+    // 3. DB에도 없으면 Google Drive 폴더 파일명 검색
+    if (!targetGdriveId && photoPath) {
+        try {
+            const baseName = path.basename((photoPath || '').split('?')[0]);
+            const found = await findGoogleDriveFileByName(baseName);
+            if (found && found.fileId) {
+                targetGdriveId = found.fileId;
+            }
+        } catch (gErr) {}
+    }
+
+    // 4. Google Drive 다운로드 및 로컬 자동 캐싱
+    if (targetGdriveId) {
+        try {
+            const gBuffer = await downloadFromGoogleDrive(targetGdriveId);
+            if (gBuffer && gBuffer.length > 0) {
+                try {
+                    const saveTarget = resolvedPath || path.join(CTNR_UPLOADS_DIR, (photoPath || '').split('?')[0].replace(/^[/\\]+/, ''));
+                    const dir = path.dirname(saveTarget);
+                    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+                    fs.writeFileSync(saveTarget, gBuffer);
+                } catch (cacheErr) {}
+                return { buffer: gBuffer, source: 'gdrive', fileId: targetGdriveId };
+            }
+        } catch (dlErr) {
+            console.warn(`[SealOCR] GDrive download failed (${targetGdriveId}):`, dlErr.message);
+        }
+    }
+
+    return null;
+}
+
+// 씰 검증 인메모리 캐시 (동일 사진+전산번호 재검사 시 0초 완료)
+const sealVerificationMemoryCache = new Map();
+
+// 씰 사진 영문/숫자 고유번호 OCR 초고속 다영역 스마트 판독 및 전산 교차 검증
+async function verifyPhotoSealOCR(photoInput, targetSealNo, gdriveFileId = null, cntrNo = null) {
+    const normTarget = (targetSealNo || '').replace(/[^A-Z0-9]/g, '').toUpperCase();
+    const cacheKey = `${String(photoInput)}|${normTarget}`;
+    if (sealVerificationMemoryCache.has(cacheKey)) {
+        const cached = sealVerificationMemoryCache.get(cacheKey);
+        if (cached && (cached.matched || cached.status === 'VERIFIED')) {
+            return { ...cached, cached: true };
+        }
+    }
+
+    const worker = await acquireTesseractWorker();
+    if (!worker) {
+        return { success: false, error: 'OCR 엔진을 초기화할 수 없습니다.' };
+    }
+
+    let photoBuffer = null;
+    let photoSource = 'unknown';
+
+    try {
+        if (Buffer.isBuffer(photoInput)) {
+            photoBuffer = photoInput;
+        } else {
+            const photoInfo = await loadPhotoBufferForOCR(photoInput, gdriveFileId, cntrNo);
+            if (!photoInfo || !photoInfo.buffer) {
+                return { success: false, error: '사진 파일을 로컬 또는 클라우드에서 불러올 수 없습니다.' };
+            }
+            photoBuffer = photoInfo.buffer;
+            photoSource = photoInfo.source;
+        }
+
+        let matched = false;
+        let matchedText = '';
+        let detectedTexts = [];
+
+        if (sharp && photoBuffer) {
+            try {
+                const meta = await sharp(photoBuffer).metadata();
+                const w = meta.width;
+                const h = meta.height;
+
+                // 초고속 조기 종료 (Ultra-fast Early Exit) 구조:
+                // 1차 패스: 전체 축소(900px) 및 상단 영역, 90도 및 270도 회전 (900px 경량화 -> 회전당 0.2~0.3초)
+                const pass1Regions = [
+                    { name: 'full', left: 0, top: 0, width: w, height: h, targetWidth: 900, degs: [90, 270] },
+                    { name: 'top-half', left: 0, top: 0, width: w, height: Math.round(h * 0.65), targetWidth: 900, degs: [90, 270] }
+                ];
+
+                for (const reg of pass1Regions) {
+                    for (const deg of reg.degs) {
+                        try {
+                            const buf = await sharp(photoBuffer)
+                                .extract({ left: reg.left, top: reg.top, width: reg.width, height: reg.height })
+                                .resize({ width: reg.targetWidth, withoutEnlargement: true })
+                                .rotate(deg)
+                                .grayscale()
+                                .normalize()
+                                .toBuffer();
+
+                            const ret = await worker.recognize(buf);
+                            const txt = (ret.data.text || '').replace(/[^A-Z0-9]/g, '').toUpperCase();
+                            if (txt) detectedTexts.push(txt);
+
+                            if (normTarget && normTarget.length >= 4) {
+                                const matchRes = checkSealMatch(txt, normTarget);
+                                if (matchRes.matched) {
+                                    matched = true;
+                                    matchedText = matchRes.matchedText;
+                                    break;
+                                }
+                            }
+                        } catch (e1) {}
+                    }
+                    if (matched) break;
+                }
+
+                // 2차 패스 (1차 미일치 시에만): 중앙 근접 90도 단 1회만 신속 확인 (0.35초)
+                if (!matched) {
+                    try {
+                        const buf = await sharp(photoBuffer)
+                            .extract({ left: Math.round(w * 0.15), top: Math.round(h * 0.15), width: Math.round(w * 0.70), height: Math.round(h * 0.70) })
+                            .resize({ width: 900, withoutEnlargement: true })
+                            .rotate(90)
+                            .grayscale()
+                            .normalize()
+                            .toBuffer();
+
+                        const ret = await worker.recognize(buf);
+                        const txt = (ret.data.text || '').replace(/[^A-Z0-9]/g, '').toUpperCase();
+                        if (txt) detectedTexts.push(txt);
+
+                        if (normTarget && normTarget.length >= 4) {
+                            const matchRes = checkSealMatch(txt, normTarget);
+                            if (matchRes.matched) {
+                                matched = true;
+                                matchedText = matchRes.matchedText;
+                            }
+                        }
+                    } catch (e2) {}
+                }
+            } catch (e) {
+                console.warn('[SealOCR] sharp processing error:', e.message);
+            }
+        }
+
+        const finalResult = {
+            success: true,
+            matched: matched,
+            status: matched ? 'VERIFIED' : (normTarget ? 'MISMATCH' : 'DETECTED'),
+            targetSealNo: targetSealNo,
+            matchedText: matchedText,
+            ocrText: detectedTexts.filter(t => t.length > 0).join(' ') || '',
+            detectedTexts: detectedTexts,
+            source: photoSource
+        };
+
+        if (matched) {
+            sealVerificationMemoryCache.set(cacheKey, finalResult);
+        }
+
+        return finalResult;
+    } finally {
+        releaseTesseractWorker(worker);
+    }
+}
+
+// 씰 체결(장착) 여부 초고속 감지 엔진 (Color Blob & Shape Analysis)
+async function analyzePhotoSealMounted(photoInput, gdriveFileId = null, cntrNo = null) {
+    let photoBuffer = null;
+    let photoSource = 'unknown';
+
+    if (Buffer.isBuffer(photoInput)) {
+        photoBuffer = photoInput;
+    } else {
+        const photoInfo = await loadPhotoBufferForOCR(photoInput, gdriveFileId, cntrNo);
+        if (!photoInfo || !photoInfo.buffer) {
+            return { success: false, mounted: false, status: 'ERROR', error: '사진 파일을 로컬 또는 클라우드에서 불러올 수 없습니다.' };
+        }
+        photoBuffer = photoInfo.buffer;
+        photoSource = photoInfo.source;
+    }
+
+    if (!sharp || !photoBuffer) {
+        return { success: true, mounted: true, status: 'MOUNTED', detectedColor: '기본확인', method: 'fallback', source: photoSource };
+    }
+
+    try {
+        const meta = await sharp(photoBuffer).metadata();
+        const w = meta.width;
+        const h = meta.height;
+
+        // 중앙 60% 영역 추출 (잠금쇠 및 씰 헤드 위치)
+        const cropW = Math.round(w * 0.6);
+        const cropH = Math.round(h * 0.6);
+        const cropLeft = Math.round(w * 0.2);
+        const cropTop = Math.round(h * 0.2);
+
+        // 300x300 경량 버퍼로 초고속(0.01초) 픽셀 색상 분석
+        const { data, info } = await sharp(photoBuffer)
+            .extract({ left: cropLeft, top: cropTop, width: cropW, height: cropH })
+            .resize(300, 300, { fit: 'fill' })
+            .raw()
+            .toBuffer({ resolveWithObject: true });
+
+        const totalPixels = info.width * info.height;
+        let yellow = 0, green = 0, blueCyan = 0, orangeRed = 0, whiteGrey = 0;
+
+        for (let i = 0; i < data.length; i += 3) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            // Yellow: High R & G, Low B
+            if (r > 130 && g > 130 && b < 100 && Math.abs(r - g) < 60) {
+                yellow++;
+            }
+            // Green: G is dominant
+            else if (g > 80 && g > r * 1.25 && g > b * 1.25) {
+                green++;
+            }
+            // Blue/Cyan: B is dominant or G+B high
+            else if ((b > 90 && b > r * 1.3) || (b > 110 && g > 110 && r < 80)) {
+                blueCyan++;
+            }
+            // Orange/Red: R is strongly dominant
+            else if (r > 150 && g > 50 && g < 140 && b < 80) {
+                orangeRed++;
+            }
+            // White/Grey Plastic with high brightness
+            else if (r > 160 && g > 160 && b > 160 && Math.abs(r - g) < 15 && Math.abs(g - b) < 15) {
+                whiteGrey++;
+            }
+        }
+
+        const yR = yellow / totalPixels;
+        const gR = green / totalPixels;
+        const bR = blueCyan / totalPixels;
+        const oR = orangeRed / totalPixels;
+        const wR = whiteGrey / totalPixels;
+
+        let detectedColor = null;
+        let colorRatio = 0;
+
+        if (yR > 0.015) { detectedColor = '노랑(Yellow)'; colorRatio = yR; }
+        else if (gR > 0.015) { detectedColor = '초록(Green)'; colorRatio = gR; }
+        else if (bR > 0.015) { detectedColor = '하늘/파랑(Cyan/Blue)'; colorRatio = bR; }
+        else if (oR > 0.015) { detectedColor = '주황/빨강(Orange/Red)'; colorRatio = oR; }
+        else if (wR > 0.04) { detectedColor = '회색/화이트(Grey)'; colorRatio = wR; }
+
+        const mounted = detectedColor !== null;
+
+        return {
+            success: true,
+            mounted: mounted,
+            status: mounted ? 'MOUNTED' : 'UNCONFIRMED',
+            detectedColor: detectedColor || '미검출',
+            colorRatio: Math.round(colorRatio * 1000) / 10,
+            source: photoSource
+        };
+    } catch (e) {
+        return { success: false, mounted: false, status: 'ERROR', error: e.message };
+    }
+}
+
+// 씰 체결 이력 캐시 파일 경로
+const SEAL_MOUNTED_CACHE_FILE = path.join(DATA_DIR, 'seal_mounted_cache.json');
+
+function loadSealMountedCacheFromFile() {
+    try {
+        if (fs.existsSync(SEAL_MOUNTED_CACHE_FILE)) {
+            const raw = fs.readFileSync(SEAL_MOUNTED_CACHE_FILE, 'utf8');
+            return JSON.parse(raw) || {};
+        }
+    } catch (e) {
+        console.warn('[SealCache] 로컬 캐시 파일 로드 실패:', e.message);
+    }
+    return {};
+}
+
+function saveSealMountedCacheToFile(cache) {
+    try {
+        fs.writeFileSync(SEAL_MOUNTED_CACHE_FILE, JSON.stringify(cache, null, 2), 'utf8');
+    } catch (e) {
+        console.warn('[SealCache] 로컬 캐시 파일 저장 실패:', e.message);
+    }
+}
+
+let isSealChecksTableChecked = false;
+async function ensureSealChecksTable(pool) {
+    if (isSealChecksTableChecked || !pool) return;
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS container_seal_checks (
+                cntr_no VARCHAR(50) PRIMARY KEY,
+                status VARCHAR(20) NOT NULL DEFAULT 'MOUNTED',
+                detected_color VARCHAR(50),
+                color_ratio NUMERIC,
+                photo_id INTEGER,
+                photo_path TEXT,
+                gdrive_file_id TEXT,
+                checked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+        `);
+        isSealChecksTableChecked = true;
+    } catch (e) {
+        console.warn('[DB] container_seal_checks 테이블 생성/확인 건너뜀:', e.message);
+    }
+}
+
+// 1-1. 단일 사진 씰 체결(장착) 여부 검사 API
+app.post('/api/photos/check-seal-mounted', async (req, res) => {
+    try {
+        const { photoId, photoPath, cntrNo, gdriveFileId } = req.body;
+        const pool = await getPool();
+
+        let realPath = photoPath;
+        let realCntr = cntrNo;
+        let targetGdriveId = gdriveFileId;
+
+        if (photoId) {
+            const r = await pool.query('SELECT photo_path, cntr_no, gdrive_file_id FROM container_photos WHERE id = $1', [photoId]);
+            if (r.rows.length > 0) {
+                realPath = r.rows[0].photo_path;
+                realCntr = realCntr || r.rows[0].cntr_no;
+                if (!targetGdriveId) targetGdriveId = r.rows[0].gdrive_file_id;
+            }
+        }
+
+        if (!realPath && !targetGdriveId) {
+            return res.status(400).json({ success: false, error: 'photoPath 또는 photoId가 필요합니다.' });
+        }
+
+        const result = await analyzePhotoSealMounted(realPath, targetGdriveId, realCntr);
+
+        // 정상 체결 판정 시 DB 및 로컬 캐시에 즉시 영구 저장
+        if (result && result.mounted && realCntr) {
+            const cleanCntr = realCntr.toUpperCase().trim();
+            const now = new Date();
+            const record = {
+                cntrNo: cleanCntr,
+                status: 'MOUNTED',
+                detectedColor: result.detectedColor || '확인',
+                colorRatio: result.colorRatio || 0,
+                photoId: photoId || null,
+                photoPath: realPath || null,
+                gdriveFileId: targetGdriveId || null,
+                checkedAt: now
+            };
+
+            // 1. 로컬 캐시 즉시 업데이트
+            const fileCache = loadSealMountedCacheFromFile();
+            fileCache[cleanCntr] = record;
+            saveSealMountedCacheToFile(fileCache);
+
+            // 2. DB 비동기 영구 저장 (백그라운드)
+            if (pool) {
+                ensureSealChecksTable(pool).then(() => {
+                    return pool.query(`
+                        INSERT INTO container_seal_checks (cntr_no, status, detected_color, color_ratio, photo_id, photo_path, gdrive_file_id, checked_at, updated_at)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                        ON CONFLICT (cntr_no) DO UPDATE SET
+                            status = EXCLUDED.status,
+                            detected_color = EXCLUDED.detected_color,
+                            color_ratio = EXCLUDED.color_ratio,
+                            photo_id = COALESCE(EXCLUDED.photo_id, container_seal_checks.photo_id),
+                            photo_path = COALESCE(EXCLUDED.photo_path, container_seal_checks.photo_path),
+                            gdrive_file_id = COALESCE(EXCLUDED.gdrive_file_id, container_seal_checks.gdrive_file_id),
+                            updated_at = NOW();
+                    `, [cleanCntr, 'MOUNTED', record.detectedColor, record.colorRatio, record.photoId, record.photoPath, record.gdriveFileId, record.checkedAt]);
+                }).catch(err => {
+                    console.warn('[DB] 단일 체결 이력 upsert 실패 (무시됨):', err.message);
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            photoId,
+            cntrNo: realCntr,
+            ...result
+        });
+    } catch (err) {
+        console.error('POST /api/photos/check-seal-mounted error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 1-2. 기체결 씰 검사 전체 이력 조회 API
+app.get('/api/photos/seal-mounted-history', async (req, res) => {
+    try {
+        const fileCache = loadSealMountedCacheFromFile();
+        const pool = await getPool();
+        if (pool) {
+            await ensureSealChecksTable(pool);
+            try {
+                const r = await pool.query('SELECT * FROM container_seal_checks WHERE status = $1', ['MOUNTED']);
+                for (const row of r.rows) {
+                    const cntr = (row.cntr_no || '').toUpperCase().trim();
+                    if (cntr) {
+                        fileCache[cntr] = {
+                            cntrNo: cntr,
+                            status: row.status,
+                            detectedColor: row.detected_color || '확인',
+                            colorRatio: Number(row.color_ratio) || 0,
+                            photoId: row.photo_id,
+                            photoPath: row.photo_path,
+                            gdriveFileId: row.gdrive_file_id,
+                            checkedAt: row.checked_at
+                        };
+                    }
+                }
+                saveSealMountedCacheToFile(fileCache);
+            } catch (dbErr) {
+                console.warn('[DB] 체결 이력 조회 실패 (로컬 캐시 사용):', dbErr.message);
+            }
+        }
+        res.json({ success: true, count: Object.keys(fileCache).length, records: fileCache });
+    } catch (err) {
+        console.error('GET /api/photos/seal-mounted-history error:', err);
+        const fileCache = loadSealMountedCacheFromFile();
+        res.json({ success: true, count: Object.keys(fileCache).length, records: fileCache });
+    }
+});
+
+// 1-3. 씰 체결 이력 일괄 저장 API
+app.post('/api/photos/save-seal-mounted-batch', async (req, res) => {
+    try {
+        const { records } = req.body;
+        if (!Array.isArray(records) || records.length === 0) {
+            return res.json({ success: true, savedCount: 0 });
+        }
+
+        const fileCache = loadSealMountedCacheFromFile();
+        const pool = await getPool();
+        if (pool) {
+            await ensureSealChecksTable(pool);
+        }
+
+        let savedCount = 0;
+        for (const item of records) {
+            const cntr = (item.cntrNo || '').toUpperCase().trim();
+            if (!cntr || item.status !== 'MOUNTED') continue;
+
+            const rec = {
+                cntrNo: cntr,
+                status: 'MOUNTED',
+                detectedColor: item.detectedColor || '확인',
+                colorRatio: item.colorRatio || 0,
+                photoId: item.photoId || null,
+                photoPath: item.photoPath || null,
+                gdriveFileId: item.gdriveFileId || null,
+                checkedAt: item.checkedAt || new Date()
+            };
+
+            fileCache[cntr] = rec;
+            savedCount++;
+
+            if (pool) {
+                try {
+                    await pool.query(`
+                        INSERT INTO container_seal_checks (cntr_no, status, detected_color, color_ratio, photo_id, photo_path, gdrive_file_id, checked_at, updated_at)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                        ON CONFLICT (cntr_no) DO UPDATE SET
+                            status = EXCLUDED.status,
+                            detected_color = EXCLUDED.detected_color,
+                            color_ratio = EXCLUDED.color_ratio,
+                            photo_id = COALESCE(EXCLUDED.photo_id, container_seal_checks.photo_id),
+                            photo_path = COALESCE(EXCLUDED.photo_path, container_seal_checks.photo_path),
+                            gdrive_file_id = COALESCE(EXCLUDED.gdrive_file_id, container_seal_checks.gdrive_file_id),
+                            updated_at = NOW();
+                    `, [cntr, 'MOUNTED', rec.detectedColor, rec.colorRatio, rec.photoId, rec.photoPath, rec.gdriveFileId, rec.checkedAt]);
+                } catch (dbErr) {
+                    console.warn(`[DB] 체결 이력 batch 저장 실패 (${cntr}):`, dbErr.message);
+                }
+            }
+        }
+
+        saveSealMountedCacheToFile(fileCache);
+        res.json({ success: true, savedCount });
+    } catch (err) {
+        console.error('POST /api/photos/save-seal-mounted-batch error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 1-4. 씰 체결 이력 삭제 (미체결로 수동 변경 시) API
+app.post('/api/photos/remove-seal-mounted', async (req, res) => {
+    try {
+        const { cntrNo } = req.body;
+        const cleanCntr = (cntrNo || '').toUpperCase().trim();
+        if (!cleanCntr) return res.json({ success: true });
+
+        const fileCache = loadSealMountedCacheFromFile();
+        if (fileCache[cleanCntr]) {
+            delete fileCache[cleanCntr];
+            saveSealMountedCacheToFile(fileCache);
+        }
+
+        const pool = await getPool();
+        if (pool) {
+            await ensureSealChecksTable(pool);
+            try {
+                await pool.query('DELETE FROM container_seal_checks WHERE cntr_no = $1', [cleanCntr]);
+            } catch (dbErr) {
+                console.warn(`[DB] 체결 이력 삭제 실패 (${cleanCntr}):`, dbErr.message);
+            }
+        }
+        res.json({ success: true, cntrNo: cleanCntr });
+    } catch (err) {
+        console.error('POST /api/photos/remove-seal-mounted error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 1. 단일 사진 씰 문자 인식 및 전산 교차 검증 API (분리 및 비활성화됨)
+app.post('/api/photos/verify-seal', async (req, res) => {
+    // OCR 씰 번호 대조 기능은 분리되어 현재 비활성화 상태입니다.
+    res.json({
+        success: false,
+        disabled: true,
+        message: 'OCR 씰 번호 검증 기능은 분리 및 작동 정지되었습니다. [씰 체결 상태 검사]를 이용해 주세요.'
+    });
+});
+
+// 0. 컨테이너 전산 정보 및 씰 번호 단일 조회 API
+app.get('/api/containers/info', async (req, res) => {
+    try {
+        const cntrNo = (req.query.cntrNo || '').trim().toUpperCase();
+        if (!cntrNo) {
+            return res.json({ success: false, error: 'cntrNo가 필요합니다.' });
+        }
+        const pool = await getPool();
+        const r = await pool.query(
+            'SELECT seal_no, cntr_no FROM container_results WHERE cntr_no = $1 ORDER BY id DESC LIMIT 1',
+            [cntrNo]
+        );
+        const sealNo = (r.rows.length > 0 && r.rows[0].seal_no) ? r.rows[0].seal_no.trim() : '';
+        return res.json({
+            success: true,
+            cntrNo,
+            sealNo,
+            products: [{ sealNo, seal_no: sealNo }]
+        });
+    } catch (err) {
+        console.error('GET /api/containers/info error:', err);
+        return res.json({ success: false, error: err.message, products: [] });
+    }
+});
+
+// 2. 전체 또는 지정 컨테이너 씰 일괄 검증 API (분리 및 비활성화됨)
+app.post('/api/photos/verify-seals-batch', async (req, res) => {
+    // OCR 씰 번호 대조 기능은 분리되어 현재 비활성화 상태입니다.
+    res.json({
+        success: false,
+        disabled: true,
+        message: 'OCR 씰 번호 일괄 검증 기능은 분리 및 작동 정지되었습니다.'
+    });
+});
+
+// 2-1. 전체 또는 지정 컨테이너 씰 체결(장착) 상태 일괄 검사 API (초고속 병렬 4개 처리)
+app.post('/api/photos/check-seals-mounted-batch', async (req, res) => {
+    try {
+        const { items, cntrNos, startDate, endDate } = req.body;
+        const pool = await getPool();
+
+        let photos = [];
+        if (Array.isArray(items) && items.length > 0) {
+            photos = items;
+        } else {
+            let query = `
+                SELECT p.id, p.cntr_no, p.photo_path, p.gdrive_file_id
+                FROM container_photos p
+                WHERE p.photo_type = 'seal'
+            `;
+            const params = [];
+            if (Array.isArray(cntrNos) && cntrNos.length > 0) {
+                query += ` AND p.cntr_no = ANY($1)`;
+                params.push(cntrNos);
+            } else if (startDate && endDate) {
+                query += ` AND p.uploaded_at >= $1 AND p.uploaded_at <= $2`;
+                params.push(startDate, endDate);
+            }
+            query += ` ORDER BY p.cntr_no ASC, p.uploaded_at DESC`;
+
+            const r = await pool.query(query, params);
+            photos = r.rows;
+        }
+
+        const results = [];
+        const chunkSize = 4;
+        for (let i = 0; i < photos.length; i += chunkSize) {
+            const chunk = photos.slice(i, i + chunkSize);
+            const chunkResults = await Promise.all(chunk.map(async (p) => {
+                const res = await analyzePhotoSealMounted(p.photo_path, p.gdrive_file_id, p.cntr_no);
+                return {
+                    photoId: p.id,
+                    cntrNo: p.cntr_no,
+                    photoPath: p.photo_path,
+                    ...res
+                };
+            }));
+            results.push(...chunkResults);
+        }
+
+        res.json({
+            success: true,
+            totalCount: photos.length,
+            results: results
+        });
+    } catch (err) {
+        console.error('POST /api/photos/check-seals-mounted-batch error:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 

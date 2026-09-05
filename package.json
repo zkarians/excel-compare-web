@@ -1,13 +1,14 @@
 {
   "dependencies": {
+    "@zxing/library": "^0.23.0",
     "cors": "^2.8.6",
-    "electron-updater": "^6.8.9",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "googleapis": "^176.0.0",
     "multer": "^2.0.2",
     "nodemailer": "^8.0.2",
     "pg": "^8.20.0",
+    "tesseract.js": "^7.0.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
@@ -41,14 +42,9 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "ExcelCompare"
+      "shortcutName": "ExcelCompare",
+      "include": "build/installer.nsh"
     },
-    "publish": [
-      {
-        "provider": "generic",
-        "url": "http://ungdong.iptime.org:4001/"
-      }
-    ],
     "files": [
       "server.js",
       "main.js",
@@ -70,7 +66,7 @@
     ]
   },
   "name": "excelcompare",
-  "version": "1.2.4",
+  "version": "1.2.6",
   "engines": {
     "node": ">=18"
   },

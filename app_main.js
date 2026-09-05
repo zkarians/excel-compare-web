@@ -166,11 +166,25 @@ window.autoSaveWorkSession = async function() {
             downloadData: typeof downloadData !== 'undefined' ? downloadData : null,
             reworkData: typeof reworkData !== 'undefined' ? reworkData : null,
             warehouseStockLoaded: typeof warehouseStockLoaded !== 'undefined' ? warehouseStockLoaded : false,
+            warehousePath: (document.getElementById('pathWarehouse')?.value || localStorage.getItem('pathWarehouse') || '').trim(),
+            warehouseStockData: (warehouseStockLoaded && (warehouseStockQtyMapAll || warehouseStockQtyMapNo17)) ? {
+                dongPrefixes: Array.from(warehouseStockDongPrefixes || []),
+                blockProductNamesWith17: Array.from(warehouseStockBlockProductsAll || []),
+                blockProductNames: Array.from(warehouseStockBlockProductsNo17 || []),
+                stockMapWith17: warehouseStockQtyMapAll || {},
+                stockMap: warehouseStockQtyMapNo17 || {},
+                holdStockListWith17: warehouseHoldStockListAll || [],
+                holdStockList: warehouseHoldStockListNo17 || [],
+                allStockListWith17: warehouseAllStockListAll || [],
+                allStockList: warehouseAllStockListNo17 || [],
+                fileName: (window.savedRawFiles && window.savedRawFiles['warehouse'] ? window.savedRawFiles['warehouse'].name : ((document.getElementById('pathWarehouse')?.value || '').split(/[\\/]/).pop() || '창고재고.xlsx')),
+                totalProducts: Object.keys(warehouseStockQtyMapAll || warehouseStockQtyMapNo17 || {}).length
+            } : null,
             processedAvailabilityData: typeof processedAvailabilityData !== 'undefined' ? processedAvailabilityData : null
         };
 
         await SessionDB.save('currentSession', sessionData);
-        console.log('💾 [SessionDB] 작업 세션 자동 저장 완료 (파일 수:', Object.keys(filesPayload).length, ')');
+        console.log('💾 [SessionDB] 작업 세션 자동 저장 완료 (파일 수:', Object.keys(filesPayload).length, ', 창고재고 포함:', Boolean(sessionData.warehouseStockData), ')');
     } catch (err) {
         console.warn('autoSaveWorkSession error:', err);
     }
@@ -180,6 +194,13 @@ window.autoRestoreWorkSession = async function() {
     try {
         const session = await SessionDB.get('currentSession');
         if (!session || !session.files || Object.keys(session.files).length === 0) {
+            // 세션 데이터가 없더라도 화면에 창고재고 경로가 있다면 자동 로드 시도
+            const currentWhPath = (document.getElementById('pathWarehouse')?.value || localStorage.getItem('pathWarehouse') || '').trim();
+            if (currentWhPath && !warehouseStockLoaded && typeof reloadLatestFile === 'function') {
+                try {
+                    await reloadLatestFile('warehouse');
+                } catch (e) {}
+            }
             return false;
         }
 
@@ -228,16 +249,102 @@ window.autoRestoreWorkSession = async function() {
             if (btnClrRework) btnClrRework.style.display = 'inline-block';
         }
 
-        if (session.files.warehouse && session.files.warehouse.buffer) {
-            const wsFile = new File([session.files.warehouse.buffer], session.files.warehouse.name, { type: session.files.warehouse.type });
-            window.savedRawFiles['warehouse'] = wsFile;
+        // 1-4. 창고재고 파일 및 분석 데이터 복원
+        let warehouseRestored = false;
+
+        // A. 저장된 분석 데이터가 있는 경우 즉시 인메모리 복원 (0초 초고속 복원)
+        if (session.warehouseStockData) {
+            warehouseStockDongPrefixes = new Set(session.warehouseStockData.dongPrefixes || []);
+            warehouseStockBlockProductsAll = new Set(session.warehouseStockData.blockProductNamesWith17 || []);
+            warehouseStockBlockProductsNo17 = new Set(session.warehouseStockData.blockProductNames || []);
+            warehouseStockQtyMapAll = session.warehouseStockData.stockMapWith17 || {};
+            warehouseStockQtyMapNo17 = session.warehouseStockData.stockMap || {};
+            warehouseHoldStockListAll = session.warehouseStockData.holdStockListWith17 || [];
+            warehouseHoldStockListNo17 = session.warehouseStockData.holdStockList || [];
+            warehouseAllStockListAll = session.warehouseStockData.allStockListWith17 || [];
+            warehouseAllStockListNo17 = session.warehouseStockData.allStockList || [];
+            warehouseStockLoaded = true;
+            updateActiveWarehouseStock();
+
             const wsStat = document.getElementById('statusWarehouseStock');
             if (wsStat) {
-                wsStat.textContent = `업로드됨: ${wsFile.name}`;
-                wsStat.style.color = '#1e293b';
+                wsStat.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a; margin-right:4px;"></i>상태: 분석 완료 (${session.warehouseStockData.fileName || '창고재고'})`;
+                wsStat.style.color = '#16a34a';
+            }
+            const lastWhEl = document.getElementById('lastWarehouseStock');
+            if (lastWhEl && session.warehouseStockData.totalProducts) {
+                lastWhEl.textContent = `고유제품 ${session.warehouseStockData.totalProducts}개 분석 완료`;
+            }
+            const dongTagBadge = document.getElementById('dongTagBadge');
+            const dongPrefixCount = document.getElementById('dongPrefixCount');
+            if (dongTagBadge && dongPrefixCount && session.warehouseStockData.dongPrefixes) {
+                dongPrefixCount.textContent = session.warehouseStockData.dongPrefixes.length;
+                dongTagBadge.style.display = 'inline-flex';
+                dongTagBadge.style.alignItems = 'center';
+                dongTagBadge.style.gap = '4px';
             }
             const btnClrWs = document.getElementById('btnClearWarehouseStock');
             if (btnClrWs) btnClrWs.style.display = 'inline-block';
+            const btnRelWs = document.getElementById('btnReloadWarehouse');
+            if (btnRelWs) btnRelWs.style.display = 'inline-block';
+            warehouseRestored = true;
+        }
+
+        // B. 세션에 원본 파일 버퍼가 있는 경우
+        if (session.files.warehouse && session.files.warehouse.buffer) {
+            const wsFile = new File([session.files.warehouse.buffer], session.files.warehouse.name, { type: session.files.warehouse.type });
+            window.savedRawFiles['warehouse'] = wsFile;
+            if (!warehouseRestored) {
+                // 저장된 분석 데이터가 없었다면 버퍼를 서버로 전송하여 즉시 분석
+                try {
+                    const formData = new FormData();
+                    formData.append('warehouseFile', wsFile);
+                    const resp = await fetch(`${API_BASE}/api/parse-warehouse-stock`, { method: 'POST', body: formData });
+                    const result = await resp.json();
+                    if (result.success) {
+                        warehouseStockDongPrefixes = new Set(result.dongPrefixes.map(x => x.toUpperCase()));
+                        warehouseStockBlockProductsAll = new Set((result.blockProductNamesWith17 || []).map(x => x.toUpperCase()));
+                        warehouseStockBlockProductsNo17 = new Set((result.blockProductNames || []).map(x => x.toUpperCase()));
+                        warehouseStockQtyMapAll = result.stockMapWith17 || {};
+                        warehouseStockQtyMapNo17 = result.stockMap || {};
+                        warehouseHoldStockListAll = result.holdStockListWith17 || [];
+                        warehouseHoldStockListNo17 = result.holdStockList || [];
+                        warehouseAllStockListAll = result.allStockListWith17 || [];
+                        warehouseAllStockListNo17 = result.allStockList || [];
+                        warehouseStockLoaded = true;
+                        updateActiveWarehouseStock();
+
+                        const wsStat = document.getElementById('statusWarehouseStock');
+                        if (wsStat) {
+                            wsStat.innerHTML = `<i class="fas fa-check-circle" style="color:#16a34a; margin-right:4px;"></i>상태: 분석 완료 (${wsFile.name})`;
+                            wsStat.style.color = '#16a34a';
+                        }
+                        const lastWhEl = document.getElementById('lastWarehouseStock');
+                        if (lastWhEl) lastWhEl.textContent = `고유제품 ${result.totalProducts}개 분석 완료`;
+                        const btnClrWs = document.getElementById('btnClearWarehouseStock');
+                        if (btnClrWs) btnClrWs.style.display = 'inline-block';
+                        const btnRelWs = document.getElementById('btnReloadWarehouse');
+                        if (btnRelWs) btnRelWs.style.display = 'inline-block';
+                        warehouseRestored = true;
+                    }
+                } catch (pe) {
+                    console.warn("Session warehouse buffer parse failed:", pe);
+                }
+            }
+        }
+
+        // C. 세션에 창고재고 파일이 없더라도, 화면의 창고재고 경로(pathWarehouse)나 세션/로컬에 유효한 경로가 있는 경우 자동 로드
+        if (!warehouseRestored) {
+            const whPath = (session.warehousePath || document.getElementById('pathWarehouse')?.value || localStorage.getItem('pathWarehouse') || '').trim();
+            if (whPath && typeof reloadLatestFile === 'function') {
+                console.log(`🔄 [SessionRestore] 입력된 창고재고 파일 경로(${whPath}) 자동 분석 실행...`);
+                try {
+                    await reloadLatestFile('warehouse');
+                    warehouseRestored = true;
+                } catch (reErr) {
+                    console.warn("창고재고 파일 자동 분석 실패:", reErr);
+                }
+            }
         }
 
         if (session.originalData) originalData = session.originalData;
@@ -343,7 +450,8 @@ let reworkContainers = new Set(); // 재작업 파일에 존재하는 컨테이�
 let downloadData = [];
 let comparisonResult = [];
 let displayData = []; // 현재 화면에 표시 중인 (필터링된) 전체 데이터
-let excludedList = []; // 제외된 컨테이너 목록 (작업일 없음)
+let excludedList = []; // 제외된 컨테이너 목록 (작업일 없음 - 원본에만 있고 전산에 없는 경우)
+let scheduledContainers = new Set(); // 원본/전산 모두 있고 작업일만 없는 예정작업 컨테이너
 let lastDbSearchResults = []; // 마지막 DB 검색 결과 (탭 전환 시 유지용)
 let currentFilter = 'success';
 let selectedItems = new Set(); // DB 저장을 위해 선택된 항목
@@ -2345,6 +2453,20 @@ if (btnClearDown) {
     }
 
     if (pathWarehouse) {
+        let whInputDebounce = null;
+        const triggerWarehouseAutoLoad = async () => {
+            const val = pathWarehouse.value.trim();
+            if (val && (val.endsWith('.xlsx') || val.endsWith('.xls') || val.endsWith('.xlsm'))) {
+                try {
+                    await reloadLatestFile('warehouse');
+                } catch (e) {
+                    console.warn("Auto reload warehouse on path change failed:", e);
+                }
+            }
+        };
+
+        pathWarehouse.addEventListener('change', triggerWarehouseAutoLoad);
+
         pathWarehouse.addEventListener('input', () => {
             const val = pathWarehouse.value.trim();
             warehouseData = []; // 캐시 초기화
@@ -2352,9 +2474,11 @@ if (btnClearDown) {
             if (val) {
                 localStorage.setItem('pathWarehouse', val);
                 if (window.electronAPI) window.electronAPI.saveFilePath('warehouse', val);
-                statusWarehouseStock.innerHTML = `<i class="fas fa-folder-open" style="color:#16a34a; margin-right:4px;"></i>상태: 경로 입력됨 (자동 로드)`;
+                statusWarehouseStock.innerHTML = `<i class="fas fa-folder-open" style="color:#16a34a; margin-right:4px;"></i>상태: 경로 입력됨 (자동 로드 준비)`;
                 statusWarehouseStock.style.color = '#16a34a';
                 if (btnReloadWarehouse) btnReloadWarehouse.style.display = 'inline-block';
+                clearTimeout(whInputDebounce);
+                whInputDebounce = setTimeout(triggerWarehouseAutoLoad, 800);
             } else {
                 localStorage.removeItem('pathWarehouse');
                 if (window.electronAPI) window.electronAPI.saveFilePath('warehouse', null);
@@ -4341,8 +4465,17 @@ async function reloadLatestFile(type) {
                 statusWarehouseStock.style.color = '#16a34a';
                 const lastWhEl = document.getElementById('lastWarehouseStock');
                 if (lastWhEl) lastWhEl.textContent = `고유제품 ${result.totalProducts}개 분석 완료`;
+                const dongTagBadge = document.getElementById('dongTagBadge');
+                const dongPrefixCount = document.getElementById('dongPrefixCount');
+                if (dongTagBadge && dongPrefixCount && result.dongPrefixes) {
+                    dongPrefixCount.textContent = result.dongPrefixes.length;
+                    dongTagBadge.style.display = 'inline-flex';
+                    dongTagBadge.style.alignItems = 'center';
+                    dongTagBadge.style.gap = '4px';
+                }
                 if (btnClearWarehouseStock) btnClearWarehouseStock.style.display = 'inline-block';
                 if (btnReloadWarehouse) btnReloadWarehouse.style.display = 'inline-block';
+                if (window.autoSaveWorkSession) window.autoSaveWorkSession();
             } else {
                 throw new Error(result.message || '창고 재고 파싱 실패');
             }
@@ -4393,7 +4526,7 @@ btnReloadOriginal.addEventListener('click', () => reloadLatestFile('original'));
 btnReloadDownload.addEventListener('click', () => reloadLatestFile('download'));
 
 // 공통 자동 불러오기 로직
-async function handleAutoLoad(type) {
+async function handleAutoLoad(type, options = {}) {
     let inputEl, statusEl, lastEl, reloadBtn, storageKey;
 
     if (type === 'original') {
@@ -4500,7 +4633,10 @@ async function handleAutoLoad(type) {
             }
 
             checkReadyStatus();
-            alert(`✅ ${typeKor} 최신 파일 '${result.fileName}'을(를) 성공적으로 불러왔습니다.`);
+            if (!options.silent) {
+                alert(`✅ ${typeKor} 최신 파일 '${result.fileName}'을(를) 성공적으로 불러왔습니다.`);
+            }
+            return result;
         } else {
             throw new Error(result.message);
         }
@@ -4508,7 +4644,10 @@ async function handleAutoLoad(type) {
         console.error("handleAutoLoad error:", err);
         statusEl.innerHTML = `<i class="fas fa-exclamation-circle" style="color:#ef4444; margin-right:4px;"></i>상태: 오류 (${err.message})`;
         statusEl.style.color = '#ef4444';
-        alert(`❌ 최신 파일 로드 실패:\n${err.message}`);
+        if (!options.silent) {
+            alert(`❌ 최신 파일 로드 실패:\n${err.message}`);
+        }
+        throw err;
     }
 }
 
@@ -4550,11 +4689,17 @@ function updateDashboard() {
     const extraCntrs = new Set();
     const missingCntrs = new Set();
     const holdCntrs = new Set();
+    const scheduledCntrs = new Set();
 
     cntrSet.forEach(cntrNo => {
         const ck = (cntrNo || "").trim().toUpperCase();
         if (holdContainerMap.has(ck)) {
             holdCntrs.add(ck);
+            return;
+        }
+
+        if (typeof scheduledContainers !== 'undefined' && scheduledContainers.has(ck)) {
+            scheduledCntrs.add(cntrNo);
             return;
         }
 
@@ -4603,6 +4748,7 @@ function updateDashboard() {
     const valHoldCntr = document.getElementById('valHoldCntr');
     const cntMissingExtra = document.getElementById('cntMissingExtra');
     const cntMissingMissing = document.getElementById('cntMissingMissing');
+    const scheduledCountEl = document.getElementById('scheduledCount');
 
     if (valTotalCntr) valTotalCntr.textContent = cntrSet.size;
     if (valSuccessCntr) valSuccessCntr.textContent = successCntrs.size;
@@ -4611,6 +4757,7 @@ function updateDashboard() {
     if (valOrigExtraCntr) valOrigExtraCntr.textContent = missingCntrs.size;
     if (cntMissingExtra) cntMissingExtra.textContent = extraCntrs.size;
     if (cntMissingMissing) cntMissingMissing.textContent = missingCntrs.size;
+    if (scheduledCountEl) scheduledCountEl.textContent = scheduledCntrs.size;
     if (valExcludedCntr) {
         valExcludedCntr.textContent = new Set(excludedList.map(item => item.cntrNo)).size;
     }
@@ -4634,6 +4781,19 @@ function updateDashboard() {
     const transAssignmentMap = new Set();
     comparisonResult.forEach(r => {
         const ck = (r.cntrNo || "").trim().toUpperCase();
+
+        // [예정작업 제외] 예정작업 컨테이너는 운송사 배정 현황에서 제외
+        if (typeof scheduledContainers !== 'undefined' && scheduledContainers.has(ck)) {
+            return;
+        }
+        if (r.isScheduled) {
+            return;
+        }
+        // [보류 컨테이너 제외] 보류 컨테이너도 운송사 배정 현황에서 제외
+        if (typeof holdContainerMap !== 'undefined' && holdContainerMap.has(ck)) {
+            return;
+        }
+
         const isUnclassified = unclassifiedCntrNos.has(r.cntrNo);
 
         let trans = (r.transporter || "").trim();
@@ -4973,6 +5133,9 @@ async function loadNativeWarehouseFile(filePath) {
                     document.getElementById('dongPrefixCount').textContent = result.dongPrefixes.length;
                     document.getElementById('dongTagBadge').style.display = 'inline-flex';
                 }
+                window.savedRawFiles = window.savedRawFiles || {};
+                window.savedRawFiles['warehouse'] = file;
+                if (window.autoSaveWorkSession) window.autoSaveWorkSession();
                 console.log(`✅ [자동로드] 창고재고 완료: Block Qty 대상 ${warehouseStockBlockProducts.size}개`);
             }
         }
@@ -4981,9 +5144,18 @@ async function loadNativeWarehouseFile(filePath) {
     }
 }
 
-// 비교 로직 실행 버튼
-btnCompare.addEventListener('click', async () => {
+// 비교 로직 실행 함수
+async function executeCompare() {
     try {
+        // 창고재고 경로가 입력되어 있으나 아직 로드되지 않은 경우 비교 전 자동 로드
+        if (!warehouseStockLoaded && pathWarehouse && pathWarehouse.value.trim()) {
+            try {
+                console.log("🔄 [비교 전 자동 로드] 창고재고 파일 자동 분석 실행 중...");
+                await reloadLatestFile('warehouse');
+            } catch (whErr) {
+                console.warn("비교 전 창고재고 자동 로드 실패:", whErr);
+            }
+        }
         if (!originalFile && !pathOriginal.value.trim()) {
             alert("원본 파일을 선택하거나 폴더 경로를 입력해주세요.");
             setProcessStatus("원본 파일 필요", 0);
@@ -5248,26 +5420,68 @@ btnCompare.addEventListener('click', async () => {
         downloadData = [...finalDownList];
         reworkData = [...finalReworkList];
 
-        // [사용자 요청] 원본파일, 재작업대상 파일의 S열(작업일)값에 날짜가 없는 경우 작업대상에서 제외 처리
+        // [사용자 요청] 작업일(S열) 누락 컨테이너 분기:
+        // 1) 원본과 전산 파일 모두에 컨테이너 정보가 있고 작업일만 없는 경우: '예정작업(scheduled)'으로 분류 (대조 유지)
+        // 2) 원본에는 있고 전산에 컨테이너 정보가 없는 경우: '제외(작업일 없음)'으로 처리 (대조 대상에서 제외)
         excludedList = [];
         const excludedContainers = new Set();
+        scheduledContainers = new Set();
+
+        const downCntrSet = new Set(
+            finalDownList
+                .map(d => (d.cntrNo || "").trim().toUpperCase())
+                .filter(cntr => isValidContainerNumber(cntr))
+        );
+
+        // 컨테이너별 작업일 유무 파악 (컨테이너 내 행 중 작업일이 하나라도 있으면 작업일 있는 것으로 판정)
+        const origCntrWorkDateMap = new Map();
         finalOrigList.forEach(item => {
-            const cntr = (item.cntrNo || "").trim().toUpperCase();
-            if (cntr && !item.workDate) {
-                excludedContainers.add(cntr);
-                excludedList.push({
-                    cntrNo: cntr,
-                    sheetName: item.sheetName || "-",
-                    rowNumber: item.rowNumber || "-",
-                    prodName: item.prodName || "-",
-                    qty: item.qty || 0,
-                    transporter: item.transporter || "미분류"
-                });
+            const rawCntr = (item.cntrNo || "").trim();
+            const cntr = rawCntr.toUpperCase();
+            if (isValidContainerNumber(cntr)) {
+                const hasDate = Boolean(item.workDate && String(item.workDate).trim());
+                if (hasDate) {
+                    origCntrWorkDateMap.set(cntr, true);
+                } else if (!origCntrWorkDateMap.has(cntr)) {
+                    origCntrWorkDateMap.set(cntr, false);
+                }
+            }
+        });
+
+        // 분기 처리
+        finalOrigList.forEach(item => {
+            const rawCntr = (item.cntrNo || "").trim();
+            const cntr = rawCntr.toUpperCase();
+            const isValidCntr = isValidContainerNumber(cntr);
+            if (!isValidCntr) return;
+
+            const hasWorkDate = origCntrWorkDateMap.get(cntr) === true;
+            if (!hasWorkDate) {
+                if (downCntrSet.has(cntr)) {
+                    // 원본 O, 전산 O, 작업일 X -> 예정작업
+                    scheduledContainers.add(cntr);
+                } else {
+                    // 원본 O, 전산 X, 작업일 X -> 제외 (작업일 없음)
+                    excludedContainers.add(cntr);
+                    const info = resolveExcludedItemInfo(item, productMaster);
+                    excludedList.push({
+                        cntrNo: cntr,
+                        jobName: item.jobName || "-",
+                        sheetName: item.sheetName || "-",
+                        rowNumber: item.rowNumber || "-",
+                        prodType: info.prodType,
+                        division: info.division,
+                        prodName: item.prodName || "-",
+                        qty: item.qty != null ? item.qty : 0,
+                        remark: item.remark || "-",
+                        transporter: item.transporter || "미분류"
+                    });
+                }
             }
         });
 
         if (excludedContainers.size > 0) {
-            console.log(`⚠️ 작업일(S열)이 없어 작업대상에서 제외되는 컨테이너 목록:`, [...excludedContainers]);
+            console.log(`⚠️ 전산에 컨테이너가 없고 작업일(S열)도 없어 제외되는 컨테이너 목록:`, [...excludedContainers]);
             // 원본 리스트에서 제외
             finalOrigList = finalOrigList.filter(item => {
                 const cntr = (item.cntrNo || "").trim().toUpperCase();
@@ -5281,6 +5495,15 @@ btnCompare.addEventListener('click', async () => {
                 });
             }
         }
+        if (scheduledContainers.size > 0) {
+            console.log(`📅 원본과 전산 모두 존재하나 작업일(S열)이 없어 [예정작업]으로 분류된 컨테이너 목록:`, [...scheduledContainers]);
+        }
+
+        // [사용자 요청] 컨테이너 번호가 유효하지 않은(미지정, 빈값, WAIT, - 등) 행은 컨테이너 대조 및 전산누락 대상에서 제외
+        finalOrigList = finalOrigList.filter(item => {
+            const cntr = (item.cntrNo || "").trim().toUpperCase();
+            return isValidContainerNumber(cntr);
+        });
 
         setProcessStatus("데이터 비교 알고리즘 실행 중...", 80);
 
@@ -5304,6 +5527,10 @@ btnCompare.addEventListener('click', async () => {
             normalizeCarrier
         );
         comparisonResult.forEach(r => {
+            const cleanCntr = (r.cntrNo || "").trim().toUpperCase();
+            if (scheduledContainers.has(cleanCntr)) {
+                r.isScheduled = true;
+            }
             r.initialBadgeClass = r.badgeClass;
             r.origBadgeClass = r.badgeClass;
         });
@@ -5346,7 +5573,68 @@ btnCompare.addEventListener('click', async () => {
         alert(`비교 중 오류가 발생했습니다: ${err.message}\n\n스택:\n${err.stack}`);
         setProcessStatus("오류 발생", 0);
     }
-});
+}
+if (btnCompare) btnCompare.addEventListener('click', executeCompare);
+window.executeCompare = executeCompare;
+
+// [원클릭] 비교결과 탭에서 최신 다운로드 파일 + 원본 파일 로드 후 즉시 재대조 실행
+window.handleQuickReloadAndCompare = async function(event) {
+    if (event) event.stopPropagation();
+
+    const btn = document.getElementById('btnQuickReloadCompare');
+    const icon = document.getElementById('iconQuickReloadCompare');
+    const text = document.getElementById('textQuickReloadCompare');
+
+    if (btn && btn.disabled) return;
+
+    // 현재 보고 있던 서브 탭 기억 (예: scheduled, success, all, error 등)
+    const currentActiveFilter = (typeof currentFilter !== 'undefined' && currentFilter) ? currentFilter : 'scheduled';
+
+    try {
+        if (btn) btn.disabled = true;
+        if (icon) icon.className = 'fas fa-spinner fa-spin';
+        if (text) text.textContent = '최신 로드 및 대조 중...';
+
+        // 1단계: 다운로드 폴더에서 최신 전산 파일 자동 로드
+        let downRes = null;
+        try {
+            downRes = await handleAutoLoad('download', { silent: true });
+        } catch (downErr) {
+            alert(`전산(다운로드) 최신 파일 로드 실패:\n${downErr.message}`);
+            return;
+        }
+
+        // 2단계: 원본 파일 최신 데이터 재로드 (기억된 경로/파일 기준)
+        try {
+            await reloadLatestFile('original');
+        } catch (origErr) {
+            console.warn("원본 파일 재로드 경고 (기존 원본 데이터 유지):", origErr);
+        }
+
+        // 3단계: 비교 실행
+        await executeCompare();
+
+        // 4단계: 기존 보던 탭 유지
+        if (currentActiveFilter && currentActiveFilter !== 'success' && typeof setActiveTab === 'function') {
+            setActiveTab(currentActiveFilter);
+            if (typeof comparisonResult !== 'undefined' && comparisonResult) {
+                displayResults(comparisonResult);
+            }
+        }
+
+        // 5단계: 완료 피드백 알림
+        const loadedFileName = (downRes && downRes.fileName) ? downRes.fileName : (downloadFile ? downloadFile.name : '최신 파일');
+        alert(`✅ 최신 전산 파일('${loadedFileName}')과 원본 파일을 불러와 대조를 성공적으로 완료했습니다.`);
+
+    } catch (err) {
+        console.error("handleQuickReloadAndCompare error:", err);
+        alert(`대조 갱신 중 오류가 발생했습니다: ${err.message}`);
+    } finally {
+        if (btn) btn.disabled = false;
+        if (icon) icon.className = 'fas fa-sync-alt';
+        if (text) text.textContent = '최신 전산 대조';
+    }
+};
 
 // [사용자 요청] 필터링 조건(작업일 없는 컨테이너 제외)을 적용하여 대조를 재실행하는 함수
 function reCompareFilteredData() {
@@ -5364,21 +5652,63 @@ function reCompareFilteredData() {
         finalOrigList = [...finalOrigList, ...finalReworkList];
     }
 
-    // [사용자 요청] 원본파일, 재작업대상 파일의 S열(작업일)값에 날짜가 없는 경우 작업대상에서 제외 처리
+    // [사용자 요청] 작업일(S열) 누락 컨테이너 분기:
+    // 1) 원본과 전산 파일 모두에 컨테이너 정보가 있고 작업일만 없는 경우: '예정작업(scheduled)'으로 분류 (대조 유지)
+    // 2) 원본에는 있고 전산에 컨테이너 정보가 없는 경우: '제외(작업일 없음)'으로 처리 (대조 대상에서 제외)
     excludedList = [];
     const excludedContainers = new Set();
+    scheduledContainers = new Set();
+
+    const downCntrSet = new Set(
+        finalDownList
+            .map(d => (d.cntrNo || "").trim().toUpperCase())
+            .filter(cntr => isValidContainerNumber(cntr))
+    );
+
+    // 컨테이너별 작업일 유무 파악 (컨테이너 내 행 중 작업일이 하나라도 있으면 작업일 있는 것으로 판정)
+    const origCntrWorkDateMap = new Map();
     finalOrigList.forEach(item => {
-        const cntr = (item.cntrNo || "").trim().toUpperCase();
-        if (cntr && !item.workDate) {
-            excludedContainers.add(cntr);
-            excludedList.push({
-                cntrNo: cntr,
-                sheetName: item.sheetName || "-",
-                rowNumber: item.rowNumber || "-",
-                prodName: item.prodName || "-",
-                qty: item.qty || 0,
-                transporter: item.transporter || "미분류"
-            });
+        const rawCntr = (item.cntrNo || "").trim();
+        const cntr = rawCntr.toUpperCase();
+        if (isValidContainerNumber(cntr)) {
+            const hasDate = Boolean(item.workDate && String(item.workDate).trim());
+            if (hasDate) {
+                origCntrWorkDateMap.set(cntr, true);
+            } else if (!origCntrWorkDateMap.has(cntr)) {
+                origCntrWorkDateMap.set(cntr, false);
+            }
+        }
+    });
+
+    // 분기 처리
+    finalOrigList.forEach(item => {
+        const rawCntr = (item.cntrNo || "").trim();
+        const cntr = rawCntr.toUpperCase();
+        const isValidCntr = isValidContainerNumber(cntr);
+        if (!isValidCntr) return;
+
+        const hasWorkDate = origCntrWorkDateMap.get(cntr) === true;
+        if (!hasWorkDate) {
+            if (downCntrSet.has(cntr)) {
+                // 원본 O, 전산 O, 작업일 X -> 예정작업
+                scheduledContainers.add(cntr);
+            } else {
+                // 원본 O, 전산 X, 작업일 X -> 제외 (작업일 없음)
+                excludedContainers.add(cntr);
+                const info = resolveExcludedItemInfo(item, productMaster);
+                excludedList.push({
+                    cntrNo: cntr,
+                    jobName: item.jobName || "-",
+                    sheetName: item.sheetName || "-",
+                    rowNumber: item.rowNumber || "-",
+                    prodType: info.prodType,
+                    division: info.division,
+                    prodName: item.prodName || "-",
+                    qty: item.qty != null ? item.qty : 0,
+                    remark: item.remark || "-",
+                    transporter: item.transporter || "미분류"
+                });
+            }
         }
     });
 
@@ -5395,6 +5725,12 @@ function reCompareFilteredData() {
         });
     }
 
+    // [사용자 요청] 컨테이너 번호가 유효하지 않은(미지정, 빈값, WAIT, - 등) 행은 컨테이너 대조 및 전산누락 대상에서 제외
+    finalOrigList = finalOrigList.filter(item => {
+        const cntr = (item.cntrNo || "").trim().toUpperCase();
+        return isValidContainerNumber(cntr);
+    });
+
     comparisonResult = compareData(
         finalOrigList,
         finalDownList,
@@ -5405,6 +5741,10 @@ function reCompareFilteredData() {
         normalizeCarrier
     );
     comparisonResult.forEach(r => {
+        const cleanCntr = (r.cntrNo || "").trim().toUpperCase();
+        if (scheduledContainers.has(cleanCntr)) {
+            r.isScheduled = true;
+        }
         r.initialBadgeClass = r.badgeClass;
         r.origBadgeClass = r.badgeClass;
     });
@@ -5417,6 +5757,10 @@ window.reCompareFilteredData = reCompareFilteredData;
 // 비교 로직 메인
 // Helper to categorize a container's rows (matches updateDashboard logic)
 function getContainerStatus(results, cntrNo) {
+    const ck = (cntrNo || "").trim().toUpperCase();
+    if (typeof scheduledContainers !== 'undefined' && scheduledContainers.has(ck)) {
+        return 'scheduled';
+    }
     const rows = results.filter(r => r.cntrNo === cntrNo);
     if (rows.length === 0) return 'none';
 
@@ -6003,11 +6347,20 @@ function displayResults(results, isDbMode = false) {
                     if (statusA !== 'missing' && statusB === 'missing') return 1;
                     return a.cntrNo.localeCompare(b.cntrNo);
                 });
+            } else if (currentFilter === 'scheduled') {
+                displayData = results.filter(r => {
+                    const status = getContainerStatus(fullResultsForStatus, r.cntrNo);
+                    return status === 'scheduled' || r.isScheduled;
+                });
             } else if (currentFilter === 'entry' || currentFilter === 'entry_unclassified') {
                 const aggregated = new Map();
                 let totalWeight = 0;
 
                 results.forEach(item => {
+                    const ck = (item.cntrNo || "").trim().toUpperCase();
+                    if (typeof scheduledContainers !== 'undefined' && scheduledContainers.has(ck)) return;
+                    if (item.isScheduled) return;
+
                     const cleanTrans = (item.transporter || "").replace(/\(빨강\)|\(파랑\)/g, "").trim();
 
                     // 미분류 반입 탭 대상: 실제 운송사가 미분류이거나, 혹은 컨테이너 내부에 누락/추가건이 있는 경우
@@ -6468,7 +6821,7 @@ function displayResults(results, isDbMode = false) {
                     tr._trError = trError;
                 }
             } else {
-                const isSelectable = (currentFilter === 'all' || currentFilter === 'success' || currentFilter === 'hold' || currentFilter === 'error');
+                const isSelectable = (currentFilter === 'all' || currentFilter === 'success' || currentFilter === 'hold' || currentFilter === 'error' || currentFilter === 'scheduled');
                 tr.innerHTML = `
                     ${isSelectable ? `
                         <td class="col-select" style="text-align: center;">
@@ -6477,7 +6830,7 @@ function displayResults(results, isDbMode = false) {
                                    style="width: 16px; height: 16px; cursor: pointer;">
                         </td>
                     ` : ''}
-                    ${(currentFilter === 'error' || currentFilter === 'missing' || currentFilter === 'all' || currentFilter === 'success') ? `
+                    ${(currentFilter === 'error' || currentFilter === 'missing' || currentFilter === 'all' || currentFilter === 'success' || currentFilter === 'scheduled') ? `
                         <td class="col-manage" style="text-align: center;">
                             ${(() => {
                             const isError = res.isErrorRow || res.badgeClass === 'diff' || res.badgeClass === 'missing' || res.badgeClass === 'extra' || res.badgeClass === 'noproduct';
@@ -6667,7 +7020,7 @@ function displayResults(results, isDbMode = false) {
                         <td class="col-adj1" style="font-size: 0.8rem; line-height: 1.4; color: #475569;">
                             ${(() => {
                         const val = res.adj1 || '-';
-                        if (isDbMode || currentFilter === 'success') {
+                        if (isDbMode || currentFilter === 'success' || currentFilter === 'scheduled') {
                             let adj1ColorStr = 'inherit';
                             if (res.adj1Color) {
                                 adj1ColorStr = res.adj1Color.startsWith('FF') ? '#' + res.adj1Color.substring(2) : res.adj1Color;
@@ -6887,7 +7240,7 @@ function updateTableHeaders(filterName) {
             </tr>
         `;
     } else {
-        const isSelectableTab = filterName === 'all' || filterName === 'success' || filterName === 'hold' || filterName === 'error';
+        const isSelectableTab = filterName === 'all' || filterName === 'success' || filterName === 'hold' || filterName === 'error' || filterName === 'scheduled';
         const isDbSearchTab = filterName === 'dbSearch';
         const isMergedColTab = filterName === 'all' || filterName === 'error' || filterName === 'missing';
         const isErrorTab = filterName === 'error' || filterName === 'missing';
@@ -6895,7 +7248,7 @@ function updateTableHeaders(filterName) {
         tableHead.innerHTML = `
             <tr>
                 ${isSelectableTab ? '<th class="col-select">선택</th>' : ''}
-                ${(isDbSearchTab || isErrorTab || filterName === 'success' || filterName === 'all') ? '<th class="col-manage">관리</th>' : ''}
+                ${(isDbSearchTab || isErrorTab || filterName === 'success' || filterName === 'all' || filterName === 'scheduled') ? '<th class="col-manage">관리</th>' : ''}
                 <th class="col-work">작업구분</th>
                 <th class="col-special">특이사항</th>
                 <th class="col-cntr">컨테이너번호</th>
@@ -6933,7 +7286,8 @@ function setActiveTab(filterName) {
         'hold': document.getElementById('tabHold'),
         'entry': document.getElementById('tabEntryInfo'),
         'entry_unclassified': document.getElementById('tabUnclassifiedEntry'),
-        'dbSearch': document.getElementById('tabDbSearch')
+        'dbSearch': document.getElementById('tabDbSearch'),
+        'scheduled': document.getElementById('tabScheduled')
     };
     if (tabMap[filterName]) tabMap[filterName].classList.add('active');
 
@@ -7016,6 +7370,7 @@ function initTabListeners() {
     attach('tabEntryInfo', 'entry');
     attach('tabUnclassifiedEntry', 'entry_unclassified');
     attach('tabDbSearch', 'dbSearch');
+    attach('tabScheduled', 'scheduled');
 
     // 상단 요약 카드 클릭 이벤트 (대시보드 네비게이션)
     attach('cardTotal', 'all');
@@ -9975,6 +10330,50 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 })();
 
+// 컨테이너 번호 유효성 확인 헬퍼
+function isValidContainerNumber(cntr) {
+    if (!cntr) return false;
+    const clean = String(cntr).trim().toUpperCase();
+    return clean !== '' && clean !== '미지정' && clean !== '-' && !clean.includes('WAIT');
+}
+
+// 제품구분 및 사업부 판별 헬퍼 (excludedList 수집용)
+function resolveExcludedItemInfo(item, masterList) {
+    const cleanProd = (item.prodName || "").trim().toUpperCase();
+    let rawProdType = (item.prodType || "").trim();
+    let division = (item.division || "").trim();
+    let prodType = rawProdType;
+
+    // G열이 3자리 사업부 코드(CVZ, CNZ, CDZ, DFZ 등)인 경우 사업부로 할당
+    const isDivCode = /^[A-Z]{2}Z$/i.test(rawProdType) || ["DFZ", "CVZ", "CNZ", "CDZ"].includes(rawProdType.toUpperCase());
+    if (isDivCode && !division) {
+        division = rawProdType;
+        prodType = '';
+    }
+
+    if (Array.isArray(masterList)) {
+        const pmMatch = masterList.find(p => (p.name || '').trim().toUpperCase() === cleanProd);
+        if (pmMatch) {
+            if (!prodType || prodType === '-') prodType = pmMatch.prodType || pmMatch.type || '';
+            if (!division || division === '-') division = pmMatch.division || pmMatch.ba || '';
+        }
+    }
+    if (!division && typeof warehouseStockQtyMap !== 'undefined' && warehouseStockQtyMap && warehouseStockQtyMap[cleanProd]) {
+        division = warehouseStockQtyMap[cleanProd].division || '';
+    }
+    if (!division && typeof warehouseAllStockList !== 'undefined' && warehouseAllStockList && Array.isArray(warehouseAllStockList)) {
+        const stockMatch = warehouseAllStockList.find(s => (s.modelName || '').trim().toUpperCase() === cleanProd);
+        if (stockMatch && stockMatch.division) {
+            division = stockMatch.division;
+        }
+    }
+
+    return {
+        prodType: prodType && prodType !== '-' ? prodType : '-',
+        division: division && division !== '-' ? division : '-'
+    };
+}
+
 function renderExcludedModalTable() {
     const tbody = document.getElementById('excludedContainersBody');
     if (!tbody) return;
@@ -9982,7 +10381,7 @@ function renderExcludedModalTable() {
     if (!excludedList || excludedList.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" style="padding: 20px; text-align: center; color: #94a3b8;">
+                <td colspan="9" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 0.9rem;">
                     제외된 컨테이너가 없습니다.
                 </td>
             </tr>
@@ -9998,13 +10397,19 @@ function renderExcludedModalTable() {
             cntrColor = '#3498db';
         }
 
+        const remarkText = item.remark && item.remark !== '-' ? item.remark : '-';
+
         return `
-            <tr style="border-bottom: 1px solid #e2e8f0; height: 35px;">
-                <td style="padding: 8px; text-align: center; font-weight: 600; color: ${cntrColor};">${item.cntrNo}</td>
-                <td style="padding: 8px; text-align: center; color: #475569;">${item.sheetName}</td>
-                <td style="padding: 8px; text-align: center; color: #475569;">${item.rowNumber}행</td>
-                <td style="padding: 8px; text-align: center; color: #475569; font-weight: 600;">${item.qty != null ? item.qty : '-'}</td>
-                <td style="padding: 8px; text-align: left; color: #1e293b; font-family: monospace;">${item.prodName}</td>
+            <tr style="border-bottom: 1px solid #e2e8f0; height: 35px; font-size: 0.84rem;">
+                <td style="padding: 8px; text-align: center; font-weight: 700; color: ${cntrColor};">${item.cntrNo}</td>
+                <td style="padding: 8px; text-align: center; color: #334155; font-weight: 600;" title="${item.jobName || ''}">${item.jobName || '-'}</td>
+                <td style="padding: 8px; text-align: center; color: #475569;">${item.sheetName || '-'}</td>
+                <td style="padding: 8px; text-align: center; color: #64748b;">${item.rowNumber ? item.rowNumber + '행' : '-'}</td>
+                <td style="padding: 8px; text-align: center; color: #334155; font-weight: 600;">${item.prodType || '-'}</td>
+                <td style="padding: 8px; text-align: center; color: #0284c7; font-weight: 700;">${item.division || '-'}</td>
+                <td style="padding: 8px; text-align: left; color: #1e293b; font-family: monospace; font-weight: 600;" title="${item.prodName || ''}">${item.prodName || '-'}</td>
+                <td style="padding: 8px; text-align: center; color: #0f172a; font-weight: 700;">${item.qty != null ? Number(item.qty).toLocaleString() : '-'}</td>
+                <td style="padding: 8px; text-align: left; color: #64748b; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${remarkText !== '-' ? remarkText : ''}">${remarkText}</td>
             </tr>
         `;
     }).join('');
@@ -12575,16 +12980,22 @@ window.handleDeleteSelectedPhotos = async function() {
     }
 };
 
-// 2. 씰 지정 / 씰 해제 일괄 토글
-window.handleBatchToggleSealPhoto = async function() {
-    const ids = Array.from(window.selectedPhotoIds);
-    if (ids.length === 0) {
+// 2. 씰 지정 / 씰 해제 (분리 및 일괄 처리 지원)
+window.handleBatchSetSealPhoto = async function(targetType = 'seal') {
+    const allSelected = Array.from(window.selectedPhotoIds || []);
+    if (allSelected.length === 0) {
         alert("사진을 선택해 주세요.");
         return;
     }
-    const selectedPhotos = window.currentGalleryPhotos.filter(p => window.selectedPhotoIds.has(String(p.id)));
-    const hasNormal = selectedPhotos.some(p => p.photo_type !== 'seal');
-    const targetType = hasNormal ? 'seal' : 'normal';
+    const selectedPhotos = (window.currentGalleryPhotos || []).filter(p => window.selectedPhotoIds.has(String(p.id)));
+    let targetPhotos = [];
+    if (targetType === 'seal') {
+        targetPhotos = selectedPhotos.filter(p => p.photo_type !== 'seal');
+    } else {
+        targetPhotos = selectedPhotos.filter(p => p.photo_type === 'seal');
+    }
+
+    const ids = targetPhotos.length > 0 ? targetPhotos.map(p => p.id) : allSelected;
 
     try {
         const res = await fetch(`${API_BASE}/api/photos`, {
@@ -12599,14 +13010,25 @@ window.handleBatchToggleSealPhoto = async function() {
         const data = await res.json();
         if (data.success) {
             if (typeof window.clearAllGallerySelection === 'function') window.clearAllGallerySelection();
+            if (typeof window.clearGalleryPhotoSelection === 'function') window.clearGalleryPhotoSelection();
+            if (typeof window.fetchContainerPhotoCounts === 'function') {
+                await window.fetchContainerPhotoCounts();
+            }
             await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+            alert(data.message || (targetType === 'normal' ? '선택한 사진의 씰(Seal) 지정이 해제되었습니다.' : '선택한 사진이 씰(Seal) 사진으로 지정되었습니다.'));
         } else {
             alert(`씰 상태 변경 실패: ${data.error || data.message}`);
         }
     } catch (err) {
-        console.error("Toggle seal error:", err);
+        console.error("Batch set seal error:", err);
         alert("오류가 발생했습니다: " + err.message);
     }
+};
+
+window.handleBatchToggleSealPhoto = async function() {
+    const selectedPhotos = (window.currentGalleryPhotos || []).filter(p => window.selectedPhotoIds && window.selectedPhotoIds.has(String(p.id)));
+    const hasNormal = selectedPhotos.some(p => p.photo_type !== 'seal');
+    return window.handleBatchSetSealPhoto(hasNormal ? 'seal' : 'normal');
 };
 
 // 3. 작업 조(팀) 변경 모달 & 실행
@@ -12796,6 +13218,70 @@ window.handleDownloadSelectedPhotos = function() {
     a.remove();
 };
 
+// 작업시간 기준(오후 1시부터 익일 오후 1시까지) 오늘 작업일 계산 및 경로 치환 헬퍼
+window.getAutoWorkDateCopyPath = function(savedPath) {
+    const now = new Date();
+    // 작업시간 기준: 오후 1시(13시)부터 익일 오후 1시까지가 하나의 작업일
+    if (now.getHours() < 13) {
+        now.setDate(now.getDate() - 1);
+    }
+    const yyyy = String(now.getFullYear());
+    const yy = yyyy.slice(2);
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const info = {
+        yyyy, yy, mm, dd,
+        formattedMMDD: `${mm}/${dd}`,
+        formattedYYMMDD: `${yy}.${mm}.${dd}`
+    };
+
+    if (!savedPath) {
+        return {
+            path: `X:\\${yy}.${mm}\\${dd}\\야간`,
+            info
+        };
+    }
+
+    let updated = savedPath;
+    // 1) 2자리 연도 패턴: \26.09\03 또는 /26.09/03
+    const regex2Digit = /([\\/])\d{2}\.\d{2}([\\/])\d{2}(?=[\\/]|$)/;
+    if (regex2Digit.test(updated)) {
+        updated = updated.replace(regex2Digit, `$1${yy}.${mm}$2${dd}`);
+        return { path: updated, info };
+    }
+
+    // 2) 4자리 연도 점 패턴: \2026.09\03
+    const regex4DigitDot = /([\\/])\d{4}\.\d{2}([\\/])\d{2}(?=[\\/]|$)/;
+    if (regex4DigitDot.test(updated)) {
+        updated = updated.replace(regex4DigitDot, `$1${yyyy}.${mm}$2${dd}`);
+        return { path: updated, info };
+    }
+
+    // 3) 4자리 연도 하이픈 패턴: \2026-09-03
+    const regex4DigitDash = /([\\/])\d{4}-\d{2}-\d{2}(?=[\\/]|$)/;
+    if (regex4DigitDash.test(updated)) {
+        updated = updated.replace(regex4DigitDash, `$1${yyyy}-${mm}-${dd}`);
+        return { path: updated, info };
+    }
+
+    return { path: updated, info };
+};
+
+window.applyTodayWorkDateToInput = function() {
+    const inputEl = document.getElementById('inputLocalCopyPath');
+    if (!inputEl) return;
+    const currentVal = inputEl.value.trim();
+    const result = window.getAutoWorkDateCopyPath(currentVal);
+    inputEl.value = result.path;
+    localStorage.setItem('lastPhotoLocalCopyPath', result.path);
+    window.updateLocalCopyPreview();
+
+    const hintTextEl = document.getElementById('localCopyTeamHintText');
+    if (hintTextEl) {
+        hintTextEl.innerHTML = `<span style="color: #38bdf8; font-weight: 800;"><i class="fas fa-check-circle"></i> 오늘 작업일(${result.info.formattedMMDD}) 경로가 적용되었습니다.</span>`;
+    }
+};
+
 // 6. 로컬 폴더 복사 모달 & 실행 (CTNR 조별 하위 폴더 자동 분류 완벽 지원)
 window.handleOpenLocalCopyModal = function() {
     const isFolderMode = window.selectedFolderKeys && window.selectedFolderKeys.size > 0;
@@ -12836,15 +13322,20 @@ window.handleOpenLocalCopyModal = function() {
         teamSet.add(tm);
     });
     const teamListStr = Array.from(teamSet).join(', ');
+
+    // 작업시간 기준(오후 1시부터 익일 오후 1시까지) 오늘 작업일 정보 계산 및 경로 자동 갱신
+    const savedPath = localStorage.getItem('lastPhotoLocalCopyPath');
+    const workDateResult = window.getAutoWorkDateCopyPath(savedPath);
+
     const hintTextEl = document.getElementById('localCopyTeamHintText');
     if (hintTextEl) {
-        hintTextEl.textContent = teamSet.size > 0 ? `[${teamListStr}] 선택됨 - 마지막 저장 경로가 자동 적용됩니다.` : `마지막 저장 경로가 자동 적용됩니다.`;
+        const teamInfo = teamSet.size > 0 ? `[${teamListStr}] 선택됨 - ` : '';
+        hintTextEl.innerHTML = `${teamInfo}<span style="color: #38bdf8; font-weight: 800;"><i class="fas fa-calendar-check"></i> 오늘 작업일(${workDateResult.info.formattedMMDD}) 경로 자동 적용</span>`;
     }
 
     const inputEl = document.getElementById('inputLocalCopyPath');
     if (inputEl) {
-        const savedPath = localStorage.getItem('lastPhotoLocalCopyPath');
-        inputEl.value = savedPath || 'X:\\26.08\\27\\야간';
+        inputEl.value = workDateResult.path;
     }
 
     const chkByTeam = document.getElementById('chkByTeamFolder');
@@ -13479,8 +13970,24 @@ window.toggleTeamGroupFolders = function(dateStr, teamName, e) {
     window.refreshFolderHeaderSelectState();
 };
 
-// 날짜/조 헤더 선택 카운트 텍스트 갱신
+// 날짜/조 헤더 선택 카운트 및 상단 조회기간 전체선택 텍스트 갱신
 window.refreshFolderHeaderSelectState = function() {
+    const allFolders = window.currentGalleryFolders || [];
+    const totalSelected = window.selectedFolderKeys ? window.selectedFolderKeys.size : 0;
+
+    // 1. 상단 [조회기간 전체 선택] 체크박스 및 라벨 동기화
+    const allChk = document.getElementById('chkSelectAllGalleryFolders');
+    const allLbl = document.getElementById('lblSelectAllGalleryFolders');
+    if (allChk) {
+        allChk.checked = (allFolders.length > 0 && totalSelected === allFolders.length);
+    }
+    if (allLbl) {
+        allLbl.textContent = totalSelected > 0
+            ? `전체 선택 (${totalSelected}/${allFolders.length})`
+            : `조회기간 전체 선택`;
+    }
+
+    // 2. 날짜별 카드 동기화
     document.querySelectorAll('.ctnr-date-card').forEach(dateCard => {
         const dateStr = dateCard.getAttribute('data-date-str');
         if (!dateStr) return;
@@ -13498,6 +14005,7 @@ window.refreshFolderHeaderSelectState = function() {
         if (textSpan) textSpan.textContent = `${dayNum}일 전체 선택 (${selCount}/${totalItems})`;
     });
 
+    // 3. 조별 카드 동기화
     document.querySelectorAll('.ctnr-team-card').forEach(teamCard => {
         const totalItems = teamCard.querySelectorAll('[data-folder-key]').length;
         let selCount = 0;
@@ -13510,6 +14018,48 @@ window.refreshFolderHeaderSelectState = function() {
             btn.textContent = (totalItems > 0 && selCount === totalItems) ? '전체 해제' : '전체 선택';
         }
     });
+};
+
+// 상단: 조회기간 전체 컨테이너 폴더 일괄 선택 / 해제
+window.toggleAllGalleryFolders = function(checked) {
+    if (!window.selectedFolderKeys) window.selectedFolderKeys = new Set();
+    const allFolders = window.currentGalleryFolders || [];
+
+    allFolders.forEach(f => {
+        const key = `${f.cntrNo}|${f.workDateStr}`;
+        if (checked) {
+            window.selectedFolderKeys.add(key);
+        } else {
+            window.selectedFolderKeys.delete(key);
+        }
+    });
+
+    document.querySelectorAll('[data-folder-key]').forEach(card => {
+        const k = card.getAttribute('data-folder-key');
+        const isSel = window.selectedFolderKeys.has(k);
+        if (isSel) card.classList.add('selected');
+        else card.classList.remove('selected');
+        const chk = card.querySelector('.ctnr-folder-chk');
+        if (chk) chk.checked = isSel;
+    });
+
+    window.refreshFolderHeaderSelectState();
+    window.updateGalleryActionBar();
+};
+
+// 하단 액션바: 선택된 컨테이너들만 일괄 체결 검사 실행
+window.handleBatchCheckSelectedSealMounted = async function() {
+    if (!window.selectedFolderKeys || window.selectedFolderKeys.size === 0) {
+        alert("선택된 컨테이너가 없습니다.");
+        return;
+    }
+    const allFolders = window.currentGalleryFolders || [];
+    const selectedFolders = allFolders.filter(f => window.selectedFolderKeys.has(`${f.cntrNo}|${f.workDateStr}`));
+    if (selectedFolders.length === 0) {
+        alert("선택된 컨테이너 정보를 찾을 수 없습니다.");
+        return;
+    }
+    await window.executeSealMountedBatchValidation(selectedFolders, `선택한 ${selectedFolders.length}개 컨테이너`);
 };
 
 // 전체 선택 해제 (폴더 및 사진 공통)
@@ -13592,11 +14142,26 @@ window.updateGalleryActionBar = function() {
         if (photoGroup) photoGroup.style.display = 'flex';
         if (folderGroup) folderGroup.style.display = 'none';
 
-        const sealText = document.getElementById('btnActionSealText');
+        const sealSetBtn = document.getElementById('btnActionSealSet');
+        const sealUnsetBtn = document.getElementById('btnActionSealUnset');
+        const sealVerifyBtn = document.getElementById('btnActionSealVerify');
+        const legacySealBtn = document.getElementById('btnActionSealToggle');
+
         const selectedPhotos = (window.currentGalleryPhotos || []).filter(p => window.selectedPhotoIds.has(String(p.id)));
         const hasNormal = selectedPhotos.some(p => p.photo_type !== 'seal');
-        if (sealText) {
-            sealText.textContent = hasNormal ? '씰 지정' : '씰 해제';
+        const hasSeal = selectedPhotos.some(p => p.photo_type === 'seal');
+
+        if (sealSetBtn) {
+            sealSetBtn.style.display = hasNormal ? 'inline-flex' : 'none';
+        }
+        if (sealUnsetBtn) {
+            sealUnsetBtn.style.display = hasSeal ? 'inline-flex' : 'none';
+        }
+        if (sealVerifyBtn) {
+            sealVerifyBtn.style.display = hasSeal ? 'inline-flex' : 'none';
+        }
+        if (legacySealBtn) {
+            legacySealBtn.style.display = 'none';
         }
         return;
     }
@@ -13814,39 +14379,7 @@ window.handleDeleteSelectedPhotos = async function() {
     }
 };
 
-// 2. 씰 지정 / 씰 해제 일괄 토글
-window.handleBatchToggleSealPhoto = async function() {
-    const ids = Array.from(window.selectedPhotoIds);
-    if (ids.length === 0) {
-        alert("사진을 선택해 주세요.");
-        return;
-    }
-    const selectedPhotos = window.currentGalleryPhotos.filter(p => window.selectedPhotoIds.has(String(p.id)));
-    const hasNormal = selectedPhotos.some(p => p.photo_type !== 'seal');
-    const targetType = hasNormal ? 'seal' : 'normal';
-
-    try {
-        const res = await fetch(`${API_BASE}/api/photos`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'update_photo_type',
-                ids: ids,
-                photoType: targetType
-            })
-        });
-        const data = await res.json();
-        if (data.success) {
-            if (typeof window.clearAllGallerySelection === 'function') window.clearAllGallerySelection();
-            await window.loadPhotoGallery(window.currentGalleryTargetCntr);
-        } else {
-            alert(`씰 상태 변경 실패: ${data.error || data.message}`);
-        }
-    } catch (err) {
-        console.error("Toggle seal error:", err);
-        alert("오류가 발생했습니다: " + err.message);
-    }
-};
+// 2. 씰 지정 / 씰 해제 (상단 handleBatchSetSealPhoto 사용)
 
 // 3. 작업 조(팀) 변경 모달 & 실행
 window.selectedTargetTeamId = null;
@@ -14508,21 +15041,61 @@ window.resetGalleryFilters = function() {
     window.loadPhotoGallery('');
 };
 
-// 모달 닫기 (isFullReset=true면 초기화, false면 상태 보존)
+// 모달 닫기 (isFullReset=true면 완전 초기화, false면 상태 보존)
 window.closePhotoGalleryModal = function(isFullReset = true) {
     const modal = document.getElementById('photoGalleryModal');
     if (modal) modal.style.display = 'none';
+
     if (isFullReset) {
+        window.isPhotoGalleryOpen = false;
         window.currentGalleryTargetCntr = '';
         const searchEl = document.getElementById('photoGallerySearchCntr');
         if (searchEl) searchEl.value = '';
+
+        // 날짜 범위 기본값(어제~오늘)으로 복구
+        const formatYMD = (d) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        };
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+        const startDateEl = document.getElementById('photoGalleryStartDate');
+        const endDateEl = document.getElementById('photoGalleryEndDate');
+        if (startDateEl) startDateEl.value = formatYMD(yesterday);
+        if (endDateEl) endDateEl.value = formatYMD(today);
+
+        // 필터 드롭다운 초기화
+        const teamEl = document.getElementById('photoGalleryTeamFilter');
+        const typeEl = document.getElementById('photoGalleryTypeFilter');
+        if (teamEl) teamEl.value = 'all';
+        if (typeEl) typeEl.value = 'all';
+
+        // 탭 상태 초기화: ACTIVE(진행 중인 작업)
+        window.galleryTabState = 'ACTIVE';
+        document.querySelectorAll('.ctnr-tab-btn').forEach(btn => btn.classList.remove('active'));
+        const activeTabBtn = document.getElementById('tabBtnActive');
+        if (activeTabBtn) activeTabBtn.classList.add('active');
+
+        // 컨테이너 상세 헤더 숨김 & 타이틀 기본값 복구
+        const badgeBox = document.getElementById('galleryCntrBadgeBox');
+        if (badgeBox) badgeBox.style.display = 'none';
+        const titleEl = document.getElementById('galleryHeaderTitle');
+        if (titleEl) titleEl.textContent = '진행 중인 작업 사진 보관함';
+        const subTitleEl = document.getElementById('galleryHeaderSubtitle');
+        if (subTitleEl) subTitleEl.textContent = '현장에서 업로드된 진행 중인 컨테이너 적재 사진을 조회하고 완료 처리합니다.';
+
+        // 캐시 초기화
+        window.currentGalleryPhotos = null;
     }
     if (typeof window.clearAllGallerySelection === 'function') {
         window.clearAllGallerySelection();
     }
 };
 
-// 1. 사진 보관함 모달 오픈 (initialCntrNo === null 이면 기존 보던 화면 유지)
+// 1. 사진 보관함 모달 오픈 (initialCntrNo === null 이면 기존 보던 화면 유지 or 새로 열림)
 window.openPhotoGalleryModal = function(initialCntrNo = null) {
     const modal = document.getElementById('photoGalleryModal');
     if (!modal) return;
@@ -14562,19 +15135,34 @@ window.openPhotoGalleryModal = function(initialCntrNo = null) {
     if (startDateEl && !startDateEl.value) startDateEl.value = formatYMD(yesterday);
     if (endDateEl && !endDateEl.value) endDateEl.value = formatYMD(today);
 
-    // initialCntrNo가 null인 경우: 화면 전환(Resume)이므로 기존에 보던 컨테이너 상세 화면 유지!
-    if (initialCntrNo === null) {
+    // 닫혀있었던 상태(새로 열림)이거나 특정 컨테이너가 명시된 경우 구분
+    const isResuming = (window.isPhotoGalleryOpen === true && initialCntrNo === null);
+    window.isPhotoGalleryOpen = true;
+
+    if (isResuming) {
+        // 화면 전환(Resume): 기존에 보던 컨테이너 상세 화면 및 로드 데이터 유지
         const target = window.currentGalleryTargetCntr || '';
         if (searchEl && target) searchEl.value = target;
         if (!window.currentGalleryPhotos || window.currentGalleryPhotos.length === 0) {
             window.loadPhotoGallery(target);
         }
-    } else {
-        // 특정 컨테이너 명시 진입 또는 '' 리셋
-        const cleanNo = (initialCntrNo || '').trim().toUpperCase();
+    } else if (initialCntrNo && typeof initialCntrNo === 'string' && initialCntrNo.trim() && initialCntrNo !== 'null') {
+        // 특정 컨테이너 전용 오픈
+        const cleanNo = initialCntrNo.trim().toUpperCase();
         if (searchEl) searchEl.value = cleanNo;
         window.currentGalleryTargetCntr = cleanNo;
         window.loadPhotoGallery(cleanNo);
+    } else {
+        // X나 닫기를 눌러 닫힌 후 새로 열린 경우: 전체 루트 폴더 목록으로 새로 로드!
+        window.currentGalleryTargetCntr = '';
+        if (searchEl) searchEl.value = '';
+        const badgeBox = document.getElementById('galleryCntrBadgeBox');
+        if (badgeBox) badgeBox.style.display = 'none';
+        const titleEl = document.getElementById('galleryHeaderTitle');
+        if (titleEl) titleEl.textContent = '진행 중인 작업 사진 보관함';
+        const subTitleEl = document.getElementById('galleryHeaderSubtitle');
+        if (subTitleEl) subTitleEl.textContent = '현장에서 업로드된 진행 중인 컨테이너 적재 사진을 조회하고 완료 처리합니다.';
+        window.loadPhotoGallery('');
     }
 };
 
@@ -14635,7 +15223,11 @@ window.loadPhotoGallery = async function(targetCntr = null) {
             if (startDate) queryParams.push(`startDate=${encodeURIComponent(startDate)}`);
             if (endDate) queryParams.push(`endDate=${encodeURIComponent(endDate)}`);
         }
-        if (typeFilter !== 'all') queryParams.push(`photoType=${encodeURIComponent(typeFilter)}`);
+        let reqType = typeFilter;
+        if (typeFilter === 'seal_verified' || typeFilter === 'seal_suspicious') {
+            reqType = 'seal';
+        }
+        if (reqType !== 'all') queryParams.push(`photoType=${encodeURIComponent(reqType)}`);
 
         url += queryParams.join('&');
 
@@ -14672,12 +15264,27 @@ window.loadPhotoGallery = async function(targetCntr = null) {
             loadedPhotos = loadedPhotos.filter(p => (p.team_name || '').includes(teamFilter));
         }
 
+        if (typeFilter === 'seal_verified') {
+            loadedPhotos = loadedPhotos.filter(p => {
+                const val = window.sealValidationCache.get(String(p.id));
+                return val && val.status === 'VERIFIED';
+            });
+        } else if (typeFilter === 'seal_suspicious') {
+            loadedPhotos = loadedPhotos.filter(p => {
+                const val = window.sealValidationCache.get(String(p.id));
+                return !val || val.status !== 'VERIFIED';
+            });
+        }
+
         window.currentGalleryPhotos = loadedPhotos;
         if (typeof window.clearAllGallerySelection === 'function') {
             window.clearAllGallerySelection();
         } else {
             if (window.selectedPhotoIds) window.selectedPhotoIds.clear();
             if (window.selectedFolderKeys) window.selectedFolderKeys.clear();
+        }
+        if (typeof window.syncSealMountedHistory === 'function') {
+            await window.syncSealMountedHistory(false);
         }
         window.renderGalleryPhotos();
 
@@ -14846,6 +15453,869 @@ function getGalleryCarrierInfo(transporter = '', teamName = '') {
 }
 
 // ===================================================================
+// [신규] AI 미사용 100% 로컬 씰(Seal) 사진 유효성 검증 & 전산 대조 엔진
+// ===================================================================
+window.sealValidationCache = new Map(); // photoId (문자열) -> { status, barcodeText, sealNo, message, format }
+window.sealContainerResults = {}; // cntrNo -> { cntrNo, targetSealNo, status, matchedText, ocrText, photoId, photoPath, checkedAt }
+
+// 1. 컨테이너의 전산 씰 번호 조회
+window.getContainerSealNo = async function(cntrNo) {
+    if (!cntrNo) return '';
+    const key = String(cntrNo).toUpperCase().trim();
+    let foundRows = [];
+    if (typeof comparisonResult !== 'undefined' && Array.isArray(comparisonResult) && comparisonResult.length > 0) {
+        foundRows = comparisonResult.filter(r => (r.cntrNo || '').toUpperCase().trim() === key);
+    } else if (Array.isArray(window.comparisonResult) && window.comparisonResult.length > 0) {
+        foundRows = window.comparisonResult.filter(r => (r.cntrNo || '').toUpperCase().trim() === key);
+    }
+    if (foundRows.length === 0 && Array.isArray(window.processedData) && window.processedData.length > 0) {
+        foundRows = window.processedData.filter(r => (r.cntrNo || r.cntr_no || '').toUpperCase().trim() === key);
+    }
+    if (foundRows.length === 0 && Array.isArray(window.containerTableData) && window.containerTableData.length > 0) {
+        foundRows = window.containerTableData.filter(r => (r.cntrNo || r.cntr_no || '').toUpperCase().trim() === key);
+    }
+    if (foundRows.length === 0 && Array.isArray(window.processedAvailabilityData) && window.processedAvailabilityData.length > 0) {
+        foundRows = window.processedAvailabilityData.filter(r => (r.cntrNo || r.cntr_no || '').toUpperCase().trim() === key);
+    }
+    for (const r of foundRows) {
+        const s = (r.sealNo || r.seal_no || r.seal || '').trim();
+        if (s && s !== '-') return s;
+    }
+    // 서버 DB 폴백 조회
+    try {
+        const res = await fetch(`${API_BASE}/api/containers/info?cntrNo=${encodeURIComponent(key)}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.products)) {
+            for (const p of data.products) {
+                const s = (p.sealNo || p.seal_no || p.seal || '').trim();
+                if (s && s !== '-') return s;
+            }
+        }
+    } catch (e) {}
+    return '';
+};
+
+// 2. 이미지/캔버스에서 1D/2D 바코드 디코딩 (0°, 90°, 270°, 180° 회전 및 명암 대비 전처리)
+window.scanBarcodeFromImage = async function(imgSrcOrElement) {
+    if (typeof ZXing === 'undefined') {
+        console.warn("[SealVerify] ZXing library is not loaded.");
+        return null;
+    }
+
+    let img;
+    if (typeof imgSrcOrElement === 'string') {
+        img = new Image();
+        img.crossOrigin = 'anonymous';
+        await new Promise((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error("Image load failed"));
+            img.src = imgSrcOrElement;
+        });
+    } else {
+        img = imgSrcOrElement;
+        if (!img.complete || img.naturalWidth === 0) {
+            await new Promise((resolve) => {
+                img.onload = () => resolve();
+            });
+        }
+    }
+
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+        ZXing.BarcodeFormat.CODE_128,
+        ZXing.BarcodeFormat.CODE_39,
+        ZXing.BarcodeFormat.CODE_93,
+        ZXing.BarcodeFormat.EAN_13,
+        ZXing.BarcodeFormat.ITF,
+        ZXing.BarcodeFormat.CODABAR,
+        ZXing.BarcodeFormat.DATA_MATRIX,
+        ZXing.BarcodeFormat.QR_CODE
+    ]);
+
+    const reader = new ZXing.BrowserMultiFormatReader(hints);
+
+    // 스케일 다운 (디코딩 속도 및 메모리 최적화, 최대 폭/높이 1600px)
+    const origW = img.naturalWidth || img.width;
+    const origH = img.naturalHeight || img.height;
+    if (!origW || !origH) return null;
+
+    const maxDim = 1600;
+    let targetW = origW;
+    let targetH = origH;
+    if (targetW > maxDim || targetH > maxDim) {
+        if (targetW > targetH) {
+            targetH = Math.round((targetH * maxDim) / targetW);
+            targetW = maxDim;
+        } else {
+            targetW = Math.round((targetW * maxDim) / targetH);
+            targetH = maxDim;
+        }
+    }
+
+    // 회전 각도 목록 (0도, 90도, 270도, 180도)
+    const angles = [0, 90, 270, 180];
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+    // 1단계: 원본/회전 상태에서 스캔
+    for (const deg of angles) {
+        if (deg === 90 || deg === 270) {
+            canvas.width = targetH;
+            canvas.height = targetW;
+        } else {
+            canvas.width = targetW;
+            canvas.height = targetH;
+        }
+
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((deg * Math.PI) / 180);
+        ctx.drawImage(img, -targetW / 2, -targetH / 2, targetW, targetH);
+        ctx.restore();
+
+        try {
+            const bitmap = reader.createBinaryBitmap(canvas);
+            const result = reader.decodeBitmap(bitmap);
+            if (result && result.getText()) {
+                return {
+                    text: result.getText().trim(),
+                    format: result.getBarcodeFormat() ? result.getBarcodeFormat().toString() : 'BARCODE'
+                };
+            }
+        } catch (e) {
+            // 이번 회전 각도에서 미검출
+        }
+    }
+
+    // 2단계: 미검출 시 명암 대비 향상(Contrast + Grayscale) 전처리 후 재시도 (0도, 90도)
+    for (const deg of [0, 90]) {
+        if (deg === 90) {
+            canvas.width = targetH;
+            canvas.height = targetW;
+        } else {
+            canvas.width = targetW;
+            canvas.height = targetH;
+        }
+
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((deg * Math.PI) / 180);
+        ctx.drawImage(img, -targetW / 2, -targetH / 2, targetW, targetH);
+        ctx.restore();
+
+        // Contrast 필터 적용
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+        const contrast = 1.35; // 대비 35% 증폭
+        const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
+        for (let i = 0; i < data.length; i += 4) {
+            const gray = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+            const highContrast = Math.min(255, Math.max(0, factor * (gray - 128) + 128));
+            data[i] = highContrast;
+            data[i + 1] = highContrast;
+            data[i + 2] = highContrast;
+        }
+        ctx.putImageData(imgData, 0, 0);
+
+        try {
+            const bitmap = reader.createBinaryBitmap(canvas);
+            const result = reader.decodeBitmap(bitmap);
+            if (result && result.getText()) {
+                return {
+                    text: result.getText().trim(),
+                    format: result.getBarcodeFormat() ? result.getBarcodeFormat().toString() : 'BARCODE'
+                };
+            }
+        } catch (e) {
+            // 계속
+        }
+    }
+
+    return null;
+};
+
+// 3. 단일 씰 사진 유효성 검증 및 전산 대조 (서버 로컬 OCR 엔진 연동)
+window.verifySealPhoto = async function(photoItem, targetCntrNo) {
+    if (!photoItem) return null;
+    const photoId = String(photoItem.id);
+    const cntrNo = targetCntrNo || photoItem.cntr_no || window.currentGalleryTargetCntr || '';
+    const rawPath = (photoItem.photo_path || '').split('?')[0];
+
+    // 전산 씰 번호 조회
+    const sealNo = await window.getContainerSealNo(cntrNo);
+
+    let validationResult;
+    try {
+        const resp = await fetch(`${API_BASE}/api/photos/verify-seal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                photoId: photoItem.id,
+                photoPath: rawPath,
+                cntrNo: cntrNo,
+                targetSealNo: sealNo,
+                gdriveFileId: photoItem.gdrive_file_id || null
+            })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            validationResult = {
+                status: data.matched ? 'VERIFIED' : (data.targetSealNo ? 'MISMATCH' : 'DETECTED'),
+                barcodeText: data.matchedText || data.ocrText || '',
+                ocrText: data.ocrText || '',
+                matchedText: data.matchedText || '',
+                sealNo: data.targetSealNo || sealNo || '',
+                format: 'OCR',
+                message: data.matched 
+                    ? `전산 일치 확인 (${data.matchedText || sealNo})` 
+                    : (sealNo ? `씰 불일치 (전산: ${sealNo}, OCR: ${data.ocrText || '미인식'})` : `번호 감지됨 (${data.ocrText || '텍스트'})`)
+            };
+        } else {
+            validationResult = {
+                status: 'UNVERIFIED',
+                barcodeText: '',
+                ocrText: '',
+                matchedText: '',
+                sealNo: sealNo,
+                format: '',
+                message: data.error || '검증 실패'
+            };
+        }
+    } catch (e) {
+        console.warn(`[SealVerify] Server OCR error for photo ${photoId}:`, e);
+        validationResult = {
+            status: 'UNVERIFIED',
+            barcodeText: '',
+            ocrText: '',
+            matchedText: '',
+            sealNo: sealNo,
+            format: '',
+            message: '서버 통신 실패'
+        };
+    }
+
+    window.sealValidationCache.set(photoId, validationResult);
+    return validationResult;
+};
+
+// 4. 사진 카드에 표시할 씰 검증 배지 HTML 생성
+window.getSealBadgeHtml = function(photoItem, isSeal) {
+    if (!isSeal) return '';
+    const photoId = String(photoItem.id);
+    const val = window.sealValidationCache ? window.sealValidationCache.get(photoId) : null;
+    const cntrNo = (photoItem.cntr_no || window.currentGalleryTargetCntr || '').toUpperCase().trim();
+    const cntrResult = window.sealContainerResults ? window.sealContainerResults[cntrNo] : null;
+
+    // 해당 컨테이너에 1장이라도 전산 일치(VERIFIED)된 사진이 존재하는지 확인
+    const isCntrSealVerified = (cntrResult && cntrResult.status === 'MATCH') ||
+        (window.currentGalleryPhotos || []).some(p => {
+            if ((p.cntr_no || '').toUpperCase().trim() !== cntrNo) return false;
+            const cVal = window.sealValidationCache ? window.sealValidationCache.get(String(p.id)) : null;
+            return cVal && cVal.status === 'VERIFIED';
+        });
+
+    if (!val) {
+        if (isCntrSealVerified) {
+            return `<span class="ctnr-card-seal-tag seal-ref" style="background:#334155; color:#94a3b8; border:1px solid #475569;" title="컨테이너 내 씰 확인 완료 (본 사진은 전경/참고 사진)"><i class="fas fa-camera"></i> 전경/참고</span>`;
+        }
+        return `<span class="ctnr-card-seal-tag" title="씰 사진으로 지정됨 (OCR 검사 미실시)"><i class="fas fa-camera"></i> 씰</span>`;
+    }
+
+    if (val.status === 'VERIFIED') {
+        return `<span class="ctnr-card-seal-tag seal-verified" title="[정상 씰 확인] 전산 씰 번호(${val.sealNo})와 OCR(${val.barcodeText}) 일치 (컨테이너 씰 확인 완료)"><i class="fas fa-check-circle"></i> 씰 확인 (${val.barcodeText})</span>`;
+    }
+
+    // 1장이라도 실제 씰 사진으로 확인된 경우, 나머지 사진은 불일치 경고가 아닌 '전경/참고 사진'으로 표시
+    if (isCntrSealVerified) {
+        return `<span class="ctnr-card-seal-tag seal-ref" style="background:#334155; color:#94a3b8; border:1px solid #475569;" title="컨테이너 내 씰 확인 완료 (본 사진은 전경/참고 사진)"><i class="fas fa-camera"></i> 전경/참고</span>`;
+    }
+
+    if (val.status === 'MISMATCH') {
+        return `<span class="ctnr-card-seal-tag seal-mismatch" title="[주의: 불일치] OCR: ${val.ocrText || '미인식'} / 전산 씰: ${val.sealNo || '미등록'}"><i class="fas fa-exclamation-triangle"></i> 씰 불일치</span>`;
+    } else if (val.status === 'DETECTED') {
+        return `<span class="ctnr-card-seal-tag seal-detected" title="[번호 감지] OCR 번호: ${val.barcodeText} (전산 번호 미등록)"><i class="fas fa-barcode"></i> OCR ${val.barcodeText}</span>`;
+    } else {
+        return `<span class="ctnr-card-seal-tag seal-unverified" title="[미확인] 볼트 씰 번호가 감지되지 않았습니다. 실제 씰 사진인지 확인 필요"><i class="fas fa-question-circle"></i> 미확인 씰</span>`;
+    }
+};
+
+// 4-1. 메인 화면 폴더 카드에 표시할 씰 배지 HTML 생성 (OCR 대조 배지 완전 제거 & 체결 상태 전용)
+window.getFolderSealBadgeHtml = function(folder) {
+    if (!folder) return '';
+    const cntrNo = (folder.cntrNo || '').toUpperCase().trim();
+    const mRes = window.sealMountedResults ? window.sealMountedResults[cntrNo] : null;
+
+    // 1. 씰 체결 상태 검사 결과가 있는 경우
+    if (mRes) {
+        if (mRes.status === 'MOUNTED') {
+            return `<span class="ctnr-folder-seal-badge mounted" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="[씰 체결 확인] 볼트 씰이 정상 체결되었습니다. (색상: ${mRes.detectedColor || '확인'}, 클릭 시 사진 확인)"><i class="fas fa-lock"></i> 씰체결됨</span>`;
+        } else if (mRes.status === 'NO_SEAL_PHOTO') {
+            return `<span class="ctnr-folder-seal-badge none" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="씰 사진 미등록"><i class="fas fa-camera"></i> 씰사진없음</span>`;
+        } else {
+            return `<span class="ctnr-folder-seal-badge unmounted" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="[씰 미체결/확인필요] 볼트 씰 체결이 감지되지 않았습니다. (클릭 시 사진 확인)"><i class="fas fa-lock-open"></i> 씰미체결</span>`;
+        }
+    }
+
+    // 2. 아직 체결 검사를 실시하지 않은 경우
+    const hasSeal = folder.photos && folder.photos.some(p => p.photo_type === 'seal');
+    if (hasSeal) {
+        return `<span class="ctnr-folder-seal-badge" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0;" title="씰 사진 등록됨 (체결검사 미실시)"><i class="fas fa-camera"></i> 씰</span>`;
+    } else {
+        return `<span title="씰(Seal) 사진이 등록되지 않았습니다." class="camera-pulse"><i class="fas fa-camera"></i></span>`;
+    }
+};
+
+// 4-2. 씰 검증 상세 팝업 모달
+window.showSealResultDetail = function(cntrNo) {
+    if (!cntrNo) return;
+    const key = cntrNo.toUpperCase().trim();
+    const res = window.sealContainerResults ? window.sealContainerResults[key] : null;
+    if (!res) return;
+
+    let existing = document.getElementById('sealDetailModal');
+    if (existing) existing.remove();
+
+    const isMatch = res.status === 'MATCH';
+    const isMismatch = res.status === 'MISMATCH';
+    const isNoTarget = res.status === 'NO_TARGET_SEAL';
+
+    let statusText = '';
+    let statusBadgeColor = '#10b981';
+    if (isMatch) {
+        statusText = '🟢 정상 씰 일치 확인';
+        statusBadgeColor = '#10b981';
+    } else if (isMismatch) {
+        statusText = '🔴 씰 번호 불일치 / 미인식';
+        statusBadgeColor = '#ef4444';
+    } else if (isNoTarget) {
+        statusText = '⚠️ 전산 씰 번호 미등록';
+        statusBadgeColor = '#f59e0b';
+    } else {
+        statusText = '📷 씰 사진 미지정';
+        statusBadgeColor = '#64748b';
+    }
+
+    const photoUrl = res.photoPath 
+        ? `${API_BASE}/api/photos/view?filename=${encodeURIComponent(res.photoPath)}`
+        : '';
+
+    const modalHtml = `
+        <div id="sealDetailModal" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); z-index:200000; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.2s ease;">
+            <div style="background:#1e293b; border:1px solid #334155; border-radius:14px; width:440px; max-width:92vw; box-shadow:0 20px 40px rgba(0,0,0,0.6); overflow:hidden; color:#f8fafc;">
+                <div style="padding:16px 20px; background:#0f172a; border-bottom:1px solid #334155; display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:8px; font-weight:800; font-size:1.05rem;">
+                        <i class="fas fa-barcode" style="color:#0284c7;"></i>
+                        <span>씰 검증 상세 정보</span>
+                    </div>
+                    <button onclick="document.getElementById('sealDetailModal').remove()" style="background:transparent; border:none; color:#94a3b8; font-size:1.2rem; cursor:pointer; padding:0 4px;">&times;</button>
+                </div>
+                <div style="padding:20px; display:flex; flex-direction:column; gap:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#0f172a; border-radius:8px; border:1px solid #334155;">
+                        <span style="color:#94a3b8; font-size:0.85rem; font-weight:700;">컨테이너</span>
+                        <strong style="color:#38bdf8; font-size:1rem; letter-spacing:0.5px;">${cntrNo}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#0f172a; border-radius:8px; border:1px solid #334155;">
+                        <span style="color:#94a3b8; font-size:0.85rem; font-weight:700;">전산 씰 번호</span>
+                        <strong style="color:#f1f5f9; font-size:0.95rem;">${res.targetSealNo || '<span style="color:#64748b;">(미등록)</span>'}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#0f172a; border-radius:8px; border:1px solid #334155;">
+                        <span style="color:#94a3b8; font-size:0.85rem; font-weight:700;">OCR 인식 텍스트</span>
+                        <strong style="color:${isMatch ? '#34d399' : '#f87171'}; font-size:0.95rem; word-break:break-all; text-align:right;">${res.matchedText || res.ocrText || '<span style="color:#64748b;">(인식 없음)</span>'}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#0f172a; border-radius:8px; border:1px solid #334155;">
+                        <span style="color:#94a3b8; font-size:0.85rem; font-weight:700;">판정 결과</span>
+                        <span style="font-size:0.85rem; font-weight:800; color:${statusBadgeColor};">${statusText}</span>
+                    </div>
+                    ${photoUrl ? `
+                        <div style="position:relative; width:100%; height:180px; border-radius:8px; overflow:hidden; border:1px solid #334155; background:#090d16;">
+                            <img src="${photoUrl}" style="width:100%; height:100%; object-fit:contain;" alt="Seal Photo" />
+                        </div>
+                    ` : ''}
+                </div>
+                <div style="padding:14px 20px; background:#0f172a; border-top:1px solid #334155; display:flex; justify-content:flex-end; gap:8px;">
+                    <button onclick="document.getElementById('sealDetailModal').remove(); window.openContainerFolderPhotos('${cntrNo}');" style="padding:7px 14px; background:#0284c7; color:#fff; border:none; border-radius:6px; font-weight:700; font-size:0.85rem; cursor:pointer;">
+                        <i class="fas fa-folder-open"></i> 사진함 열기
+                    </button>
+                    <button onclick="document.getElementById('sealDetailModal').remove()" style="padding:7px 14px; background:#334155; color:#cbd5e1; border:none; border-radius:6px; font-weight:700; font-size:0.85rem; cursor:pointer;">
+                        닫기
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+// [분리 및 정지됨] 기존 OCR 씰 번호 대조 엔진 (사용자 요청에 의해 UI 제거 및 정지 처리)
+window.executeSealBatchValidation = async function(targetFolders, scopeTitle) {
+    console.log("기존 OCR 씰 번호 대조 기능은 분리/정지되었습니다.");
+};
+
+window.runBatchDateSealValidation = async function(dateStr, event) {
+    console.log("기존 OCR 씰 번호 대조 기능은 분리/정지되었습니다.");
+};
+
+window.runAllVisibleSealValidation = async function() {
+    console.log("기존 OCR 씰 번호 대조 기능은 분리/정지되었습니다.");
+};
+
+// ==========================================
+// [신규] 씰 체결(장착) 여부 전용 초고속 검사 모듈 (이력 영구 보관 & 기체결 자동 스킵)
+// ==========================================
+window.sealMountedResults = window.sealMountedResults || {};
+
+// 로컬 스토리지 캐시 즉시 1차 복원
+try {
+    const cachedSealData = localStorage.getItem('excel_seal_mounted_results');
+    if (cachedSealData) {
+        window.sealMountedResults = Object.assign(JSON.parse(cachedSealData) || {}, window.sealMountedResults || {});
+    }
+} catch (e) {}
+
+// 서버 DB로부터 체결 이력 동기화 함수
+window.syncSealMountedHistory = async function(triggerRender = true) {
+    try {
+        const resp = await fetch(`${API_BASE}/api/photos/seal-mounted-history`);
+        const data = await resp.json();
+        if (data.success && data.records) {
+            window.sealMountedResults = window.sealMountedResults || {};
+            for (const [k, v] of Object.entries(data.records)) {
+                window.sealMountedResults[k] = v;
+            }
+            try {
+                localStorage.setItem('excel_seal_mounted_results', JSON.stringify(window.sealMountedResults));
+            } catch (e) {}
+            if (triggerRender && typeof window.renderGalleryPhotos === 'function' && document.getElementById('photoGalleryContent')) {
+                window.renderGalleryPhotos();
+            }
+        }
+    } catch (e) {
+        console.warn('[SealHistory] 서버 체결 이력 동기화 오류 (오프라인 캐시 사용):', e);
+    }
+};
+
+// 백그라운드 자동 1회 동기화 실행
+setTimeout(() => {
+    if (typeof window.syncSealMountedHistory === 'function') {
+        window.syncSealMountedHistory(false);
+    }
+}, 1000);
+
+// 씰 체결 상태 사용자 임의(수동) 변경 함수
+window.toggleManualSealMounted = async function(cntrNo, targetStatus) {
+    if (!cntrNo) return;
+    const cleanCntr = cntrNo.toUpperCase().trim();
+    const isNowMounted = (targetStatus === 'MOUNTED');
+
+    // 기존 결과가 없으면 기본 레코드 생성
+    let rec = window.sealMountedResults ? window.sealMountedResults[cleanCntr] : null;
+    if (!rec) {
+        const folder = (window.currentGalleryFolders || []).find(f => (f.cntrNo || '').toUpperCase().trim() === cleanCntr);
+        const sealPhoto = folder && folder.photos ? folder.photos.find(p => p.photo_type === 'seal') : null;
+        rec = {
+            cntrNo: cleanCntr,
+            status: targetStatus,
+            detectedColor: isNowMounted ? '수동 체결확인' : '미검출',
+            colorRatio: isNowMounted ? 100 : 0,
+            photoId: sealPhoto ? sealPhoto.id : null,
+            photoPath: sealPhoto ? sealPhoto.photo_path : null,
+            gdriveFileId: sealPhoto ? sealPhoto.gdrive_file_id : null,
+            checkedAt: new Date()
+        };
+    } else {
+        rec.status = targetStatus;
+        rec.detectedColor = isNowMounted ? (rec.detectedColor && rec.detectedColor !== '미검출' ? rec.detectedColor : '수동 체결확인') : '미체결(수동)';
+        rec.checkedAt = new Date();
+    }
+
+    window.sealMountedResults = window.sealMountedResults || {};
+    window.sealMountedResults[cleanCntr] = rec;
+
+    // 1. 서버에 영구 보존 API 호출
+    if (isNowMounted) {
+        try {
+            await fetch(`${API_BASE}/api/photos/save-seal-mounted-batch`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ records: [rec] })
+            });
+        } catch (e) {
+            console.warn('[SealHistory] 수동 체결 저장 실패:', e);
+        }
+    } else {
+        try {
+            await fetch(`${API_BASE}/api/photos/remove-seal-mounted`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cntrNo: cleanCntr })
+            });
+        } catch (e) {
+            console.warn('[SealHistory] 수동 미체결 변경 실패:', e);
+        }
+    }
+
+    // 2. 로컬 스토리지 즉시 동기화
+    try {
+        localStorage.setItem('excel_seal_mounted_results', JSON.stringify(window.sealMountedResults));
+    } catch (e) {}
+
+    // 3. 모달 닫기 및 갤러리 화면 즉시 갱신
+    const modalEl = document.getElementById('sealMountedDetailModal');
+    if (modalEl) modalEl.remove();
+
+    if (typeof window.renderGalleryPhotos === 'function') {
+        window.renderGalleryPhotos();
+    }
+
+    alert(`컨테이너 [${cleanCntr}] 씰 상태를 '${isNowMounted ? '🟢 정상 체결' : '🔴 미체결'}'(으)로 변경했습니다.`);
+};
+
+// 씰 체결 상세 정보 모달
+window.showSealMountedResultDetail = function(cntrNo) {
+    if (!cntrNo) return;
+    const key = cntrNo.toUpperCase().trim();
+    let res = window.sealMountedResults ? window.sealMountedResults[key] : null;
+
+    // 검사 이력이 없는 경우에도 사진을 찾아 수동 체결할 수 있도록 지원
+    if (!res) {
+        const folder = (window.currentGalleryFolders || []).find(f => (f.cntrNo || '').toUpperCase().trim() === key);
+        const sealPhoto = folder && folder.photos ? folder.photos.find(p => p.photo_type === 'seal') : null;
+        res = {
+            cntrNo: key,
+            status: sealPhoto ? 'UNCONFIRMED' : 'NO_SEAL_PHOTO',
+            detectedColor: '미검사',
+            colorRatio: 0,
+            photoId: sealPhoto ? sealPhoto.id : null,
+            photoPath: sealPhoto ? sealPhoto.photo_path : '',
+            checkedAt: null
+        };
+    }
+
+    const isMounted = res.status === 'MOUNTED';
+    let statusBadgeColor = isMounted ? '#4f46e5' : (res.status === 'NO_SEAL_PHOTO' ? '#e11d48' : '#e11d48');
+    let statusText = isMounted ? '🟢 정상 씰 체결 확인' : (res.status === 'NO_SEAL_PHOTO' ? '📷 씰 사진 미등록' : '🔴 씰 미체결 / 확인 필요');
+
+    const photoUrl = res.photoPath 
+        ? `${API_BASE}/api/photos/view?filename=${encodeURIComponent(res.photoPath)}`
+        : '';
+
+    const modalHtml = `
+        <div id="sealMountedDetailModal" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); z-index:200000; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.2s ease;">
+            <div style="background:#1e293b; border:1px solid #4338ca; border-radius:14px; width:460px; max-width:92vw; box-shadow:0 20px 40px rgba(0,0,0,0.6); overflow:hidden; color:#f8fafc;">
+                <div style="padding:16px 20px; background:#0f172a; border-bottom:1px solid #334155; display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:8px; font-weight:800; font-size:1.05rem;">
+                        <i class="fas fa-lock" style="color:#818cf8;"></i>
+                        <span>씰 체결(장착) 상태 관리</span>
+                    </div>
+                    <button onclick="document.getElementById('sealMountedDetailModal').remove()" style="background:transparent; border:none; color:#94a3b8; font-size:1.2rem; cursor:pointer; padding:0 4px;">&times;</button>
+                </div>
+                <div style="padding:20px; display:flex; flex-direction:column; gap:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#0f172a; border-radius:8px; border:1px solid #334155;">
+                        <span style="color:#94a3b8; font-size:0.85rem; font-weight:700;">컨테이너</span>
+                        <strong style="color:#38bdf8; font-size:1rem; letter-spacing:0.5px;">${cntrNo}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#0f172a; border-radius:8px; border:1px solid #334155;">
+                        <span style="color:#94a3b8; font-size:0.85rem; font-weight:700;">체결 상태</span>
+                        <span style="font-size:0.88rem; font-weight:800; color:${statusBadgeColor};">${statusText}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#0f172a; border-radius:8px; border:1px solid #334155;">
+                        <span style="color:#94a3b8; font-size:0.85rem; font-weight:700;">감지 정보</span>
+                        <strong style="color:${isMounted ? '#a5b4fc' : '#f87171'}; font-size:0.95rem;">${res.detectedColor || '미검출'} ${res.colorRatio ? `(${res.colorRatio}%)` : ''}</strong>
+                    </div>
+                    ${photoUrl ? `
+                        <div style="position:relative; width:100%; height:180px; border-radius:8px; overflow:hidden; border:1px solid #334155; background:#090d16;">
+                            <img src="${photoUrl}" style="width:100%; height:100%; object-fit:contain;" alt="Seal Photo" />
+                        </div>
+                    ` : '<div style="padding:20px; text-align:center; color:#64748b; font-size:0.85rem; background:#0f172a; border-radius:8px;">등록된 씰 사진이 없습니다.</div>'}
+                </div>
+                <div style="padding:14px 20px; background:#0f172a; border-top:1px solid #334155; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                    <div>
+                        ${!isMounted ? `
+                            <button type="button" onclick="window.toggleManualSealMounted('${cntrNo}', 'MOUNTED')" style="padding:7px 12px; background:linear-gradient(135deg, #059669, #10b981); color:#fff; border:none; border-radius:6px; font-weight:800; font-size:0.82rem; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 8px rgba(16,185,129,0.3);">
+                                <i class="fas fa-check-circle"></i> 체결 완료로 수동 변경
+                            </button>
+                        ` : `
+                            <button type="button" onclick="window.toggleManualSealMounted('${cntrNo}', 'UNCONFIRMED')" style="padding:7px 12px; background:#334155; color:#fca5a5; border:1px solid #475569; border-radius:6px; font-weight:700; font-size:0.8rem; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                                <i class="fas fa-undo"></i> 미체결로 되돌리기
+                            </button>
+                        `}
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" onclick="document.getElementById('sealMountedDetailModal').remove(); window.openContainerFolderPhotos('${cntrNo}');" style="padding:7px 12px; background:#6366f1; color:#fff; border:none; border-radius:6px; font-weight:700; font-size:0.82rem; cursor:pointer;">
+                            <i class="fas fa-folder-open"></i> 사진함 열기
+                        </button>
+                        <button type="button" onclick="document.getElementById('sealMountedDetailModal').remove()" style="padding:7px 12px; background:#334155; color:#cbd5e1; border:none; border-radius:6px; font-weight:700; font-size:0.82rem; cursor:pointer;">
+                            닫기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+// 씰 체결 상태 일괄 검사 실행 엔진 (기체결 컨테이너 자동 제외/스킵)
+window.executeSealMountedBatchValidation = async function(targetFolders, scopeTitle, options = {}) {
+    if (!targetFolders || targetFolders.length === 0) {
+        alert("검사할 컨테이너가 없습니다.");
+        return;
+    }
+
+    // 최신 체결 이력 동기화
+    if (typeof window.syncSealMountedHistory === 'function') {
+        await window.syncSealMountedHistory(false);
+    }
+
+    const forceAll = !!options.forceAll;
+    let alreadyMountedFolders = [];
+    let toCheckFolders = [];
+
+    for (const f of targetFolders) {
+        const cntrNo = (f.cntrNo || '').toUpperCase().trim();
+        const existing = window.sealMountedResults ? window.sealMountedResults[cntrNo] : null;
+        if (!forceAll && existing && existing.status === 'MOUNTED') {
+            alreadyMountedFolders.push(f);
+        } else {
+            toCheckFolders.push(f);
+        }
+    }
+
+    // 모든 컨테이너가 이미 정상 체결 완료된 경우
+    if (toCheckFolders.length === 0) {
+        const confirmMsg = `선택된 [${scopeTitle}]의 모든 컨테이너(총 ${targetFolders.length}개)가 이미 🔒 씰 체결 확인(완료)된 상태입니다!\n\n검사를 스킵합니다.\n(만약 사진 변경 등으로 전체를 처음부터 강제 재체크하시겠습니까?)`;
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+        toCheckFolders = [...targetFolders];
+        alreadyMountedFolders = [];
+    }
+
+    let progressBox = document.getElementById('sealMountedProgressModal');
+    if (progressBox) progressBox.remove();
+
+    window.isSealMountedCancelled = false;
+
+    const skippedCount = alreadyMountedFolders.length;
+    const totalCount = targetFolders.length;
+    const checkCount = toCheckFolders.length;
+
+    const modalHtml = `
+        <div id="sealMountedProgressModal" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); z-index:200000; display:flex; align-items:center; justify-content:center;">
+            <div style="background:#1e293b; border:1px solid #6366f1; border-radius:14px; width:480px; max-width:92vw; padding:24px; box-shadow:0 25px 50px rgba(0,0,0,0.7); color:#f8fafc; text-align:center;">
+                <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:12px;">
+                    <i class="fas fa-lock fa-spin" style="font-size:1.8rem; color:#818cf8;"></i>
+                    <h3 style="margin:0; font-size:1.15rem; font-weight:800;">씰 체결 상태 체크</h3>
+                </div>
+                <div style="font-size:0.85rem; color:#94a3b8; margin-bottom:12px;">
+                    대상: <strong style="color:#38bdf8;">${scopeTitle}</strong> (총 ${totalCount}개 컨테이너)
+                </div>
+                ${skippedCount > 0 ? `
+                <div style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:9px 14px; margin-bottom:14px; font-size:0.84rem; display:flex; justify-content:space-around; align-items:center;">
+                    <span style="color:#38bdf8;"><i class="fas fa-forward"></i> 기체결 제외: <strong>${skippedCount}</strong>개</span>
+                    <span style="color:#64748b;">|</span>
+                    <span style="color:#a5b4fc;"><i class="fas fa-bolt"></i> 실제 체크 대상: <strong>${checkCount}</strong>개</span>
+                </div>
+                ` : ''}
+                <div style="width:100%; height:12px; background:#0f172a; border-radius:6px; overflow:hidden; margin-bottom:12px; border:1px solid #334155;">
+                    <div id="sealMountedProgressBar" style="width:0%; height:100%; background:linear-gradient(90deg, #4f46e5, #8b5cf6); transition:width 0.15s ease;"></div>
+                </div>
+                <div id="sealMountedStatusText" style="font-size:0.88rem; font-weight:700; color:#cbd5e1; margin-bottom:18px; min-height:22px;">
+                    체크 준비 중...
+                </div>
+                <button onclick="window.isSealMountedCancelled = true; this.textContent='취소 중...'; this.disabled=true;" style="padding:6px 18px; background:#334155; color:#cbd5e1; border:1px solid #475569; border-radius:8px; font-weight:700; font-size:0.82rem; cursor:pointer;">
+                    체크 취소
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const barEl = document.getElementById('sealMountedProgressBar');
+    const textEl = document.getElementById('sealMountedStatusText');
+
+    let mountedCount = 0;
+    let unmountedCount = 0;
+    let noPhotoCount = 0;
+    const startTime = Date.now();
+    const newlyMountedRecords = [];
+
+    for (let i = 0; i < toCheckFolders.length; i++) {
+        if (window.isSealMountedCancelled) break;
+        const f = toCheckFolders[i];
+        const cntrNo = (f.cntrNo || '').toUpperCase().trim();
+        const percent = Math.round(((i + 1) / toCheckFolders.length) * 100);
+        const elapsedSec = Math.round((Date.now() - startTime) / 1000);
+
+        if (barEl) barEl.style.width = `${percent}%`;
+        if (textEl) textEl.innerHTML = `<span style="color:#a5b4fc;">[${cntrNo}]</span> 체크 중... (${i + 1}/${toCheckFolders.length}) <span style="color:#94a3b8; font-size:0.8rem;">[${elapsedSec}초 경과]</span>`;
+
+        const sealPhotos = (f.photos || []).filter(p => p.photo_type === 'seal');
+        if (sealPhotos.length === 0) {
+            window.sealMountedResults[cntrNo] = {
+                cntrNo,
+                status: 'NO_SEAL_PHOTO',
+                detectedColor: '',
+                photoPath: '',
+                checkedAt: new Date()
+            };
+            noPhotoCount++;
+            continue;
+        }
+
+        let isMounted = false;
+        let matchedPhoto = null;
+        let detectedColor = '';
+        let colorRatio = 0;
+
+        // 최신순(역순)으로 씰 사진 검사 (보통 마지막 씰 사진이 체결 접사 사진)
+        const orderedPhotos = [...sealPhotos].reverse();
+        for (const sp of orderedPhotos) {
+            try {
+                const resp = await fetch(`${API_BASE}/api/photos/check-seal-mounted`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        photoId: sp.id,
+                        photoPath: sp.photo_path,
+                        cntrNo: cntrNo,
+                        gdriveFileId: sp.gdrive_file_id || null
+                    })
+                });
+                const data = await resp.json();
+                if (data.success && data.mounted) {
+                    isMounted = true;
+                    matchedPhoto = sp;
+                    detectedColor = data.detectedColor || '확인';
+                    colorRatio = data.colorRatio || 0;
+                    break;
+                }
+            } catch (e) {}
+        }
+
+        if (isMounted) {
+            mountedCount++;
+            const rec = {
+                cntrNo,
+                status: 'MOUNTED',
+                detectedColor,
+                colorRatio,
+                photoId: matchedPhoto ? matchedPhoto.id : sealPhotos[0].id,
+                photoPath: matchedPhoto ? matchedPhoto.photo_path : sealPhotos[0].photo_path,
+                gdriveFileId: matchedPhoto ? matchedPhoto.gdrive_file_id : null,
+                checkedAt: new Date()
+            };
+            window.sealMountedResults[cntrNo] = rec;
+            newlyMountedRecords.push(rec);
+        } else {
+            unmountedCount++;
+            window.sealMountedResults[cntrNo] = {
+                cntrNo,
+                status: 'UNCONFIRMED',
+                detectedColor: '미검출',
+                colorRatio: 0,
+                photoId: sealPhotos[0].id,
+                photoPath: sealPhotos[0].photo_path,
+                checkedAt: new Date()
+            };
+        }
+    }
+
+    // 신규 체결된 레코드 일괄 영구 저장 API 호출 & localStorage 갱신
+    if (newlyMountedRecords.length > 0) {
+        try {
+            await fetch(`${API_BASE}/api/photos/save-seal-mounted-batch`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ records: newlyMountedRecords })
+            });
+        } catch (e) {
+            console.warn('[SealHistory] 일괄 저장 실패 (로컬 유지):', e);
+        }
+    }
+    try {
+        localStorage.setItem('excel_seal_mounted_results', JSON.stringify(window.sealMountedResults));
+    } catch (e) {}
+
+    const modalEl = document.getElementById('sealMountedProgressModal');
+    if (modalEl) modalEl.remove();
+
+    window.renderGalleryPhotos();
+
+    let msg = `[${scopeTitle}] 🔒 씰 체결 상태 체크 완료\n\n`;
+    msg += `• 대상 컨테이너: 총 ${totalCount}개\n`;
+    if (skippedCount > 0) {
+        msg += `• ⏩ 기체결 제외(스킵): ${skippedCount}개 (0초 완료)\n`;
+    }
+    msg += `• ⚡ 실제 체크 진행: ${checkCount}개\n`;
+    msg += `  - 🟢 신규 정상 체결 확인: ${mountedCount}개\n`;
+    if (unmountedCount > 0) msg += `  - 🔴 씰 미체결 / 확인필요: ${unmountedCount}개\n`;
+    if (noPhotoCount > 0) msg += `  - 📷 씰 사진 미등록: ${noPhotoCount}개\n\n`;
+    msg += `※ 정상 체결된 컨테이너는 영구 보존되어 다음 체크 시 자동으로 제외됩니다.`;
+
+    alert(msg);
+};
+
+// 씰 체결 상태 필터 모드 관리 ('ALL' | 'MOUNTED' | 'UNMOUNTED')
+window.sealFilterMode = 'ALL';
+window.setSealFilterMode = function(mode) {
+    window.sealFilterMode = mode || 'ALL';
+    const tabAll = document.getElementById('sealTabAll');
+    const tabMounted = document.getElementById('sealTabMounted');
+    const tabUnmounted = document.getElementById('sealTabUnmounted');
+    if (tabAll) tabAll.classList.toggle('active', mode === 'ALL');
+    if (tabMounted) tabMounted.classList.toggle('active', mode === 'MOUNTED');
+    if (tabUnmounted) tabUnmounted.classList.toggle('active', mode === 'UNMOUNTED');
+    if (typeof window.renderGalleryPhotos === 'function') {
+        window.renderGalleryPhotos();
+    }
+};
+
+// 상단 버튼 클릭 시 (현재 화면 표시된 컨테이너 체결 체크)
+window.runAllVisibleSealMountedCheck = async function() {
+    const allFolders = window.currentGalleryFolders || [];
+    if (allFolders.length === 0) {
+        alert("체크할 컨테이너 폴더가 없습니다.");
+        return;
+    }
+    const filterTitle = window.sealFilterMode === 'MOUNTED' 
+        ? '체결 완료 컨테이너' 
+        : (window.sealFilterMode === 'UNMOUNTED' ? '미체결 컨테이너' : '조회된 컨테이너');
+    await window.executeSealMountedBatchValidation(allFolders, filterTitle);
+};
+
+// 날짜별 툴바 버튼 클릭 시 (특정 날짜 체결 검사)
+window.runBatchDateSealMountedCheck = async function(dateStr, event) {
+    if (event) event.stopPropagation();
+    const allFolders = window.currentGalleryFolders || [];
+    let dateFolders = allFolders.filter(f => f.workDateStr === dateStr);
+    if (dateFolders.length === 0) {
+        alert(`${dateStr} 작업에 등록된 컨테이너가 없습니다.`);
+        return;
+    }
+    const dayNum = parseInt((dateStr || '').split('-')[2] || '0', 10);
+    await window.executeSealMountedBatchValidation(dateFolders, `${dayNum}일 (${dateStr})`);
+};
+
+// 5. [분리 및 정지됨] 기존 OCR 씰 유효성 검사 모듈
+window.runContainerSealValidation = async function() {
+    console.log("기존 OCR 씰 검증 기능은 분리/정지되었습니다.");
+};
+
+// 6. [분리 및 정지됨] 선택된 사진들 씰 검증 (하단 플로팅 액션바)
+window.handleBatchVerifySealPhotos = async function() {
+    console.log("기존 OCR 씰 검증 기능은 분리/정지되었습니다.");
+};
+
+// 7. [분리 및 정지됨] 라이트박스 씰 검증
+window.lightboxVerifyCurrentSeal = async function() {
+    console.log("기존 OCR 씰 검증 기능은 분리/정지되었습니다.");
+};
+
+// ===================================================================
 // [신규] 컨테이너 작업 제품 리스트 & 수량 실시간 조회 엔진
 // ===================================================================
 window.containerProductInfoCache = new Map();
@@ -14997,8 +16467,30 @@ window.updateGalleryProductSummary = async function(cntrNo) {
 
     btn.style.display = 'inline-flex';
     const textEl = document.getElementById('galleryProductSummaryText');
-    if (textEl) {
-        textEl.textContent = `${info.modelCount}모델 ${info.totalQty.toLocaleString()}개`;
+    const iconEl = document.getElementById('galleryProductSummaryIcon');
+    const chevronEl = document.getElementById('galleryProductSummaryChevron');
+
+    const hasQModel = (info.products || []).some(p => (p.prodType || '').trim().toUpperCase() === 'Q');
+    const qCount = (info.products || []).filter(p => (p.prodType || '').trim().toUpperCase() === 'Q').length;
+
+    if (hasQModel) {
+        btn.classList.add('has-q');
+        btn.classList.remove('no-q');
+        btn.title = `클릭하여 품목 상세 확인 (Q모델 ${qCount}종 포함)`;
+        if (iconEl) iconEl.style.color = '#8b5cf6';
+        if (chevronEl) chevronEl.style.color = '#7c3aed';
+        if (textEl) {
+            textEl.innerHTML = `${info.modelCount}모델 ${info.totalQty.toLocaleString()}개 <span style="background:#7c3aed; color:#fff; font-size:0.68rem; padding:1px 5px; border-radius:4px; margin-left:3px; font-weight:900;">Q</span>`;
+        }
+    } else {
+        btn.classList.add('no-q');
+        btn.classList.remove('has-q');
+        btn.title = `클릭하여 품목 상세 확인 (Q모델 없음)`;
+        if (iconEl) iconEl.style.color = '#10b981';
+        if (chevronEl) chevronEl.style.color = '#059669';
+        if (textEl) {
+            textEl.textContent = `${info.modelCount}모델 ${info.totalQty.toLocaleString()}개`;
+        }
     }
 
     const popCntr = document.getElementById('popoverCntrNo');
@@ -15101,8 +16593,23 @@ window.updateLightboxProductSummary = async function(cntrNo) {
 
     btn.style.display = 'inline-flex';
     const textEl = document.getElementById('lightboxProductSummaryText');
-    if (textEl) {
-        textEl.textContent = `${info.modelCount}모델 ${info.totalQty.toLocaleString()}개`;
+    const hasQModel = (info.products || []).some(p => (p.prodType || '').trim().toUpperCase() === 'Q');
+    const qCount = (info.products || []).filter(p => (p.prodType || '').trim().toUpperCase() === 'Q').length;
+
+    if (hasQModel) {
+        btn.classList.add('has-q');
+        btn.classList.remove('no-q');
+        btn.title = `클릭하여 품목 상세 확인 (Q모델 ${qCount}종 포함)`;
+        if (textEl) {
+            textEl.innerHTML = `${info.modelCount}모델 ${info.totalQty.toLocaleString()}개 <span style="background:#7c3aed; color:#fff; font-size:0.65rem; padding:1px 4px; border-radius:3px; margin-left:3px; font-weight:900;">Q</span>`;
+        }
+    } else {
+        btn.classList.add('no-q');
+        btn.classList.remove('has-q');
+        btn.title = `클릭하여 품목 상세 확인 (Q모델 없음)`;
+        if (textEl) {
+            textEl.textContent = `${info.modelCount}모델 ${info.totalQty.toLocaleString()}개`;
+        }
     }
 
     const popCntr = document.getElementById('lbPopoverCntrNo');
@@ -15438,6 +16945,21 @@ window.renderGalleryPhotos = function() {
         if (badgeCount) badgeCount.textContent = `${photos.length}장`;
         if (btnBack) btnBack.style.display = 'inline-flex';
 
+        // 컨테이너 상세 사진 보기에서는 폴더 전용 메뉴(3단 씰필터, 전체선택, 체결체크) 숨기고 뒤로가기/새로고침만 노출
+        const sealTabs = document.getElementById('sealFilterTabGroup');
+        if (sealTabs) sealTabs.style.display = 'none';
+        const allSelWrap = document.querySelector('.ctnr-all-select-wrap');
+        if (allSelWrap) allSelWrap.style.display = 'none';
+        const btnCheckAll = document.getElementById('btnCheckAllSealMounted');
+        if (btnCheckAll) btnCheckAll.style.display = 'none';
+
+        const btnVerifySeals = document.getElementById('btnVerifyContainerSeals');
+        if (btnVerifySeals) {
+            btnVerifySeals.style.display = 'none'; // 컨테이너 폴더 안에서는 눈으로 확인하므로 검증 버튼 숨김
+        }
+        const btnVerifyAll = document.getElementById('btnVerifyAllGallerySeals');
+        if (btnVerifyAll) btnVerifyAll.style.display = 'none';
+
         const selCount = photos.filter(p => window.selectedPhotoIds.has(String(p.id))).length;
         const allSel = photos.length > 0 && selCount === photos.length;
         let selectAllBtn = document.getElementById('btnGallerySelectAllInView');
@@ -15484,7 +17006,7 @@ window.renderGalleryPhotos = function() {
                         </div>
                         ${(p.gdrive_file_id || p.gdrive_url) ? `<span class="ctnr-card-cloud-tag" title="구글드라이브 안전 보관 사진 (PC 용량 정리 완료)">☁️</span>` : ''}
                         ${isDuplicate ? `<span class="ctnr-card-duplicate-tag" title="완전히 동일한 중복 사진 (정리 대상)">중복</span>` : ''}
-                        ${isSeal ? `<span class="ctnr-card-seal-tag"><i class="fas fa-camera"></i> 씰</span>` : ''}
+                        ${window.getSealBadgeHtml ? window.getSealBadgeHtml(p, isSeal) : (isSeal ? `<span class="ctnr-card-seal-tag"><i class="fas fa-camera"></i> 씰</span>` : '')}
                         <img src="${photoUrl}" alt="${p.cntr_no}" style="${rotateStyle}" loading="lazy" onerror="if (!this._retried) { this._retried = 1; setTimeout(() => { this.src = '${photoUrl}&retry=' + Date.now(); }, 800); } else { this.src='https://placehold.co/600x800/11111a/94a3b8?text=Image+Load+Fail'; }">
                         <div class="ctnr-card-gradient-overlay"></div>
                     </div>
@@ -15527,6 +17049,19 @@ window.renderGalleryPhotos = function() {
 
     if (badgeBox) badgeBox.style.display = 'none';
     if (btnBack) btnBack.style.display = 'none';
+
+    // 메인 사진보관함(폴더 목록)에서는 3단 씰필터 탭, 전체선택, 체결체크 버튼 정상 표시
+    const sealTabs = document.getElementById('sealFilterTabGroup');
+    if (sealTabs) sealTabs.style.display = 'inline-flex';
+    const allSelWrap = document.querySelector('.ctnr-all-select-wrap');
+    if (allSelWrap) allSelWrap.style.display = 'inline-flex';
+    const btnCheckAll = document.getElementById('btnCheckAllSealMounted');
+    if (btnCheckAll) btnCheckAll.style.display = 'inline-flex';
+
+    const btnVerifySeals = document.getElementById('btnVerifyContainerSeals');
+    if (btnVerifySeals) btnVerifySeals.style.display = 'none';
+    const btnVerifyAll = document.getElementById('btnVerifyAllGallerySeals');
+    if (btnVerifyAll) btnVerifyAll.style.display = 'inline-flex';
     const selAllBtn = document.getElementById('btnGallerySelectAllInView');
     if (selAllBtn) selAllBtn.style.display = 'none';
 
@@ -15555,11 +17090,54 @@ window.renderGalleryPhotos = function() {
         }
     });
 
-    const folderList = Object.values(folderGroup);
+    const allFolderList = Object.values(folderGroup);
+
+    // 씰 체결 상태 판별 및 카운트 집계
+    let mountedCount = 0;
+    let unmountedCount = 0;
+    allFolderList.forEach(f => {
+        const cntr = (f.cntrNo || '').toUpperCase().trim();
+        const mRes = window.sealMountedResults ? window.sealMountedResults[cntr] : null;
+        f.isSealMounted = (mRes && mRes.status === 'MOUNTED');
+        if (f.isSealMounted) {
+            mountedCount++;
+        } else {
+            unmountedCount++;
+        }
+    });
+
+    // 3단 필터 탭 숫자 실시간 갱신
+    const elCntAll = document.getElementById('cntSealAll');
+    const elCntMounted = document.getElementById('cntSealMounted');
+    const elCntUnmounted = document.getElementById('cntSealUnmounted');
+    if (elCntAll) elCntAll.textContent = allFolderList.length;
+    if (elCntMounted) elCntMounted.textContent = mountedCount;
+    if (elCntUnmounted) elCntUnmounted.textContent = unmountedCount;
+
+    // 현재 씰 필터 모드에 따라 표시할 폴더 필터링
+    window.sealFilterMode = window.sealFilterMode || 'ALL';
+    let folderList = allFolderList;
+    if (window.sealFilterMode === 'MOUNTED') {
+        folderList = allFolderList.filter(f => f.isSealMounted);
+    } else if (window.sealFilterMode === 'UNMOUNTED') {
+        folderList = allFolderList.filter(f => !f.isSealMounted);
+    }
+
     window.currentGalleryFolders = folderList;
     const uniqueCntrs = new Set(folderList.map(f => f.cntrNo));
     if (summaryEl) {
-        summaryEl.textContent = `총 ${folderList.length}개 폴더 (${uniqueCntrs.size}개 컨테이너 · ${allPhotos.length}장)`;
+        summaryEl.textContent = `총 ${folderList.length}개 (${allPhotos.length}장)`;
+    }
+
+    // 상단 씰 체결 체크 버튼 텍스트에 개수 동적 업데이트 (컴팩트)
+    const btnCheckAllSealText = document.getElementById('btnCheckAllSealMountedText');
+    if (btnCheckAllSealText) {
+        btnCheckAllSealText.textContent = `체결 체크 (${folderList.length}개)`;
+    }
+
+    // 상단 조회기간 전체선택 상태 및 체크박스 라벨 동기화
+    if (typeof window.refreshFolderHeaderSelectState === 'function') {
+        window.refreshFolderHeaderSelectState();
     }
 
     if (folderList.length === 0) {
@@ -15611,6 +17189,9 @@ window.renderGalleryPhotos = function() {
                         </button>
                         <button class="btn-date-report" onclick="window.openReportModal('${dateStr}', event)" title="${dateStr} 작업 보고서 보기">
                             <i class="fas fa-file-alt"></i> ${dayNum}일 보고서
+                        </button>
+                        <button class="btn-date-seal-mounted" onclick="window.runBatchDateSealMountedCheck('${dateStr}', event)" title="${dateStr} 등록된 컨테이너 씰 체결(장착) 상태 체크">
+                            <i class="fas fa-lock"></i> ${dayNum}일 체결 체크
                         </button>
                         <span class="ctnr-date-info-summary">
                             컨테이너 <strong>${dateFolders.length}개</strong> · 총 <strong>${totalDatePhotos}장</strong>
@@ -15685,12 +17266,12 @@ window.renderGalleryPhotos = function() {
                                                 <div class="ctnr-folder-left-info">
                                                     <input type="checkbox" class="ctnr-folder-chk" ${isFolderSelected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="window.toggleFolderSelect('${folderKey}', event)">
                                                     <i class="fas fa-folder" style="color:#00c0fa; font-size:1rem; margin:0 4px 0 2px;"></i>
-                                                    <strong class="ctnr-folder-name ${carrierInfo.colorClass}" onclick="event.stopPropagation(); window.copyToClipboard('${f.cntrNo}', '컨테이너 번호')" title="클릭하여 컨테이너 번호 복사" style="cursor: pointer; text-decoration: underline dotted transparent; transition: text-decoration-color 0.2s;" onmouseenter="this.style.textDecorationColor='#0284c7'" onmouseleave="this.style.textDecorationColor='transparent'">${f.cntrNo}</strong>
+                                                    <strong class="ctnr-folder-name ${carrierInfo.colorClass}" onclick="event.stopPropagation(); if (typeof window.copyToClipboard === 'function') window.copyToClipboard('${f.cntrNo}', '컨테이너 번호'); window.openContainerFolderPhotos('${f.cntrNo}', '${f.workDateStr}');" title="클릭하여 '${f.cntrNo}' 사진 열기 (번호 자동 복사)" style="cursor: pointer; text-decoration: underline dotted transparent; transition: text-decoration-color 0.2s;" onmouseenter="this.style.textDecorationColor='#0284c7'" onmouseleave="this.style.textDecorationColor='transparent'">${f.cntrNo}</strong>
                                                     ${carrierInfo.name ? `<span class="ctnr-folder-carrier-tag ${carrierInfo.colorClass}">[${carrierInfo.name}]</span>` : ''}
                                                 </div>
                                                 <div style="display:flex; align-items:center; gap:5px;">
                                                     ${isAllGDrive ? `<span style="font-size:0.75rem;" title="모든 사진이 구글드라이브에 안전 보관 중입니다 (로컬 용량 정리됨).">☁️</span>` : ''}
-                                                    ${!hasSeal ? `<span title="씰(Seal) 사진이 등록되지 않았습니다." class="camera-pulse"><i class="fas fa-camera"></i></span>` : ''}
+                                                    ${window.getFolderSealBadgeHtml(f)}
                                                     <span class="ctnr-folder-count-badge"><i class="far fa-image" style="font-size:0.72rem; opacity:0.75;"></i>${f.photos.length}장</span>
                                                 </div>
                                             </div>
@@ -15721,6 +17302,14 @@ window.filterPhotoGallery = function() {
 };
 
 // 4. 고기능 라이트박스 뷰어
+let isLightboxDragging = false;
+let lightboxDragStart = { x: 0, y: 0 };
+let lightboxScale = 1;
+let lightboxRotation = 0;
+let lightboxPan = { x: 0, y: 0 };
+let lightboxPhotos = [];
+let currentLightboxIndex = 0;
+
 window.openPhotoLightboxById = function(photoId) {
     let photos = [...window.currentGalleryPhotos];
     if (window.currentGalleryTargetCntr) {
@@ -15784,7 +17373,69 @@ window.renderLightboxPhoto = function() {
     const fileName = (photo.photo_path || '').split('/').pop() || '';
 
     if (cntrEl) cntrEl.textContent = photo.cntr_no || '-';
-    if (sealEl) sealEl.style.display = (photo.photo_type === 'seal') ? 'inline-block' : 'none';
+    const isSeal = photo.photo_type === 'seal';
+    if (sealEl) sealEl.style.display = isSeal ? 'inline-block' : 'none';
+    const lbSealBtn = document.getElementById('btnLightboxSealToggle');
+    if (lbSealBtn) {
+        lbSealBtn.title = isSeal ? '씰(Seal) 지정 해제' : '씰(Seal) 사진으로 지정';
+        lbSealBtn.style.background = isSeal ? '#e11d48' : '';
+        lbSealBtn.style.color = isSeal ? '#ffffff' : '';
+        lbSealBtn.style.borderColor = isSeal ? '#be123c' : '';
+    }
+
+    // 라이트박스 씰 검증 버튼 및 배지 연동
+    const valBadge = document.getElementById('lightboxSealValidationBadge');
+    const lbVerifyBtn = document.getElementById('btnLightboxVerifySeal');
+    if (lbVerifyBtn) {
+        lbVerifyBtn.style.display = isSeal ? 'inline-flex' : 'none';
+    }
+    if (valBadge) {
+        if (isSeal) {
+            const val = window.sealValidationCache ? window.sealValidationCache.get(String(photo.id)) : null;
+            const cntrNo = (photo.cntr_no || '').toUpperCase().trim();
+            const cntrResult = window.sealContainerResults ? window.sealContainerResults[cntrNo] : null;
+            const isCntrSealVerified = (cntrResult && cntrResult.status === 'MATCH') ||
+                (window.currentGalleryPhotos || []).some(p => {
+                    if ((p.cntr_no || '').toUpperCase().trim() !== cntrNo) return false;
+                    const cVal = window.sealValidationCache ? window.sealValidationCache.get(String(p.id)) : null;
+                    return cVal && cVal.status === 'VERIFIED';
+                });
+
+            if (val) {
+                valBadge.style.display = 'inline-block';
+                if (val.status === 'VERIFIED') {
+                    valBadge.style.background = 'linear-gradient(135deg, #059669, #10b981)';
+                    valBadge.style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.5)';
+                    valBadge.innerHTML = `<i class="fas fa-check-circle"></i> 씰 확인 (${val.barcodeText})`;
+                } else if (isCntrSealVerified) {
+                    valBadge.style.background = 'linear-gradient(135deg, #334155, #475569)';
+                    valBadge.style.boxShadow = 'none';
+                    valBadge.innerHTML = `<i class="fas fa-camera"></i> 전경/참고 사진 (컨테이너 씰 확인 완료)`;
+                } else if (val.status === 'MISMATCH') {
+                    valBadge.style.background = 'linear-gradient(135deg, #d97706, #f59e0b)';
+                    valBadge.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.5)';
+                    valBadge.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 씰 불일치 (${val.barcodeText || '미인식'} ≠ ${val.sealNo || '미등록'})`;
+                } else if (val.status === 'DETECTED') {
+                    valBadge.style.background = 'linear-gradient(135deg, #0284c7, #38bdf8)';
+                    valBadge.style.boxShadow = '0 0 10px rgba(56, 189, 248, 0.5)';
+                    valBadge.innerHTML = `<i class="fas fa-barcode"></i> OCR 번호 (${val.barcodeText})`;
+                } else {
+                    valBadge.style.background = 'linear-gradient(135deg, #ea580c, #f97316)';
+                    valBadge.style.boxShadow = '0 0 10px rgba(234, 88, 12, 0.5)';
+                    valBadge.innerHTML = `<i class="fas fa-question-circle"></i> 씰 번호 미인식`;
+                }
+            } else if (isCntrSealVerified) {
+                valBadge.style.display = 'inline-block';
+                valBadge.style.background = 'linear-gradient(135deg, #334155, #475569)';
+                valBadge.style.boxShadow = 'none';
+                valBadge.innerHTML = `<i class="fas fa-camera"></i> 전경/참고 사진 (컨테이너 씰 확인 완료)`;
+            } else {
+                valBadge.style.display = 'none';
+            }
+        } else {
+            valBadge.style.display = 'none';
+        }
+    }
     if (filenameEl) {
         filenameEl.textContent = fileName;
         filenameEl.title = fileName;
@@ -16013,7 +17664,13 @@ window.lightboxToggleSeal = async function() {
         if (data.success) {
             photo.photo_type = newType;
             window.renderLightboxPhoto();
+            if (typeof window.fetchContainerPhotoCounts === 'function') {
+                await window.fetchContainerPhotoCounts();
+            }
             await window.loadPhotoGallery(window.currentGalleryTargetCntr);
+            alert(newType === 'normal' ? '현재 사진의 씰(Seal) 지정이 해제되었습니다.' : '현재 사진이 씰(Seal) 사진으로 지정되었습니다.');
+        } else {
+            alert("씰 상태 변경 실패: " + (data.error || data.message));
         }
     } catch (e) {
         alert("씰 상태 변경 실패: " + e.message);
@@ -16286,21 +17943,26 @@ window.lightboxDownload = function() {
         modal.style.display = 'flex';
 
         const dateInput = document.getElementById('reportTargetDate');
-        if (targetDate) {
+        const isResuming = (window.isReportModalOpen === true && targetDate === null && Boolean(dateInput?.value));
+        window.isReportModalOpen = true;
+
+        if (isResuming) {
+            // 화면 전환(Resume): 이미 열려있던 상태에서 탭만 이동했다가 돌아온 경우 기존 날짜/데이터 유지
+            if (!window.currentReportData || window.currentReportData.length === 0) {
+                window.loadReportData();
+            }
+        } else if (targetDate) {
+            // 특정 날짜 명시 오픈
             if (dateInput) dateInput.value = targetDate;
             window.loadReportData();
-        } else if (!dateInput?.value) {
+        } else {
+            // X나 닫기를 눌러 닫힌 후 새로 열린 경우: 기준 작업일(13시 이전 전일, 13시 이후 당일)로 새로 로드!
             const now = new Date();
             if (now.getHours() < 13) {
                 now.setDate(now.getDate() - 1);
             }
             if (dateInput) dateInput.value = formatReportYMD(now);
             window.loadReportData();
-        } else {
-            // targetDate가 null이고 이미 날짜가 있으면: 화면 전환이므로 이미 로드된 데이터가 있다면 유지, 없으면 로드
-            if (!window.currentReportData || window.currentReportData.length === 0) {
-                window.loadReportData();
-            }
         }
     };
 
@@ -16308,7 +17970,10 @@ window.lightboxDownload = function() {
         const modal = document.getElementById('reportModal');
         if (modal) modal.style.display = 'none';
         if (isFullReset) {
-            // 닫기 시 필요에 따라 초기화
+            window.isReportModalOpen = false;
+            const dateInput = document.getElementById('reportTargetDate');
+            if (dateInput) dateInput.value = '';
+            window.currentReportData = null;
         }
     };
 
