@@ -15767,7 +15767,7 @@ window.getFolderSealTagHtml = function(folder) {
     // A. 체결 검사 결과가 있는 경우
     if (mRes) {
         if (mRes.status === 'MOUNTED') {
-            return `<span class="ctnr-folder-seal-badge mounted" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="[씰 체결 확인] 볼트 씰이 정상 체결되었습니다. (색상: ${mRes.detectedColor || '확인'}, 클릭 시 사진 확인)"><i class="fas fa-lock"></i> 씰체결됨</span>`;
+            return `<span class="ctnr-folder-seal-badge mounted" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="[씰 체결 확인] 볼트 씰이 정상 체결되었습니다. (색상: ${mRes.detectedColor || '확인'}, 클릭 시 사진 확인)"><i class="fas fa-lock"></i></span>`;
         } else if (mRes.status === 'NO_SEAL_PHOTO') {
             return `<span class="ctnr-folder-seal-badge none" onclick="event.stopPropagation(); window.showSealMountedResultDetail('${cntrNo}');" title="씰 사진 미등록/누락"><i class="fas fa-camera"></i> 씰사진없음</span>`;
         } else {
